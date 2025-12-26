@@ -1,0 +1,342 @@
+---
+name: database-patterns
+description: Database best practices with Drizzle ORM. Use when writing queries, migrations, or database logic.
+---
+
+# Database Patterns
+
+## Query Patterns
+
+### Avoid N+1 Queries
+```typescript
+// ✅ GOOD - Single query with relations
+const chatsWithMessages = await db.query.chats.findMany({
+  where: eq(chats.userId, userId),
+  with: {
+    messages: {
+      orderBy: [desc(messages.createdAt)],
+      limit: 10,
+    },
+  },
+})
+
+// ❌ BAD - N+1 problem
+const chats = await db.query.chats.findMany({ where: eq(chats.userId, userId) })
+for (const chat of chats) {
+  // N queries!
+  const messages = await db.query.messages.findMany({ where: eq(messages.chatId, chat.id) })
+}
+```
+
+### Selective Fields
+```typescript
+// ✅ GOOD - Select only needed fields
+const users = await db
+  .select({ id: users.id, email: users.email })
+  .from(users)
+  .where(eq(users.tier, 'pro'))
+
+// ❌ BAD - Fetching all fields when you only need some
+const users = await db.select().from(users).where(eq(users.tier, 'pro'))
+// Then only use user.id and user.email
+```
+
+### Pagination
+```typescript
+// ✅ GOOD - Cursor-based pagination (for large datasets)
+const pageSize = 20
+const messages = await db.query.messages.findMany({
+  where: and(
+    eq(messages.chatId, chatId),
+    cursor ? lt(messages.createdAt, cursor) : undefined
+  ),
+  orderBy: [desc(messages.createdAt)],
+  limit: pageSize + 1, // Fetch one extra to check if there's more
+})
+
+const hasMore = messages.length > pageSize
+const items = hasMore ? messages.slice(0, -1) : messages
+const nextCursor = hasMore ? items[items.length - 1].createdAt : null
+
+return { items, nextCursor, hasMore }
+
+// ✅ GOOD - Offset pagination (for small datasets)
+const page = 1
+const pageSize = 20
+const chats = await db.query.chats.findMany({
+  where: eq(chats.userId, userId),
+  orderBy: [desc(chats.updatedAt)],
+  limit: pageSize,
+  offset: (page - 1) * pageSize,
+})
+
+// ❌ BAD - No pagination (memory issues with large datasets)
+const messages = await db.query.messages.findMany({
+  where: eq(messages.chatId, chatId),
+})
+```
+
+## Transaction Patterns
+
+### Atomic Operations
+```typescript
+// ✅ GOOD - Transaction for related operations
+await db.transaction(async tx => {
+  // Create message
+  const [message] = await tx
+    .insert(messages)
+    .values({ chatId, role: 'assistant', content, outputTokens })
+    .returning()
+
+  // Deduct credits atomically
+  await tx
+    .update(users)
+    .set({ creditsRemaining: sql`${users.creditsRemaining} - ${outputTokens}` })
+    .where(eq(users.id, userId))
+
+  // Update chat timestamp
+  await tx.update(chats).set({ updatedAt: new Date() }).where(eq(chats.id, chatId))
+
+  return message
+})
+
+// ❌ BAD - Separate operations (can fail partially)
+const message = await db.insert(messages).values({ chatId, content }).returning()
+await db.update(users).set({ creditsRemaining: user.creditsRemaining - tokens })
+// If this fails, message is created but credits not deducted!
+```
+
+### Idempotency
+```typescript
+// ✅ GOOD - Upsert for idempotent operations
+await db
+  .insert(users)
+  .values({ id: clerkUserId, email, tier: 'free' })
+  .onConflictDoUpdate({
+    target: users.id,
+    set: { email, updatedAt: new Date() },
+  })
+
+// This can be called multiple times safely (webhook retries)
+```
+
+## Schema Design
+
+### Relations
+```typescript
+// ✅ GOOD - Define relations for type-safe queries
+export const usersRelations = relations(users, ({ many }) => ({
+  chats: many(chats),
+}))
+
+export const chatsRelations = relations(chats, ({ one, many }) => ({
+  user: one(users, { fields: [chats.userId], references: [users.id] }),
+  messages: many(messages),
+}))
+
+// Now you can use .with() in queries
+```
+
+### Indexes
+```typescript
+// ✅ GOOD - Index frequently queried columns
+export const messages = pgTable(
+  'messages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    chatId: uuid('chat_id').notNull(),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  table => ({
+    chatIdIdx: index('messages_chat_id_idx').on(table.chatId),
+    createdAtIdx: index('messages_created_at_idx').on(table.createdAt),
+  })
+)
+
+// ❌ BAD - No indexes on frequently queried columns
+// WHERE chatId = ? will be slow without index
+```
+
+### Constraints
+```typescript
+// ✅ GOOD - Foreign key constraints
+export const chats = pgTable('chats', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }), // Delete chats when user deleted
+})
+
+// ✅ GOOD - Check constraints
+export const users = pgTable('users', {
+  creditsRemaining: integer('credits_remaining')
+    .default(50000)
+    .notNull()
+    .$default(() => 50000),
+})
+```
+
+## Migration Workflow
+
+### Safe Migrations
+```bash
+# 1. Generate migration
+pnpm db:generate
+
+# 2. Review generated SQL (ALWAYS DO THIS)
+cat drizzle/0001_migration.sql
+
+# 3. Test in development
+pnpm db:migrate
+
+# 4. If safe, apply to production
+```
+
+```typescript
+// ✅ GOOD - Backward compatible changes
+// Add new column with default
+export const users = pgTable('users', {
+  // ... existing columns
+  newField: text('new_field').default('default_value'), // Safe
+})
+
+// ❌ RISKY - Breaking changes
+export const users = pgTable('users', {
+  // ... existing columns
+  email: text('email').notNull(), // Making nullable field required = breaks!
+})
+
+// ✅ GOOD - Multi-step migration for breaking changes
+// Step 1: Add new nullable column
+// Step 2: Backfill data
+// Step 3: Make it NOT NULL
+// Step 4: Remove old column
+```
+
+### Data Migrations
+```typescript
+// ✅ GOOD - Separate data migration script
+// scripts/migrate-data.ts
+import { db } from '../lib/db'
+
+async function migrateData() {
+  await db.transaction(async tx => {
+    // Backfill new column
+    await tx
+      .update(users)
+      .set({ newField: sql`old_field` })
+      .where(isNull(users.newField))
+  })
+}
+
+migrateData()
+```
+
+## Performance Patterns
+
+### Connection Pooling
+```typescript
+// ✅ GOOD - Reuse client (singleton pattern)
+// lib/db/index.ts
+import { drizzle } from 'drizzle-orm/postgres-js'
+import postgres from 'postgres'
+
+const globalForDb = globalThis as unknown as { client: ReturnType<typeof postgres> | undefined }
+
+const client = globalForDb.client ?? postgres(process.env.DATABASE_URL!, { prepare: false })
+if (process.env.NODE_ENV !== 'production') globalForDb.client = client
+
+export const db = drizzle(client, { schema })
+
+// ❌ BAD - New connection every time
+export function getDb() {
+  const client = postgres(process.env.DATABASE_URL!)
+  return drizzle(client)
+}
+```
+
+### Prepared Statements
+```typescript
+// ✅ GOOD - Prepared statement for repeated queries
+const getChatsByUser = db.query.chats
+  .findMany({
+    where: eq(chats.userId, sql.placeholder('userId')),
+  })
+  .prepare('get_chats_by_user')
+
+const userChats = await getChatsByUser.execute({ userId })
+
+// For Supabase pooler, set prepare: false in postgres client
+```
+
+### Batch Operations
+```typescript
+// ✅ GOOD - Batch inserts
+const newMessages = [
+  { chatId, role: 'user', content: 'Hello' },
+  { chatId, role: 'assistant', content: 'Hi there!' },
+]
+
+await db.insert(messages).values(newMessages)
+
+// ❌ BAD - Individual inserts
+for (const message of newMessages) {
+  await db.insert(messages).values(message) // N queries instead of 1
+}
+```
+
+## Type Safety
+
+### Infer Types from Schema
+```typescript
+import type { InferSelectModel, InferInsertModel } from 'drizzle-orm'
+
+// ✅ GOOD - Types derived from schema
+export type User = InferSelectModel<typeof users>
+export type NewUser = InferInsertModel<typeof users>
+export type Chat = InferSelectModel<typeof chats>
+export type Message = InferSelectModel<typeof messages>
+
+// ❌ BAD - Duplicating types manually
+type User = {
+  id: string
+  email: string
+  // ... can get out of sync with schema
+}
+```
+
+### Partial Updates
+```typescript
+// ✅ GOOD - Type-safe partial update
+await db
+  .update(users)
+  .set({ creditsRemaining: 1000 }) // Only update this field
+  .where(eq(users.id, userId))
+
+// TypeScript ensures creditsRemaining is the right type
+```
+
+## Anti-Patterns to Avoid
+- ❌ N+1 queries (fetch relations in single query)
+- ❌ Fetching entire tables without WHERE clause
+- ❌ No pagination (memory issues)
+- ❌ Missing indexes on queried columns
+- ❌ Operations outside transactions when atomicity needed
+- ❌ Creating new connection per request
+- ❌ No foreign key constraints
+- ❌ Breaking schema changes without multi-step migration
+- ❌ Manual type definitions (use InferSelectModel)
+- ❌ Hardcoding SQL strings (use Drizzle builders)
+
+## Quick Checklist
+- [ ] Relations defined in schema
+- [ ] Indexes on frequently queried columns
+- [ ] Foreign key constraints with onDelete
+- [ ] Atomic operations in transactions
+- [ ] Pagination for large datasets
+- [ ] Single connection reused (singleton)
+- [ ] Types inferred from schema
+- [ ] Migrations reviewed before applying
+- [ ] Queries avoid N+1 problem
+- [ ] Batch operations instead of loops
