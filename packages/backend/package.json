@@ -1,0 +1,41 @@
+{
+  "name": "@prophet/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "clean": "rm -rf .next node_modules"
+  },
+  "dependencies": {
+    "next": "^16.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@prophet/shared": "workspace:*",
+    "@clerk/nextjs": "^6.14.1",
+    "drizzle-orm": "^0.38.3",
+    "postgres": "^3.4.5",
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@upstash/redis": "^1.36.0",
+    "@upstash/ratelimit": "^2.0.5",
+    "zod": "^3.24.1",
+    "svix": "^1.40.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "@types/react": "^19.0.6",
+    "@types/react-dom": "^19.0.3",
+    "typescript": "^5.7.2",
+    "drizzle-kit": "^0.29.2",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "^16.0.0"
+  }
+}

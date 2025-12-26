@@ -1,0 +1,32 @@
+{
+  "name": "prophet",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:sidepanel": "pnpm -F @prophet/sidepanel dev",
+    "dev:backend": "pnpm -F @prophet/backend dev",
+    "dev:marketing": "pnpm -F @prophet/marketing dev",
+    "build": "pnpm -r build",
+    "build:sidepanel": "pnpm -F @prophet/sidepanel build",
+    "build:backend": "pnpm -F @prophet/backend build",
+    "build:marketing": "pnpm -F @prophet/marketing build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm -F @prophet/backend db:generate",
+    "db:migrate": "pnpm -F @prophet/backend db:migrate",
+    "db:studio": "pnpm -F @prophet/backend db:studio",
+    "clean": "pnpm -r clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "eslint": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}
