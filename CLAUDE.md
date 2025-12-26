@@ -110,6 +110,7 @@ Skills are organized by **topic** (frontend, backend, etc.) to make discovery ea
 
 ### Cross-Cutting Skills
 - **typescript-standards** - Type safety, discriminated unions, Zod type inference, generics. Use in all TypeScript code.
+- **skill-creator** - Guide for creating Claude Code skills with proper structure and frontmatter. Use when building new skills.
 
 ## How Skills Work
 
