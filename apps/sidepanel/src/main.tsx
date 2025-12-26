@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 import { ClerkProvider } from '@clerk/chrome-extension'
+import { dark } from '@clerk/themes'
 import App from './App'
 import './index.css'
 
@@ -25,7 +26,7 @@ ReactDOM.createRoot(root).render(
     <ClerkProvider
       publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
       appearance={{
-        baseTheme: 'dark' as any,
+        baseTheme: dark,
       }}
     >
       <QueryClientProvider client={queryClient}>

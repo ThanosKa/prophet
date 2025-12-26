@@ -4,9 +4,16 @@ import { useAuthStore } from '@/store/authStore'
 import { apiClient } from '@/lib/api'
 import type { User } from '@prophet/shared'
 
+interface ClerkUser {
+  id: string
+  emailAddresses?: Array<{ emailAddress: string }>
+  firstName: string | null
+  lastName: string | null
+}
+
 interface UseAuthReturn {
   user: User | null | undefined
-  clerkUser: any
+  clerkUser: ClerkUser | null | undefined
   isSignedIn: boolean | undefined
   isLoading: boolean
   error: Error | null

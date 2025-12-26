@@ -13,7 +13,7 @@ class ApiClient {
     options?: RequestInit
   ): Promise<ApiResponse<T>> {
     try {
-      const token = await (window as any).chrome?.runtime?.sendMessage({
+      const token = await chrome.runtime.sendMessage({
         type: 'GET_AUTH_TOKEN',
       })
 
@@ -82,7 +82,7 @@ class ApiClient {
     chatId: string,
     content: string
   ): AsyncGenerator<{ type: string; content?: string; error?: string; usage?: { inputTokens: number; outputTokens: number } }> {
-    const token = await (window as any).chrome?.runtime?.sendMessage({
+    const token = await chrome.runtime.sendMessage({
       type: 'GET_AUTH_TOKEN',
     })
 

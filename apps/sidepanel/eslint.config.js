@@ -10,10 +10,11 @@ export default [
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  react.configs.flat.recommended,
   {
     files: ["**/*.{ts,tsx}"],
+    ...react.configs.flat.recommended,
     plugins: {
+      react: react,
       "react-hooks": reactHooks,
     },
     languageOptions: {
