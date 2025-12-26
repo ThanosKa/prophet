@@ -257,9 +257,12 @@ Copy from [apps/marketing/.env.example](apps/marketing/.env.example) - marketing
 
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `NEXT_PUBLIC_APP_URL`
 
-### apps/sidepanel
+### apps/sidepanel/.env.local
 
-No `.env.local` needed (uses VITE\_\* variables from root during build)
+Copy from [apps/sidepanel/.env.example](apps/sidepanel/.env.example) - Chrome extension needs:
+
+- `VITE_CLERK_PUBLISHABLE_KEY` - Clerk public key (Vite prefixed for build-time inlining)
+- `VITE_API_URL` - Backend API URL for extension requests
 
 ## Critical Security Rules
 
@@ -368,6 +371,13 @@ cp apps/marketing/.env.example apps/marketing/.env.local
 # Copy NEXT_PUBLIC_* values from root/.env.local
 ```
 
+**Sidepanel** - Copy [apps/sidepanel/.env.example](apps/sidepanel/.env.example) → `apps/sidepanel/.env.local`
+
+```bash
+cp apps/sidepanel/.env.example apps/sidepanel/.env.local
+# Copy VITE_* values from root/.env.local
+```
+
 ### 4. Initialize Database
 
 ```bash
@@ -383,8 +393,22 @@ pnpm dev
 # Or individual apps
 pnpm dev:backend      # localhost:3000
 pnpm dev:marketing    # localhost:3001
-pnpm dev:sidepanel    # localhost:5173
+pnpm dev:sidepanel    # localhost:5173 (dev server, builds to dist/)
 ```
+
+### 6. Load Chrome Extension
+
+After building the sidepanel:
+
+```bash
+pnpm -F @prophet/sidepanel build
+```
+
+1. Open `chrome://extensions`
+2. Enable "Developer mode" (top right)
+3. Click "Load unpacked"
+4. Select `apps/sidepanel/dist` folder
+5. Click the extension icon to open the sidepanel
 
 ## Messages for the developer
 
