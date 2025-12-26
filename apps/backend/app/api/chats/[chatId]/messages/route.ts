@@ -5,25 +5,22 @@ import { chats, messages } from '@/lib/db/schema'
 import { and, eq, asc } from 'drizzle-orm'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { error, success } from '@/types'
+import { logger } from '@/lib/logger'
 
-/**
- * GET /api/chats/[chatId]/messages
- * Get all messages for a chat
- */
 export async function GET(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ chatId: string }> }
 ) {
+  let userId: string | null = null
   try {
     const { chatId } = await params
 
-    // Authenticate user
-    const { userId } = await auth()
+    const auth_ = await auth()
+    userId = auth_.userId
     if (!userId) {
       return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
     }
 
-    // Check rate limit
     const rateLimitResult = await checkRateLimit(userId, 'api')
     if (!rateLimitResult.success) {
       return NextResponse.json(
@@ -39,7 +36,6 @@ export async function GET(
       )
     }
 
-    // Verify chat ownership
     const chat = await db.query.chats.findFirst({
       where: and(eq(chats.id, chatId), eq(chats.userId, userId)),
     })
@@ -48,15 +44,15 @@ export async function GET(
       return NextResponse.json(error('Chat not found', 'CHAT_NOT_FOUND'), { status: 404 })
     }
 
-    // Get messages for chat
     const chatMessages = await db.query.messages.findMany({
       where: eq(messages.chatId, chatId),
       orderBy: [asc(messages.createdAt)],
     })
 
+    logger.info({ userId, chatId, messageCount: chatMessages.length }, 'Messages fetched')
     return NextResponse.json(success(chatMessages))
   } catch (err) {
-    console.error('[GET /api/chats/[chatId]/messages] Error:', err)
+    logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to fetch messages')
     return NextResponse.json(
       error('Internal server error', 'INTERNAL_ERROR', err),
       { status: 500 }

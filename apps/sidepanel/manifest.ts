@@ -18,17 +18,17 @@ const manifest = defineManifest({
 
   action: {
     default_title: 'Prophet',
-    default_icons: {
-      16: '/images/icon-16.png',
-      48: '/images/icon-48.png',
-      128: '/images/icon-128.png',
+    default_icon: {
+      16: 'images/icon-16.png',
+      48: 'images/icon-48.png',
+      128: 'images/icon-128.png',
     },
   },
 
   icons: {
-    16: '/images/icon-16.png',
-    48: '/images/icon-48.png',
-    128: '/images/icon-128.png',
+    16: 'images/icon-16.png',
+    48: 'images/icon-48.png',
+    128: 'images/icon-128.png',
   },
 
   background: {

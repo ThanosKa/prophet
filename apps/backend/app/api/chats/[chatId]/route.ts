@@ -5,25 +5,22 @@ import { chats } from '@/lib/db/schema'
 import { and, eq } from 'drizzle-orm'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { error, success } from '@/types'
+import { logger } from '@/lib/logger'
 
-/**
- * GET /api/chats/[chatId]
- * Get a single chat by ID
- */
 export async function GET(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ chatId: string }> }
 ) {
+  let userId: string | null = null
   try {
     const { chatId } = await params
 
-    // Authenticate user
-    const { userId } = await auth()
+    const auth_ = await auth()
+    userId = auth_.userId
     if (!userId) {
       return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
     }
 
-    // Check rate limit
     const rateLimitResult = await checkRateLimit(userId, 'api')
     if (!rateLimitResult.success) {
       return NextResponse.json(
@@ -39,7 +36,6 @@ export async function GET(
       )
     }
 
-    // Get chat and verify ownership
     const chat = await db.query.chats.findFirst({
       where: and(eq(chats.id, chatId), eq(chats.userId, userId)),
     })
@@ -48,9 +44,10 @@ export async function GET(
       return NextResponse.json(error('Chat not found', 'CHAT_NOT_FOUND'), { status: 404 })
     }
 
+    logger.info({ userId, chatId }, 'Chat fetched')
     return NextResponse.json(success(chat))
   } catch (err) {
-    console.error('[GET /api/chats/[chatId]] Error:', err)
+    logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to fetch chat')
     return NextResponse.json(
       error('Internal server error', 'INTERNAL_ERROR', err),
       { status: 500 }
@@ -58,24 +55,20 @@ export async function GET(
   }
 }
 
-/**
- * DELETE /api/chats/[chatId]
- * Delete a chat by ID
- */
 export async function DELETE(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ chatId: string }> }
 ) {
+  let userId: string | null = null
   try {
     const { chatId } = await params
 
-    // Authenticate user
-    const { userId } = await auth()
+    const auth_ = await auth()
+    userId = auth_.userId
     if (!userId) {
       return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
     }
 
-    // Check rate limit
     const rateLimitResult = await checkRateLimit(userId, 'api')
     if (!rateLimitResult.success) {
       return NextResponse.json(
@@ -91,7 +84,6 @@ export async function DELETE(
       )
     }
 
-    // Verify ownership before deleting
     const chat = await db.query.chats.findFirst({
       where: and(eq(chats.id, chatId), eq(chats.userId, userId)),
     })
@@ -100,12 +92,12 @@ export async function DELETE(
       return NextResponse.json(error('Chat not found', 'CHAT_NOT_FOUND'), { status: 404 })
     }
 
-    // Delete chat (cascade will delete associated messages)
     await db.delete(chats).where(eq(chats.id, chatId))
 
+    logger.info({ userId, chatId }, 'Chat deleted')
     return NextResponse.json(success({ deleted: true }))
   } catch (err) {
-    console.error('[DELETE /api/chats/[chatId]] Error:', err)
+    logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to delete chat')
     return NextResponse.json(
       error('Internal server error', 'INTERNAL_ERROR', err),
       { status: 500 }

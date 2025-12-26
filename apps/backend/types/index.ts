@@ -1,16 +1,3 @@
-import type { Message } from '@anthropic-ai/sdk'
-
-// Anthropic streaming types
-export interface StreamingMessage {
-  role: 'user' | 'assistant'
-  content: string
-}
-
-export interface ChatStreamRequest {
-  chatId: string
-  content: string
-}
-
 export interface ChatStreamResponse {
   type: 'token' | 'done' | 'error'
   content?: string

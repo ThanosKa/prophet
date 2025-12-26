@@ -27,7 +27,9 @@
     "@upstash/redis": "^1.36.0",
     "@upstash/ratelimit": "^2.0.5",
     "zod": "^3.24.1",
-    "svix": "^1.40.0"
+    "svix": "^1.40.0",
+    "pino": "^9.4.0",
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",
@@ -36,6 +38,7 @@
     "typescript": "^5.7.2",
     "drizzle-kit": "^0.31.0",
     "eslint": "^9.18.0",
-    "eslint-config-next": "^16.0.0"
+    "eslint-config-next": "^16.0.0",
+    "pino-pretty": "^11.2.2"
   }
 }

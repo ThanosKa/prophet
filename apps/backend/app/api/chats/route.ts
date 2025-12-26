@@ -2,24 +2,21 @@ import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { chats } from '@/lib/db/schema'
-import { and, eq, desc } from 'drizzle-orm'
+import { eq, desc } from 'drizzle-orm'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { createChatSchema } from '@prophet/shared'
 import { error, success } from '@/types'
+import { logger } from '@/lib/logger'
 
-/**
- * GET /api/chats
- * List all chats for the current user
- */
 export async function GET() {
+  let userId: string | null = null
   try {
-    // Authenticate user
-    const { userId } = await auth()
+    const auth_ = await auth()
+    userId = auth_.userId
     if (!userId) {
       return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
     }
 
-    // Check rate limit
     const rateLimitResult = await checkRateLimit(userId, 'api')
     if (!rateLimitResult.success) {
       return NextResponse.json(
@@ -35,7 +32,6 @@ export async function GET() {
       )
     }
 
-    // Get chats for user
     const userChats = await db.query.chats.findMany({
       where: eq(chats.userId, userId),
       orderBy: [desc(chats.updatedAt)],
@@ -43,7 +39,7 @@ export async function GET() {
 
     return NextResponse.json(success(userChats))
   } catch (err) {
-    console.error('[GET /api/chats] Error:', err)
+    logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to fetch chats')
     return NextResponse.json(
       error('Internal server error', 'INTERNAL_ERROR', err),
       { status: 500 }
@@ -51,19 +47,15 @@ export async function GET() {
   }
 }
 
-/**
- * POST /api/chats
- * Create a new chat
- */
 export async function POST(req: Request) {
+  let userId: string | null = null
   try {
-    // Authenticate user
-    const { userId } = await auth()
+    const auth_ = await auth()
+    userId = auth_.userId
     if (!userId) {
       return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
     }
 
-    // Check rate limit
     const rateLimitResult = await checkRateLimit(userId, 'api')
     if (!rateLimitResult.success) {
       return NextResponse.json(
@@ -79,7 +71,6 @@ export async function POST(req: Request) {
       )
     }
 
-    // Parse and validate request body
     const body = await req.json()
     const validation = createChatSchema.safeParse(body)
 
@@ -92,7 +83,6 @@ export async function POST(req: Request) {
 
     const { title } = validation.data
 
-    // Create chat
     const [newChat] = await db
       .insert(chats)
       .values({
@@ -101,9 +91,10 @@ export async function POST(req: Request) {
       })
       .returning()
 
+    logger.info({ userId, chatId: newChat.id }, 'Chat created successfully')
     return NextResponse.json(success(newChat), { status: 201 })
   } catch (err) {
-    console.error('[POST /api/chats] Error:', err)
+    logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to create chat')
     return NextResponse.json(
       error('Internal server error', 'INTERNAL_ERROR', err),
       { status: 500 }

@@ -16,9 +16,11 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
+    "baseUrl": "../../",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["apps/sidepanel/src/*"],
+      "@prophet/shared": ["apps/shared/index.ts"],
+      "@prophet/shared/*": ["apps/shared/*"]
     }
   },
   "include": ["src", "vite.config.ts", "manifest.json"]

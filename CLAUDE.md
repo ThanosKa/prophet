@@ -248,6 +248,50 @@ See [.env.example](.env.example) for complete list:
 - ✅ Rate limit by `userId`
 - ✅ Use transactions for credit deductions
 
+## Code Comment Standards
+
+**When writing code, Claude should NOT add comments unless the implementation is hard to understand for humans.**
+
+- ✅ DO: Write self-documenting code with clear names
+- ✅ DO: Add comments ONLY for complex logic, algorithms, or non-obvious behavior
+- ❌ DON'T: Add comments for obvious code (e.g., `const x = 5; // Set x to 5`)
+- ❌ DON'T: Add redundant comments that just repeat the code
+- ❌ DON'T: Add comments for simple CRUD operations or straightforward logic
+
+**Example - GOOD (no unnecessary comments):**
+```typescript
+export async function GET(req: Request, { params }: { params: Promise<{ chatId: string }> }) {
+  const { chatId } = await params
+  const { userId } = await auth()
+
+  if (!userId) {
+    return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
+  }
+
+  const chat = await db.query.chats.findFirst({
+    where: and(eq(chats.id, chatId), eq(chats.userId, userId)),
+  })
+
+  if (!chat) {
+    return NextResponse.json(error('Chat not found', 'CHAT_NOT_FOUND'), { status: 404 })
+  }
+
+  logger.info({ userId, chatId }, 'Chat fetched')
+  return NextResponse.json(success(chat))
+}
+```
+
+**Example - BAD (too many comments):**
+```typescript
+// Get the authenticated user
+const { userId } = await auth()
+// Check if user is authenticated
+if (!userId) {
+  // Return unauthorized error
+  return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
+}
+```
+
 ## Getting Started
 
 1. Run `pnpm install`

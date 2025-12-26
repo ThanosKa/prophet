@@ -1,15 +1,21 @@
 import { useQuery } from '@tanstack/react-query'
-import { useUser, useSignIn, useSignUp } from '@clerk/chrome-extension'
+import { useUser, useAuth as useClerkAuth } from '@clerk/chrome-extension'
 import { useAuthStore } from '@/store/authStore'
 import { apiClient } from '@/lib/api'
+import type { User } from '@prophet/shared'
 
-/**
- * Hook for managing authentication
- * Uses Clerk for auth + local user profile fetching
- */
-export function useAuth() {
+interface UseAuthReturn {
+  user: User | null | undefined
+  clerkUser: any
+  isSignedIn: boolean | undefined
+  isLoading: boolean
+  error: Error | null
+  signOut: () => Promise<void>
+}
+
+export function useAuth(): UseAuthReturn {
   const { user: clerkUser, isSignedIn } = useUser()
-  const { signOut } = useSignIn()
+  const { signOut } = useClerkAuth()
   const { setUser } = useAuthStore()
 
   const { data: user, isLoading, error } = useQuery({

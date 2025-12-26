@@ -1,10 +1,6 @@
 import { config } from './config'
 import type { ApiResponse, Chat, Message, User } from '@prophet/shared'
 
-/**
- * Type-safe API client for backend communication
- */
-
 class ApiClient {
   private baseUrl: string
 
@@ -22,9 +18,8 @@ class ApiClient {
       })
 
       const url = new URL(endpoint, this.baseUrl)
-      const headers: HeadersInit = {
+      const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...options?.headers,
       }
 
       if (token) {
@@ -33,7 +28,7 @@ class ApiClient {
 
       const response = await fetch(url, {
         ...options,
-        headers,
+        headers: { ...headers, ...(typeof options?.headers === 'object' ? options.headers : {}) },
       })
 
       if (!response.ok) {
@@ -54,12 +49,10 @@ class ApiClient {
     }
   }
 
-  // Auth endpoints
   async getUser(): Promise<ApiResponse<User>> {
     return this.request('/api/auth/user')
   }
 
-  // Chat endpoints
   async getChats(): Promise<ApiResponse<Chat[]>> {
     return this.request('/api/chats')
   }
@@ -81,12 +74,10 @@ class ApiClient {
     })
   }
 
-  // Message endpoints
   async getMessages(chatId: string): Promise<ApiResponse<Message[]>> {
     return this.request(`/api/chats/${chatId}/messages`)
   }
 
-  // Streaming endpoint
   async *streamChat(
     chatId: string,
     content: string
@@ -96,7 +87,7 @@ class ApiClient {
     })
 
     const url = new URL('/api/chat/stream', this.baseUrl)
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
 

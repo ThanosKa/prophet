@@ -6,6 +6,7 @@ import { users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import type { ClerkWebhookEvent } from '@/types'
 import { error, success } from '@/types'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/webhooks/clerk
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
     const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
 
     if (!WEBHOOK_SECRET) {
-      console.error('[POST /api/webhooks/clerk] Missing CLERK_WEBHOOK_SECRET')
+      logger.error({}, 'Missing CLERK_WEBHOOK_SECRET')
       return NextResponse.json(
         error('Webhook secret not configured', 'WEBHOOK_SECRET_MISSING'),
         { status: 500 }
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
         'svix-signature': svix_signature,
       }) as ClerkWebhookEvent
     } catch (err) {
-      console.error('[POST /api/webhooks/clerk] Webhook verification failed:', err)
+      logger.error({ error: err instanceof Error ? err.message : String(err) }, 'Webhook verification failed')
       return NextResponse.json(
         error('Webhook verification failed', 'VERIFICATION_FAILED'),
         { status: 400 }
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
         creditsRemaining: 50000, // Default free tier credits
       })
 
-      console.log(`[POST /api/webhooks/clerk] User created: ${id}`)
+      logger.info({ userId: id, email: primaryEmail }, 'User created from webhook')
     } else if (eventType === 'user.updated') {
       const { id, email_addresses, public_metadata } = evt.data
 
@@ -100,19 +101,19 @@ export async function POST(req: Request) {
         })
         .where(eq(users.id, id))
 
-      console.log(`[POST /api/webhooks/clerk] User updated: ${id}`)
+      logger.info({ userId: id, email: primaryEmail }, 'User updated from webhook')
     } else if (eventType === 'user.deleted') {
       const { id } = evt.data
 
       // Delete user from database (cascade will delete chats, messages, usage records)
       await db.delete(users).where(eq(users.id, id!))
 
-      console.log(`[POST /api/webhooks/clerk] User deleted: ${id}`)
+      logger.info({ userId: id }, 'User deleted from webhook')
     }
 
     return NextResponse.json(success({ received: true }))
   } catch (err) {
-    console.error('[POST /api/webhooks/clerk] Error:', err)
+    logger.error({ error: err instanceof Error ? err.message : String(err) }, 'Webhook processing error')
     return NextResponse.json(
       error('Internal server error', 'INTERNAL_ERROR', err),
       { status: 500 }

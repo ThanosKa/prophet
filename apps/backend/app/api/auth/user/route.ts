@@ -5,20 +5,17 @@ import { users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { error, success } from '@/types'
+import { logger } from '@/lib/logger'
 
-/**
- * GET /api/auth/user
- * Get current authenticated user profile
- */
 export async function GET() {
+  let userId: string | null = null
   try {
-    // Authenticate user
-    const { userId } = await auth()
+    const auth_ = await auth()
+    userId = auth_.userId
     if (!userId) {
       return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
     }
 
-    // Check rate limit
     const rateLimitResult = await checkRateLimit(userId, 'api')
     if (!rateLimitResult.success) {
       return NextResponse.json(
@@ -34,7 +31,6 @@ export async function GET() {
       )
     }
 
-    // Get user from database
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId),
     })
@@ -43,9 +39,10 @@ export async function GET() {
       return NextResponse.json(error('User not found', 'USER_NOT_FOUND'), { status: 404 })
     }
 
+    logger.info({ userId }, 'User profile fetched')
     return NextResponse.json(success(user))
   } catch (err) {
-    console.error('[GET /api/auth/user] Error:', err)
+    logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to fetch user profile')
     return NextResponse.json(
       error('Internal server error', 'INTERNAL_ERROR', err),
       { status: 500 }

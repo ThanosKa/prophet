@@ -1,17 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useChatStore } from '@/store/chatStore'
 import { apiClient } from '@/lib/api'
-import type { Chat } from '@prophet/shared'
 
-/**
- * Hook for managing chats
- * Handles fetching, creating, and deleting chats
- */
 export function useChats() {
   const queryClient = useQueryClient()
   const { setChats, addChat, removeChat } = useChatStore()
 
-  // Fetch chats
   const { data: chats = [], isLoading, error } = useQuery({
     queryKey: ['chats'],
     queryFn: async () => {
@@ -25,7 +19,6 @@ export function useChats() {
     staleTime: 1000 * 60,
   })
 
-  // Create chat mutation
   const createMutation = useMutation({
     mutationFn: (title: string) => apiClient.createChat(title),
     onSuccess: (response) => {
@@ -36,7 +29,6 @@ export function useChats() {
     },
   })
 
-  // Delete chat mutation
   const deleteMutation = useMutation({
     mutationFn: (chatId: string) => apiClient.deleteChat(chatId),
     onSuccess: (response, chatId) => {

@@ -5,12 +5,11 @@ import { ClerkProvider } from '@clerk/chrome-extension'
 import App from './App'
 import './index.css'
 
-// Create query client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 10,
     },
   },
 })
@@ -26,7 +25,7 @@ ReactDOM.createRoot(root).render(
     <ClerkProvider
       publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
       appearance={{
-        baseTheme: 'dark',
+        baseTheme: 'dark' as any,
       }}
     >
       <QueryClientProvider client={queryClient}>
