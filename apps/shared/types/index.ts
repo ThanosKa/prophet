@@ -35,3 +35,37 @@ export interface ApiResponse<T> {
   error?: string
   code?: string
 }
+
+// Streaming types
+export interface StreamEvent {
+  type: 'token' | 'done' | 'error'
+  content?: string
+  error?: string
+  usage?: {
+    inputTokens: number
+    outputTokens: number
+  }
+}
+
+export interface StreamChunk {
+  event: StreamEvent
+  timestamp: number
+}
+
+// Pagination types
+export interface PaginatedResponse<T> {
+  data: T[]
+  pagination: {
+    page: number
+    pageSize: number
+    totalPages: number
+    totalItems: number
+  }
+}
+
+// Error types
+export interface ApiError {
+  error: string
+  code: string
+  details?: unknown
+}

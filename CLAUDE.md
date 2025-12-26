@@ -1,9 +1,11 @@
 # Prophet - AI-Powered Chrome Extension SaaS
 
 ## Project Overview
+
 Chrome side panel extension with streaming AI chat, secure backend API, and marketing landing page. Token-based credit system for SaaS monetization.
 
 **Architecture**: Monorepo with 4 applications
+
 - `apps/sidepanel` - Chrome extension (Vite + React 18)
 - `apps/backend` - API server (Next.js 16 App Router)
 - `apps/marketing` - Landing page (Next.js 16)
@@ -14,14 +16,16 @@ Chrome side panel extension with streaming AI chat, secure backend API, and mark
 **SaaS Model**: Token-based credits (Free: ~50K tokens, Pro: ~500K, Premium: ~1.5M, Ultra: ~3M)
 
 ## Tech Stack
-| App | Technologies |
-|-----|-------------|
+
+| App       | Technologies                                                                    |
+| --------- | ------------------------------------------------------------------------------- |
 | sidepanel | Vite, React 18, TypeScript, Tailwind, shadcn/ui, TanStack Query, Zustand, CRXJS |
-| backend | Next.js 16, Drizzle ORM, Supabase, Anthropic SDK, Upstash Redis, Clerk |
-| marketing | Next.js 16, Tailwind, shadcn/ui, Framer Motion, Clerk |
-| shared | TypeScript, Zod |
+| backend   | Next.js 16, Drizzle ORM, Supabase, Anthropic SDK, Upstash Redis, Clerk          |
+| marketing | Next.js 16, Tailwind, shadcn/ui, Framer Motion, Clerk                           |
+| shared    | TypeScript, Zod                                                                 |
 
 ## Essential Commands
+
 ```bash
 # Install
 pnpm install
@@ -47,6 +51,7 @@ pnpm -F @prophet/sidepanel lint        # Specific app
 ```
 
 ## File Structure
+
 ```
 prophet/
 ├── apps/
@@ -90,6 +95,7 @@ prophet/
 ## Skills Reference
 
 Detailed coding standards organized by topic in `.claude/skills/`:
+
 - **frontend/** - UX patterns, components, accessibility
 - **backend/** - API security, database patterns, streaming
 - **stack/** - Next.js, Chrome extension setup
@@ -100,6 +106,7 @@ Detailed coding standards organized by topic in `.claude/skills/`:
 **Claude Code has access to context7 MCP server for up-to-date documentation.**
 
 When you need latest docs while coding, Claude will use:
+
 ```
 mcp__context7__resolve-library-id  # Find library ID
 mcp__context7__get-library-docs    # Fetch documentation
@@ -117,6 +124,7 @@ mcp__context7__get-library-docs    # Fetch documentation
 **Claude prefers context7 over training cutoff knowledge** for API changes, version-specific syntax, and migration guides.
 
 ## Database Schema
+
 ```typescript
 // Core tables (Drizzle + Supabase PostgreSQL)
 users {
@@ -158,24 +166,26 @@ usageRecords {
 ## Key Patterns
 
 ### Authentication Flow
+
 ```typescript
 // Backend API route
-import { auth } from '@clerk/nextjs/server'
+import { auth } from "@clerk/nextjs/server";
 
 export async function POST(request: Request) {
-  const { userId } = await auth()
-  if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  const { userId } = await auth();
+  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   // Verify ownership
   const chat = await db.query.chats.findFirst({
-    where: and(eq(chats.id, chatId), eq(chats.userId, userId))
-  })
+    where: and(eq(chats.id, chatId), eq(chats.userId, userId)),
+  });
 
-  if (!chat) return Response.json({ error: 'Not found' }, { status: 404 })
+  if (!chat) return Response.json({ error: "Not found" }, { status: 404 });
 }
 ```
 
 ### Streaming AI Response
+
 ```typescript
 // Backend API route
 const stream = await anthropic.messages.stream({
@@ -201,23 +211,26 @@ return new Response(stream.toReadableStream(), {
 ```
 
 ### Rate Limiting
+
 ```typescript
 // middleware.ts or API route
-import { Ratelimit } from '@upstash/ratelimit'
+import { Ratelimit } from "@upstash/ratelimit";
 
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(10, '1 m'),
-})
+  limiter: Ratelimit.slidingWindow(10, "1 m"),
+});
 
-const { success } = await ratelimit.limit(userId)
+const { success } = await ratelimit.limit(userId);
 if (!success) {
-  return Response.json({ error: 'Too many requests' }, { status: 429 })
+  return Response.json({ error: "Too many requests" }, { status: 429 });
 }
 ```
 
 ## Environment Variables
+
 See [.env.example](.env.example) for complete list:
+
 - `DATABASE_URL` - Supabase PostgreSQL connection
 - `ANTHROPIC_API_KEY` - AI API (server-side only, never expose)
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk public key
@@ -226,6 +239,7 @@ See [.env.example](.env.example) for complete list:
 - `VITE_API_URL` - Backend URL for extension
 
 ## Critical Security Rules
+
 - ❌ NEVER expose `ANTHROPIC_API_KEY` to client
 - ✅ ALL AI requests proxied through backend
 - ✅ ALWAYS validate input with Zod
@@ -235,7 +249,12 @@ See [.env.example](.env.example) for complete list:
 - ✅ Use transactions for credit deductions
 
 ## Getting Started
+
 1. Run `pnpm install`
 2. Copy `.env.example` to `.env.local` and fill in credentials
 3. Set up Clerk, Supabase, Anthropic, Upstash accounts
 4. Run `pnpm -F @prophet/backend db:migrate` to initialize database
+
+## Messages for the developer
+
+After finishing a task, briefly state (max 2 sentences): if you used any skill,which skill you used and why, and if you used an MCP server, what content from its response helped.
