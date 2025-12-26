@@ -8,9 +8,11 @@ import { ChatList } from '@/components/chat/ChatList'
 import { MessageList } from '@/components/chat/MessageList'
 import { ChatInput } from '@/components/chat/ChatInput'
 import { SignInButton } from '@/components/auth/SignInButton'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 export default function App() {
-  const { isSignedIn, user } = useAuth()
+  const { isSignedIn, user, clerkUser } = useAuth()
   const { chats, isLoading: chatsLoading, createChat, deleteChat } = useChats()
   const { activeChatId, setActiveChatId, isStreaming } = useChatStore()
   const { messages } = useMessages(activeChatId)
@@ -46,12 +48,23 @@ export default function App() {
   // Show sign-in if not authenticated
   if (!isSignedIn) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center gap-4 p-4">
-        <h1 className="text-2xl font-bold">Prophet</h1>
-        <p className="text-muted-foreground text-center">
-          Your AI-powered assistant right in your browser
-        </p>
-        <SignInButton />
+      <div className="h-screen w-screen flex flex-col items-center justify-center gap-6 p-6 bg-background">
+        <div className="flex flex-col items-center gap-2">
+          <h1 className="text-3xl font-bold text-foreground">Prophet</h1>
+          <p className="text-sm text-muted-foreground text-center max-w-xs">
+            Your AI-powered assistant right in your browser
+          </p>
+        </div>
+
+        <div className="w-full max-w-xs space-y-4">
+          <SignInButton />
+
+          <div className="pt-4 border-t border-border">
+            <p className="text-xs text-muted-foreground text-center">
+              Secure authentication powered by Clerk
+            </p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -96,12 +109,25 @@ export default function App() {
             />
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            <div className="text-center">
-              <p className="mb-4">No chat selected</p>
-              <p className="text-sm">{user?.tier} tier</p>
-              <p className="text-sm">{user?.creditsRemaining} credits remaining</p>
-            </div>
+          <div className="flex-1 flex items-center justify-center p-6">
+            <Card className="w-full max-w-sm">
+              <CardHeader>
+                <CardTitle>Welcome back, {clerkUser?.firstName || 'User'}</CardTitle>
+                <CardDescription>Select a chat to continue or create a new one</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2 rounded-lg bg-muted p-4">
+                  <h4 className="font-semibold text-sm text-muted-foreground">Your Plan</h4>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm capitalize">{user?.tier || 'Free'} Tier</span>
+                    <span className="font-medium text-sm">{user?.creditsRemaining || 0} credits</span>
+                  </div>
+                </div>
+                <Button onClick={handleNewChat} className="w-full">
+                  Start New Chat
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
