@@ -4,7 +4,7 @@ import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 import { ClerkProvider } from '@clerk/chrome-extension'
 import { dark } from '@clerk/themes'
 import App from './App'
-import './index.css'
+import './globals.css'
 
 const queryClient = new QueryClient({
   defaultOptions: {
