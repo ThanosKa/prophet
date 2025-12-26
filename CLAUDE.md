@@ -87,53 +87,13 @@ prophet/
 └── CLAUDE.md               # This file
 ```
 
-## Coding Standards (Claude Code Skills)
+## Skills Reference
 
-**Skills are coding standards, not technology tutorials.** They define HOW to write quality, scalable code and create top-tier user experiences.
-
-Skills are organized by **topic** (frontend, backend, etc.) to make discovery easy:
-
-### Frontend Skills (Creating Great UX)
-- **frontend/ux-patterns** - Loading states, error handling, empty states, user feedback. Use when implementing UI that communicates system state.
-- **frontend/component-design** - Component composition, variant patterns, naming conventions, state management. Use when creating or refactoring React components.
-- **frontend/accessibility** - ARIA labels, keyboard navigation, screen reader support, WCAG compliance. Use when building forms, buttons, or interactive components.
-
-### Backend Skills (API & Database)
-- **backend/api-security** - Input validation with Zod, authentication, authorization, rate limiting, error handling. Use when building API routes.
-- **backend/database-patterns** - Query optimization, transactions, migrations, N+1 avoidance. Use when writing database queries.
-
-### Stack Skills (Setup & Configuration)
-- **stack/nextjs-architecture** - File organization, Server/Client boundaries, data fetching, caching. Use for Next.js App Router structure.
-- **stack/chrome-extension** - Manifest V3, CRXJS setup, side panel configuration. Use for extension setup.
-
-### Cross-Cutting Skills
-- **typescript-standards** - Type safety, discriminated unions, Zod type inference, generics. Use in all TypeScript code.
-- **skill-creator** - Guide for creating Claude Code skills with proper structure and frontmatter. Use when building new skills.
-
-## How Skills Work
-
-Skills are organized by **topic** (not by technology) to group related best practices:
-- **Frontend** contains all patterns for building great user interfaces
-- **Backend** contains patterns for secure APIs and efficient databases
-- **Stack** contains technology-specific setup guides (minimal, just configuration)
-- **TypeScript standards** applies everywhere
-
-When you're writing code, Claude will use the relevant skill to guide decisions. For example:
-- Writing a new component? Use **frontend/component-design**
-- Showing a loading state? Use **frontend/ux-patterns**
-- Building an API route? Use **backend/api-security**
-- Querying the database? Use **backend/database-patterns**
-
-All skills reference **official documentation** from context7 MCP - never outdated, always current.
-
-### Quick Reference Rules
-- **Components**: PascalCase, named exports, composition over props, variants over booleans (see frontend/component-design)
-- **UX**: Skeleton screens not spinners, optimistic updates, error boundaries, graceful degradation (see frontend/ux-patterns)
-- **Accessibility**: Semantic HTML first, ARIA labels, keyboard nav, visible focus indicators (see frontend/accessibility)
-- **TypeScript**: Strict mode, explicit return types on exports, discriminated unions for state, Zod for runtime validation
-- **Server/Client**: Server Components by default, 'use client' only for interactivity, keep boundary low in tree
-- **API**: ALWAYS validate with Zod, ALWAYS authenticate, verify resource ownership, rate limit by user
-- **Database**: Use relations to avoid N+1, transactions for atomic operations, index frequently queried columns
+Detailed coding standards organized by topic in `.claude/skills/`:
+- **frontend/** - UX patterns, components, accessibility
+- **backend/** - API security, database patterns, streaming
+- **stack/** - Next.js, Chrome extension setup
+- **typescript-standards/** - Type safety across all code
 
 ## Context7 MCP Integration
 
@@ -274,11 +234,8 @@ See [.env.example](.env.example) for complete list:
 - ✅ Rate limit by `userId`
 - ✅ Use transactions for credit deductions
 
-## Next Steps for Development
-1. Run `pnpm install` to install dependencies
-2. Copy `.env.example` to `.env.local` and fill in keys
+## Getting Started
+1. Run `pnpm install`
+2. Copy `.env.example` to `.env.local` and fill in credentials
 3. Set up Clerk, Supabase, Anthropic, Upstash accounts
-4. Generate and run initial database migration
-5. Start building the extension UI
-
-**Reference the Skills in `.claude/skills/` for coding standards while developing.**
+4. Run `pnpm -F @prophet/backend db:migrate` to initialize database
