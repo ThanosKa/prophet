@@ -388,4 +388,4 @@ pnpm dev:sidepanel    # localhost:5173
 
 ## Messages for the developer
 
-After finishing a task, briefly state (max 2 sentences): if you used any rule, which rule you used and why, and if you used an MCP server, what content from its response helped.
+After finishing a task, briefly state (max 2 sentences): if you used any rule file from .curosr/rules/, which rule you used and why, and if you used an MCP server, what content from its response helped.

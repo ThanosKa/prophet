@@ -232,7 +232,9 @@ if (!success) {
 **Monorepo Setup**: Each app has its own `.env.local` with only the variables it needs.
 
 ### Root (`.env.local`)
+
 Copy from [.env.example](.env.example) - contains all shared variables:
+
 - `DATABASE_URL` - Supabase PostgreSQL connection
 - `ANTHROPIC_API_KEY` - AI API (server-side only)
 - `CLERK_SECRET_KEY` - Clerk secret (server-side only)
@@ -244,15 +246,20 @@ Copy from [.env.example](.env.example) - contains all shared variables:
 - `NEXT_PUBLIC_APP_URL` - Marketing app URL
 
 ### apps/backend/.env.local
+
 Copy from [apps/backend/.env.example](apps/backend/.env.example) - backend API needs:
+
 - `DATABASE_URL`, `ANTHROPIC_API_KEY`, `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SECRET`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
 
 ### apps/marketing/.env.local
+
 Copy from [apps/marketing/.env.example](apps/marketing/.env.example) - marketing site needs:
+
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `NEXT_PUBLIC_APP_URL`
 
 ### apps/sidepanel
-No `.env.local` needed (uses VITE_* variables from root during build)
+
+No `.env.local` needed (uses VITE\_\* variables from root during build)
 
 ## Critical Security Rules
 
@@ -275,80 +282,100 @@ No `.env.local` needed (uses VITE_* variables from root during build)
 - ❌ DON'T: Add comments for simple CRUD operations or straightforward logic
 
 **Example - GOOD (no unnecessary comments):**
+
 ```typescript
-export async function GET(req: Request, { params }: { params: Promise<{ chatId: string }> }) {
-  const { chatId } = await params
-  const { userId } = await auth()
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ chatId: string }> }
+) {
+  const { chatId } = await params;
+  const { userId } = await auth();
 
   if (!userId) {
-    return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
+    return NextResponse.json(error("Unauthorized", "UNAUTHORIZED"), {
+      status: 401,
+    });
   }
 
   const chat = await db.query.chats.findFirst({
     where: and(eq(chats.id, chatId), eq(chats.userId, userId)),
-  })
+  });
 
   if (!chat) {
-    return NextResponse.json(error('Chat not found', 'CHAT_NOT_FOUND'), { status: 404 })
+    return NextResponse.json(error("Chat not found", "CHAT_NOT_FOUND"), {
+      status: 404,
+    });
   }
 
-  logger.info({ userId, chatId }, 'Chat fetched')
-  return NextResponse.json(success(chat))
+  logger.info({ userId, chatId }, "Chat fetched");
+  return NextResponse.json(success(chat));
 }
 ```
 
 **Example - BAD (too many comments):**
+
 ```typescript
 // Get the authenticated user
-const { userId } = await auth()
+const { userId } = await auth();
 // Check if user is authenticated
 if (!userId) {
   // Return unauthorized error
-  return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
+  return NextResponse.json(error("Unauthorized", "UNAUTHORIZED"), {
+    status: 401,
+  });
 }
 ```
 
 ## Getting Started
 
 ### 1. Install Dependencies
+
 ```bash
 pnpm install
 ```
 
 ### 2. Setup External Services
+
 Create accounts and get credentials from:
+
 - **Clerk** - https://dashboard.clerk.com (authentication)
 - **Supabase** - https://supabase.com (PostgreSQL database)
 - **Anthropic** - https://console.anthropic.com (AI API)
 - **Upstash** - https://upstash.com (Redis rate limiting)
 
 ### 3. Configure Environment Variables
+
 Each app reads its own `.env.local`:
 
 **Root** - Copy [.env.example](.env.example) → `.env.local`
+
 ```bash
 cp .env.example .env.local
 # Edit .env.local with your credentials
 ```
 
 **Backend** - Copy [apps/backend/.env.example](apps/backend/.env.example) → `apps/backend/.env.local`
+
 ```bash
 cp apps/backend/.env.example apps/backend/.env.local
 # Copy your values from root/.env.local
 ```
 
 **Marketing** - Copy [apps/marketing/.env.example](apps/marketing/.env.example) → `apps/marketing/.env.local`
+
 ```bash
 cp apps/marketing/.env.example apps/marketing/.env.local
 # Copy NEXT_PUBLIC_* values from root/.env.local
 ```
 
 ### 4. Initialize Database
+
 ```bash
 pnpm -F @prophet/backend db:migrate
 ```
 
 ### 5. Start Development
+
 ```bash
 # All apps in parallel
 pnpm dev
@@ -361,4 +388,4 @@ pnpm dev:sidepanel    # localhost:5173
 
 ## Messages for the developer
 
-After finishing a task, briefly state (max 2 sentences): if you used any skill,which skill you used and why, and if you used an MCP server, what content from its response helped.
+After finishing a task, briefly state (max 2 sentences): if you used any rule file from .claude/skills/, which rule you used and why, and if you used an MCP server, what content from its response helped.
