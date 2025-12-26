@@ -8,6 +8,7 @@ import { anthropic, DEFAULT_MODEL, DEFAULT_MAX_TOKENS, SYSTEM_PROMPT } from '@/l
 import { streamMessageSchema } from '@prophet/shared'
 import { error } from '@/types'
 import { logger } from '@/lib/logger'
+import { calculateCostInCents, type ModelName } from '@/lib/pricing'
 
 export async function POST(req: Request) {
   try {
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
       return NextResponse.json(error('User not found', 'USER_NOT_FOUND'), { status: 404 })
     }
 
-    if (user.creditsRemaining < 1000) {
+    if (user.creditsRemaining < 10) {
       logger.warn({ userId, creditsRemaining: user.creditsRemaining }, 'Insufficient credits for chat')
       return NextResponse.json(
         error('Insufficient credits. Please upgrade your plan.', 'INSUFFICIENT_CREDITS'),
@@ -122,36 +123,42 @@ export async function POST(req: Request) {
             }
           }
 
-          const totalTokens = inputTokens + outputTokens
+          const costCents = calculateCostInCents(DEFAULT_MODEL as ModelName, inputTokens, outputTokens)
 
           await db.transaction(async (tx) => {
             await tx.insert(messages).values({
               chatId,
               role: 'user',
               content,
+              model: null,
               inputTokens: 0,
               outputTokens: 0,
+              costCents: 0,
             })
 
             await tx.insert(messages).values({
               chatId,
               role: 'assistant',
               content: fullResponse,
+              model: DEFAULT_MODEL,
               inputTokens,
               outputTokens,
+              costCents,
             })
 
             await tx
               .update(users)
               .set({
-                creditsRemaining: sql`${users.creditsRemaining} - ${totalTokens}`,
+                creditsRemaining: sql`${users.creditsRemaining} - ${costCents}`,
                 updatedAt: new Date(),
               })
               .where(eq(users.id, userId))
 
             await tx.insert(usageRecords).values({
               userId,
-              tokensUsed: totalTokens,
+              inputTokens,
+              outputTokens,
+              costCents,
               model: DEFAULT_MODEL,
             })
 
@@ -163,7 +170,7 @@ export async function POST(req: Request) {
               .where(eq(chats.id, chatId))
           })
 
-          logger.info({ userId, chatId, totalTokens, inputTokens, outputTokens }, 'Stream completed successfully')
+          logger.info({ userId, chatId, costCents, inputTokens, outputTokens }, 'Stream completed successfully')
 
           const doneData = JSON.stringify({
             type: 'done',

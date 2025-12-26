@@ -53,6 +53,12 @@ class ApiClient {
     return this.request('/api/auth/user')
   }
 
+  async syncUser(): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request('/api/auth/sync', {
+      method: 'POST',
+    })
+  }
+
   async getChats(): Promise<ApiResponse<Chat[]>> {
     return this.request('/api/chats')
   }

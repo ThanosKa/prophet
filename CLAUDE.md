@@ -111,6 +111,8 @@ When you need latest docs while coding, Claude will use:
 mcp__context7__resolve-library-id  # Find library ID
 mcp__context7__get-library-docs    # Fetch documentation
 
+Alternative if you cannot find your asnwers you are looking for, fetch the web
+
 # Key library IDs:
 /crxjs/chrome-extension-tools      - CRXJS
 /drizzle-team/drizzle-orm-docs     - Drizzle ORM

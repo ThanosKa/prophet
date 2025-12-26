@@ -2,12 +2,23 @@
 // Add types here as the project grows
 
 export type Tier = 'free' | 'pro' | 'premium' | 'ultra'
+export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete'
 
 export interface User {
   id: string
   email: string
+  firstName?: string | null
+  lastName?: string | null
+  profileImageUrl?: string | null
   tier: Tier
   creditsRemaining: number
+  creditsIncluded: number
+  billingPeriodStart?: Date | null
+  billingPeriodEnd?: Date | null
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  stripePriceId?: string | null
+  subscriptionStatus?: SubscriptionStatus | null
   createdAt: Date
   updatedAt: Date
 }
@@ -25,8 +36,10 @@ export interface Message {
   chatId: string
   role: 'user' | 'assistant'
   content: string
-  inputTokens?: number
-  outputTokens?: number
+  model?: string | null
+  inputTokens?: number | null
+  outputTokens?: number | null
+  costCents?: number | null
   createdAt: Date
 }
 

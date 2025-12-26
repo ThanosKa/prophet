@@ -2,23 +2,44 @@ import { relations } from 'drizzle-orm'
 import { pgTable, uuid, text, integer, timestamp, pgEnum, index } from 'drizzle-orm/pg-core'
 
 // Enums
-export const tierEnum = pgEnum('tier', ['free', 'pro', 'premium', 'ultra'])
-export const roleEnum = pgEnum('role', ['user', 'assistant'])
+export const userTierEnum = pgEnum('user_tier', ['free', 'pro', 'premium', 'ultra'])
+export const messageRoleEnum = pgEnum('message_role', ['user', 'assistant'])
+export const subscriptionStatusEnum = pgEnum('subscription_status', [
+  'active',
+  'canceled',
+  'past_due',
+  'trialing',
+  'incomplete',
+])
 
 // Users table
 export const users = pgTable(
   'users',
   {
-    id: text('id').primaryKey(), // Clerk user ID
+    id: text('id').primaryKey(),
     email: text('email').notNull(),
-    tier: tierEnum('tier').notNull().default('free'),
-    creditsRemaining: integer('credits_remaining').notNull().default(50000), // ~50K tokens for free tier
+    firstName: text('first_name'),
+    lastName: text('last_name'),
+    profileImageUrl: text('profile_image_url'),
+
+    tier: userTierEnum('tier').notNull().default('free'),
+    creditsRemaining: integer('credits_remaining').notNull().default(0),
+    creditsIncluded: integer('credits_included').notNull().default(0),
+    billingPeriodStart: timestamp('billing_period_start', { withTimezone: true }),
+    billingPeriodEnd: timestamp('billing_period_end', { withTimezone: true }),
+
+    stripeCustomerId: text('stripe_customer_id').unique(),
+    stripeSubscriptionId: text('stripe_subscription_id').unique(),
+    stripePriceId: text('stripe_price_id'),
+    subscriptionStatus: subscriptionStatusEnum('subscription_status'),
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index('users_email_idx').on(table.email),
     index('users_tier_idx').on(table.tier),
+    index('users_stripe_customer_id_idx').on(table.stripeCustomerId),
   ]
 )
 
@@ -47,11 +68,13 @@ export const messages = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     chatId: uuid('chat_id')
       .notNull()
-      .references(() => chats.id, { onDelete: 'cascade' }), // Cascade delete messages when chat is deleted
-    role: roleEnum('role').notNull(),
+      .references(() => chats.id, { onDelete: 'cascade' }),
+    role: messageRoleEnum('role').notNull(),
     content: text('content').notNull(),
+    model: text('model'),
     inputTokens: integer('input_tokens'),
     outputTokens: integer('output_tokens'),
+    costCents: integer('cost_cents'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -67,8 +90,10 @@ export const usageRecords = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     userId: text('user_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }), // Cascade delete usage records when user is deleted
-    tokensUsed: integer('tokens_used').notNull(),
+      .references(() => users.id, { onDelete: 'cascade' }),
+    inputTokens: integer('input_tokens').notNull(),
+    outputTokens: integer('output_tokens').notNull(),
+    costCents: integer('cost_cents').notNull(),
     model: text('model').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

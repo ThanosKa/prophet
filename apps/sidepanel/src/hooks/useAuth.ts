@@ -29,6 +29,9 @@ export function useAuth(): UseAuthReturn {
     queryKey: ['user', clerkUser?.id],
     queryFn: async () => {
       if (!isSignedIn) return null
+
+      await apiClient.syncUser()
+
       const response = await apiClient.getUser()
       if (response.data) {
         setUser(response.data)
