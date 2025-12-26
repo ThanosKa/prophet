@@ -48,7 +48,20 @@ pnpm -F @prophet/backend db:studio    # Open Drizzle Studio GUI
 # Lint
 pnpm lint                              # All apps
 pnpm -F @prophet/sidepanel lint        # Specific app
+
+# Testing
+pnpm -F @prophet/backend test          # Watch mode
+pnpm -F @prophet/backend test:run      # Single run
+pnpm -F @prophet/backend test:coverage # With coverage
 ```
+
+## Testing
+
+- **Framework**: Vitest (all apps)
+- **Location**: Colocated (`*.test.ts` next to source files)
+- **Coverage**: Backend has 27 tests passing
+- **Commands**: `pnpm test` (all), `pnpm test:run` (once), `pnpm test:coverage` (with coverage)
+- **Skill**: See `.claude/skills/testing/SKILL.md` for comprehensive patterns
 
 ## File Structure
 
@@ -97,7 +110,7 @@ prophet/
 Detailed coding standards organized by topic in `.claude/skills/`:
 
 - **frontend/** - UX patterns, components, accessibility
-- **backend/** - API security, database patterns, streaming
+- **backend/** - API security, database patterns, streaming, testing
 - **stack/** - Next.js, Chrome extension setup
 - **typescript-standards/** - Type safety across all code
 

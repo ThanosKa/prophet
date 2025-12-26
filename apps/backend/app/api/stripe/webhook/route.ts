@@ -138,6 +138,8 @@ async function handleSubscriptionChange(subscription: StripeSubscriptionWithBill
     ? new Date(subscription.current_period_end * 1000)
     : new Date()
 
+  const isFirstSubscription = !user.stripeSubscriptionId
+
   await db
     .update(users)
     .set({
@@ -146,14 +148,22 @@ async function handleSubscriptionChange(subscription: StripeSubscriptionWithBill
       stripePriceId: priceId,
       subscriptionStatus: status,
       creditsIncluded: tierConfig.credits,
-      creditsRemaining: tierConfig.credits,
+      creditsRemaining: isFirstSubscription ? tierConfig.credits : user.creditsRemaining,
       billingPeriodStart,
       billingPeriodEnd,
+      pendingTier: null,
+      pendingTierEffectiveDate: null,
       updatedAt: new Date(),
     })
     .where(eq(users.id, user.id))
 
-  logger.info({ userId: user.id, tier, status }, 'Subscription updated')
+  logger.info({
+    userId: user.id,
+    tier,
+    status,
+    isFirstSubscription,
+    creditsRemaining: isFirstSubscription ? tierConfig.credits : user.creditsRemaining,
+  }, 'Subscription updated')
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
@@ -174,10 +184,12 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       stripeSubscriptionId: null,
       stripePriceId: null,
       subscriptionStatus: null,
-      creditsIncluded: 100,
-      creditsRemaining: 100,
+      creditsIncluded: TIER_CONFIG.free.credits,
+      creditsRemaining: TIER_CONFIG.free.credits,
       billingPeriodStart: null,
       billingPeriodEnd: null,
+      pendingTier: null,
+      pendingTierEffectiveDate: null,
       updatedAt: new Date(),
     })
     .where(eq(users.id, user.id))
@@ -250,7 +262,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   logger.warn({ userId: user.id }, 'Payment failed, subscription past due')
 }
 
-function determineTierFromPrice(priceId: string): 'pro' | 'premium' | 'ultra' | null {
+export function determineTierFromPrice(priceId: string): 'pro' | 'premium' | 'ultra' | null {
   if (priceId.includes('pro')) return 'pro'
   if (priceId.includes('premium')) return 'premium'
   if (priceId.includes('ultra')) return 'ultra'

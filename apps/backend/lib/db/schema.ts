@@ -33,6 +33,9 @@ export const users = pgTable(
     stripePriceId: text('stripe_price_id'),
     subscriptionStatus: subscriptionStatusEnum('subscription_status'),
 
+    pendingTier: userTierEnum('pending_tier'),
+    pendingTierEffectiveDate: timestamp('pending_tier_effective_date', { withTimezone: true }),
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
