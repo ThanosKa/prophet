@@ -79,10 +79,9 @@ prophet/
 │       │   └── accessibility/
 │       ├── backend/        # Backend API & database patterns
 │       │   ├── api-security/
-│       │   ├── database-patterns/
-│       │   └── streaming/
+│       │   └── database-patterns/
 │       ├── stack/          # Stack-specific setup
-│       │   ├── nextjs-setup/
+│       │   ├── nextjs-architecture/
 │       │   └── chrome-extension/
 │       └── typescript-standards/  # Cross-cutting concern
 └── CLAUDE.md               # This file
@@ -102,10 +101,9 @@ Skills are organized by **topic** (frontend, backend, etc.) to make discovery ea
 ### Backend Skills (API & Database)
 - **backend/api-security** - Input validation with Zod, authentication, authorization, rate limiting, error handling. Use when building API routes.
 - **backend/database-patterns** - Query optimization, transactions, migrations, N+1 avoidance. Use when writing database queries.
-- **backend/streaming** - Server-Sent Events (SSE), Anthropic streaming, token counting. Use when implementing AI streaming features.
 
 ### Stack Skills (Setup & Configuration)
-- **stack/nextjs-setup** - File organization, Server/Client boundaries, data fetching, caching. Use for Next.js App Router structure.
+- **stack/nextjs-architecture** - File organization, Server/Client boundaries, data fetching, caching. Use for Next.js App Router structure.
 - **stack/chrome-extension** - Manifest V3, CRXJS setup, side panel configuration. Use for extension setup.
 
 ### Cross-Cutting Skills
