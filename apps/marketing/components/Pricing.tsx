@@ -18,14 +18,14 @@ export function Pricing() {
     },
     {
       name: 'Premium',
-      price: '$19.99',
-      credits: '1.5M tokens/month',
+      price: '$29.99',
+      credits: '$35 in API credits (+17% bonus)',
       features: ['24/7 support', 'Custom rate limits', 'Chat history', 'Advanced analytics'],
     },
     {
       name: 'Ultra',
-      price: '$49.99',
-      credits: '3M tokens/month',
+      price: '$59.99',
+      credits: '$70 in API credits (+17% bonus)',
       features: ['Dedicated support', 'Unlimited requests', 'Chat history', 'API access'],
     },
   ]

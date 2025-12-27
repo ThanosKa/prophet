@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm'
 import type { ClerkWebhookEvent } from '@/types'
 import { error, success } from '@/types'
 import { logger } from '@/lib/logger'
+import { TIER_CONFIG } from '@/lib/pricing'
 
 /**
  * POST /api/webhooks/clerk
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
         id,
         email: primaryEmail,
         tier: (public_metadata?.tier as 'free' | 'pro' | 'premium' | 'ultra') || 'free',
-        creditsRemaining: 50000, // Default free tier credits
+        creditsRemaining: TIER_CONFIG.free.credits,
       })
 
       logger.info({ userId: id, email: primaryEmail }, 'User created from webhook')

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { logger } from '@/lib/logger'
+import { TIER_CONFIG } from '@/lib/pricing'
 
 export async function POST() {
   try {
@@ -29,8 +30,8 @@ export async function POST() {
         lastName: clerkUser.lastName,
         profileImageUrl: clerkUser.imageUrl,
         tier: 'free',
-        creditsRemaining: 100,
-        creditsIncluded: 100,
+        creditsRemaining: TIER_CONFIG.free.credits,
+        creditsIncluded: TIER_CONFIG.free.credits,
       })
       .onConflictDoUpdate({
         target: users.id,
