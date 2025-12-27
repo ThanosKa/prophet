@@ -25,6 +25,7 @@ ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <ClerkProvider
       publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
+      syncSessionWithTab
       appearance={{
         baseTheme: dark,
       }}

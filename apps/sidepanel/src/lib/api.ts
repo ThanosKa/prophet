@@ -13,9 +13,13 @@ class ApiClient {
     options?: RequestInit
   ): Promise<ApiResponse<T>> {
     try {
-      const token = await chrome.runtime.sendMessage({
+      const tokenResponse = await chrome.runtime.sendMessage({
         type: 'GET_AUTH_TOKEN',
       })
+      const token = tokenResponse?.token
+
+      console.log('[API] Token retrieved:', token ? 'yes' : 'no')
+      console.log('[API] Request:', endpoint)
 
       const url = new URL(endpoint, this.baseUrl)
       const headers: Record<string, string> = {
@@ -88,9 +92,13 @@ class ApiClient {
     chatId: string,
     content: string
   ): AsyncGenerator<{ type: string; content?: string; error?: string; usage?: { inputTokens: number; outputTokens: number } }> {
-    const token = await chrome.runtime.sendMessage({
+    const tokenResponse = await chrome.runtime.sendMessage({
       type: 'GET_AUTH_TOKEN',
     })
+    const token = tokenResponse?.token
+
+    console.log('[API] Stream token retrieved:', token ? 'yes' : 'no')
+    console.log('[API] Stream request:', chatId)
 
     const url = new URL('/api/chat/stream', this.baseUrl)
     const headers: Record<string, string> = {
