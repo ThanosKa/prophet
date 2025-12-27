@@ -428,3 +428,7 @@ pnpm -F @prophet/sidepanel build
 ## Messages for the developer
 
 After finishing a task, briefly state (max 2 sentences): if you used any rule file from .claude/skills/, which rule you used and why, and if you used an MCP server, what content from its response helped.
+
+# Summary instructions
+
+When you are using compact, please focus on test output and code changes
