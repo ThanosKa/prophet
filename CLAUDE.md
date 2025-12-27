@@ -12,8 +12,8 @@ Chrome side panel extension with streaming AI chat, secure backend API, and mark
 - `apps/shared` - Shared types, utilities, Zod schemas
 
 **Data Flow**: Extension → Backend API → Anthropic API (streaming) → Extension
-**Auth**: Clerk handles authentication, subscription tiers in user metadata
-**SaaS Model**: Token-based credits (Free: ~50K tokens, Pro: ~500K, Premium: ~1.5M, Ultra: ~3M)
+**Auth**: Clerk v2.0 handles authentication across web app and Chrome extension
+**SaaS Model**: Credits-based billing (1 credit = 1 cent API cost). Free: $0.50, Pro: $11 (+10% bonus), Premium: $35 (+17% bonus), Ultra: $70 (+17% bonus)
 
 ## Tech Stack
 
@@ -143,10 +143,22 @@ Alternative if you cannot find your asnwers you are looking for, fetch the web
 ```typescript
 // Core tables (Drizzle + Supabase PostgreSQL)
 users {
-  id: string              // Clerk user ID
+  id: string                           // Clerk user ID
   email: string
+  firstName: string
+  lastName: string
+  profileImageUrl: string
   tier: 'free' | 'pro' | 'premium' | 'ultra'
-  creditsRemaining: number
+  creditsRemaining: number             // Current balance (cents)
+  creditsIncluded: number              // Monthly allocation (cents)
+  billingPeriodStart: timestamp
+  billingPeriodEnd: timestamp
+  stripeCustomerId: string
+  stripeSubscriptionId: string
+  stripePriceId: string
+  subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete'
+  pendingTier: 'free' | 'pro' | 'premium' | 'ultra'  // For downgrades
+  pendingTierEffectiveDate: timestamp                 // When pendingTier takes effect
   createdAt: timestamp
   updatedAt: timestamp
 }
@@ -164,15 +176,19 @@ messages {
   chatId: uuid            // FK → chats.id (cascade delete)
   role: 'user' | 'assistant'
   content: text
+  model: string           // e.g., 'claude-sonnet-4-20250514'
   inputTokens: number
   outputTokens: number
+  costCents: number       // Actual API cost in cents
   createdAt: timestamp
 }
 
 usageRecords {
   id: uuid
-  userId: string          // FK → users.id
-  tokensUsed: number
+  userId: string          // FK → users.id (cascade delete)
+  inputTokens: number
+  outputTokens: number
+  costCents: number       // Actual API cost in cents
   model: string
   createdAt: timestamp
 }
@@ -198,6 +214,43 @@ export async function POST(request: Request) {
   if (!chat) return Response.json({ error: "Not found" }, { status: 404 });
 }
 ```
+
+### Chrome Extension Authentication (Clerk v2.0)
+
+**Package**: `@clerk/chrome-extension` v2.8.14+
+
+**Setup** (`apps/sidepanel/src/main.tsx`):
+
+```typescript
+<ClerkProvider
+  publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
+  syncHost={import.meta.env.VITE_SYNC_HOST}  // Marketing site URL
+  appearance={{ baseTheme: dark }}
+>
+```
+
+**User Flow**:
+
+1. User clicks "Sign In via Prophet Website" in sidepanel
+2. Opens marketing site in new tab (OAuth works there)
+3. After sign-in, redirects to `/auth-success` page
+4. Tab auto-closes after 3 seconds
+5. **User must close and reopen sidepanel** (Clerk v2.0 limitation)
+6. Session syncs → user logged in
+
+**⚠️ Known Limitation**: Sidepanels require close/reopen after auth. Per Clerk docs: "The Chrome Extension SDK currently does not fully support Sync Host on side panels."
+
+**Environment Variables**:
+
+```bash
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+VITE_SYNC_HOST=http://localhost:3001  # Marketing site for OAuth
+```
+
+**Clerk Dashboard Config**:
+
+- Add `chrome-extension://<YOUR_EXTENSION_ID>` to Allowed Origins
+- Required for cross-origin session sync
 
 ### Streaming AI Response
 
