@@ -6,21 +6,21 @@ export function Pricing() {
     {
       name: 'Free',
       price: '$0',
-      credits: '50K tokens/month',
+      credits: '$0.50 in API credits',
       features: ['Basic support', 'Limited requests', 'Chat history'],
     },
     {
       name: 'Pro',
       price: '$9.99',
-      credits: '500K tokens/month',
+      credits: '$11 in API credits (+10% bonus)',
       features: ['Priority support', 'Higher rate limits', 'Chat history', 'Token insights'],
-      popular: true,
     },
     {
       name: 'Premium',
       price: '$29.99',
       credits: '$35 in API credits (+17% bonus)',
       features: ['24/7 support', 'Custom rate limits', 'Chat history', 'Advanced analytics'],
+      popular: true,
     },
     {
       name: 'Ultra',
