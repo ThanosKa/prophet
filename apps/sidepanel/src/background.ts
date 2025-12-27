@@ -31,7 +31,7 @@ chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: true })
   .catch((error) => console.error('[Background] Failed to set sidepanel behavior:', error))
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'GET_AUTH_TOKEN') {
     getToken()
       .then((token) => sendResponse({ token }))
@@ -39,6 +39,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         console.error('[Background] Token request error:', error)
         sendResponse({ token: null })
       })
+    return true
+  }
+
+  if (message.type === 'CLOSE_AUTH_TAB') {
+    if (sender.tab?.id) {
+      chrome.tabs.remove(sender.tab.id).catch((error) => {
+        console.error('[Background] Failed to close auth tab:', error)
+      })
+    }
+    sendResponse({ success: true })
     return true
   }
 })

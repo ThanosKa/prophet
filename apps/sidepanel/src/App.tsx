@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { useChats } from '@/hooks/useChats'
 import { useMessages } from '@/hooks/useMessages'
@@ -12,11 +13,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 
 export default function App() {
+  const queryClient = useQueryClient()
   const { isSignedIn, user, clerkUser } = useAuth()
   const { chats, isLoading: chatsLoading, createChat, deleteChat } = useChats()
   const { activeChatId, setActiveChatId, isStreaming } = useChatStore()
   const { messages } = useMessages(activeChatId)
   const { stream } = useStreamChat()
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[App] Sidepanel visible, refreshing auth state')
+        queryClient.invalidateQueries({ queryKey: ['user'] })
+        if (isSignedIn) {
+          console.log('[App] User signed in, refreshing chats')
+          queryClient.invalidateQueries({ queryKey: ['chats'] })
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [isSignedIn, queryClient])
 
   // Auto-select first chat if none is selected
   useEffect(() => {

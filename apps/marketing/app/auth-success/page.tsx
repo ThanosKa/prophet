@@ -1,17 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 
 export default function AuthSuccessPage() {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      window.close()
-    }, 3000)
-
-    return () => clearTimeout(timer)
-  }, [])
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background">
       <div className="max-w-md p-8 text-center space-y-4">
@@ -21,7 +12,7 @@ export default function AuthSuccessPage() {
           You can close this window and return to the Prophet extension.
         </p>
         <p className="text-sm text-muted-foreground">
-          This window will close automatically in 3 seconds...
+          This window will close automatically in <span data-countdown className="font-semibold">3</span> seconds...
         </p>
         <Button
           onClick={() => window.close()}
