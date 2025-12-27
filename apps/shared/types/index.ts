@@ -1,6 +1,9 @@
 // Shared type definitions
 // Add types here as the project grows
 
+// Re-export agent types
+export * from './agent'
+
 export type Tier = 'free' | 'pro' | 'premium' | 'ultra'
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete'
 

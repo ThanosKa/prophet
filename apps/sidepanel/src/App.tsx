@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { useChats } from '@/hooks/useChats'
 import { useMessages } from '@/hooks/useMessages'
-import { useStreamChat } from '@/hooks/useStreamChat'
+import { useAgentChat } from '@/hooks/useAgentChat'
 import { useChatStore } from '@/store/chatStore'
 import { ChatList } from '@/components/chat/ChatList'
 import { MessageList } from '@/components/chat/MessageList'
@@ -18,7 +18,7 @@ export default function App() {
   const { chats, isLoading: chatsLoading, createChat, deleteChat } = useChats()
   const { activeChatId, setActiveChatId, isStreaming } = useChatStore()
   const { messages } = useMessages(activeChatId)
-  const { stream } = useStreamChat()
+  const { sendMessage, currentToolCall, streamingContent } = useAgentChat()
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -60,7 +60,7 @@ export default function App() {
 
   const handleSendMessage = async (content: string) => {
     if (!activeChatId) return
-    await stream(activeChatId, content)
+    await sendMessage(activeChatId, content)
   }
 
   // Show sign-in if not authenticated
@@ -115,7 +115,12 @@ export default function App() {
       <div className="flex-1 flex flex-col">
         {activeChatId ? (
           <>
-            <MessageList messages={messages} isLoading={isStreaming} />
+            <MessageList
+              messages={messages}
+              isLoading={isStreaming}
+              currentToolCall={currentToolCall}
+              streamingContent={streamingContent}
+            />
             <ChatInput
               onSend={handleSendMessage}
               disabled={isStreaming}

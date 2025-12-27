@@ -1,5 +1,8 @@
 import { z } from 'zod'
 
+// Re-export agent schemas
+export * from './agent'
+
 // Chat schemas
 export const createChatSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),

@@ -2,10 +2,14 @@ import { config } from './config'
 import type { ApiResponse, Chat, Message, User } from '@prophet/shared'
 
 class ApiClient {
-  private baseUrl: string
+  private _baseUrl: string
 
   constructor(baseUrl: string) {
-    this.baseUrl = baseUrl
+    this._baseUrl = baseUrl
+  }
+
+  get baseUrl(): string {
+    return this._baseUrl
   }
 
   private async request<T>(
@@ -21,7 +25,7 @@ class ApiClient {
       console.log('[API] Token retrieved:', token ? 'yes' : 'no')
       console.log('[API] Request:', endpoint)
 
-      const url = new URL(endpoint, this.baseUrl)
+      const url = new URL(endpoint, this._baseUrl)
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       }
@@ -100,7 +104,7 @@ class ApiClient {
     console.log('[API] Stream token retrieved:', token ? 'yes' : 'no')
     console.log('[API] Stream request:', chatId)
 
-    const url = new URL('/api/chat/stream', this.baseUrl)
+    const url = new URL('/api/chat/stream', this._baseUrl)
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }

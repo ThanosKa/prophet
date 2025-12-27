@@ -6,11 +6,19 @@ const manifest = defineManifest({
   version: '1.0.0',
   description: 'Your AI-powered assistant right in your browser',
 
-  permissions: ['sidePanel', 'storage', 'cookies'],
+  permissions: [
+    'sidePanel',
+    'storage',
+    'cookies',
+    'tabs',
+    'activeTab',
+    'scripting',
+    'debugger',
+  ],
   host_permissions: [
     'http://localhost:3000/*',
     'http://localhost:3001/*',
-    'https://*/*',
+    '<all_urls>',
   ],
 
   side_panel: {
