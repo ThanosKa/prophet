@@ -90,17 +90,11 @@ prophet/
 │       ├── types/          # Shared TypeScript types
 │       └── utils/          # Shared utilities
 ├── .claude/
+│   ├── docs/               # Detailed documentation
 │   └── skills/             # Claude Code coding standards (topic-based)
 │       ├── frontend/       # Frontend UX/UI patterns
-│       │   ├── ux-patterns/
-│       │   ├── component-design/
-│       │   └── accessibility/
 │       ├── backend/        # Backend API & database patterns
-│       │   ├── api-security/
-│       │   └── database-patterns/
 │       ├── stack/          # Stack-specific setup
-│       │   ├── nextjs-architecture/
-│       │   └── chrome-extension/
 │       └── typescript-standards/  # Cross-cutting concern
 └── CLAUDE.md               # This file
 ```
@@ -113,224 +107,6 @@ Detailed coding standards organized by topic in `.claude/skills/`:
 - **backend/** - API security, database patterns, streaming, testing
 - **stack/** - Next.js, Chrome extension setup
 - **typescript-standards/** - Type safety across all code
-
-## Context7 MCP Integration
-
-**Claude Code has access to context7 MCP server for up-to-date documentation.**
-
-When you need latest docs while coding, Claude will use:
-
-```
-mcp__context7__resolve-library-id  # Find library ID
-mcp__context7__get-library-docs    # Fetch documentation
-
-Alternative if you cannot find your asnwers you are looking for, fetch the web
-
-# Key library IDs:
-/crxjs/chrome-extension-tools      - CRXJS
-/drizzle-team/drizzle-orm-docs     - Drizzle ORM
-/anthropics/anthropic-cookbook     - Anthropic SDK
-/websites/ui_shadcn                - shadcn/ui
-/websites/nextjs_app               - Next.js App Router
-/upstash/ratelimit-js              - Upstash
-/clerk/clerk-docs                  - Clerk
-```
-
-**Claude prefers context7 over training cutoff knowledge** for API changes, version-specific syntax, and migration guides.
-
-## Database Schema
-
-```typescript
-// Core tables (Drizzle + Supabase PostgreSQL)
-users {
-  id: string                           // Clerk user ID
-  email: string
-  firstName: string
-  lastName: string
-  profileImageUrl: string
-  tier: 'free' | 'pro' | 'premium' | 'ultra'
-  creditsRemaining: number             // Current balance (cents)
-  creditsIncluded: number              // Monthly allocation (cents)
-  billingPeriodStart: timestamp
-  billingPeriodEnd: timestamp
-  stripeCustomerId: string
-  stripeSubscriptionId: string
-  stripePriceId: string
-  subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete'
-  pendingTier: 'free' | 'pro' | 'premium' | 'ultra'  // For downgrades
-  pendingTierEffectiveDate: timestamp                 // When pendingTier takes effect
-  createdAt: timestamp
-  updatedAt: timestamp
-}
-
-chats {
-  id: uuid
-  userId: string          // FK → users.id (cascade delete)
-  title: string
-  createdAt: timestamp
-  updatedAt: timestamp
-}
-
-messages {
-  id: uuid
-  chatId: uuid            // FK → chats.id (cascade delete)
-  role: 'user' | 'assistant'
-  content: text
-  model: string           // e.g., 'claude-sonnet-4-20250514'
-  inputTokens: number
-  outputTokens: number
-  costCents: number       // Actual API cost in cents
-  createdAt: timestamp
-}
-
-usageRecords {
-  id: uuid
-  userId: string          // FK → users.id (cascade delete)
-  inputTokens: number
-  outputTokens: number
-  costCents: number       // Actual API cost in cents
-  model: string
-  createdAt: timestamp
-}
-```
-
-## Key Patterns
-
-### Authentication Flow
-
-```typescript
-// Backend API route
-import { auth } from "@clerk/nextjs/server";
-
-export async function POST(request: Request) {
-  const { userId } = await auth();
-  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
-
-  // Verify ownership
-  const chat = await db.query.chats.findFirst({
-    where: and(eq(chats.id, chatId), eq(chats.userId, userId)),
-  });
-
-  if (!chat) return Response.json({ error: "Not found" }, { status: 404 });
-}
-```
-
-### Chrome Extension Authentication (Clerk v2.0)
-
-**Package**: `@clerk/chrome-extension` v2.8.14+
-
-**Setup** (`apps/sidepanel/src/main.tsx`):
-
-```typescript
-<ClerkProvider
-  publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
-  syncHost={import.meta.env.VITE_SYNC_HOST}  // Marketing site URL
-  appearance={{ baseTheme: dark }}
->
-```
-
-**User Flow**:
-
-1. User clicks "Sign In via Prophet Website" in sidepanel
-2. Opens marketing site in new tab (OAuth works there)
-3. After sign-in, redirects to `/auth-success` page
-4. Tab auto-closes after 3 seconds
-5. **User must close and reopen sidepanel** (Clerk v2.0 limitation)
-6. Session syncs → user logged in
-
-**⚠️ Known Limitation**: Sidepanels require close/reopen after auth. Per Clerk docs: "The Chrome Extension SDK currently does not fully support Sync Host on side panels."
-
-**Environment Variables**:
-
-```bash
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
-VITE_SYNC_HOST=http://localhost:3001  # Marketing site for OAuth
-```
-
-**Clerk Dashboard Config**:
-
-- Add `chrome-extension://<YOUR_EXTENSION_ID>` to Allowed Origins
-- Required for cross-origin session sync
-
-### Streaming AI Response
-
-```typescript
-// Backend API route
-const stream = await anthropic.messages.stream({
-  model: "claude-sonnet-4-20250514",
-  max_tokens: 4096,
-  messages: [...],
-})
-
-// Track tokens after completion
-stream.on('finalMessage', async (message) => {
-  const totalTokens = message.usage.input_tokens + message.usage.output_tokens
-
-  await db.transaction(async tx => {
-    await tx.update(users)
-      .set({ creditsRemaining: sql`${users.creditsRemaining} - ${totalTokens}` })
-      .where(eq(users.id, userId))
-  })
-})
-
-return new Response(stream.toReadableStream(), {
-  headers: { 'Content-Type': 'text/event-stream' }
-})
-```
-
-### Rate Limiting
-
-```typescript
-// middleware.ts or API route
-import { Ratelimit } from "@upstash/ratelimit";
-
-const ratelimit = new Ratelimit({
-  redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(10, "1 m"),
-});
-
-const { success } = await ratelimit.limit(userId);
-if (!success) {
-  return Response.json({ error: "Too many requests" }, { status: 429 });
-}
-```
-
-## Environment Variables
-
-**Monorepo Setup**: Each app has its own `.env.local` with only the variables it needs.
-
-### Root (`.env.local`)
-
-Copy from [.env.example](.env.example) - contains all shared variables:
-
-- `DATABASE_URL` - Supabase PostgreSQL connection
-- `ANTHROPIC_API_KEY` - AI API (server-side only)
-- `CLERK_SECRET_KEY` - Clerk secret (server-side only)
-- `CLERK_WEBHOOK_SECRET` - Clerk webhooks
-- `UPSTASH_REDIS_REST_URL` - Redis for rate limiting
-- `UPSTASH_REDIS_REST_TOKEN` - Redis auth token
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk public key
-- `VITE_API_URL` - Backend URL for extension
-- `NEXT_PUBLIC_APP_URL` - Marketing app URL
-
-### apps/backend/.env.local
-
-Copy from [apps/backend/.env.example](apps/backend/.env.example) - backend API needs:
-
-- `DATABASE_URL`, `ANTHROPIC_API_KEY`, `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SECRET`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-
-### apps/marketing/.env.local
-
-Copy from [apps/marketing/.env.example](apps/marketing/.env.example) - marketing site needs:
-
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `NEXT_PUBLIC_APP_URL`
-
-### apps/sidepanel/.env.local
-
-Copy from [apps/sidepanel/.env.example](apps/sidepanel/.env.example) - Chrome extension needs:
-
-- `VITE_CLERK_PUBLISHABLE_KEY` - Clerk public key (Vite prefixed for build-time inlining)
-- `VITE_API_URL` - Backend API URL for extension requests
 
 ## Critical Security Rules
 
@@ -352,136 +128,34 @@ Copy from [apps/sidepanel/.env.example](apps/sidepanel/.env.example) - Chrome ex
 - ❌ DON'T: Add redundant comments that just repeat the code
 - ❌ DON'T: Add comments for simple CRUD operations or straightforward logic
 
-**Example - GOOD (no unnecessary comments):**
+## Context7 MCP Integration
 
-```typescript
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ chatId: string }> }
-) {
-  const { chatId } = await params;
-  const { userId } = await auth();
+**Claude Code has access to context7 MCP server for up-to-date documentation.**
 
-  if (!userId) {
-    return NextResponse.json(error("Unauthorized", "UNAUTHORIZED"), {
-      status: 401,
-    });
-  }
+When you need latest docs while coding, Claude will use:
 
-  const chat = await db.query.chats.findFirst({
-    where: and(eq(chats.id, chatId), eq(chats.userId, userId)),
-  });
+```
+mcp__context7__resolve-library-id  # Find library ID
+mcp__context7__get-library-docs    # Fetch documentation
 
-  if (!chat) {
-    return NextResponse.json(error("Chat not found", "CHAT_NOT_FOUND"), {
-      status: 404,
-    });
-  }
-
-  logger.info({ userId, chatId }, "Chat fetched");
-  return NextResponse.json(success(chat));
-}
+Alternative if you cannot find your answers you are looking for, fetch the web
 ```
 
-**Example - BAD (too many comments):**
+**Claude prefers context7 over training cutoff knowledge** for API changes, version-specific syntax, and migration guides.
 
-```typescript
-// Get the authenticated user
-const { userId } = await auth();
-// Check if user is authenticated
-if (!userId) {
-  // Return unauthorized error
-  return NextResponse.json(error("Unauthorized", "UNAUTHORIZED"), {
-    status: 401,
-  });
-}
-```
+## Detailed Documentation
 
-## Getting Started
+For comprehensive guides, see:
 
-### 1. Install Dependencies
-
-```bash
-pnpm install
-```
-
-### 2. Setup External Services
-
-Create accounts and get credentials from:
-
-- **Clerk** - https://dashboard.clerk.com (authentication)
-- **Supabase** - https://supabase.com (PostgreSQL database)
-- **Anthropic** - https://console.anthropic.com (AI API)
-- **Upstash** - https://upstash.com (Redis rate limiting)
-
-### 3. Configure Environment Variables
-
-Each app reads its own `.env.local`:
-
-**Root** - Copy [.env.example](.env.example) → `.env.local`
-
-```bash
-cp .env.example .env.local
-# Edit .env.local with your credentials
-```
-
-**Backend** - Copy [apps/backend/.env.example](apps/backend/.env.example) → `apps/backend/.env.local`
-
-```bash
-cp apps/backend/.env.example apps/backend/.env.local
-# Copy your values from root/.env.local
-```
-
-**Marketing** - Copy [apps/marketing/.env.example](apps/marketing/.env.example) → `apps/marketing/.env.local`
-
-```bash
-cp apps/marketing/.env.example apps/marketing/.env.local
-# Copy NEXT_PUBLIC_* values from root/.env.local
-```
-
-**Sidepanel** - Copy [apps/sidepanel/.env.example](apps/sidepanel/.env.example) → `apps/sidepanel/.env.local`
-
-```bash
-cp apps/sidepanel/.env.example apps/sidepanel/.env.local
-# Copy VITE_* values from root/.env.local
-```
-
-### 4. Initialize Database
-
-```bash
-pnpm -F @prophet/backend db:migrate
-```
-
-### 5. Start Development
-
-```bash
-# All apps in parallel
-pnpm dev
-
-# Or individual apps
-pnpm dev:backend      # localhost:3000
-pnpm dev:marketing    # localhost:3001
-pnpm dev:sidepanel    # localhost:5173 (dev server, builds to dist/)
-```
-
-### 6. Load Chrome Extension
-
-After building the sidepanel:
-
-```bash
-pnpm -F @prophet/sidepanel build
-```
-
-1. Open `chrome://extensions`
-2. Enable "Developer mode" (top right)
-3. Click "Load unpacked"
-4. Select `apps/sidepanel/dist` folder
-5. Click the extension icon to open the sidepanel
+- **Setup**: @.claude/docs/setup.md - Getting started + environment variables
+- **Database**: @.claude/docs/database-schema.md - Database schema and relationships
+- **Patterns**: @.claude/docs/patterns.md - Key patterns (auth, streaming, rate limiting)
+- **Chrome Extension Auth**: @.claude/docs/chrome-extension-auth.md - Chrome extension authentication flow
 
 ## Messages for the developer
 
 After finishing a task, briefly state (max 2 sentences): if you used any rule file from .claude/skills/, which rule you used and why, and if you used an MCP server, what content from its response helped.
 
-# Summary instructions
+## Summary instructions
 
 When you are using compact, please focus on test output and code changes
