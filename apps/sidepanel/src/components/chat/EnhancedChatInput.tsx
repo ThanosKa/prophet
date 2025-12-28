@@ -1,9 +1,18 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Plus, X } from 'lucide-react'
+import { ArrowUp, Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ModelSelector } from './ModelSelector'
-import { ContextUsageRing } from '@/components/ui/context-usage-ring'
+import {
+  Context,
+  ContextContent,
+  ContextContentBody,
+  ContextContentFooter,
+  ContextContentHeader,
+  ContextInputUsage,
+  ContextOutputUsage,
+  ContextTrigger,
+} from '@/components/ai-elements/context'
 import { useUIStore } from '@/store/uiStore'
 import { cn } from '@/lib/utils'
 
@@ -33,7 +42,7 @@ export function EnhancedChatInput({
   const [image, setImage] = useState<LocalImageData | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { contextTokens, maxContextTokens } = useUIStore()
+  const { contextTokens, maxContextTokens, selectedModel } = useUIStore()
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -103,7 +112,7 @@ export function EnhancedChatInput({
       <div
         className={cn(
           'relative flex flex-col',
-          'bg-muted/50 rounded-[28px] border border-border/50',
+          'bg-muted/50 rounded-lg border border-border/50',
           'focus-within:border-border focus-within:ring-1 focus-within:ring-ring/20',
           'transition-all duration-200'
         )}
@@ -164,11 +173,28 @@ export function EnhancedChatInput({
               <span className="sr-only">Attach image</span>
             </Button>
             <ModelSelector disabled={disabled} compact />
-            <ContextUsageRing
-              used={contextTokens}
-              max={maxContextTokens}
-              size="sm"
-            />
+            <Context
+              maxTokens={maxContextTokens}
+              modelId={selectedModel}
+              usage={{
+                inputTokens: contextTokens,
+                outputTokens: 0,
+                totalTokens: contextTokens,
+                cachedInputTokens: 0,
+                reasoningTokens: 0,
+              }}
+              usedTokens={contextTokens}
+            >
+              <ContextTrigger />
+              <ContextContent>
+                <ContextContentHeader />
+                <ContextContentBody>
+                  <ContextInputUsage />
+                  <ContextOutputUsage />
+                </ContextContentBody>
+                <ContextContentFooter />
+              </ContextContent>
+            </Context>
           </div>
 
           <Button
@@ -183,7 +209,7 @@ export function EnhancedChatInput({
             onClick={handleSend}
             disabled={disabled || !hasContent}
           >
-            <Send className="h-4 w-4" />
+            <ArrowUp className="h-4 w-4" />
             <span className="sr-only">Send message</span>
           </Button>
         </div>

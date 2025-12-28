@@ -1,11 +1,20 @@
-import { useRef, useEffect, useState } from 'react'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { ScrollToBottomButton } from '@/components/ui/scroll-to-bottom'
+import { Copy, Check } from 'lucide-react'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { TypingIndicator } from '@/components/ui/typing-indicator'
-import { EnhancedChatMessage } from './EnhancedChatMessage'
-import type { Message, ToolCall } from '@prophet/shared'
+import {
+  Conversation,
+  ConversationContent,
+} from '@/components/ai-elements/conversation'
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from '@/components/ai-elements/message'
+import { ToolCallCollapsible } from './ToolCallCollapsible'
+import type { Message as MessageType, ToolCall } from '@prophet/shared'
 
-interface AgentMessage extends Message {
+interface AgentMessage extends MessageType {
   toolCalls?: ToolCall[]
 }
 
@@ -17,6 +26,74 @@ interface EnhancedMessageListProps {
   currentToolCall?: ToolCall | null
 }
 
+function MessageWithActions({
+  message,
+  isStreaming,
+  streamingContent,
+  currentToolCall,
+}: {
+  message: AgentMessage
+  isStreaming?: boolean
+  streamingContent?: string
+  currentToolCall?: ToolCall | null
+}) {
+  const [copied, setCopied] = useState(false)
+  const isAssistant = message.role === 'assistant'
+  const displayContent = streamingContent || message.content
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(displayContent)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Message from={message.role} key={message.id}>
+      {isAssistant && (message.toolCalls || currentToolCall) && (
+        <div className="space-y-1 mb-2">
+          {message.toolCalls?.map((tc) => (
+            <ToolCallCollapsible key={tc.id} toolCall={tc} />
+          ))}
+          {currentToolCall && (
+            <ToolCallCollapsible toolCall={currentToolCall} isExecuting />
+          )}
+        </div>
+      )}
+
+      <div className="flex items-start justify-between gap-2 group">
+        <MessageContent>
+          {message.role === 'user' ? (
+            <p className="whitespace-pre-wrap break-words text-sm">{displayContent}</p>
+          ) : (
+            <MessageResponse>{displayContent}</MessageResponse>
+          )}
+        </MessageContent>
+
+        {isAssistant && !isStreaming && displayContent && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+            onClick={handleCopy}
+          >
+            {copied ? (
+              <Check className="h-3 w-3 text-green-500" />
+            ) : (
+              <Copy className="h-3 w-3" />
+            )}
+          </Button>
+        )}
+      </div>
+
+      {isAssistant && message.outputTokens && !isStreaming && (
+        <p className="text-xs text-muted-foreground mt-2">
+          {message.outputTokens} tokens
+        </p>
+      )}
+    </Message>
+  )
+}
+
 export function EnhancedMessageList({
   messages,
   isLoading,
@@ -24,40 +101,6 @@ export function EnhancedMessageList({
   streamingContent,
   currentToolCall,
 }: EnhancedMessageListProps) {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const [showScrollButton, setShowScrollButton] = useState(false)
-  const [userScrolled, setUserScrolled] = useState(false)
-
-  const scrollToBottom = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-      setUserScrolled(false)
-    }
-  }
-
-  const handleScroll = () => {
-    if (scrollRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current
-      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
-      setShowScrollButton(!isNearBottom)
-      if (!isNearBottom) {
-        setUserScrolled(true)
-      }
-    }
-  }
-
-  useEffect(() => {
-    if (!userScrolled) {
-      scrollToBottom()
-    }
-  }, [messages, streamingContent, userScrolled])
-
-  useEffect(() => {
-    if (isStreaming && !userScrolled) {
-      scrollToBottom()
-    }
-  }, [isStreaming, userScrolled])
-
   if (messages.length === 0 && !isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
@@ -67,40 +110,31 @@ export function EnhancedMessageList({
   }
 
   return (
-    <div className="relative flex-1 overflow-hidden">
-      <ScrollArea
-        className="h-full"
-        ref={scrollRef}
-        onScroll={handleScroll}
-      >
-        <div className="divide-y divide-border/50">
-          {messages.map((message, index) => {
-            const isLast = index === messages.length - 1
-            const isLastAssistant = isLast && message.role === 'assistant'
+    <Conversation>
+      <ConversationContent>
+        {messages.map((message, index) => {
+          const isLast = index === messages.length - 1
+          const isLastAssistant = isLast && message.role === 'assistant'
 
-            return (
-              <EnhancedChatMessage
-                key={message.id}
-                message={message}
-                isStreaming={isLastAssistant && isStreaming}
-                streamingContent={isLastAssistant ? streamingContent : undefined}
-                currentToolCall={isLastAssistant ? currentToolCall : undefined}
-              />
-            )
-          })}
-        </div>
+          return (
+            <MessageWithActions
+              key={message.id}
+              message={message}
+              isStreaming={isLastAssistant && isStreaming}
+              streamingContent={isLastAssistant ? streamingContent : undefined}
+              currentToolCall={isLastAssistant ? currentToolCall : undefined}
+            />
+          )
+        })}
 
         {isLoading && !isStreaming && (
-          <div className="flex items-center gap-3 py-4 px-4 bg-muted/30">
-            <TypingIndicator />
-          </div>
+          <Message from="assistant">
+            <MessageContent>
+              <TypingIndicator />
+            </MessageContent>
+          </Message>
         )}
-      </ScrollArea>
-
-      <ScrollToBottomButton
-        show={showScrollButton}
-        onClick={scrollToBottom}
-      />
-    </div>
+      </ConversationContent>
+    </Conversation>
   )
 }
