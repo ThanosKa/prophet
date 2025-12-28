@@ -61,6 +61,8 @@ function MessageWithActions({
         <MessageContent>
           {message.role === 'user' ? (
             <p className="whitespace-pre-wrap break-words text-sm">{displayContent}</p>
+          ) : isStreaming && !displayContent ? (
+            <TypingIndicator />
           ) : (
             <MessageResponse>{displayContent}</MessageResponse>
           )}
@@ -116,14 +118,6 @@ export function EnhancedMessageList({
             />
           )
         })}
-
-        {isLoading && !isStreaming && (
-          <Message from="assistant">
-            <MessageContent>
-              <TypingIndicator />
-            </MessageContent>
-          </Message>
-        )}
       </ConversationContent>
     </Conversation>
   )
