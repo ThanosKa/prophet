@@ -4,14 +4,13 @@
 
 Chrome side panel extension with streaming AI chat, secure backend API, and marketing landing page. Token-based credit system for SaaS monetization.
 
-**Architecture**: Monorepo with 4 applications
+**Architecture**: Monorepo with 3 applications
 
 - `apps/sidepanel` - Chrome extension (Vite + React 18)
-- `apps/backend` - API server (Next.js 16 App Router)
-- `apps/marketing` - Landing page (Next.js 16)
+- `apps/marketing` - Landing page + API server (Next.js 16 App Router)
 - `apps/shared` - Shared types, utilities, Zod schemas
 
-**Data Flow**: Extension → Backend API → Anthropic API (streaming) → Extension
+**Data Flow**: Extension → Marketing API → Anthropic API (streaming) → Extension
 **Auth**: Clerk v2.0 handles authentication across web app and Chrome extension
 **SaaS Model**: Credits-based billing (1 credit = 1 cent API cost). Free: $0.50, Pro: $11 (+10% bonus), Premium: $35 (+17% bonus), Ultra: $70 (+17% bonus)
 
@@ -20,8 +19,7 @@ Chrome side panel extension with streaming AI chat, secure backend API, and mark
 | App       | Technologies                                                                    |
 | --------- | ------------------------------------------------------------------------------- |
 | sidepanel | Vite, React 18, TypeScript, Tailwind, shadcn/ui, TanStack Query, Zustand, CRXJS |
-| backend   | Next.js 16, Drizzle ORM, Supabase, Anthropic SDK, Upstash Redis, Clerk          |
-| marketing | Next.js 16, Tailwind, shadcn/ui, Framer Motion, Clerk                           |
+| marketing | Next.js 16, Drizzle ORM, Supabase, Anthropic SDK, Upstash Redis, Stripe, Clerk, shadcn/ui, Framer Motion |
 | shared    | TypeScript, Zod                                                                 |
 
 ## Essential Commands
@@ -32,34 +30,35 @@ pnpm install
 
 # Development (run in parallel)
 pnpm -F @prophet/sidepanel dev      # localhost:5173
-pnpm -F @prophet/backend dev        # localhost:3000
-pnpm -F @prophet/marketing dev      # localhost:3001
+pnpm -F @prophet/marketing dev      # localhost:3000
+
+# Or use shortcuts
+pnpm dev:web                        # Start marketing app
+pnpm dev:sidepanel                  # Start sidepanel
 
 # Build
 pnpm -F @prophet/sidepanel build    # → apps/sidepanel/dist
-pnpm -F @prophet/backend build
 pnpm -F @prophet/marketing build
 
 # Database
-pnpm -F @prophet/backend db:generate  # Generate migrations from schema
-pnpm -F @prophet/backend db:migrate   # Apply migrations
-pnpm -F @prophet/backend db:studio    # Open Drizzle Studio GUI
+pnpm db:generate                     # Generate migrations from schema
+pnpm db:migrate                      # Apply migrations
+pnpm db:studio                       # Open Drizzle Studio GUI
 
 # Lint
-pnpm lint                              # All apps
-pnpm -F @prophet/sidepanel lint        # Specific app
+pnpm lint                            # All apps
+pnpm -F @prophet/sidepanel lint      # Specific app
 
 # Testing
-pnpm -F @prophet/backend test          # Watch mode
-pnpm -F @prophet/backend test:run      # Single run
-pnpm -F @prophet/backend test:coverage # With coverage
+pnpm -F @prophet/marketing test      # Watch mode
+pnpm -F @prophet/marketing test:run  # Single run
+pnpm test:agent                      # Test agent dev endpoint
 ```
 
 ## Testing
 
 - **Framework**: Vitest (all apps)
 - **Location**: Colocated (`*.test.ts` next to source files)
-- **Coverage**: Backend has 27 tests passing
 - **Commands**: `pnpm test` (all), `pnpm test:run` (once), `pnpm test:coverage` (with coverage)
 - **Skill**: See `.claude/skills/testing/SKILL.md` for comprehensive patterns
 
@@ -77,15 +76,15 @@ prophet/
 │   │   │   └── lib/        # Utilities
 │   │   ├── public/         # Static assets
 │   │   └── manifest.json   # Chrome extension manifest
-│   ├── backend/            # Next.js API
+│   ├── marketing/          # Next.js landing page + API
 │   │   ├── app/
-│   │   │   └── api/        # API routes
+│   │   │   ├── api/        # API routes
+│   │   │   └── ...         # Pages and layouts
+│   │   ├── components/     # React components
 │   │   ├── lib/
-│   │   │   └── db/         # Drizzle schema, migrations
+│   │   │   ├── db/         # Drizzle schema, migrations
+│   │   │   └── agent/      # Agent tools and system prompt
 │   │   └── types/          # TypeScript types
-│   ├── marketing/          # Next.js landing page
-│   │   ├── app/            # Pages and layouts
-│   │   └── components/     # React components
 │   └── shared/             # Shared code
 │       ├── types/          # Shared TypeScript types
 │       └── utils/          # Shared utilities
@@ -111,7 +110,7 @@ Detailed coding standards organized by topic in `.claude/skills/`:
 ## Critical Security Rules
 
 - ❌ NEVER expose `ANTHROPIC_API_KEY` to client
-- ✅ ALL AI requests proxied through backend
+- ✅ ALL AI requests proxied through marketing API
 - ✅ ALWAYS validate input with Zod
 - ✅ ALWAYS authenticate users
 - ✅ ALWAYS verify resource ownership

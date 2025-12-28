@@ -37,7 +37,7 @@ Per Clerk docs: "The Chrome Extension SDK currently does not fully support Sync 
 
 ```bash
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
-VITE_SYNC_HOST=http://localhost:3001  # Marketing site for OAuth
+VITE_SYNC_HOST=http://localhost:3000  # Marketing site for OAuth
 ```
 
 ## Clerk Dashboard Configuration
@@ -62,7 +62,7 @@ After loading unpacked extension in Chrome:
 Configured in environment:
 
 ```bash
-# apps/backend/.env.local or apps/marketing/.env.local
+# apps/marketing/.env.local
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/auth-success
