@@ -15,7 +15,12 @@ export function useMessages(chatId: string | null) {
       if (!chatId) return []
       const response = await apiClient.getMessages(chatId)
       if (response.data) {
-        setMessages(chatId, response.data)
+        // Hydrate chat history, but avoid overwriting locally-added / streaming messages.
+        // We only set the store when it doesn't have messages for this chat yet.
+        const existing = useChatStore.getState().messages[chatId]
+        if (!existing || existing.length === 0) {
+          setMessages(chatId, response.data)
+        }
         return response.data
       }
       return []

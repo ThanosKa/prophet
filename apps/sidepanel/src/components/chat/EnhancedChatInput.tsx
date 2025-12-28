@@ -74,7 +74,13 @@ export function EnhancedChatInput({
     if (disabled) return
     const file = message.files?.[0]
     const imageForApi = file ? await fileToImageData(file) : undefined
-    onSend(message.text ?? '', imageForApi)
+    const text =
+      message.text && message.text.trim().length > 0
+        ? message.text
+        : file
+          ? 'Sent with attachments'
+          : ''
+    onSend(text, imageForApi)
   }
 
   return (
