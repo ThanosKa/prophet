@@ -49,6 +49,6 @@ Your approach:
 5. Call \`press_key\` with key "Enter" to submit
 6. Call \`take_snapshot\` to see results
 
-Remember: You're here to help users accomplish their browsing tasks efficiently and safely. Be proactive in explaining your actions but don't be overly verbose.`
+Remember: You're here to help users accomplish their browsing tasks efficiently and safely. Be proactive in explaining your actions but don't be overly verbose.`;
 
-export const AGENT_MAX_TOKENS = 4096
+export const AGENT_MAX_TOKENS = 4096;
