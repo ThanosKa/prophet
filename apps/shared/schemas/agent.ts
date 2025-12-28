@@ -34,8 +34,15 @@ export const toolUseSchema = z.object({
 
 export const contentBlockSchema = z.union([textContentSchema, toolUseSchema])
 
+export const agentModelSchema = z.enum([
+  'claude-haiku-4-5',
+  'claude-sonnet-4-5',
+  'claude-opus-4-5',
+])
+
 export const agentChatRequestSchema = z.object({
   chatId: z.string().uuid('Invalid chat ID'),
+  model: agentModelSchema.optional(),
   userMessage: z.string().min(1).max(50000).optional(),
   toolResults: z.array(toolResultSchema).optional(),
   previousContent: z.array(contentBlockSchema).optional(),
@@ -88,6 +95,7 @@ export type ToolName = z.infer<typeof toolNameSchema>
 export type ToolResult = z.infer<typeof toolResultSchema>
 export type ToolUse = z.infer<typeof toolUseSchema>
 export type ContentBlock = z.infer<typeof contentBlockSchema>
+export type AgentModel = z.infer<typeof agentModelSchema>
 export type AgentChatRequest = z.infer<typeof agentChatRequestSchema>
 export type ClickElementInput = z.infer<typeof clickElementInputSchema>
 export type FillElementInput = z.infer<typeof fillElementInputSchema>

@@ -1,6 +1,7 @@
 import { executeTool } from './tools'
 import type {
   AgentStreamEvent,
+  AgentModel,
   ToolUse,
   ToolResult,
   ContentBlock,
@@ -21,6 +22,7 @@ export interface AgentLoopEvent {
 
 interface StreamAgentChatOptions {
   chatId: string
+  model: AgentModel
   userMessage?: string
   toolResults?: ToolResult[]
   previousContent?: ContentBlock[]
@@ -46,6 +48,7 @@ async function* streamAgentChat(
 
   const body: Record<string, unknown> = {
     chatId: options.chatId,
+    model: options.model,
   }
 
   if (options.userMessage) {
@@ -124,7 +127,8 @@ async function* streamAgentChat(
 export async function* runAgentLoop(
   baseUrl: string,
   chatId: string,
-  userMessage: string
+  userMessage: string,
+  model: AgentModel = 'claude-haiku-4-5'
 ): AsyncGenerator<AgentLoopEvent> {
   let previousContent: ContentBlock[] = []
   let currentTextContent = ''
@@ -134,6 +138,7 @@ export async function* runAgentLoop(
   while (true) {
     const streamOptions: StreamAgentChatOptions = {
       chatId,
+      model,
     }
 
     if (isFirstRequest) {

@@ -14,13 +14,16 @@ export interface ToolDefinition {
 }
 
 export interface AgentStreamEvent {
-  type: 'content_delta' | 'tool_use' | 'tool_use_complete' | 'done' | 'error'
+  type: 'content_delta' | 'tool_use_start' | 'tool_use' | 'tool_use_complete' | 'done' | 'error'
   content?: string
+  id?: string
+  name?: ToolName
   toolUse?: ToolUse
   error?: string
   usage?: {
     inputTokens: number
     outputTokens: number
+    costCents?: number
   }
 }
 

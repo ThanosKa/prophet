@@ -48,6 +48,7 @@ export async function POST(req: Request) {
     }
 
     const { chatId, userMessage, toolResults, previousContent } = validation.data
+    const model = (validation.data.model ?? AGENT_MODEL) as ModelName
 
     const [chat, user] = await Promise.all([
       db.query.chats.findFirst({
@@ -114,7 +115,10 @@ export async function POST(req: Request) {
       )
     }
 
-    logger.debug({ userId, chatId, messageCount: anthropicMessages.length, hasToolResults: !!toolResults }, 'Starting agent stream')
+    logger.debug(
+      { userId, chatId, model, messageCount: anthropicMessages.length, hasToolResults: !!toolResults },
+      'Starting agent stream'
+    )
 
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
@@ -126,7 +130,7 @@ export async function POST(req: Request) {
 
         try {
           const anthropicStream = await anthropic.messages.stream({
-            model: AGENT_MODEL,
+            model,
             max_tokens: AGENT_MAX_TOKENS,
             system: AGENT_SYSTEM_PROMPT,
             tools: AGENT_TOOLS,
@@ -204,7 +208,7 @@ export async function POST(req: Request) {
           const finalMessage = await anthropicStream.finalMessage()
           const stopReason = finalMessage.stop_reason
 
-          const costCents = calculateCostInCents(AGENT_MODEL as ModelName, inputTokens, outputTokens)
+          const costCents = calculateCostInCents(model, inputTokens, outputTokens)
 
           if (userMessage) {
             await db.insert(messages).values({
@@ -224,7 +228,7 @@ export async function POST(req: Request) {
                 chatId,
                 role: 'assistant',
                 content: fullTextResponse,
-                model: AGENT_MODEL,
+                model,
                 inputTokens,
                 outputTokens,
                 costCents,
@@ -243,7 +247,7 @@ export async function POST(req: Request) {
                 inputTokens,
                 outputTokens,
                 costCents,
-                model: AGENT_MODEL,
+                model,
               })
 
               await tx
@@ -268,12 +272,12 @@ export async function POST(req: Request) {
                 inputTokens,
                 outputTokens,
                 costCents,
-                model: AGENT_MODEL,
+                model,
               })
             })
           }
 
-          logger.info({ userId, chatId, costCents, inputTokens, outputTokens, stopReason }, 'Agent stream completed')
+          logger.info({ userId, chatId, model, costCents, inputTokens, outputTokens, stopReason }, 'Agent stream completed')
 
           const doneData = JSON.stringify({
             type: 'done',
