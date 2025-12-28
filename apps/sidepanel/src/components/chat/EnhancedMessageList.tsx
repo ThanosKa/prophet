@@ -1,7 +1,7 @@
 import { Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { TypingIndicator } from "@/components/ui/typing-indicator";
+import { Shimmer } from "@/components/ai-elements/shimmer";
 import {
   Conversation,
   ConversationContent,
@@ -64,7 +64,9 @@ function MessageWithActions({
               {displayContent}
             </p>
           ) : !displayContent ? (
-            <TypingIndicator />
+            <Shimmer duration={1.5} className="text-sm">
+              Planning next moves
+            </Shimmer>
           ) : (
             <MessageResponse>{displayContent}</MessageResponse>
           )}
