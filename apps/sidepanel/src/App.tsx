@@ -5,28 +5,37 @@ import { useChats } from '@/hooks/useChats'
 import { useMessages } from '@/hooks/useMessages'
 import { useAgentChat } from '@/hooks/useAgentChat'
 import { useChatStore } from '@/store/chatStore'
-import { ChatList } from '@/components/chat/ChatList'
-import { MessageList } from '@/components/chat/MessageList'
-import { ChatInput } from '@/components/chat/ChatInput'
+import { useUIStore } from '@/store/uiStore'
+import { AppShell } from '@/components/layout'
+import { WelcomeScreen } from '@/components/chat/WelcomeScreen'
+import { ChatView } from '@/components/chat/ChatView'
 import { SignInButton } from '@/components/auth/SignInButton'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+
+interface ImageData {
+  base64: string
+  mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+}
 
 export default function App() {
   const queryClient = useQueryClient()
-  const { isSignedIn, user, clerkUser } = useAuth()
-  const { chats, isLoading: chatsLoading, createChat, deleteChat } = useChats()
+  const { isSignedIn, user } = useAuth()
+  const { chats, isLoading: chatsLoading, createChatAsync, deleteChat } = useChats()
   const { activeChatId, setActiveChatId, isStreaming } = useChatStore()
+  const { resetContextTokens, theme } = useUIStore()
   const { messages } = useMessages(activeChatId)
   const { sendMessage, currentToolCall, streamingContent } = useAgentChat()
 
   useEffect(() => {
+    document.documentElement.classList.remove('light', 'dark')
+    document.documentElement.classList.add(theme)
+  }, [theme])
+
+  useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('[App] Sidepanel visible, refreshing auth state')
         queryClient.invalidateQueries({ queryKey: ['user'] })
         if (isSignedIn) {
-          console.log('[App] User signed in, refreshing chats')
           queryClient.invalidateQueries({ queryKey: ['chats'] })
         }
       }
@@ -36,15 +45,17 @@ export default function App() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [isSignedIn, queryClient])
 
-  // Auto-select first chat if none is selected
   useEffect(() => {
-    if (chats.length > 0 && !activeChatId) {
-      setActiveChatId(chats[0].id)
+    if (activeChatId) {
+      resetContextTokens()
     }
-  }, [chats, activeChatId, setActiveChatId])
+  }, [activeChatId, resetContextTokens])
 
-  const handleNewChat = () => {
-    createChat(`New Chat ${new Date().toLocaleTimeString()}`)
+  const handleNewChat = async () => {
+    const chat = await createChatAsync(`New Chat ${new Date().toLocaleTimeString()}`)
+    if (chat) {
+      setActiveChatId(chat.id)
+    }
   }
 
   const handleSelectChat = (chatId: string) => {
@@ -58,102 +69,87 @@ export default function App() {
     }
   }
 
-  const handleSendMessage = async (content: string) => {
-    if (!activeChatId) return
-    await sendMessage(activeChatId, content)
+  const handleSendMessage = async (content: string, image?: ImageData) => {
+    if (!activeChatId) {
+      const chat = await createChatAsync(content.slice(0, 50) || 'Image')
+      if (chat) {
+        setActiveChatId(chat.id)
+        await sendMessage(chat.id, content, image)
+      }
+    } else {
+      await sendMessage(activeChatId, content, image)
+    }
   }
 
-  // Show sign-in if not authenticated
   if (!isSignedIn) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center gap-6 p-6 bg-background">
         <div className="flex flex-col items-center gap-2">
-          <h1 className="text-3xl font-bold text-foreground">Prophet</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Prophet</h1>
           <p className="text-sm text-muted-foreground text-center max-w-xs">
-            Your AI-powered assistant right in your browser
+            Your AI-powered browser assistant
           </p>
         </div>
 
         <div className="w-full max-w-xs space-y-4">
           <SignInButton />
-
-          <div className="pt-4 border-t border-border">
-            <p className="text-xs text-muted-foreground text-center">
-              Secure authentication powered by Clerk
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            Secure authentication powered by Clerk
+          </p>
         </div>
       </div>
     )
   }
 
-  // Show loading state
   if (chatsLoading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="mb-2">Loading chats...</div>
-          <div className="text-sm text-muted-foreground">{user?.tier} tier</div>
+      <div className="h-screen w-screen flex flex-col bg-background">
+        <div className="h-12 border-b flex items-center justify-between px-3">
+          <Skeleton className="h-8 w-8" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-6 w-6 rounded-full" />
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-2">
+            <Skeleton className="h-8 w-32 mx-auto" />
+            <Skeleton className="h-4 w-24 mx-auto" />
+          </div>
         </div>
       </div>
     )
   }
 
-  // Show main chat interface
-  return (
-    <div className="flex h-screen w-screen bg-background">
-      {/* Sidebar */}
-      <ChatList
-        chats={chats}
-        activeId={activeChatId}
-        onSelectChat={handleSelectChat}
-        onDeleteChat={handleDeleteChat}
-        onNewChat={handleNewChat}
-      />
+  const activeChat = chats.find((c) => c.id === activeChatId)
 
-      {/* Main chat area */}
-      <div className="flex-1 flex flex-col">
-        {activeChatId ? (
-          <>
-            <MessageList
-              messages={messages}
-              isLoading={isStreaming}
-              currentToolCall={currentToolCall}
-              streamingContent={streamingContent}
-            />
-            <ChatInput
-              onSend={handleSendMessage}
-              disabled={isStreaming}
-              placeholder={
-                user?.creditsRemaining === 0
-                  ? 'Upgrade to continue chatting'
-                  : 'Type your message...'
-              }
-            />
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center p-6">
-            <Card className="w-full max-w-sm">
-              <CardHeader>
-                <CardTitle>Welcome back, {clerkUser?.firstName || 'User'}</CardTitle>
-                <CardDescription>Select a chat to continue or create a new one</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2 rounded-lg bg-muted p-4">
-                  <h4 className="font-semibold text-sm text-muted-foreground">Your Plan</h4>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm capitalize">{user?.tier || 'Free'} Tier</span>
-                    <span className="font-medium text-sm">{user?.creditsRemaining || 0} credits</span>
-                  </div>
-                </div>
-                <Button onClick={handleNewChat} className="w-full">
-                  Start New Chat
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
-    </div>
+  return (
+    <AppShell
+      chatTitle={activeChat?.title}
+      chats={chats}
+      activeChatId={activeChatId}
+      onSelectChat={handleSelectChat}
+      onDeleteChat={handleDeleteChat}
+      onNewChat={handleNewChat}
+    >
+      {activeChatId ? (
+        <ChatView
+          messages={messages}
+          isStreaming={isStreaming}
+          streamingContent={streamingContent}
+          currentToolCall={currentToolCall}
+          onSend={handleSendMessage}
+          disabled={isStreaming}
+          inputPlaceholder={
+            user?.creditsRemaining === 0
+              ? 'Upgrade to continue chatting'
+              : 'Ask anything...'
+          }
+        />
+      ) : (
+        <WelcomeScreen
+          onSend={handleSendMessage}
+          disabled={isStreaming}
+        />
+      )}
+    </AppShell>
   )
 }

@@ -8,6 +8,7 @@ import type {
   ContentBlock,
   ToolCall,
   ScreenshotResult,
+  ImageData,
 } from "@prophet/shared";
 
 export interface AgentLoopEvent {
@@ -32,6 +33,7 @@ interface StreamAgentChatOptions {
   userMessage?: string;
   toolResults?: ToolResult[];
   previousContent?: ContentBlock[];
+  image?: ImageData;
 }
 
 async function* streamAgentChat(
@@ -67,6 +69,10 @@ async function* streamAgentChat(
 
   if (options.previousContent) {
     body.previousContent = options.previousContent;
+  }
+
+  if (options.image) {
+    body.image = options.image;
   }
 
   const response = await fetch(url, {
@@ -134,7 +140,8 @@ export async function* runAgentLoop(
   baseUrl: string,
   chatId: string,
   userMessage: string,
-  model: AgentModel = DEFAULT_AGENT_MODEL
+  model: AgentModel = DEFAULT_AGENT_MODEL,
+  image?: ImageData
 ): AsyncGenerator<AgentLoopEvent> {
   let previousContent: ContentBlock[] = [];
   let currentTextContent = "";
@@ -149,6 +156,9 @@ export async function* runAgentLoop(
 
     if (isFirstRequest) {
       streamOptions.userMessage = userMessage;
+      if (image) {
+        streamOptions.image = image;
+      }
       isFirstRequest = false;
     } else {
       streamOptions.previousContent = previousContent;

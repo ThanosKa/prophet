@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef } from 'react'
 import { useChatStore } from '@/store/chatStore'
+import { useUIStore } from '@/store/uiStore'
 import { runAgentLoop } from '@/lib/agent'
 import { config } from '@/lib/config'
-import type { Message, ToolCall } from '@prophet/shared'
+import type { Message, ToolCall, ImageData } from '@prophet/shared'
 
 export interface AgentMessage extends Message {
   toolCalls?: ToolCall[]
@@ -11,13 +12,14 @@ export interface AgentMessage extends Message {
 
 export function useAgentChat() {
   const { addMessage, setStreaming } = useChatStore()
+  const { selectedModel, addContextTokens } = useUIStore()
   const [error, setError] = useState<string | null>(null)
   const [currentToolCall, setCurrentToolCall] = useState<ToolCall | null>(null)
   const [streamingContent, setStreamingContent] = useState<string>('')
   const abortRef = useRef<boolean>(false)
 
   const sendMessage = useCallback(
-    async (chatId: string, content: string) => {
+    async (chatId: string, content: string, image?: ImageData) => {
       try {
         setError(null)
         setStreaming(true)
@@ -29,7 +31,7 @@ export function useAgentChat() {
           id: crypto.randomUUID(),
           chatId,
           role: 'user',
-          content,
+          content: image ? `${content}\n[Image attached]` : content,
           createdAt: new Date(),
         }
         addMessage(chatId, userMessage)
@@ -37,7 +39,7 @@ export function useAgentChat() {
         let fullContent = ''
         const toolCalls: ToolCall[] = []
 
-        for await (const event of runAgentLoop(config.apiUrl, chatId, content)) {
+        for await (const event of runAgentLoop(config.apiUrl, chatId, content, selectedModel, image)) {
           if (abortRef.current) break
 
           switch (event.type) {
@@ -74,6 +76,10 @@ export function useAgentChat() {
               }
               addMessage(chatId, assistantMessage)
               setStreamingContent('')
+
+              if (event.usage) {
+                addContextTokens(event.usage.inputTokens + event.usage.outputTokens)
+              }
               break
             }
 
@@ -89,7 +95,7 @@ export function useAgentChat() {
         setCurrentToolCall(null)
       }
     },
-    [addMessage, setStreaming]
+    [addMessage, setStreaming, selectedModel, addContextTokens]
   )
 
   const abort = useCallback(() => {

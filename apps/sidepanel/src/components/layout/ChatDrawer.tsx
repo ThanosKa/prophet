@@ -1,0 +1,130 @@
+import { Plus, Trash2 } from 'lucide-react'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { useUIStore } from '@/store/uiStore'
+import { cn } from '@/lib/utils'
+import type { Chat } from '@prophet/shared'
+
+interface ChatDrawerProps {
+  chats: Chat[]
+  activeId?: string | null
+  onSelectChat: (chatId: string) => void
+  onDeleteChat: (chatId: string) => void
+  onNewChat: () => void
+}
+
+export function ChatDrawer({
+  chats,
+  activeId,
+  onSelectChat,
+  onDeleteChat,
+  onNewChat,
+}: ChatDrawerProps) {
+  const { drawerOpen, setDrawerOpen } = useUIStore()
+
+  const handleSelectChat = (chatId: string) => {
+    onSelectChat(chatId)
+    setDrawerOpen(false)
+  }
+
+  const handleNewChat = () => {
+    onNewChat()
+    setDrawerOpen(false)
+  }
+
+  const groupChatsByDate = (chats: Chat[]) => {
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    const groups: { label: string; chats: Chat[] }[] = [
+      { label: 'Today', chats: [] },
+      { label: 'Yesterday', chats: [] },
+      { label: 'Previous', chats: [] },
+    ]
+
+    chats.forEach((chat) => {
+      const chatDate = new Date(chat.updatedAt)
+      if (chatDate.toDateString() === today.toDateString()) {
+        groups[0].chats.push(chat)
+      } else if (chatDate.toDateString() === yesterday.toDateString()) {
+        groups[1].chats.push(chat)
+      } else {
+        groups[2].chats.push(chat)
+      }
+    })
+
+    return groups.filter((g) => g.chats.length > 0)
+  }
+
+  const groupedChats = groupChatsByDate(chats)
+
+  return (
+    <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+      <SheetContent side="left" className="w-72 p-0">
+        <SheetHeader className="p-4 pb-2">
+          <SheetTitle className="text-lg font-semibold">Prophet</SheetTitle>
+        </SheetHeader>
+
+        <div className="px-4 pb-4">
+          <Button onClick={handleNewChat} className="w-full" size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            New Chat
+          </Button>
+        </div>
+
+        <Separator />
+
+        <ScrollArea className="h-[calc(100vh-140px)]">
+          <div className="p-2 space-y-4">
+            {chats.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-8">
+                No chats yet
+              </p>
+            ) : (
+              groupedChats.map((group) => (
+                <div key={group.label}>
+                  <p className="text-xs font-medium text-muted-foreground px-2 mb-2">
+                    {group.label}
+                  </p>
+                  <div className="space-y-1">
+                    {group.chats.map((chat) => (
+                      <div
+                        key={chat.id}
+                        className={cn(
+                          'group relative flex items-center gap-2 px-2 py-2 rounded-md hover:bg-accent cursor-pointer transition-colors',
+                          activeId === chat.id && 'bg-accent'
+                        )}
+                        onClick={() => handleSelectChat(chat.id)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm truncate">{chat.title}</p>
+                        </div>
+                        <button
+                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive/20 rounded transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onDeleteChat(chat.id)
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </ScrollArea>
+      </SheetContent>
+    </Sheet>
+  )
+}

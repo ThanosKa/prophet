@@ -49,12 +49,18 @@ export const agentModelSchema = z.enum([
   CLAUDE_MODELS.OPUS,
 ]);
 
+export const imageDataSchema = z.object({
+  base64: z.string().min(1),
+  mediaType: z.enum(["image/jpeg", "image/png", "image/gif", "image/webp"]),
+});
+
 export const agentChatRequestSchema = z.object({
   chatId: z.string().uuid("Invalid chat ID"),
   model: agentModelSchema.default(DEFAULT_AGENT_MODEL),
   userMessage: z.string().min(1).max(50000).optional(),
   toolResults: z.array(toolResultSchema).optional(),
   previousContent: z.array(contentBlockSchema).optional(),
+  image: imageDataSchema.optional(),
 });
 
 export const agentInitialMessageSchema = z.object({
@@ -120,3 +126,4 @@ export type NavigateInput = z.infer<typeof navigateInputSchema>;
 export type ScrollPageInput = z.infer<typeof scrollPageInputSchema>;
 export type SearchSnapshotInput = z.infer<typeof searchSnapshotInputSchema>;
 export type PressKeyInput = z.infer<typeof pressKeyInputSchema>;
+export type ImageData = z.infer<typeof imageDataSchema>;

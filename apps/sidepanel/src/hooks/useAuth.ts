@@ -9,6 +9,7 @@ interface ClerkUser {
   emailAddresses?: Array<{ emailAddress: string }>
   firstName: string | null
   lastName: string | null
+  imageUrl?: string
 }
 
 interface UseAuthReturn {

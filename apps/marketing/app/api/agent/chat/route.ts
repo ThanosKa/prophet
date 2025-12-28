@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { chatId, userMessage, toolResults, previousContent } =
+    const { chatId, userMessage, toolResults, previousContent, image } =
       validation.data;
     const model = (validation.data.model ?? DEFAULT_AGENT_MODEL) as ModelName;
 
@@ -122,10 +122,30 @@ export async function POST(req: Request) {
     }));
 
     if (userMessage) {
-      anthropicMessages.push({
-        role: "user",
-        content: userMessage,
-      });
+      if (image) {
+        anthropicMessages.push({
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: image.mediaType,
+                data: image.base64,
+              },
+            },
+            {
+              type: "text",
+              text: userMessage,
+            },
+          ],
+        });
+      } else {
+        anthropicMessages.push({
+          role: "user",
+          content: userMessage,
+        });
+      }
     } else if (toolResults && previousContent) {
       anthropicMessages.push({
         role: "assistant",

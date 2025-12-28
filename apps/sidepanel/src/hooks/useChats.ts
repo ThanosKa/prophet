@@ -39,11 +39,17 @@ export function useChats() {
     },
   })
 
+  const createChatAsync = async (title: string) => {
+    const response = await createMutation.mutateAsync(title)
+    return response.data
+  }
+
   return {
     chats,
     isLoading,
     error,
     createChat: createMutation.mutate,
+    createChatAsync,
     isCreating: createMutation.isPending,
     deleteChat: deleteMutation.mutate,
     isDeleting: deleteMutation.isPending,
