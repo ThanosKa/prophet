@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server'
 const isPublicRoute = createRouteMatcher([
   '/',
   '/api/webhooks/clerk(.*)', // Clerk webhooks are public but verified via signature
+  '/api/agent/chat/dev', // Dev-only endpoint (protected by NODE_ENV check)
 ])
 
 export default clerkMiddleware(async (auth, req) => {
