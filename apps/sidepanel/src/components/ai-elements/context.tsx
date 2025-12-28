@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface ContextProps {
@@ -27,8 +28,6 @@ interface ContextValue {
   modelId: string;
   usage: ContextProps["usage"];
   usedTokens: number;
-  openPopover: () => void;
-  closePopover: () => void;
 }
 
 const ContextContext = React.createContext<ContextValue | null>(null);
@@ -48,31 +47,6 @@ export function Context({
   usedTokens,
   children,
 }: ContextProps) {
-  const [open, setOpen] = React.useState(false);
-  const closeTimerRef = React.useRef<number | null>(null);
-
-  const openPopover = React.useCallback(() => {
-    if (closeTimerRef.current) {
-      window.clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-    setOpen(true);
-  }, []);
-
-  const closePopover = React.useCallback(() => {
-    if (closeTimerRef.current) {
-      window.clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-    closeTimerRef.current = window.setTimeout(() => setOpen(false), 80);
-  }, []);
-
-  React.useEffect(() => {
-    return () => {
-      if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
-    };
-  }, []);
-
   return (
     <ContextContext.Provider
       value={{
@@ -80,19 +54,17 @@ export function Context({
         modelId,
         usage,
         usedTokens,
-        openPopover,
-        closePopover,
       }}
     >
-      <Popover open={open} onOpenChange={setOpen}>
-        {children}
-      </Popover>
+      <TooltipProvider delayDuration={150} skipDelayDuration={0}>
+        <Tooltip disableHoverableContent={false}>{children}</Tooltip>
+      </TooltipProvider>
     </ContextContext.Provider>
   );
 }
 
 export function ContextTrigger() {
-  const { usedTokens, maxTokens, openPopover, closePopover } = useContext();
+  const { usedTokens, maxTokens } = useContext();
   const percentage = Math.min((usedTokens / maxTokens) * 100, 100);
 
   const radius = 10;
@@ -100,15 +72,8 @@ export function ContextTrigger() {
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <PopoverTrigger asChild>
-      <button
-        className="inline-flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-        onMouseEnter={openPopover}
-        onMouseLeave={closePopover}
-        onFocus={openPopover}
-        onBlur={closePopover}
-        onPointerDown={(e) => e.preventDefault()}
-      >
+    <TooltipTrigger asChild>
+      <button className="inline-flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
         <svg width="14" height="14" viewBox="0 0 24 24" className="relative">
           {/* Background circle */}
           <circle
@@ -137,22 +102,24 @@ export function ContextTrigger() {
         </svg>
         <span className="sr-only">View token usage</span>
       </button>
-    </PopoverTrigger>
+    </TooltipTrigger>
   );
 }
 
 export function ContextContent({ children }: { children: React.ReactNode }) {
-  const { openPopover, closePopover } = useContext();
   return (
-    <PopoverContent
+    <TooltipContent
       side="top"
       align="end"
-      className="w-64 p-0"
-      onMouseEnter={openPopover}
-      onMouseLeave={closePopover}
+      sideOffset={8}
+      className={cn(
+        "w-64 p-0",
+        "rounded-md border bg-popover text-popover-foreground shadow-md",
+        "overflow-hidden"
+      )}
     >
       {children}
-    </PopoverContent>
+    </TooltipContent>
   );
 }
 
