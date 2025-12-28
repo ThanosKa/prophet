@@ -1,28 +1,28 @@
-import { Copy, Check } from 'lucide-react'
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { TypingIndicator } from '@/components/ui/typing-indicator'
+import { Copy, Check } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { TypingIndicator } from "@/components/ui/typing-indicator";
 import {
   Conversation,
   ConversationContent,
-} from '@/components/ai-elements/conversation'
+} from "@/components/ai-elements/conversation";
 import {
   Message,
   MessageContent,
   MessageResponse,
-} from '@/components/ai-elements/message'
-import { ToolCallCollapsible } from './ToolCallCollapsible'
-import type { Message as MessageType, ToolCall } from '@prophet/shared'
+} from "@/components/ai-elements/message";
+import { ToolCallCollapsible } from "./ToolCallCollapsible";
+import type { Message as MessageType, ToolCall } from "@prophet/shared";
 
 interface AgentMessage extends MessageType {
-  toolCalls?: ToolCall[]
+  toolCalls?: ToolCall[];
 }
 
 interface EnhancedMessageListProps {
-  messages: AgentMessage[]
-  isLoading?: boolean
-  isStreaming?: boolean
-  currentToolCall?: ToolCall | null
+  messages: AgentMessage[];
+  isLoading?: boolean;
+  isStreaming?: boolean;
+  currentToolCall?: ToolCall | null;
 }
 
 function MessageWithActions({
@@ -30,19 +30,19 @@ function MessageWithActions({
   isStreaming,
   currentToolCall,
 }: {
-  message: AgentMessage
-  isStreaming?: boolean
-  currentToolCall?: ToolCall | null
+  message: AgentMessage;
+  isStreaming?: boolean;
+  currentToolCall?: ToolCall | null;
 }) {
-  const [copied, setCopied] = useState(false)
-  const isAssistant = message.role === 'assistant'
-  const displayContent = message.content
+  const [copied, setCopied] = useState(false);
+  const isAssistant = message.role === "assistant";
+  const displayContent = message.content;
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(displayContent)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
+    await navigator.clipboard.writeText(displayContent);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <Message from={message.role} key={message.id}>
@@ -59,9 +59,11 @@ function MessageWithActions({
 
       <div className="flex items-start justify-between gap-2 group">
         <MessageContent>
-          {message.role === 'user' ? (
-            <p className="whitespace-pre-wrap break-words text-sm">{displayContent}</p>
-          ) : isStreaming && !displayContent ? (
+          {message.role === "user" ? (
+            <p className="whitespace-pre-wrap break-words text-sm">
+              {displayContent}
+            </p>
+          ) : !displayContent ? (
             <TypingIndicator />
           ) : (
             <MessageResponse>{displayContent}</MessageResponse>
@@ -83,9 +85,8 @@ function MessageWithActions({
           </Button>
         )}
       </div>
-
     </Message>
-  )
+  );
 }
 
 export function EnhancedMessageList({
@@ -99,15 +100,15 @@ export function EnhancedMessageList({
       <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
         Start a conversation
       </div>
-    )
+    );
   }
 
   return (
     <Conversation>
       <ConversationContent>
         {messages.map((message, index) => {
-          const isLast = index === messages.length - 1
-          const isLastAssistant = isLast && message.role === 'assistant'
+          const isLast = index === messages.length - 1;
+          const isLastAssistant = isLast && message.role === "assistant";
 
           return (
             <MessageWithActions
@@ -116,9 +117,9 @@ export function EnhancedMessageList({
               isStreaming={isLastAssistant && isStreaming}
               currentToolCall={isLastAssistant ? currentToolCall : undefined}
             />
-          )
+          );
         })}
       </ConversationContent>
     </Conversation>
-  )
+  );
 }
