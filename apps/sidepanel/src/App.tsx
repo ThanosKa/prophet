@@ -21,9 +21,9 @@ export default function App() {
   const queryClient = useQueryClient()
   const { isSignedIn, user } = useAuth()
   const { chats, isLoading: chatsLoading, createChatAsync, deleteChat } = useChats()
-  const { activeChatId, setActiveChatId, isStreaming } = useChatStore()
+  const { activeChatId, setActiveChatId, isStreaming, messages: messagesByChat } = useChatStore()
   const { resetContextTokens, theme } = useUIStore()
-  const { messages } = useMessages(activeChatId)
+  const { isLoading: messagesLoading } = useMessages(activeChatId)
   const { sendMessage, currentToolCall, streamingContent } = useAgentChat()
 
   useEffect(() => {
@@ -120,6 +120,7 @@ export default function App() {
   }
 
   const activeChat = chats.find((c) => c.id === activeChatId)
+  const activeMessages = activeChatId ? (messagesByChat[activeChatId] ?? []) : []
 
   return (
     <AppShell
@@ -132,7 +133,8 @@ export default function App() {
     >
       {activeChatId ? (
         <ChatView
-          messages={messages}
+          messages={activeMessages}
+          isLoading={messagesLoading}
           isStreaming={isStreaming}
           streamingContent={streamingContent}
           currentToolCall={currentToolCall}

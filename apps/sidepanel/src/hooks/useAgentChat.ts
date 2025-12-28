@@ -11,8 +11,8 @@ export interface AgentMessage extends Message {
 }
 
 export function useAgentChat() {
-  const { addMessage, setStreaming } = useChatStore()
-  const { selectedModel, addContextTokens } = useUIStore()
+  const { addMessage, updateMessage, setStreaming } = useChatStore()
+  const { selectedModel, addContextUsage } = useUIStore()
   const [error, setError] = useState<string | null>(null)
   const [currentToolCall, setCurrentToolCall] = useState<ToolCall | null>(null)
   const [streamingContent, setStreamingContent] = useState<string>('')
@@ -36,6 +36,16 @@ export function useAgentChat() {
         }
         addMessage(chatId, userMessage)
 
+        const assistantMessageId = crypto.randomUUID()
+        const assistantPlaceholder: AgentMessage = {
+          id: assistantMessageId,
+          chatId,
+          role: 'assistant',
+          content: '',
+          createdAt: new Date(),
+        }
+        addMessage(chatId, assistantPlaceholder)
+
         let fullContent = ''
         const toolCalls: ToolCall[] = []
 
@@ -47,6 +57,7 @@ export function useAgentChat() {
               if (event.content) {
                 fullContent += event.content
                 setStreamingContent(fullContent)
+                updateMessage(chatId, assistantMessageId, { content: fullContent })
               }
               break
 
@@ -64,27 +75,28 @@ export function useAgentChat() {
               break
 
             case 'done': {
-              const assistantMessage: AgentMessage = {
-                id: crypto.randomUUID(),
-                chatId,
-                role: 'assistant',
+              updateMessage(chatId, assistantMessageId, {
                 content: fullContent,
                 toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
                 inputTokens: event.usage?.inputTokens,
                 outputTokens: event.usage?.outputTokens,
-                createdAt: new Date(),
-              }
-              addMessage(chatId, assistantMessage)
+              })
               setStreamingContent('')
 
               if (event.usage) {
-                addContextTokens(event.usage.inputTokens + event.usage.outputTokens)
+                addContextUsage({
+                  inputTokens: event.usage.inputTokens,
+                  outputTokens: event.usage.outputTokens,
+                })
               }
               break
             }
 
             case 'error':
               setError(event.error || 'Agent execution failed')
+              updateMessage(chatId, assistantMessageId, {
+                content: event.error || 'Agent execution failed',
+              })
               break
           }
         }
@@ -95,7 +107,7 @@ export function useAgentChat() {
         setCurrentToolCall(null)
       }
     },
-    [addMessage, setStreaming, selectedModel, addContextTokens]
+    [addMessage, updateMessage, setStreaming, selectedModel, addContextUsage]
   )
 
   const abort = useCallback(() => {

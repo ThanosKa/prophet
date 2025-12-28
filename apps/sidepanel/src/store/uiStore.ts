@@ -10,6 +10,10 @@ type Theme = 'light' | 'dark'
 interface UIState {
   drawerOpen: boolean
   contextTokens: number
+  contextInputTokens: number
+  contextOutputTokens: number
+  contextReasoningTokens: number
+  contextCachedInputTokens: number
   maxContextTokens: number
   selectedModel: AgentModel
   theme: Theme
@@ -18,6 +22,7 @@ interface UIState {
   toggleDrawer: () => void
   setSelectedModel: (model: AgentModel) => void
   addContextTokens: (tokens: number) => void
+  addContextUsage: (usage: { inputTokens: number; outputTokens: number; reasoningTokens?: number; cachedInputTokens?: number }) => void
   resetContextTokens: () => void
   getContextPercentage: () => number
   setTheme: (theme: Theme) => void
@@ -29,6 +34,10 @@ export const useUIStore = create<UIState>()(
     (set, get) => ({
       drawerOpen: false,
       contextTokens: 0,
+      contextInputTokens: 0,
+      contextOutputTokens: 0,
+      contextReasoningTokens: 0,
+      contextCachedInputTokens: 0,
       maxContextTokens: MAX_CONTEXT_TOKENS,
       selectedModel: DEFAULT_AGENT_MODEL,
       theme: 'dark' as Theme,
@@ -44,7 +53,31 @@ export const useUIStore = create<UIState>()(
           contextTokens: Math.min(state.contextTokens + tokens, MAX_CONTEXT_TOKENS),
         })),
 
-      resetContextTokens: () => set({ contextTokens: 0 }),
+      addContextUsage: (usage) =>
+        set((state) => {
+          const input = usage.inputTokens ?? 0
+          const output = usage.outputTokens ?? 0
+          const reasoning = usage.reasoningTokens ?? 0
+          const cached = usage.cachedInputTokens ?? 0
+          const total = input + output + reasoning + cached
+
+          return {
+            contextTokens: Math.min(state.contextTokens + total, MAX_CONTEXT_TOKENS),
+            contextInputTokens: state.contextInputTokens + input,
+            contextOutputTokens: state.contextOutputTokens + output,
+            contextReasoningTokens: state.contextReasoningTokens + reasoning,
+            contextCachedInputTokens: state.contextCachedInputTokens + cached,
+          }
+        }),
+
+      resetContextTokens: () =>
+        set({
+          contextTokens: 0,
+          contextInputTokens: 0,
+          contextOutputTokens: 0,
+          contextReasoningTokens: 0,
+          contextCachedInputTokens: 0,
+        }),
 
       getContextPercentage: () => {
         const state = get()

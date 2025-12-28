@@ -4,17 +4,21 @@ import { useUIStore } from '@/store/uiStore'
 export function useContextUsage() {
   const {
     contextTokens,
+    contextInputTokens,
+    contextOutputTokens,
+    contextReasoningTokens,
+    contextCachedInputTokens,
     maxContextTokens,
-    addContextTokens,
+    addContextUsage,
     resetContextTokens,
     getContextPercentage,
   } = useUIStore()
 
   const trackUsage = useCallback(
     (inputTokens: number, outputTokens: number) => {
-      addContextTokens(inputTokens + outputTokens)
+      addContextUsage({ inputTokens, outputTokens })
     },
-    [addContextTokens]
+    [addContextUsage]
   )
 
   const resetUsage = useCallback(() => {
@@ -23,6 +27,10 @@ export function useContextUsage() {
 
   return {
     contextTokens,
+    contextInputTokens,
+    contextOutputTokens,
+    contextReasoningTokens,
+    contextCachedInputTokens,
     maxContextTokens,
     percentage: getContextPercentage(),
     trackUsage,
