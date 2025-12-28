@@ -15,7 +15,6 @@ interface ChatViewProps {
   messages: AgentMessage[]
   isLoading?: boolean
   isStreaming?: boolean
-  streamingContent?: string
   currentToolCall?: ToolCall | null
   onSend: (message: string, image?: ImageData) => void
   disabled?: boolean
@@ -26,19 +25,17 @@ export function ChatView({
   messages,
   isLoading,
   isStreaming,
-  streamingContent,
   currentToolCall,
   onSend,
   disabled,
   inputPlaceholder,
 }: ChatViewProps) {
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       <EnhancedMessageList
         messages={messages}
         isLoading={isLoading}
         isStreaming={isStreaming}
-        streamingContent={streamingContent}
         currentToolCall={currentToolCall}
       />
       <EnhancedChatInput

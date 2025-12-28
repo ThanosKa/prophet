@@ -4,7 +4,6 @@ import * as React from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { cn } from "@/lib/utils"
-import { Bot, User } from "lucide-react"
 
 interface MessageProps {
   from: "user" | "assistant"
@@ -19,18 +18,6 @@ export function Message({ from, children }: MessageProps) {
         from === "assistant" && "bg-muted/30"
       )}
     >
-      <div className="flex-shrink-0">
-        <div className={cn(
-          "h-7 w-7 rounded-full flex items-center justify-center",
-          from === "assistant" ? "bg-primary" : "bg-muted"
-        )}>
-          {from === "assistant" ? (
-            <Bot className="h-4 w-4 text-primary-foreground" />
-          ) : (
-            <User className="h-4 w-4 text-muted-foreground" />
-          )}
-        </div>
-      </div>
       <div className="flex-1 min-w-0 space-y-2">
         {children}
       </div>

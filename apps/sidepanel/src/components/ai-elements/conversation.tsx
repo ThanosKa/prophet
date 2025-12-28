@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 
 export function Conversation({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex-1 flex flex-col relative h-full">
+    <div className="flex-1 min-h-0 flex flex-col relative h-full">
       {children}
     </div>
   )
@@ -46,7 +46,7 @@ export function ConversationContent({ children }: { children: React.ReactNode })
 
   return (
     <>
-      <ScrollArea ref={scrollAreaRef} className="flex-1">
+      <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0">
         <div className="divide-y divide-border/50">
           {children}
         </div>

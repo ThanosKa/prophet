@@ -24,7 +24,7 @@ export default function App() {
   const { activeChatId, setActiveChatId, isStreaming, messages: messagesByChat } = useChatStore()
   const { resetContextTokens, theme } = useUIStore()
   const { isLoading: messagesLoading } = useMessages(activeChatId)
-  const { sendMessage, currentToolCall, streamingContent } = useAgentChat()
+  const { sendMessage, abort, currentToolCall } = useAgentChat()
 
   useEffect(() => {
     document.documentElement.classList.remove('light', 'dark')
@@ -59,6 +59,9 @@ export default function App() {
   }
 
   const handleSelectChat = (chatId: string) => {
+    if (isStreaming && activeChatId !== chatId) {
+      abort()
+    }
     setActiveChatId(chatId)
   }
 
@@ -136,7 +139,6 @@ export default function App() {
           messages={activeMessages}
           isLoading={messagesLoading}
           isStreaming={isStreaming}
-          streamingContent={streamingContent}
           currentToolCall={currentToolCall}
           onSend={handleSendMessage}
           disabled={isStreaming}

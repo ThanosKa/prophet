@@ -22,24 +22,21 @@ interface EnhancedMessageListProps {
   messages: AgentMessage[]
   isLoading?: boolean
   isStreaming?: boolean
-  streamingContent?: string
   currentToolCall?: ToolCall | null
 }
 
 function MessageWithActions({
   message,
   isStreaming,
-  streamingContent,
   currentToolCall,
 }: {
   message: AgentMessage
   isStreaming?: boolean
-  streamingContent?: string
   currentToolCall?: ToolCall | null
 }) {
   const [copied, setCopied] = useState(false)
   const isAssistant = message.role === 'assistant'
-  const displayContent = streamingContent || message.content
+  const displayContent = message.content
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(displayContent)
@@ -85,11 +82,6 @@ function MessageWithActions({
         )}
       </div>
 
-      {isAssistant && message.outputTokens && !isStreaming && (
-        <p className="text-xs text-muted-foreground mt-2">
-          {message.outputTokens} tokens
-        </p>
-      )}
     </Message>
   )
 }
@@ -98,7 +90,6 @@ export function EnhancedMessageList({
   messages,
   isLoading,
   isStreaming,
-  streamingContent,
   currentToolCall,
 }: EnhancedMessageListProps) {
   if (messages.length === 0 && !isLoading) {
@@ -121,7 +112,6 @@ export function EnhancedMessageList({
               key={message.id}
               message={message}
               isStreaming={isLastAssistant && isStreaming}
-              streamingContent={isLastAssistant ? streamingContent : undefined}
               currentToolCall={isLastAssistant ? currentToolCall : undefined}
             />
           )
