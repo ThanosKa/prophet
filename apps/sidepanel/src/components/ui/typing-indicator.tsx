@@ -7,19 +7,11 @@ interface TypingIndicatorProps {
 export function TypingIndicator({ className }: TypingIndicatorProps) {
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <span 
-        className="text-sm text-muted-foreground"
-        style={{
-          background: 'linear-gradient(90deg, rgba(var(--muted-foreground-rgb, 115, 115, 115), 0.6) 0%, rgba(var(--muted-foreground-rgb, 115, 115, 115), 1) 50%, rgba(var(--muted-foreground-rgb, 115, 115, 115), 0.6) 100%)',
-          backgroundSize: '200% 100%',
-          WebkitBackgroundClip: 'text',
-          backgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          animation: 'shimmer 1.5s infinite'
-        }}
-      >
-        Planning next moves...
-      </span>
+      <div className="relative inline-block">
+        <span className="text-sm text-muted-foreground/60 animate-shimmer bg-gradient-to-r from-muted-foreground/60 via-muted-foreground to-muted-foreground/60 bg-clip-text text-transparent">
+          Planning next moves...
+        </span>
+      </div>
     </div>
   )
 }

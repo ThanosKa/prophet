@@ -14,11 +14,18 @@ export function Message({ from, children }: MessageProps) {
   return (
     <div
       className={cn(
-        "flex gap-3 py-4 px-4",
-        from === "assistant" && "bg-muted/30"
+        "flex py-4 px-4",
+        from === "user" ? "justify-end" : "justify-start"
       )}
     >
-      <div className="flex-1 min-w-0 space-y-2">
+      <div
+        className={cn(
+          "max-w-[85%] rounded-lg px-4 py-3 space-y-2",
+          from === "user" 
+            ? "bg-muted/50 ml-auto" 
+            : "bg-muted/30 mr-auto"
+        )}
+      >
         {children}
       </div>
     </div>
