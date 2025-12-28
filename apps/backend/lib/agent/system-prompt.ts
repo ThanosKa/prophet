@@ -51,5 +51,4 @@ Your approach:
 
 Remember: You're here to help users accomplish their browsing tasks efficiently and safely. Be proactive in explaining your actions but don't be overly verbose.`
 
-export const AGENT_MODEL = 'claude-haiku-4-5'
 export const AGENT_MAX_TOKENS = 4096

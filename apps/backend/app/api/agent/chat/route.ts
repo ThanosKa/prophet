@@ -6,8 +6,8 @@ import { eq, sql } from 'drizzle-orm'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { anthropic } from '@/lib/anthropic'
 import { AGENT_TOOLS } from '@/lib/agent/tools'
-import { AGENT_SYSTEM_PROMPT, AGENT_MODEL, AGENT_MAX_TOKENS } from '@/lib/agent/system-prompt'
-import { agentChatRequestSchema } from '@prophet/shared'
+import { AGENT_SYSTEM_PROMPT, AGENT_MAX_TOKENS } from '@/lib/agent/system-prompt'
+import { agentChatRequestSchema, DEFAULT_AGENT_MODEL } from '@prophet/shared'
 import { error } from '@/types'
 import { logger } from '@/lib/logger'
 import { calculateCostInCents, type ModelName } from '@/lib/pricing'
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     }
 
     const { chatId, userMessage, toolResults, previousContent } = validation.data
-    const model = (validation.data.model ?? AGENT_MODEL) as ModelName
+    const model = (validation.data.model ?? DEFAULT_AGENT_MODEL) as ModelName
 
     const [chat, user] = await Promise.all([
       db.query.chats.findFirst({

@@ -218,7 +218,7 @@ describe('SmartLocator', () => {
       // Should dispatch Cmd/Ctrl+A
       const calls = vi.mocked(cdpCommander.sendCommand).mock.calls
       const selectAllCalls = calls.filter(
-        (call) => call[1] === 'Input.dispatchKeyEvent' && call[2]?.key === 'a'
+        (call) => call[1] === 'Input.dispatchKeyEvent' && (call[2] as any)?.key === 'a'
       )
 
       expect(selectAllCalls.length).toBeGreaterThan(0)
@@ -260,7 +260,7 @@ describe('SmartLocator', () => {
       // Should dispatch Backspace instead of insertText
       const calls = vi.mocked(cdpCommander.sendCommand).mock.calls
       const backspaceCalls = calls.filter(
-        (call) => call[1] === 'Input.dispatchKeyEvent' && call[2]?.key === 'Backspace'
+        (call) => call[1] === 'Input.dispatchKeyEvent' && (call[2] as any)?.key === 'Backspace'
       )
 
       expect(backspaceCalls.length).toBeGreaterThan(0)
@@ -284,12 +284,12 @@ describe('SmartLocator', () => {
       const eventCalls = calls.filter(
         (call) =>
           call[1] === 'Runtime.evaluate' &&
-          call[2]?.expression.includes('dispatchEvent')
+          (call[2] as any)?.expression.includes('dispatchEvent')
       )
 
       expect(eventCalls.length).toBeGreaterThan(0)
-      expect(eventCalls[0][2]?.expression).toContain("new Event('input'")
-      expect(eventCalls[0][2]?.expression).toContain("new Event('change'")
+      expect((eventCalls[0][2] as any)?.expression).toContain("new Event('input'")
+      expect((eventCalls[0][2] as any)?.expression).toContain("new Event('change'")
     })
   })
 
@@ -349,10 +349,10 @@ describe('SmartLocator', () => {
       await smartLocator.pressKey(1, 'a', ['ctrl', 'shift'])
 
       const calls = vi.mocked(cdpCommander.sendCommand).mock.calls
-      const keyDownCall = calls.find((call) => call[2]?.type === 'keyDown')
+      const keyDownCall = calls.find((call) => (call[2] as any)?.type === 'keyDown')
 
       expect(keyDownCall).toBeDefined()
-      expect(keyDownCall![2]?.modifiers).toBe(10) // ctrl(2) + shift(8)
+      expect((keyDownCall![2] as any)?.modifiers).toBe(10) // ctrl(2) + shift(8)
     })
 
     it('maps special keys to correct keyCodes', async () => {
@@ -361,9 +361,9 @@ describe('SmartLocator', () => {
       await smartLocator.pressKey(1, 'Enter', [])
 
       const calls = vi.mocked(cdpCommander.sendCommand).mock.calls
-      const keyDownCall = calls.find((call) => call[2]?.type === 'keyDown')
+      const keyDownCall = calls.find((call) => (call[2] as any)?.type === 'keyDown')
 
-      expect(keyDownCall![2]?.code).toBe('Enter')
+      expect((keyDownCall![2] as any)?.code).toBe('Enter')
     })
 
     it('maps single chars to KeyA, Digit0 format', async () => {
@@ -372,9 +372,9 @@ describe('SmartLocator', () => {
       await smartLocator.pressKey(1, 'a', [])
 
       const calls = vi.mocked(cdpCommander.sendCommand).mock.calls
-      const keyDownCall = calls.find((call) => call[2]?.type === 'keyDown')
+      const keyDownCall = calls.find((call) => (call[2] as any)?.type === 'keyDown')
 
-      expect(keyDownCall![2]?.code).toBe('KeyA')
+      expect((keyDownCall![2] as any)?.code).toBe('KeyA')
     })
 
     it('dispatches keyDown, char, keyUp', async () => {
@@ -385,7 +385,7 @@ describe('SmartLocator', () => {
       const calls = vi.mocked(cdpCommander.sendCommand).mock.calls
       const types = calls
         .filter((call) => call[1] === 'Input.dispatchKeyEvent')
-        .map((call) => call[2]?.type)
+        .map((call) => (call[2] as any)?.type)
 
       expect(types).toContain('keyDown')
       expect(types).toContain('char')

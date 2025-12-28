@@ -1,4 +1,5 @@
 import { executeTool } from './tools'
+import { DEFAULT_AGENT_MODEL } from '@prophet/shared'
 import type {
   AgentStreamEvent,
   AgentModel,
@@ -128,7 +129,7 @@ export async function* runAgentLoop(
   baseUrl: string,
   chatId: string,
   userMessage: string,
-  model: AgentModel = 'claude-haiku-4-5'
+  model: AgentModel = DEFAULT_AGENT_MODEL
 ): AsyncGenerator<AgentLoopEvent> {
   let previousContent: ContentBlock[] = []
   let currentTextContent = ''

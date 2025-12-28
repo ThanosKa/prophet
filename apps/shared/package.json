@@ -8,7 +8,8 @@
   "exports": {
     ".": "./index.ts",
     "./types": "./types/index.ts",
-    "./utils": "./utils/index.ts"
+    "./utils": "./utils/index.ts",
+    "./schemas/agent": "./schemas/agent.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

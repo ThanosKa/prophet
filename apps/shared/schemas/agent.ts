@@ -34,15 +34,24 @@ export const toolUseSchema = z.object({
 
 export const contentBlockSchema = z.union([textContentSchema, toolUseSchema])
 
+// Claude 4.5 model constants
+export const CLAUDE_MODELS = {
+  HAIKU: 'claude-haiku-4-5',
+  SONNET: 'claude-sonnet-4-5',
+  OPUS: 'claude-opus-4-5',
+} as const
+
+export const DEFAULT_AGENT_MODEL = CLAUDE_MODELS.HAIKU
+
 export const agentModelSchema = z.enum([
-  'claude-haiku-4-5',
-  'claude-sonnet-4-5',
-  'claude-opus-4-5',
+  CLAUDE_MODELS.HAIKU,
+  CLAUDE_MODELS.SONNET,
+  CLAUDE_MODELS.OPUS,
 ])
 
 export const agentChatRequestSchema = z.object({
   chatId: z.string().uuid('Invalid chat ID'),
-  model: agentModelSchema.optional(),
+  model: agentModelSchema.default(DEFAULT_AGENT_MODEL),
   userMessage: z.string().min(1).max(50000).optional(),
   toolResults: z.array(toolResultSchema).optional(),
   previousContent: z.array(contentBlockSchema).optional(),

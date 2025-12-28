@@ -61,7 +61,7 @@ export function useAgentChat() {
               }
               break
 
-            case 'done':
+            case 'done': {
               const assistantMessage: AgentMessage = {
                 id: crypto.randomUUID(),
                 chatId,
@@ -75,6 +75,7 @@ export function useAgentChat() {
               addMessage(chatId, assistantMessage)
               setStreamingContent('')
               break
+            }
 
             case 'error':
               setError(event.error || 'Agent execution failed')
