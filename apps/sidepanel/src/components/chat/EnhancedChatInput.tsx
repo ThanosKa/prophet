@@ -84,7 +84,7 @@ export function EnhancedChatInput({
   }
 
   return (
-    <div className="p-3 bg-background shrink-0">
+    <div className="p-3 bg-muted shrink-0">
       <PromptInput onSubmit={handleSubmit} disabled={disabled} globalDrop multiple={false}>
         <PromptInputHeader>
           <PromptInputAttachments>

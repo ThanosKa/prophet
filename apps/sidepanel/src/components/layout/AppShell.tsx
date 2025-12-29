@@ -23,7 +23,7 @@ export function AppShell({
   onNewChat,
 }: AppShellProps) {
   return (
-    <div className="flex flex-col h-screen w-screen bg-background">
+    <div className="flex flex-col h-screen w-screen bg-muted">
       <Header title={chatTitle} />
 
       <ChatDrawer

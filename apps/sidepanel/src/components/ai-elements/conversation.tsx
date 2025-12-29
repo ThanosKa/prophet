@@ -10,7 +10,7 @@ export type ConversationProps = React.ComponentProps<typeof StickToBottom>
 
 export const Conversation = ({ className, ...props }: ConversationProps) => (
   <StickToBottom
-    className={cn("relative flex-1 overflow-y-hidden bg-background", className)}
+    className={cn("relative flex-1 overflow-y-hidden bg-muted", className)}
     initial="smooth"
     resize="smooth"
     role="log"
@@ -44,7 +44,7 @@ export const ConversationScrollButton = ({
   return (
     <Button
       className={cn(
-        "absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full shadow-lg bg-background",
+        "absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full shadow-lg bg-muted",
         className
       )}
       onClick={handleScrollToBottom}
