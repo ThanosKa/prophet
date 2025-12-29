@@ -3,7 +3,6 @@ import { DEFAULT_AGENT_MODEL } from "@prophet/shared";
 import type {
   AgentStreamEvent,
   AgentModel,
-  ToolUse,
   ToolResult,
   ContentBlock,
   ToolCall,
@@ -145,7 +144,6 @@ export async function* runAgentLoop(
 ): AsyncGenerator<AgentLoopEvent> {
   let previousContent: ContentBlock[] = [];
   let currentTextContent = "";
-  let pendingToolUse: ToolUse | null = null;
   let isFirstRequest = true;
 
   while (true) {
@@ -184,7 +182,6 @@ export async function* runAgentLoop(
         case "tool_use":
           if (event.toolUse) {
             hasToolUse = true;
-            pendingToolUse = event.toolUse;
 
             if (currentTextContent) {
               assistantContent.push({
@@ -196,6 +193,7 @@ export async function* runAgentLoop(
 
             assistantContent.push(event.toolUse);
 
+            // Emit tool_use_start to show UI is working on it
             yield {
               type: "tool_use_start",
               toolCall: {
@@ -204,19 +202,16 @@ export async function* runAgentLoop(
                 input: event.toolUse.input,
               },
             };
-          }
-          break;
 
-        case "tool_use_complete":
-          if (pendingToolUse) {
+            // Execute the tool immediately via background script
             const toolResult = await executeToolViaBackground(
-              pendingToolUse.name,
-              pendingToolUse.input as Record<string, unknown>
+              event.toolUse.name,
+              event.toolUse.input as Record<string, unknown>
             );
 
             let resultContent: string;
             if (
-              pendingToolUse.name === "take_screenshot" &&
+              event.toolUse.name === "take_screenshot" &&
               toolResult.success
             ) {
               const screenshot = toolResult.data as ScreenshotResult;
@@ -232,26 +227,25 @@ export async function* runAgentLoop(
 
             const result: ToolResult = {
               type: "tool_result",
-              tool_use_id: pendingToolUse.id,
+              tool_use_id: event.toolUse.id,
               content: resultContent,
               is_error: !toolResult.success,
             };
 
             toolResults.push(result);
 
+            // Emit tool_use_complete with result
             yield {
               type: "tool_use_complete",
               toolCall: {
-                id: pendingToolUse.id,
-                name: pendingToolUse.name,
-                input: pendingToolUse.input,
+                id: event.toolUse.id,
+                name: event.toolUse.name,
+                input: event.toolUse.input,
                 result: resultContent,
                 isError: !toolResult.success,
                 durationMs: toolResult.durationMs,
               },
             };
-
-            pendingToolUse = null;
           }
           break;
 
