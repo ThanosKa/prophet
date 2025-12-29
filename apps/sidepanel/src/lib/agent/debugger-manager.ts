@@ -155,6 +155,13 @@ class DebuggerManagerClass {
     const tabIds = Array.from(this.attachedTabs)
     await Promise.all(tabIds.map((tabId) => this.detach(tabId)))
   }
+
+  handleTabRemoved(tabId: number): void {
+    if (this.attachedTabs.has(tabId)) {
+      console.log(`[DebuggerManager] Tab ${tabId} removed externally, cleaning up`)
+      this.cleanup(tabId)
+    }
+  }
 }
 
 export const debuggerManager = new DebuggerManagerClass()

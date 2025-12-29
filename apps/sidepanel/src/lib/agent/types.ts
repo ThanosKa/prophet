@@ -103,3 +103,23 @@ export const SEMANTIC_ROLES = new Set([
   'figure',
   'figcaption',
 ])
+
+export interface ToolCall {
+  id: string
+  name: string
+  input: Record<string, unknown>
+  result?: string
+  isError?: boolean
+  durationMs?: number
+}
+
+export interface AgentLoopEvent {
+  type: 'content_delta' | 'tool_use_start' | 'tool_use_complete' | 'done' | 'error'
+  content?: string
+  toolCall?: ToolCall
+  error?: string
+  usage?: {
+    inputTokens: number
+    outputTokens: number
+  }
+}

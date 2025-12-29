@@ -1,4 +1,4 @@
-import { executeTool } from "./tools";
+import { executeToolViaBackground } from "./background-bridge";
 import { DEFAULT_AGENT_MODEL } from "@prophet/shared";
 import type {
   AgentStreamEvent,
@@ -209,9 +209,9 @@ export async function* runAgentLoop(
 
         case "tool_use_complete":
           if (pendingToolUse) {
-            const toolResult = await executeTool(
+            const toolResult = await executeToolViaBackground(
               pendingToolUse.name,
-              pendingToolUse.input
+              pendingToolUse.input as Record<string, unknown>
             );
 
             let resultContent: string;
