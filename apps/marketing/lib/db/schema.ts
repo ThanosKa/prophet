@@ -78,6 +78,7 @@ export const messages = pgTable(
     inputTokens: integer('input_tokens'),
     outputTokens: integer('output_tokens'),
     costCents: integer('cost_cents'),
+    toolCalls: text('tool_calls'), // Store as JSON string
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

@@ -13,6 +13,34 @@ export interface ToolDefinition {
   };
 }
 
+export interface AgentMetrics {
+  inputTokens: number;
+  outputTokens: number;
+  costCents?: number;
+  durationMs?: number;
+}
+
+export type AgentStatus =
+  | "idle"
+  | "submitted"
+  | "streaming"
+  | "executing_tools"
+  | "error";
+
+export type AgentLoopEvent =
+  | { type: "session_created"; sessionId: string }
+  | { type: "session_resumed"; sessionId: string; itemCount: number }
+  | { type: "content_delta"; delta: string }
+  | { type: "tool_call_start"; toolName: ToolName; params: unknown; toolCallId: string }
+  | { type: "tool_call_complete"; toolName: ToolName; result: unknown; toolCallId: string }
+  | { type: "tool_call_error"; toolName: ToolName; error: string; toolCallId: string }
+  | { type: "metrics_update"; metrics: AgentMetrics }
+  | { type: "execution_complete"; finalOutput: string; metrics: AgentMetrics }
+  | { type: "error"; error: string }
+  | { type: "done"; usage?: { inputTokens: number; outputTokens: number; costCents?: number } };
+
+export type AgentEvent = AgentLoopEvent;
+
 export interface AgentStreamEvent {
   type:
     | "content_delta"
@@ -20,8 +48,15 @@ export interface AgentStreamEvent {
     | "tool_use"
     | "tool_use_complete"
     | "done"
-    | "error";
+    | "error"
+    | "session_created"
+    | "metrics_update"
+    | "execution_complete"
+    | "tool_call_start"
+    | "tool_call_complete"
+    | "tool_call_error";
   content?: string;
+  delta?: string;
   id?: string;
   name?: ToolName;
   toolUse?: ToolUse;
@@ -31,6 +66,13 @@ export interface AgentStreamEvent {
     outputTokens: number;
     costCents?: number;
   };
+  metrics?: AgentMetrics;
+  finalOutput?: string;
+  sessionId?: string;
+  toolCallId?: string;
+  toolName?: ToolName;
+  params?: unknown;
+  result?: unknown;
 }
 
 export interface AgentMessage {

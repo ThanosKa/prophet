@@ -10,7 +10,7 @@ import {
   AGENT_SYSTEM_PROMPT,
   AGENT_MAX_TOKENS,
 } from "@/lib/agent/system-prompt";
-import { agentChatRequestSchema, DEFAULT_AGENT_MODEL } from "@prophet/shared";
+import { agentChatRequestSchema, DEFAULT_AGENT_MODEL, type ToolName } from "@prophet/shared";
 import { error } from "@/types";
 import { logger } from "@/lib/logger";
 import { calculateCostInCents, type ModelName } from "@/lib/pricing";
@@ -204,6 +204,13 @@ export async function POST(req: Request) {
             input: string;
           } | null = null;
 
+          // Send session_created at the start
+          const sessionData = JSON.stringify({
+            type: "session_created",
+            sessionId: chatId,
+          });
+          controller.enqueue(encoder.encode(`data: ${sessionData}\n\n`));
+
           for await (const event of anthropicStream) {
             if (event.type === "message_start") {
               inputTokens = event.message.usage.input_tokens;
@@ -215,9 +222,10 @@ export async function POST(req: Request) {
                   input: "",
                 };
                 const data = JSON.stringify({
-                  type: "tool_use_start",
-                  id: event.content_block.id,
-                  name: event.content_block.name,
+                  type: "tool_call_start",
+                  toolCallId: event.content_block.id,
+                  toolName: event.content_block.name,
+                  params: {}, // Will be populated as deltas arrive
                 });
                 controller.enqueue(encoder.encode(`data: ${data}\n\n`));
               }
@@ -227,7 +235,7 @@ export async function POST(req: Request) {
                 fullTextResponse += text;
                 const data = JSON.stringify({
                   type: "content_delta",
-                  content: text,
+                  delta: text,
                 });
                 controller.enqueue(encoder.encode(`data: ${data}\n\n`));
               } else if (
@@ -240,28 +248,29 @@ export async function POST(req: Request) {
               if (currentToolUse) {
                 let parsedInput = {};
                 try {
-                  parsedInput = currentToolUse.input
-                    ? JSON.parse(currentToolUse.input)
-                    : {};
-                } catch {
+                  // Robust parsing: handle potential hallucinations or malformed JSON
+                  const rawInput = currentToolUse.input.trim();
+                  parsedInput = rawInput ? JSON.parse(rawInput) : {};
+                } catch (e) {
                   logger.warn(
                     {
                       toolUseId: currentToolUse.id,
                       input: currentToolUse.input,
+                      error: e instanceof Error ? e.message : String(e),
                     },
-                    "Failed to parse tool input"
+                    "Failed to parse tool input, using empty object"
                   );
                 }
 
                 contentBlocks.push({
                   type: "tool_use",
                   id: currentToolUse.id,
-                  name: currentToolUse.name,
+                  name: currentToolUse.name as ToolName,
                   input: parsedInput,
                 });
 
                 const data = JSON.stringify({
-                  type: "tool_use",
+                  type: "tool_use", // Keep legacy for compatibility or use tool_call_complete
                   id: currentToolUse.id,
                   name: currentToolUse.name,
                   input: parsedInput,
@@ -277,6 +286,15 @@ export async function POST(req: Request) {
             } else if (event.type === "message_delta") {
               if (event.usage) {
                 outputTokens = event.usage.output_tokens;
+                const metricsData = JSON.stringify({
+                  type: "metrics_update",
+                  metrics: {
+                    inputTokens,
+                    outputTokens,
+                    costCents: calculateCostInCents(model, inputTokens, outputTokens),
+                  },
+                });
+                controller.enqueue(encoder.encode(`data: ${metricsData}\n\n`));
               }
             }
           }
@@ -290,6 +308,7 @@ export async function POST(req: Request) {
             outputTokens
           );
 
+          // Save messages to DB
           if (userMessage) {
             await db.insert(messages).values({
               chatId,
@@ -302,60 +321,45 @@ export async function POST(req: Request) {
             });
           }
 
-          if (stopReason === "end_turn" && fullTextResponse) {
-            await db.transaction(async (tx) => {
-              await tx.insert(messages).values({
-                chatId,
-                role: "assistant",
-                content: fullTextResponse,
-                model,
-                inputTokens,
-                outputTokens,
-                costCents,
-              });
+          // Save assistant message with tool calls if any
+          const assistantContent = fullTextResponse || "";
+          const assistantToolCalls = contentBlocks.filter(b => b.type === "tool_use");
 
-              await tx
-                .update(users)
-                .set({
-                  creditsRemaining: sql`${users.creditsRemaining} - ${costCents}`,
-                  updatedAt: new Date(),
-                })
-                .where(eq(users.id, userId));
-
-              await tx.insert(usageRecords).values({
-                userId,
-                inputTokens,
-                outputTokens,
-                costCents,
-                model,
-              });
-
-              await tx
-                .update(chats)
-                .set({
-                  updatedAt: new Date(),
-                })
-                .where(eq(chats.id, chatId));
+          await db.transaction(async (tx) => {
+            await tx.insert(messages).values({
+              chatId,
+              role: "assistant",
+              content: assistantContent,
+              model,
+              inputTokens,
+              outputTokens,
+              costCents,
+              toolCalls: assistantToolCalls.length > 0 ? JSON.stringify(assistantToolCalls) : null,
             });
-          } else if (stopReason === "tool_use") {
-            await db.transaction(async (tx) => {
-              await tx
-                .update(users)
-                .set({
-                  creditsRemaining: sql`${users.creditsRemaining} - ${costCents}`,
-                  updatedAt: new Date(),
-                })
-                .where(eq(users.id, userId));
 
-              await tx.insert(usageRecords).values({
-                userId,
-                inputTokens,
-                outputTokens,
-                costCents,
-                model,
-              });
+            await tx
+              .update(users)
+              .set({
+                creditsRemaining: sql`${users.creditsRemaining} - ${costCents}`,
+                updatedAt: new Date(),
+              })
+              .where(eq(users.id, userId));
+
+            await tx.insert(usageRecords).values({
+              userId,
+              inputTokens,
+              outputTokens,
+              costCents,
+              model,
             });
-          }
+
+            await tx
+              .update(chats)
+              .set({
+                updatedAt: new Date(),
+              })
+              .where(eq(chats.id, chatId));
+          });
 
           logger.info(
             {
@@ -369,6 +373,17 @@ export async function POST(req: Request) {
             },
             "Agent stream completed"
           );
+
+          const executionCompleteData = JSON.stringify({
+            type: "execution_complete",
+            finalOutput: fullTextResponse,
+            metrics: {
+              inputTokens,
+              outputTokens,
+              costCents,
+            },
+          });
+          controller.enqueue(encoder.encode(`data: ${executionCompleteData}\n\n`));
 
           const doneData = JSON.stringify({
             type: "done",

@@ -5,26 +5,10 @@ import type {
   AgentModel,
   ToolResult,
   ContentBlock,
-  ToolCall,
   ScreenshotResult,
   ImageData,
+  AgentLoopEvent,
 } from "@prophet/shared";
-
-export interface AgentLoopEvent {
-  type:
-    | "content_delta"
-    | "tool_use_start"
-    | "tool_use_complete"
-    | "done"
-    | "error";
-  content?: string;
-  toolCall?: ToolCall;
-  error?: string;
-  usage?: {
-    inputTokens: number;
-    outputTokens: number;
-  };
-}
 
 interface StreamAgentChatOptions {
   chatId: string;
@@ -53,31 +37,10 @@ async function* streamAgentChat(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const body: Record<string, unknown> = {
-    chatId: options.chatId,
-    model: options.model,
-  };
-
-  if (options.userMessage) {
-    body.userMessage = options.userMessage;
-  }
-
-  if (options.toolResults) {
-    body.toolResults = options.toolResults;
-  }
-
-  if (options.previousContent) {
-    body.previousContent = options.previousContent;
-  }
-
-  if (options.image) {
-    body.image = options.image;
-  }
-
   const response = await fetch(url, {
     method: "POST",
     headers,
-    body: JSON.stringify(body),
+    body: JSON.stringify(options),
   });
 
   if (!response.ok) {
@@ -145,8 +108,11 @@ export async function* runAgentLoop(
   let previousContent: ContentBlock[] = [];
   let currentTextContent = "";
   let isFirstRequest = true;
+  const maxTurns = 10;
+  let turnCount = 0;
 
-  while (true) {
+  while (turnCount < maxTurns) {
+    turnCount++;
     const streamOptions: StreamAgentChatOptions = {
       chatId,
       model,
@@ -169,12 +135,29 @@ export async function* runAgentLoop(
 
     for await (const event of streamAgentChat(baseUrl, streamOptions)) {
       switch (event.type) {
-        case "content_delta":
-          if (event.content) {
-            currentTextContent += event.content;
+        case "session_created":
+          yield { type: "session_created", sessionId: event.sessionId || chatId };
+          break;
+
+        case "content_delta": {
+          const delta = event.delta || event.content || "";
+          if (delta) {
+            currentTextContent += delta;
             yield {
               type: "content_delta",
-              content: event.content,
+              delta,
+            };
+          }
+          break;
+        }
+
+        case "tool_call_start":
+          if (event.toolName && event.toolCallId) {
+            yield {
+              type: "tool_call_start",
+              toolName: event.toolName,
+              params: event.params,
+              toolCallId: event.toolCallId,
             };
           }
           break;
@@ -193,60 +176,67 @@ export async function* runAgentLoop(
 
             assistantContent.push(event.toolUse);
 
-            // Emit tool_use_start to show UI is working on it
-            yield {
-              type: "tool_use_start",
-              toolCall: {
-                id: event.toolUse.id,
-                name: event.toolUse.name,
-                input: event.toolUse.input,
-              },
-            };
-
             // Execute the tool immediately via background script
-            const toolResult = await executeToolViaBackground(
-              event.toolUse.name,
-              event.toolUse.input as Record<string, unknown>
-            );
+            try {
+              const toolResult = await executeToolViaBackground(
+                event.toolUse.name,
+                event.toolUse.input as Record<string, unknown>
+              );
 
-            let resultContent: string;
-            if (
-              event.toolUse.name === "take_screenshot" &&
-              toolResult.success
-            ) {
-              const screenshot = toolResult.data as ScreenshotResult;
-              resultContent = `[Screenshot captured: ${screenshot.mimeType}, base64 data available]`;
-            } else if (toolResult.success) {
-              resultContent =
-                typeof toolResult.data === "string"
-                  ? toolResult.data
-                  : JSON.stringify(toolResult.data);
-            } else {
-              resultContent = toolResult.error || "Tool execution failed";
-            }
+              let resultContent: string;
+              if (
+                event.toolUse.name === "take_screenshot" &&
+                toolResult.success
+              ) {
+                const screenshot = toolResult.data as ScreenshotResult;
+                resultContent = `[Screenshot captured: ${screenshot.mimeType}, base64 data available]`;
+              } else if (toolResult.success) {
+                resultContent =
+                  typeof toolResult.data === "string"
+                    ? toolResult.data
+                    : JSON.stringify(toolResult.data);
+              } else {
+                resultContent = toolResult.error || "Tool execution failed";
+              }
 
-            const result: ToolResult = {
-              type: "tool_result",
-              tool_use_id: event.toolUse.id,
-              content: resultContent,
-              is_error: !toolResult.success,
-            };
+              const result: ToolResult = {
+                type: "tool_result",
+                tool_use_id: event.toolUse.id,
+                content: resultContent,
+                is_error: !toolResult.success,
+              };
 
-            toolResults.push(result);
+              toolResults.push(result);
 
-            // Emit tool_use_complete with result
-            yield {
-              type: "tool_use_complete",
-              toolCall: {
-                id: event.toolUse.id,
-                name: event.toolUse.name,
-                input: event.toolUse.input,
+              yield {
+                type: "tool_call_complete",
+                toolName: event.toolUse.name,
                 result: resultContent,
-                isError: !toolResult.success,
-                durationMs: toolResult.durationMs,
-              },
-            };
+                toolCallId: event.toolUse.id,
+              };
+            } catch (error) {
+              yield {
+                type: "tool_call_error",
+                toolName: event.toolUse.name,
+                error: error instanceof Error ? error.message : String(error),
+                toolCallId: event.toolUse.id,
+              };
+            }
           }
+          break;
+
+        case "metrics_update":
+          if (event.metrics) {
+            yield { type: "metrics_update", metrics: event.metrics };
+          }
+          break;
+
+        case "execution_complete":
+          yield {
+            type: "execution_complete",
+            finalOutput: event.finalOutput || currentTextContent,
+            metrics: event.metrics || { inputTokens: 0, outputTokens: 0 },
+          };
           break;
 
         case "done":
@@ -262,14 +252,13 @@ export async function* runAgentLoop(
         case "error":
           yield {
             type: "error",
-            error: event.error,
+            error: event.error || "Unknown error",
           };
           return;
       }
     }
 
     if (!hasToolUse) {
-      yield { type: "done" };
       return;
     }
 
