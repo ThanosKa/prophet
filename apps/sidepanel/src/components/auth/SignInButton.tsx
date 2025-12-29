@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 
-const SYNC_HOST = import.meta.env.VITE_SYNC_HOST || 'http://localhost:3001'
+const SYNC_HOST = import.meta.env.VITE_SYNC_HOST || 'http://localhost:3000'
 
 export function SignInButton() {
   const handleSignIn = () => {

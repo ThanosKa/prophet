@@ -2,72 +2,94 @@
 
 import * as React from "react"
 import { ArrowDown } from "lucide-react"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom"
 
-export function Conversation({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex-1 min-h-0 flex flex-col relative h-full">
-      {children}
-    </div>
-  )
-}
+export type ConversationProps = React.ComponentProps<typeof StickToBottom>
 
-export function ConversationContent({ children }: { children: React.ReactNode }) {
-  const scrollAreaRef = React.useRef<HTMLDivElement>(null)
-  const [showScrollButton, setShowScrollButton] = React.useState(false)
+export const Conversation = ({ className, ...props }: ConversationProps) => (
+  <StickToBottom
+    className={cn("relative flex-1 overflow-y-hidden", className)}
+    initial="smooth"
+    resize="smooth"
+    role="log"
+    {...props}
+  />
+)
 
-  const scrollToBottom = React.useCallback(() => {
-    if (scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight
-      }
-    }
-  }, [])
+export type ConversationContentProps = React.ComponentProps<typeof StickToBottom.Content>
 
-  React.useEffect(() => {
-    const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
-    if (!scrollContainer) return
+export const ConversationContent = ({ className, ...props }: ConversationContentProps) => (
+  <StickToBottom.Content
+    className={cn("flex flex-col gap-4 p-4", className)}
+    {...props}
+  />
+)
 
-    const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainer
-      const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-      setShowScrollButton(distanceFromBottom > 100)
-    }
+export type ConversationScrollButtonProps = React.ComponentProps<typeof Button>
 
-    scrollContainer.addEventListener('scroll', handleScroll)
-    return () => scrollContainer.removeEventListener('scroll', handleScroll)
-  }, [])
+export const ConversationScrollButton = ({
+  className,
+  ...props
+}: ConversationScrollButtonProps) => {
+  const { isAtBottom, scrollToBottom } = useStickToBottomContext()
 
-  React.useEffect(() => {
+  const handleScrollToBottom = React.useCallback(() => {
     scrollToBottom()
-  }, [children, scrollToBottom])
+  }, [scrollToBottom])
+
+  if (isAtBottom) return null
 
   return (
-    <>
-      <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0">
-        <div className="divide-y divide-border/50">
-          {children}
+    <Button
+      className={cn(
+        "absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full shadow-lg bg-background",
+        className
+      )}
+      onClick={handleScrollToBottom}
+      size="icon"
+      type="button"
+      variant="outline"
+      {...props}
+    >
+      <ArrowDown className="h-4 w-4" />
+      <span className="sr-only">Scroll to bottom</span>
+    </Button>
+  )
+}
+
+export type ConversationEmptyStateProps = React.ComponentProps<"div"> & {
+  title?: string
+  description?: string
+  icon?: React.ReactNode
+}
+
+export const ConversationEmptyState = ({
+  className,
+  title = "No messages yet",
+  description = "Start a conversation to see messages here",
+  icon,
+  children,
+  ...props
+}: ConversationEmptyStateProps) => (
+  <div
+    className={cn(
+      "flex size-full flex-col items-center justify-center gap-3 p-8 text-center",
+      className
+    )}
+    {...props}
+  >
+    {children ?? (
+      <>
+        {icon && <div className="text-muted-foreground">{icon}</div>}
+        <div className="space-y-1">
+          <h3 className="font-medium text-sm">{title}</h3>
+          {description && (
+            <p className="text-muted-foreground text-sm">{description}</p>
+          )}
         </div>
-      </ScrollArea>
-      {showScrollButton && <ConversationScrollButton onClick={scrollToBottom} />}
-    </>
-  )
-}
-
-export function ConversationScrollButton({ onClick }: { onClick?: () => void }) {
-  return (
-    <div className="absolute bottom-4 right-4 z-10">
-      <Button
-        size="icon"
-        variant="outline"
-        className="h-8 w-8 rounded-full shadow-lg bg-background"
-        onClick={onClick}
-      >
-        <ArrowDown className="h-4 w-4" />
-        <span className="sr-only">Scroll to bottom</span>
-      </Button>
-    </div>
-  )
-}
+      </>
+    )}
+  </div>
+)

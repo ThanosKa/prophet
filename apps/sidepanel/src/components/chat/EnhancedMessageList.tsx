@@ -5,12 +5,19 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import {
   Conversation,
   ConversationContent,
+  ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
 import {
   Message,
   MessageContent,
+  MessageActions,
   MessageResponse,
 } from "@/components/ai-elements/message";
+import {
+  Reasoning,
+  ReasoningTrigger,
+  ReasoningContent,
+} from "@/components/ai-elements/reasoning";
 import { ToolCallCollapsible } from "./ToolCallCollapsible";
 import type { Message as MessageType, ToolCall } from "@prophet/shared";
 
@@ -37,6 +44,8 @@ function MessageWithActions({
   const [copied, setCopied] = useState(false);
   const isAssistant = message.role === "assistant";
   const displayContent = message.content;
+  const hasToolCalls = message.toolCalls && message.toolCalls.length > 0;
+  const isExecutingTool = Boolean(currentToolCall);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(displayContent);
@@ -46,37 +55,42 @@ function MessageWithActions({
 
   return (
     <Message from={message.role} key={message.id}>
-      {isAssistant && (message.toolCalls || currentToolCall) && (
-        <div className="space-y-1 mb-2">
-          {message.toolCalls?.map((tc) => (
-            <ToolCallCollapsible key={tc.id} toolCall={tc} />
-          ))}
-          {currentToolCall && (
-            <ToolCallCollapsible toolCall={currentToolCall} isExecuting />
-          )}
-        </div>
+      {isAssistant && (hasToolCalls || isExecutingTool) && (
+        <Reasoning isStreaming={isExecutingTool} defaultOpen={isExecutingTool}>
+          <ReasoningTrigger />
+          <ReasoningContent>
+            <div className="space-y-1">
+              {message.toolCalls?.map((tc) => (
+                <ToolCallCollapsible key={tc.id} toolCall={tc} />
+              ))}
+              {currentToolCall && (
+                <ToolCallCollapsible toolCall={currentToolCall} isExecuting />
+              )}
+            </div>
+          </ReasoningContent>
+        </Reasoning>
       )}
 
-      <div className="flex items-start justify-between gap-2 group">
-        <MessageContent>
-          {message.role === "user" ? (
-            <p className="whitespace-pre-wrap break-words text-sm">
-              {displayContent}
-            </p>
-          ) : !displayContent ? (
-            <Shimmer duration={1.5} className="text-sm">
-              Planning next moves
-            </Shimmer>
-          ) : (
-            <MessageResponse>{displayContent}</MessageResponse>
-          )}
-        </MessageContent>
+      <MessageContent>
+        {message.role === "user" ? (
+          <p className="whitespace-pre-wrap break-words text-sm">
+            {displayContent}
+          </p>
+        ) : !displayContent && isStreaming ? (
+          <Shimmer duration={1.5} className="text-sm">
+            Planning next moves
+          </Shimmer>
+        ) : displayContent ? (
+          <MessageResponse>{displayContent}</MessageResponse>
+        ) : null}
+      </MessageContent>
 
-        {isAssistant && !isStreaming && displayContent && (
+      {isAssistant && !isStreaming && displayContent && (
+        <MessageActions>
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+            className="h-6 w-6"
             onClick={handleCopy}
           >
             {copied ? (
@@ -85,8 +99,8 @@ function MessageWithActions({
               <Copy className="h-3 w-3" />
             )}
           </Button>
-        )}
-      </div>
+        </MessageActions>
+      )}
     </Message>
   );
 }
@@ -122,6 +136,7 @@ export function EnhancedMessageList({
           );
         })}
       </ConversationContent>
+      <ConversationScrollButton />
     </Conversation>
   );
 }

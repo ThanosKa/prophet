@@ -1,5 +1,6 @@
 import { EnhancedMessageList } from './EnhancedMessageList'
 import { EnhancedChatInput } from './EnhancedChatInput'
+import { Suggestions, Suggestion } from '@/components/ai-elements/suggestion'
 import type { Message, ToolCall } from '@prophet/shared'
 
 interface AgentMessage extends Message {
@@ -19,6 +20,7 @@ interface ChatViewProps {
   onSend: (message: string, image?: ImageData) => void
   disabled?: boolean
   inputPlaceholder?: string
+  suggestions?: string[]
 }
 
 export function ChatView({
@@ -29,7 +31,14 @@ export function ChatView({
   onSend,
   disabled,
   inputPlaceholder,
+  suggestions,
 }: ChatViewProps) {
+  const showSuggestions = suggestions && suggestions.length > 0 && messages.length === 0
+
+  const handleSuggestionClick = (suggestion: string) => {
+    onSend(suggestion)
+  }
+
   return (
     <div className="flex flex-col h-full min-h-0">
       <EnhancedMessageList
@@ -38,6 +47,19 @@ export function ChatView({
         isStreaming={isStreaming}
         currentToolCall={currentToolCall}
       />
+      {showSuggestions && (
+        <div className="px-4 pb-2">
+          <Suggestions>
+            {suggestions.map((suggestion) => (
+              <Suggestion
+                key={suggestion}
+                suggestion={suggestion}
+                onClick={handleSuggestionClick}
+              />
+            ))}
+          </Suggestions>
+        </div>
+      )}
       <EnhancedChatInput
         onSend={onSend}
         disabled={disabled || isStreaming}
