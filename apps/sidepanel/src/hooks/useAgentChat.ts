@@ -77,8 +77,8 @@ export function useAgentChat() {
         let fullContent = "";
         const toolCalls: ToolCall[] = [];
 
-        // Use dev endpoint in development to bypass credits
-        const apiUrl = config.isDevelopment
+        // Use dev endpoint when VITE_USE_DEV_API=true to bypass credits
+        const apiUrl = config.useDevApi
           ? `${config.apiUrl}/api/agent/chat/dev`
           : `${config.apiUrl}/api/agent/chat`;
 

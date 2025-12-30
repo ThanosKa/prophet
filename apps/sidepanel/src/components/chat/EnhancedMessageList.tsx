@@ -85,7 +85,7 @@ function MessageWithActions({
         ) : null}
       </MessageContent>
 
-      {isAssistant && !isStreaming && displayContent && (
+      {!isStreaming && displayContent && (
         <MessageActions>
           <Button
             variant="ghost"

@@ -29,7 +29,12 @@ async function* streamAgentChat(
   });
   const token = tokenResponse?.token;
 
-  const url = new URL("/api/agent/chat", baseUrl);
+  // baseUrl can be full URL like "http://localhost:3000/api/agent/chat/dev"
+  // or base URL like "http://localhost:3000" - handle both cases
+  const url = baseUrl.includes('/api/')
+    ? new URL(baseUrl)
+    : new URL("/api/agent/chat", baseUrl);
+
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
