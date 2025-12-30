@@ -270,10 +270,12 @@ export async function POST(req: Request) {
                 });
 
                 const data = JSON.stringify({
-                  type: "tool_use", // Keep legacy for compatibility or use tool_call_complete
-                  id: currentToolUse.id,
-                  name: currentToolUse.name,
-                  input: parsedInput,
+                  type: "tool_use",
+                  toolUse: {
+                    id: currentToolUse.id,
+                    name: currentToolUse.name,
+                    input: parsedInput,
+                  },
                 });
                 controller.enqueue(encoder.encode(`data: ${data}\n\n`));
                 currentToolUse = null;

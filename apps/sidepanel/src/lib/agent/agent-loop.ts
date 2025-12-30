@@ -8,6 +8,7 @@ import type {
   ScreenshotResult,
   ImageData,
   AgentLoopEvent,
+  ToolName,
 } from "@prophet/shared";
 
 interface StreamAgentChatOptions {
@@ -162,8 +163,15 @@ export async function* runAgentLoop(
           }
           break;
 
-        case "tool_use":
-          if (event.toolUse) {
+        case "tool_use": {
+          const toolUse = event.toolUse || (event.id && event.name ? {
+            type: "tool_use" as const,
+            id: event.id,
+            name: event.name as ToolName,
+            input: (event as any).input || {}
+          } : null);
+
+          if (toolUse) {
             hasToolUse = true;
 
             if (currentTextContent) {
@@ -174,18 +182,26 @@ export async function* runAgentLoop(
               currentTextContent = "";
             }
 
-            assistantContent.push(event.toolUse);
+            assistantContent.push(toolUse);
+
+            // Yield tool_call_start with full params before execution
+            yield {
+              type: "tool_call_start",
+              toolName: toolUse.name,
+              params: toolUse.input,
+              toolCallId: toolUse.id,
+            };
 
             // Execute the tool immediately via background script
             try {
               const toolResult = await executeToolViaBackground(
-                event.toolUse.name,
-                event.toolUse.input as Record<string, unknown>
+                toolUse.name,
+                toolUse.input as Record<string, unknown>
               );
 
               let resultContent: string;
               if (
-                event.toolUse.name === "take_screenshot" &&
+                toolUse.name === "take_screenshot" &&
                 toolResult.success
               ) {
                 const screenshot = toolResult.data as ScreenshotResult;
@@ -201,7 +217,7 @@ export async function* runAgentLoop(
 
               const result: ToolResult = {
                 type: "tool_result",
-                tool_use_id: event.toolUse.id,
+                tool_use_id: toolUse.id,
                 content: resultContent,
                 is_error: !toolResult.success,
               };
@@ -210,20 +226,21 @@ export async function* runAgentLoop(
 
               yield {
                 type: "tool_call_complete",
-                toolName: event.toolUse.name,
+                toolName: toolUse.name,
                 result: resultContent,
-                toolCallId: event.toolUse.id,
+                toolCallId: toolUse.id,
               };
             } catch (error) {
               yield {
                 type: "tool_call_error",
-                toolName: event.toolUse.name,
+                toolName: toolUse.name,
                 error: error instanceof Error ? error.message : String(error),
-                toolCallId: event.toolUse.id,
+                toolCallId: toolUse.id,
               };
             }
           }
           break;
+        }
 
         case "metrics_update":
           if (event.metrics) {

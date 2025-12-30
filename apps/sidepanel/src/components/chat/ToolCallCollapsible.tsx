@@ -61,9 +61,10 @@ function formatToolInput(toolCall: ToolCall): string {
     case 'fill_element_by_uid':
     case 'hover_element_by_uid':
       return input.uid as string
-    case 'navigate':
+    case 'navigate': {
       const url = input.url as string | undefined
       return url ? (url.length > 40 ? url.slice(0, 40) + '...' : url) : '...'
+    }
     case 'scroll_page':
       return input.direction as string
     case 'search_snapshot':
