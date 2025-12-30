@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { messages } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 import { anthropic } from '@/lib/anthropic'
 import { AGENT_TOOLS } from '@/lib/agent/tools'
 import { AGENT_SYSTEM_PROMPT, AGENT_MAX_TOKENS } from '@/lib/agent/system-prompt'
 import { agentChatRequestSchema, DEFAULT_AGENT_MODEL, sanitizeForLog } from '@prophet/shared'
 import { error } from '@/types'
 import { logger } from '@/lib/logger'
-import type { ModelName } from '@/lib/pricing'
+import { calculateCostInCents, type ModelName } from '@/lib/pricing'
 import type { MessageParam, ContentBlockParam } from '@anthropic-ai/sdk/resources/messages'
 import { devLogger } from '@/lib/dev-logger'
 
@@ -39,15 +42,19 @@ export async function POST(req: Request) {
 
     logger.debug({}, '[DEV] Request validation passed')
 
-    const { userMessage, toolResults, previousContent } = validation.data
+    const { chatId, userMessage, toolResults, previousContent } = validation.data
     const model = (validation.data.model ?? DEFAULT_AGENT_MODEL) as ModelName
 
-    logger.debug(
-      { model, userMessage: !!userMessage, toolResults: !!toolResults, previousContent: !!previousContent },
-      '[DEV] Request parameters'
-    )
+    // Load message history for the chat
+    const chatMessages = await db.query.messages.findMany({
+      where: eq(messages.chatId, chatId),
+      orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+    })
 
-    const anthropicMessages: MessageParam[] = []
+    const anthropicMessages: MessageParam[] = chatMessages.map((msg) => ({
+      role: msg.role as 'user' | 'assistant',
+      content: msg.content,
+    }))
 
     if (userMessage) {
       logger.debug({ messageLength: userMessage.length }, '[DEV] Building initial message')
@@ -111,6 +118,13 @@ export async function POST(req: Request) {
 
           let currentToolUse: { id: string; name: string; input: string } | null = null
 
+          // Send session_created at the start
+          const sessionData = JSON.stringify({
+            type: 'session_created',
+            sessionId: chatId,
+          })
+          controller.enqueue(encoder.encode(`data: ${sessionData}\n\n`))
+
           for await (const event of anthropicStream) {
             if (event.type === 'message_start') {
               inputTokens = event.message.usage.input_tokens
@@ -128,9 +142,10 @@ export async function POST(req: Request) {
                   '[DEV] Tool use started'
                 )
                 const data = JSON.stringify({
-                  type: 'tool_use_start',
-                  id: event.content_block.id,
-                  name: event.content_block.name,
+                  type: 'tool_call_start',
+                  toolCallId: event.content_block.id,
+                  toolName: event.content_block.name,
+                  params: {},
                 })
                 controller.enqueue(encoder.encode(`data: ${data}\n\n`))
               }
@@ -141,7 +156,7 @@ export async function POST(req: Request) {
                 fullTextResponse += text
                 const data = JSON.stringify({
                   type: 'content_delta',
-                  content: text,
+                  delta: text,
                 })
                 controller.enqueue(encoder.encode(`data: ${data}\n\n`))
               } else if (event.delta.type === 'input_json_delta' && currentToolUse) {
@@ -173,9 +188,12 @@ export async function POST(req: Request) {
 
                 const data = JSON.stringify({
                   type: 'tool_use',
-                  id: currentToolUse.id,
-                  name: currentToolUse.name,
-                  input: parsedInput,
+                  toolUse: {
+                    type: 'tool_use',
+                    id: currentToolUse.id,
+                    name: currentToolUse.name,
+                    input: parsedInput,
+                  },
                 })
                 controller.enqueue(encoder.encode(`data: ${data}\n\n`))
                 currentToolUse = null
@@ -188,12 +206,27 @@ export async function POST(req: Request) {
             } else if (event.type === 'message_delta') {
               if (event.usage) {
                 outputTokens = event.usage.output_tokens
+                const metricsData = JSON.stringify({
+                  type: 'metrics_update',
+                  metrics: {
+                    inputTokens,
+                    outputTokens,
+                    costCents: calculateCostInCents(model, inputTokens, outputTokens),
+                  },
+                })
+                controller.enqueue(encoder.encode(`data: ${metricsData}\n\n`))
               }
             }
           }
 
           const finalMessage = await anthropicStream.finalMessage()
           const stopReason = finalMessage.stop_reason
+
+          const costCents = calculateCostInCents(
+            model,
+            inputTokens,
+            outputTokens
+          )
 
           logger.info(
             {
@@ -211,13 +244,24 @@ export async function POST(req: Request) {
           // DEV LOGGING: Log response from LLM
           await devLogger.logResponse(fullTextResponse, { input_tokens: inputTokens, output_tokens: outputTokens })
 
+          const executionCompleteData = JSON.stringify({
+            type: 'execution_complete',
+            finalOutput: fullTextResponse,
+            metrics: {
+              inputTokens,
+              outputTokens,
+              costCents,
+            },
+          })
+          controller.enqueue(encoder.encode(`data: ${executionCompleteData}\n\n`))
+
           const doneData = JSON.stringify({
             type: 'done',
             stopReason,
             usage: {
               inputTokens,
               outputTokens,
-              costCents: 0,
+              costCents,
             },
             contentBlocks,
           })
