@@ -38,6 +38,13 @@ async function* streamAgentChat(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  console.log(`[Turn Debug] Sending Turn Request for ${options.chatId}:`, {
+    hasUserMessage: !!options.userMessage,
+    toolResultsCount: options.toolResults?.length || 0,
+    previousContentCount: options.previousContent?.length || 0,
+    payload: options
+  });
+
   const response = await fetch(url, {
     method: "POST",
     headers,

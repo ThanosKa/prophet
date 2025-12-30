@@ -86,15 +86,15 @@ export function ToolCallCollapsible({
   const inputSummary = formatToolInput(toolCall)
 
   const getStatusStyles = () => {
-    if (isExecuting) return 'border-blue-500/30 bg-blue-500/5'
-    if (toolCall.isError) return 'border-red-500/30 bg-red-500/5'
-    return 'border-green-500/30 bg-green-500/5'
+    if (isExecuting) return 'border-zinc-500/20 bg-zinc-500/5'
+    if (toolCall.isError) return 'border-red-500/20 bg-red-500/5'
+    return 'border-zinc-500/20 bg-zinc-500/5'
   }
 
   const getStatusIcon = () => {
-    if (isExecuting) return <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+    if (isExecuting) return <Loader2 className="h-3 w-3 animate-spin text-zinc-500" />
     if (toolCall.isError) return <X className="h-3 w-3 text-red-500" />
-    return <Check className="h-3 w-3 text-green-500" />
+    return <Check className="h-3 w-3 text-zinc-500" />
   }
 
   return (
@@ -129,21 +129,31 @@ export function ToolCallCollapsible({
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="mt-1 px-2 py-2 rounded-md bg-muted/50 text-xs">
-          <p className="font-medium mb-1">Input:</p>
-          <pre className="text-muted-foreground whitespace-pre-wrap break-all">
-            {JSON.stringify(toolCall.input, null, 2)}
-          </pre>
-          {toolCall.result && (
-            <>
-              <p className="font-medium mt-2 mb-1">Result:</p>
-              <pre className="text-muted-foreground whitespace-pre-wrap break-all max-h-32 overflow-auto">
-                {typeof toolCall.result === 'string' 
-                  ? (toolCall.result.length > 500 ? toolCall.result.slice(0, 500) + '...' : toolCall.result)
-                  : JSON.stringify(toolCall.result, null, 2)}
-              </pre>
-            </>
-          )}
+        <div className="mt-1.5 px-3 py-2.5 rounded-lg bg-zinc-950/20 border border-zinc-800/50 text-[11px] font-mono leading-relaxed">
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 transition-colors mb-2">
+              <ChevronDown className="h-3 w-3" />
+              <span className="font-medium">Execution Details</span>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-3">
+              <div className="space-y-1">
+                <p className="text-zinc-500 uppercase tracking-wider text-[9px] font-bold">Parameters</p>
+                <pre className="text-zinc-400 whitespace-pre-wrap break-all bg-zinc-950/40 p-2 rounded border border-zinc-800/30">
+                  {JSON.stringify(toolCall.input, null, 2)}
+                </pre>
+              </div>
+              {toolCall.result && (
+                <div className="space-y-1">
+                  <p className="text-zinc-500 uppercase tracking-wider text-[9px] font-bold">Response</p>
+                  <pre className="text-zinc-400 whitespace-pre-wrap break-all max-h-40 overflow-auto bg-zinc-950/40 p-2 rounded border border-zinc-800/30">
+                    {typeof toolCall.result === 'string' 
+                      ? (toolCall.result.length > 1000 ? toolCall.result.slice(0, 1000) + '...' : toolCall.result)
+                      : JSON.stringify(toolCall.result, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       </CollapsibleContent>
     </Collapsible>

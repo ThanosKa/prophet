@@ -56,12 +56,16 @@ export async function POST(req: Request) {
     const validation = agentChatRequestSchema.safeParse(body);
 
     if (!validation.success) {
+      logger.error(
+        { 
+          userId, 
+          errors: validation.error.format(),
+          body: JSON.stringify(body).slice(0, 2000) 
+        },
+        "Validation failed for agent chat request"
+      );
       return NextResponse.json(
-        error(
-          "Invalid request body",
-          "VALIDATION_ERROR",
-          validation.error.issues
-        ),
+        error("Invalid request body", "VALIDATION_ERROR", validation.error.issues),
         { status: 400 }
       );
     }
