@@ -6,42 +6,60 @@ const UID_ATTRIBUTE = 'data-prophet-nodeid'
 
 export class SmartLocator {
   private async highlightElement(tabId: number, uid: string, type: 'click' | 'hover' | 'fill' = 'click'): Promise<void> {
+    console.log(`[SmartLocator] Attempting to highlight uid="${uid}" (type=${type}) on tab=${tabId}`)
+
     const color = type === 'fill' ? '#f59e0b' : '#3b82f6' // Amber for fill, Blue for click/hover
 
-    await cdpCommander.sendCommand<EvaluateResult>(tabId, 'Runtime.evaluate', {
-      expression: `
-        (function() {
-          const el = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
-          if (el) {
-            // Store original styles if not already stored
-            if (!el.dataset.prophetOriginalTransition) {
-              el.dataset.prophetOriginalTransition = el.style.transition || '';
-              el.dataset.prophetOriginalOutline = el.style.outline || '';
-              el.dataset.prophetOriginalBoxShadow = el.style.boxShadow || '';
-            }
-
-            // Apply "AIPex-style" visual feedback
-            el.style.transition = 'all 0.2s ease-in-out';
-            el.style.outline = '3px solid ${color}';
-            el.style.outlineOffset = '2px';
-            el.style.boxShadow = '0 0 0 4px rgba(${type === 'fill' ? '245, 158, 11' : '59, 130, 246'}, 0.2), 0 0 20px rgba(${type === 'fill' ? '245, 158, 11' : '59, 130, 246'}, 0.4)';
-            
-            // Remove highlight after animation
-            setTimeout(() => {
-              el.style.transition = el.dataset.prophetOriginalTransition;
-              el.style.outline = el.dataset.prophetOriginalOutline;
-              el.style.boxShadow = el.dataset.prophetOriginalBoxShadow;
+    try {
+      await cdpCommander.sendCommand<EvaluateResult>(tabId, 'Runtime.evaluate', {
+        expression: `
+          (function() {
+            try {
+              console.log('[Prophet Debug] Searching for element with uid="${uid}"');
+              const el = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
               
-              // Cleanup dataset attributes
-              delete el.dataset.prophetOriginalTransition;
-              delete el.dataset.prophetOriginalOutline;
-              delete el.dataset.prophetOriginalBoxShadow;
-            }, 1500);
-          }
-        })()
-      `,
-      awaitPromise: false,
-    })
+              if (el) {
+                console.log('[Prophet Debug] Element found, applying styles');
+                
+                // Store original styles if not already stored
+                if (!el.dataset.prophetOriginalTransition) {
+                  el.dataset.prophetOriginalTransition = el.style.transition || '';
+                  el.dataset.prophetOriginalOutline = el.style.outline || '';
+                  el.dataset.prophetOriginalBoxShadow = el.style.boxShadow || '';
+                }
+
+                // Apply "AIPex-style" visual feedback
+                el.style.transition = 'all 0.2s ease-in-out';
+                el.style.outline = '3px solid ${color}';
+                el.style.outlineOffset = '2px';
+                el.style.boxShadow = '0 0 0 4px rgba(${type === 'fill' ? '245, 158, 11' : '59, 130, 246'}, 0.2), 0 0 20px rgba(${type === 'fill' ? '245, 158, 11' : '59, 130, 246'}, 0.4)';
+                
+                // Remove highlight after animation
+                setTimeout(() => {
+                  el.style.transition = el.dataset.prophetOriginalTransition;
+                  el.style.outline = el.dataset.prophetOriginalOutline;
+                  el.style.boxShadow = el.dataset.prophetOriginalBoxShadow;
+                  
+                  // Cleanup dataset attributes
+                  delete el.dataset.prophetOriginalTransition;
+                  delete el.dataset.prophetOriginalOutline;
+                  delete el.dataset.prophetOriginalBoxShadow;
+                  console.log('[Prophet Debug] Highlight removed');
+                }, 1500);
+              } else {
+                console.warn('[Prophet Debug] Element NOT found for uid="${uid}"');
+              }
+            } catch (err) {
+              console.error('[Prophet Debug] Error in highlight script:', err);
+            }
+          })()
+        `,
+        awaitPromise: false,
+      })
+      console.log(`[SmartLocator] Highlight command sent successfully`)
+    } catch (error) {
+      console.error(`[SmartLocator] Failed to send highlight command:`, error)
+    }
 
     // Give time for the user to see the highlight before action occurs
     await new Promise((resolve) => setTimeout(resolve, 800))

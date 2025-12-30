@@ -81,12 +81,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })
       .then((token) => {
         if (token !== undefined) {
-          console.log('[Background] Token retrieved:', token ? 'yes' : 'no')
           sendResponse({ token })
         }
       })
-      .catch((error: Error) => {
-        console.error('[Background] Token request error:', error)
+      .catch(() => {
         sendResponse({ token: null })
       })
     return true
@@ -95,8 +93,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Close auth tab request
   if (message.type === 'CLOSE_AUTH_TAB') {
     if (sender.tab?.id) {
-      chrome.tabs.remove(sender.tab.id).catch((error) => {
-        console.error('[Background] Failed to close auth tab:', error)
+      chrome.tabs.remove(sender.tab.id).catch(() => {
       })
     }
     sendResponse({ success: true })
