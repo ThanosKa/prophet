@@ -214,11 +214,11 @@ export function MessageResponse({ children }: { children: string }) {
             }
 
             return (
-              <div className="my-3 rounded-lg overflow-hidden bg-zinc-900">
-                <div className="px-4 py-2 bg-zinc-800 border-b border-zinc-700">
-                  <span className="text-xs text-zinc-400 font-mono">{language || 'code'}</span>
+              <div className="my-3 rounded-lg overflow-hidden bg-[var(--chatbot-muted)]">
+                <div className="px-4 py-2 bg-[var(--chatbot-muted)]/80 border-b border-border/50">
+                  <span className="text-xs text-muted-foreground font-mono">{language || 'code'}</span>
                 </div>
-                <pre className="p-4 overflow-x-auto">
+                <pre className="p-4 overflow-x-auto bg-transparent">
                   <code className="text-sm font-mono" {...props}>
                     {children}
                   </code>

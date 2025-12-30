@@ -129,23 +129,23 @@ export function ToolCallCollapsible({
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="mt-1.5 px-3 py-2.5 rounded-lg bg-zinc-950/20 border border-zinc-800/50 text-[11px] font-mono leading-relaxed">
+        <div className="mt-1.5 px-3 py-2.5 rounded-lg bg-[var(--chatbot-muted)]/50 border border-border/50 text-[11px] font-mono leading-relaxed">
           <Collapsible>
-            <CollapsibleTrigger className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 transition-colors mb-2">
+            <CollapsibleTrigger className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors mb-2">
               <ChevronDown className="h-3 w-3" />
               <span className="font-medium">Execution Details</span>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3">
               <div className="space-y-1">
-                <p className="text-zinc-500 uppercase tracking-wider text-[9px] font-bold">Parameters</p>
-                <pre className="text-zinc-400 whitespace-pre-wrap break-all bg-zinc-950/40 p-2 rounded border border-zinc-800/30">
+                <p className="text-muted-foreground uppercase tracking-wider text-[9px] font-bold opacity-70">Parameters</p>
+                <pre className="text-foreground/80 whitespace-pre-wrap break-all bg-[var(--chatbot-muted)] p-2 rounded border border-border/30">
                   {JSON.stringify(toolCall.input, null, 2)}
                 </pre>
               </div>
               {toolCall.result && (
                 <div className="space-y-1">
-                  <p className="text-zinc-500 uppercase tracking-wider text-[9px] font-bold">Response</p>
-                  <pre className="text-zinc-400 whitespace-pre-wrap break-all max-h-40 overflow-auto bg-zinc-950/40 p-2 rounded border border-zinc-800/30">
+                  <p className="text-muted-foreground uppercase tracking-wider text-[9px] font-bold opacity-70">Response</p>
+                  <pre className="text-foreground/80 whitespace-pre-wrap break-all max-h-40 overflow-auto bg-[var(--chatbot-muted)] p-2 rounded border border-border/30">
                     {typeof toolCall.result === 'string' 
                       ? (toolCall.result.length > 1000 ? toolCall.result.slice(0, 1000) + '...' : toolCall.result)
                       : JSON.stringify(toolCall.result, null, 2)}

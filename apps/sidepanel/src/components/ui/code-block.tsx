@@ -22,8 +22,8 @@ export function CodeBlock({ language, children, className }: CodeBlockProps) {
 
   return (
     <div className={cn('relative group rounded-lg overflow-hidden', className)}>
-      <div className="flex items-center justify-between px-4 py-2 bg-zinc-800 border-b border-zinc-700">
-        <span className="text-xs text-zinc-400 font-mono">
+      <div className="flex items-center justify-between px-4 py-2 bg-[var(--chatbot-muted)] border-b border-border/50">
+        <span className="text-xs text-muted-foreground font-mono">
           {language || 'text'}
         </span>
         <Button
