@@ -86,7 +86,7 @@ export default function App() {
 
   if (!isSignedIn) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center gap-6 p-6 bg-muted">
+      <div className="h-screen w-screen flex flex-col items-center justify-center gap-6 p-6 bg-[var(--chatbot-bg)]">
         <div className="flex flex-col items-center gap-2">
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">Prophet</h1>
           <p className="text-sm text-muted-foreground text-center max-w-xs">
@@ -106,8 +106,8 @@ export default function App() {
 
   if (chatsLoading) {
     return (
-      <div className="h-screen w-screen flex flex-col bg-muted">
-        <div className="h-12 border-b flex items-center justify-between px-3">
+      <div className="h-screen w-screen flex flex-col bg-[var(--chatbot-bg)]">
+        <div className="h-12 border-b flex items-center justify-between px-3 bg-[var(--chatbot-muted)]">
           <Skeleton className="h-8 w-8" />
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-6 w-6 rounded-full" />

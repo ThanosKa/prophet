@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useChatStore } from "@/store/chatStore";
 import { useUIStore } from "@/store/uiStore";
+import { useAgentStore } from "@/store/agentStore";
 import { runAgentLoop } from "@/lib/agent";
 import { config } from "@/lib/config";
 import type { Message, ToolCall, ImageData, AgentStatus } from "@prophet/shared";
@@ -13,6 +14,7 @@ export interface AgentMessage extends Message {
 export function useAgentChat() {
   const { addMessage, updateMessage, setStreaming } = useChatStore();
   const { selectedModel, addContextUsage } = useUIStore();
+  const { createAbortController, abort: abortAgentStore, setActive } = useAgentStore();
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<AgentStatus>("idle");
   const [currentToolCall, setCurrentToolCall] = useState<ToolCall | null>(null);
@@ -42,6 +44,17 @@ export function useAgentChat() {
         setCurrentToolCall(null);
         abortRef.current = false;
 
+        // Activate agent overlay
+        setActive(true);
+        const abortController = createAbortController();
+
+        // Send AGENT_ACTIVE to content script
+        chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
+          if (tab?.id) {
+            chrome.tabs.sendMessage(tab.id, { type: 'AGENT_ACTIVE' }).catch(() => { });
+          }
+        });
+
         const userMessage: AgentMessage = {
           id: crypto.randomUUID(),
           chatId,
@@ -64,12 +77,18 @@ export function useAgentChat() {
         let fullContent = "";
         const toolCalls: ToolCall[] = [];
 
+        // Use dev endpoint in development to bypass credits
+        const apiUrl = config.isDevelopment
+          ? `${config.apiUrl}/api/agent/chat/dev`
+          : `${config.apiUrl}/api/agent/chat`;
+
         for await (const event of runAgentLoop(
-          config.apiUrl,
+          apiUrl,
           chatId,
           content,
           selectedModel,
-          image
+          image,
+          abortController.signal
         )) {
           if (abortRef.current) break;
 
@@ -97,7 +116,7 @@ export function useAgentChat() {
                   input: event.params as Record<string, unknown>,
                 };
                 setCurrentToolCall(newToolCall);
-                
+
                 // Also update the message with placeholder if needed, 
                 // but usually EnhancedMessageList handles currentToolCall separately.
                 // However, to be robust for history:
@@ -118,7 +137,7 @@ export function useAgentChat() {
                   result: event.result as string,
                 });
                 setCurrentToolCall(null);
-                
+
                 // Update the message store immediately
                 updateMessage(chatId, assistantMessageId, {
                   toolCalls: [...toolCalls]
@@ -168,6 +187,14 @@ export function useAgentChat() {
         setStreaming(false);
         if (status !== "error") setStatus("idle");
         setCurrentToolCall(null);
+
+        // Deactivate agent overlay
+        setActive(false);
+        chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
+          if (tab?.id) {
+            chrome.tabs.sendMessage(tab.id, { type: 'AGENT_INACTIVE' }).catch(() => { });
+          }
+        });
       }
     },
     [addMessage, updateMessage, setStreaming, selectedModel, addContextUsage, status, currentToolCall]
@@ -178,7 +205,8 @@ export function useAgentChat() {
       activeStreamRef.current.abort();
       activeStreamRef.current = null;
     }
-  }, []);
+    abortAgentStore();
+  }, [abortAgentStore]);
 
   return {
     sendMessage,

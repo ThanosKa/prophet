@@ -126,6 +126,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true
   }
 
+  // Agent abort request from content script pause button
+  if (message.type === 'AGENT_ABORT') {
+    console.log('[Background] Agent abort requested')
+    if (abortController) {
+      abortController.abort()
+      abortController = null
+    }
+    agentState = { ...DEFAULT_AGENT_STATE }
+
+    // Notify content script to hide overlay
+    chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
+      if (tab?.id) {
+        chrome.tabs.sendMessage(tab.id, { type: 'AGENT_INACTIVE' }).catch(() => { })
+      }
+    })
+
+    sendResponse({ success: true })
+    return true
+  }
+
   return false
 })
 
@@ -148,6 +168,23 @@ async function handleToolExecution(
     toolInput,
     startedAt: startTime,
   }
+
+  // Send status update to content script with friendly message
+  const statusMessages: Record<string, (input: Record<string, unknown>) => string> = {
+    navigate: (input) => `Navigating to ${input.url}...`,
+    take_snapshot: () => 'Analyzing page elements...',
+    click_element_by_uid: () => 'Clicking element...',
+    fill_element_by_uid: (input) => `Filling input with "${input.value}"...`,
+    hover_element_by_uid: () => 'Hovering over element...',
+    scroll_page: (input) => `Scrolling ${input.direction}...`,
+    get_page_content: () => 'Reading page content...',
+    search_snapshot: (input) => `Searching for "${input.query}"...`,
+    press_key: (input) => `Pressing ${input.key}...`,
+    take_screenshot: () => 'Taking screenshot...',
+  }
+
+  const statusMessage = statusMessages[toolName]?.(toolInput) || `Executing ${toolName}...`
+  await sendAgentStatus(statusMessage)
 
   const executor = toolExecutors[toolName]
   if (!executor) {
@@ -207,6 +244,20 @@ async function handleToolExecution(
 // ============================================================================
 // Visual Feedback to Content Script
 // ============================================================================
+
+async function sendAgentStatus(status: string): Promise<void> {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (!tab?.id) return
+
+    await chrome.tabs.sendMessage(tab.id, {
+      type: 'AGENT_STATUS_UPDATE',
+      status,
+    })
+  } catch (error) {
+    console.debug('[Background] Could not send status update:', error)
+  }
+}
 
 async function sendVisualFeedback(
   toolName: string,

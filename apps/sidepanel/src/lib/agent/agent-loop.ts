@@ -111,7 +111,8 @@ export async function* runAgentLoop(
   chatId: string,
   userMessage: string,
   model: AgentModel = DEFAULT_AGENT_MODEL,
-  image?: ImageData
+  image?: ImageData,
+  signal?: AbortSignal
 ): AsyncGenerator<AgentLoopEvent> {
   let previousContent: ContentBlock[] = [];
   let turnCount = 0;
@@ -120,6 +121,14 @@ export async function* runAgentLoop(
   const maxTurns = 10;
 
   while (turnCount < maxTurns) {
+    if (signal?.aborted) {
+      yield {
+        type: 'error',
+        error: 'Agent execution cancelled by user',
+      }
+      return
+    }
+
     turnCount++;
     const streamOptions: StreamAgentChatOptions = {
       chatId,

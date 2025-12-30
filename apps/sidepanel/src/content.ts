@@ -33,6 +33,195 @@ const originalStyles = new Map<Element, { [key: string]: string }>()
 const activeAnimations = new Map<Element, number>()
 
 // ============================================================================
+// Agent Overlay State
+// ============================================================================
+
+let agentOverlayContainer: HTMLDivElement | null = null
+let viewportBorder: HTMLDivElement | null = null
+let statusText: HTMLDivElement | null = null
+let pauseButton: HTMLButtonElement | null = null
+
+// ============================================================================
+// Agent Overlay Functions
+// ============================================================================
+
+function createAgentOverlay(): void {
+  if (agentOverlayContainer) return
+
+  agentOverlayContainer = document.createElement('div')
+  agentOverlayContainer.id = 'prophet-agent-overlay'
+
+  const shadowRoot = agentOverlayContainer.attachShadow({ mode: 'open' })
+
+  const style = document.createElement('style')
+  style.textContent = `
+    :host {
+      all: initial;
+    }
+    
+    .viewport-border {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border: 4px solid #3b82f6;
+      pointer-events: none;
+      z-index: 2147483646;
+      box-shadow: inset 0 0 20px rgba(59, 130, 246, 0.3);
+      animation: pulse-border 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-border {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+    
+    .status-container {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 12px;
+      padding: 12px 20px;
+      color: #94a3b8;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      z-index: 2147483647;
+      pointer-events: none;
+      animation: slide-down 0.3s ease-out;
+    }
+    
+    @keyframes slide-down {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+    
+    .status-text {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .status-text::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: #3b82f6;
+      border-radius: 50%;
+      animation: pulse-dot 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+    
+    .pause-button {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      border: none;
+      border-radius: 24px;
+      padding: 12px 32px;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+      z-index: 2147483647;
+      pointer-events: all;
+      transition: all 0.2s ease;
+      animation: slide-up 0.3s ease-out;
+    }
+    
+    @keyframes slide-up {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+    
+    .pause-button:hover {
+      transform: translateX(-50%) translateY(-2px);
+      box-shadow: 0 12px 32px rgba(59, 130, 246, 0.5);
+    }
+    
+    .pause-button:active {
+      transform: translateX(-50%) translateY(0);
+    }
+  `
+
+  shadowRoot.appendChild(style)
+
+  viewportBorder = document.createElement('div')
+  viewportBorder.className = 'viewport-border'
+  viewportBorder.style.display = 'none'
+  shadowRoot.appendChild(viewportBorder)
+
+  const statusContainer = document.createElement('div')
+  statusContainer.className = 'status-container'
+  statusContainer.style.display = 'none'
+  shadowRoot.appendChild(statusContainer)
+
+  statusText = document.createElement('div')
+  statusText.className = 'status-text'
+  statusContainer.appendChild(statusText)
+
+  pauseButton = document.createElement('button')
+  pauseButton.className = 'pause-button'
+  pauseButton.textContent = '⏸️ Pause Agent'
+  pauseButton.style.display = 'none'
+  pauseButton.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ type: 'AGENT_ABORT' })
+    hideAgentOverlay()
+  })
+  shadowRoot.appendChild(pauseButton)
+
+  document.body.appendChild(agentOverlayContainer)
+}
+
+function showAgentOverlay(): void {
+  createAgentOverlay()
+  if (viewportBorder) viewportBorder.style.display = 'block'
+  if (pauseButton) pauseButton.style.display = 'block'
+}
+
+function hideAgentOverlay(): void {
+  if (viewportBorder) viewportBorder.style.display = 'none'
+  if (statusText?.parentElement) statusText.parentElement.style.display = 'none'
+  if (pauseButton) pauseButton.style.display = 'none'
+}
+
+function updateAgentStatus(status: string): void {
+  createAgentOverlay()
+  if (statusText) {
+    statusText.textContent = status
+    if (statusText.parentElement) {
+      statusText.parentElement.style.display = 'block'
+    }
+  }
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
@@ -221,6 +410,29 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           sendResponse({ success: true })
         } else {
           sendResponse({ success: false, error: 'Element not found' })
+        }
+        break
+      }
+
+      case 'AGENT_ACTIVE': {
+        showAgentOverlay()
+        sendResponse({ success: true })
+        break
+      }
+
+      case 'AGENT_INACTIVE': {
+        hideAgentOverlay()
+        sendResponse({ success: true })
+        break
+      }
+
+      case 'AGENT_STATUS_UPDATE': {
+        const { status } = message
+        if (status) {
+          updateAgentStatus(status)
+          sendResponse({ success: true })
+        } else {
+          sendResponse({ success: false, error: 'No status provided' })
         }
         break
       }
