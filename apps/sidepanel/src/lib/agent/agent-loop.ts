@@ -172,7 +172,7 @@ export async function* runAgentLoop(
           break;
 
         case "tool_use": {
-          const toolUse = event.toolUse || (event.id && event.name ? {
+          let toolUse = event.toolUse || (event.id && event.name ? {
             type: "tool_use" as const,
             id: event.id,
             name: event.name as ToolName,
@@ -180,6 +180,10 @@ export async function* runAgentLoop(
           } : null);
 
           if (toolUse) {
+            // Ensure the type property is set for message history persistence
+            if (!toolUse.type) {
+              toolUse = { ...toolUse, type: "tool_use" };
+            }
             hasToolUse = true;
 
             if (turnTextContent) {

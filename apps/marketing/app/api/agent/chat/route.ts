@@ -276,6 +276,7 @@ export async function POST(req: Request) {
                 const data = JSON.stringify({
                   type: "tool_use",
                   toolUse: {
+                    type: "tool_use",
                     id: currentToolUse.id,
                     name: currentToolUse.name,
                     input: parsedInput,
