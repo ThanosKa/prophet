@@ -61,57 +61,55 @@ function createAgentOverlay(): void {
     
     .viewport-border {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border: 4px solid #3b82f6;
+      inset: 0;
       pointer-events: none;
-      z-index: 2147483646;
-      box-shadow: inset 0 0 20px rgba(59, 130, 246, 0.3);
-      animation: pulse-border 2s ease-in-out infinite;
+      z-index: 2147483647;
+      border: 4px solid #3b82f6;
     }
     
-    @keyframes pulse-border {
-      0%, 100% { opacity: 0.6; }
-      50% { opacity: 1; }
+    @keyframes wavy-ring-1 {
+      0%, 100% { opacity: 0.2; transform: scale(1); transform-origin: center; }
+      50% { opacity: 0.5; transform: scale(1.02); transform-origin: center; }
     }
     
+    @keyframes wavy-ring-2 {
+      0%, 100% { opacity: 0.1; transform: scale(1); transform-origin: center; }
+      50% { opacity: 0.3; transform: scale(1.05); transform-origin: center; }
+    }
+    
+    /* AIPEX Glassmorphism Pattern */
     .status-container {
       position: fixed;
       top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(15, 23, 42, 0.95);
+      background: rgba(0, 0, 0, 0.6);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 12px;
-      padding: 12px 20px;
-      color: #94a3b8;
+      padding: 12px 24px;
+      color: white;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 14px;
       font-weight: 500;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 10px;
       z-index: 2147483647;
       pointer-events: none;
       animation: slide-down 0.3s ease-out;
     }
     
     @keyframes slide-down {
-      from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-      }
+      from { stroke-opacity: 0; transform: translateX(-50%) translateY(-10px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
     
     .status-text {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
     
     .status-text::before {
@@ -130,16 +128,16 @@ function createAgentOverlay(): void {
     
     .pause-button {
       position: fixed;
-      bottom: 32px;
+      bottom: 40px;
       left: 50%;
       transform: translateX(-50%);
       background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
       border: none;
-      border-radius: 24px;
-      padding: 12px 32px;
+      border-radius: 30px;
+      padding: 14px 40px;
       color: white;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 600;
       cursor: pointer;
       box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
@@ -147,22 +145,17 @@ function createAgentOverlay(): void {
       pointer-events: all;
       transition: all 0.2s ease;
       animation: slide-up 0.3s ease-out;
+      letter-spacing: 0.5px;
     }
     
     @keyframes slide-up {
-      from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-      }
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
     
     .pause-button:hover {
       transform: translateX(-50%) translateY(-2px);
-      box-shadow: 0 12px 32px rgba(59, 130, 246, 0.5);
+      box-shadow: 0 12px 32px rgba(59, 130, 246, 0.6);
     }
     
     .pause-button:active {
@@ -175,6 +168,18 @@ function createAgentOverlay(): void {
   viewportBorder = document.createElement('div')
   viewportBorder.className = 'viewport-border'
   viewportBorder.style.display = 'none'
+  // AIPEX Wavy Look SVG
+  viewportBorder.innerHTML = `
+    <svg style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;" preserveAspectRatio="none">
+      <!-- Wavy Ring 1 -->
+      <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="#3b82f6" stroke-width="2" 
+            style="animation: wavy-ring-1 3s ease-in-out infinite; transform-box: fill-box;" />
+      
+      <!-- Wavy Ring 2 (Delayed) -->
+      <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="#3b82f6" stroke-width="1"
+            style="animation: wavy-ring-2 4s ease-in-out infinite 1s; transform-box: fill-box;" />
+    </svg>
+  `
   shadowRoot.appendChild(viewportBorder)
 
   const statusContainer = document.createElement('div')

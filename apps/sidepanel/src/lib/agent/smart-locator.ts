@@ -9,7 +9,7 @@ export class SmartLocator {
   private async highlightElement(tabId: number, uid: string, type: 'click' | 'hover' | 'fill' = 'click'): Promise<void> {
     console.warn(`[SmartLocator] Highlight requested (WARNING): uid="${uid}" type=${type} tab=${tabId}`)
 
-    const color = type === 'fill' ? '#f59e0b' : '#3b82f6' // Amber for fill, Blue for click/hover
+    // const color = type === 'fill' ? '#f59e0b' : '#3b82f6' // Kept hardcoded blue per AIPEX spec
 
     try {
       await cdpCommander.sendCommand<EvaluateResult>(tabId, 'Runtime.evaluate', {
@@ -31,9 +31,10 @@ export class SmartLocator {
 
                 // Apply "AIPex-style" visual feedback
                 el.style.transition = 'all 0.2s ease-in-out';
-                el.style.outline = '3px solid ${color}';
+                el.style.outline = '3px solid #3b82f6';
                 el.style.outlineOffset = '2px';
-                el.style.boxShadow = '0 0 0 4px rgba(${type === 'fill' ? '245, 158, 11' : '59, 130, 246'}, 0.2), 0 0 20px rgba(${type === 'fill' ? '245, 158, 11' : '59, 130, 246'}, 0.4)';
+                // AIPex "Blueish Glow" - Multi-layered shadow
+                el.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.2), 0 0 20px rgba(59, 130, 246, 0.4)';
                 
                 // Remove highlight after animation
                 setTimeout(() => {

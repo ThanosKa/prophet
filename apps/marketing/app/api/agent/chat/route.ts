@@ -14,6 +14,7 @@ import { agentChatRequestSchema, DEFAULT_AGENT_MODEL, type ToolName, sanitizeFor
 import { error } from "@/types";
 import { logger } from "@/lib/logger";
 import { calculateCostInCents, type ModelName } from "@/lib/pricing";
+import { devLogger } from "@/lib/dev-logger";
 import type {
   MessageParam,
   ContentBlockParam,
@@ -57,10 +58,10 @@ export async function POST(req: Request) {
 
     if (!validation.success) {
       logger.error(
-        { 
-          userId, 
+        {
+          userId,
           errors: validation.error.format(),
-          body: sanitizeForLog(body) 
+          body: sanitizeForLog(body)
         },
         "Validation failed for agent chat request"
       );
@@ -184,6 +185,9 @@ export async function POST(req: Request) {
       },
       "Starting agent stream"
     );
+
+    // DEV LOGGING: Log request to LLM
+    await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT);
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -380,6 +384,9 @@ export async function POST(req: Request) {
             },
             "Agent stream completed"
           );
+
+          // DEV LOGGING: Log response from LLM
+          await devLogger.logResponse(fullTextResponse, { input_tokens: inputTokens, output_tokens: outputTokens });
 
           const executionCompleteData = JSON.stringify({
             type: "execution_complete",
