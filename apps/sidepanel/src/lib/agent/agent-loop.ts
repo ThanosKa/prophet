@@ -168,7 +168,7 @@ export async function* runAgentLoop(
             type: "tool_use" as const,
             id: event.id,
             name: event.name as ToolName,
-            input: (event as any).input || {}
+            input: event.input || {}
           } : null);
 
           if (toolUse) {

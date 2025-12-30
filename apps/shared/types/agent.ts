@@ -72,6 +72,7 @@ export interface AgentStreamEvent {
   toolCallId?: string;
   toolName?: ToolName;
   params?: unknown;
+  input?: Record<string, unknown>;
   result?: unknown;
 }
 
