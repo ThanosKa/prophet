@@ -42,11 +42,11 @@ function ensureConnection(): chrome.runtime.Port {
   })
 
   backgroundPort.onDisconnect.addListener(() => {
-    console.log('[BackgroundBridge] Disconnected from background')
+    // console.log('[BackgroundBridge] Disconnected from background')
     backgroundPort = null
   })
 
-  console.log('[BackgroundBridge] Connected to background')
+  // console.log('[BackgroundBridge] Connected to background')
   return backgroundPort
 }
 

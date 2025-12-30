@@ -1,5 +1,5 @@
 import { executeToolViaBackground } from "./background-bridge";
-import { DEFAULT_AGENT_MODEL, sanitizeForLog } from "@prophet/shared";
+import { DEFAULT_AGENT_MODEL } from "@prophet/shared";
 import type {
   AgentStreamEvent,
   AgentModel,
@@ -43,12 +43,14 @@ async function* streamAgentChat(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  /*
   console.log(`[Turn Debug] Sending Turn Request for ${options.chatId}:`, {
     hasUserMessage: !!options.userMessage,
     toolResultsCount: options.toolResults?.length || 0,
     previousContentCount: options.previousContent?.length || 0,
     payload: sanitizeForLog(options)
   });
+  */
 
   const response = await fetch(url, {
     method: "POST",

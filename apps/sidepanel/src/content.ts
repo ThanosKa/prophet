@@ -453,7 +453,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 // ============================================================================
 
 if (window.location.pathname === '/auth-success') {
-  console.log('[Prophet] Auth success page detected')
+  // console.log('[Prophet] Auth success page detected')
 
   let countdown = 3
   const updateCountdown = () => {
@@ -469,15 +469,15 @@ if (window.location.pathname === '/auth-success') {
 
     if (countdown <= 0) {
       clearInterval(timer)
-      console.log('[Prophet] Closing auth tab...')
+      // console.log('[Prophet] Closing auth tab...')
 
       chrome.runtime.sendMessage(
         { type: 'CLOSE_AUTH_TAB' },
-        (response) => {
+        (_response) => {
           if (chrome.runtime.lastError) {
             console.error('[Prophet] Error closing tab:', chrome.runtime.lastError)
           } else {
-            console.log('[Prophet] Tab close response:', response)
+            // console.log('[Prophet] Tab close response:', response)
           }
         }
       )
@@ -493,4 +493,4 @@ if (window.location.pathname === '/auth-success') {
   }, 100)
 }
 
-console.log('[Prophet] Content script loaded')
+// console.log('[Prophet] Content script loaded')

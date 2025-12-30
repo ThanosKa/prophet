@@ -6,7 +6,7 @@ const UID_ATTRIBUTE = 'data-prophet-nodeid'
 
 export class SmartLocator {
   private async highlightElement(tabId: number, uid: string, type: 'click' | 'hover' | 'fill' = 'click'): Promise<void> {
-    console.log(`[SmartLocator] Attempting to highlight uid="${uid}" (type=${type}) on tab=${tabId}`)
+    console.warn(`[SmartLocator] Highlight requested (WARNING): uid="${uid}" type=${type} tab=${tabId}`)
 
     const color = type === 'fill' ? '#f59e0b' : '#3b82f6' // Amber for fill, Blue for click/hover
 
@@ -15,11 +15,11 @@ export class SmartLocator {
         expression: `
           (function() {
             try {
-              console.log('[Prophet Debug] Searching for element with uid="${uid}"');
+              console.warn('[Prophet Content] Searching for element with uid="${uid}"');
               const el = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
               
               if (el) {
-                console.log('[Prophet Debug] Element found, applying styles');
+                console.warn('[Prophet Content] Element FOUND, applying styles');
                 
                 // Store original styles if not already stored
                 if (!el.dataset.prophetOriginalTransition) {
@@ -44,19 +44,19 @@ export class SmartLocator {
                   delete el.dataset.prophetOriginalTransition;
                   delete el.dataset.prophetOriginalOutline;
                   delete el.dataset.prophetOriginalBoxShadow;
-                  console.log('[Prophet Debug] Highlight removed');
+                  // console.log('[Prophet Debug] Highlight removed');
                 }, 1500);
               } else {
-                console.warn('[Prophet Debug] Element NOT found for uid="${uid}"');
+                console.error('[Prophet Content] Element NOT found for uid="${uid}"');
               }
             } catch (err) {
-              console.error('[Prophet Debug] Error in highlight script:', err);
+              console.error('[Prophet Content] Error in highlight script:', err);
             }
           })()
         `,
         awaitPromise: false,
       })
-      console.log(`[SmartLocator] Highlight command sent successfully`)
+      console.warn(`[SmartLocator] Highlight command SENT successfully`)
     } catch (error) {
       console.error(`[SmartLocator] Failed to send highlight command:`, error)
     }

@@ -26,21 +26,21 @@ export function useAuth(): UseAuthReturn {
   const { signOut } = useClerkAuth()
   const { setUser } = useAuthStore()
 
-  console.log('[Auth] isSignedIn:', isSignedIn, 'clerkUser:', clerkUser?.id)
+  // console.log('[Auth] isSignedIn:', isSignedIn, 'clerkUser:', clerkUser?.id)
 
   const { data: user, isLoading, error } = useQuery({
     queryKey: ['user', clerkUser?.id],
     queryFn: async () => {
-      console.log('[Auth] Query running, isSignedIn:', isSignedIn)
+      // console.log('[Auth] Query running, isSignedIn:', isSignedIn)
       if (!isSignedIn) return null
 
-      console.log('[Auth] Syncing user...')
-      const syncResult = await apiClient.syncUser()
-      console.log('[Auth] Sync result:', syncResult)
+      // console.log('[Auth] Syncing user...')
+      await apiClient.syncUser()
+      // console.log('[Auth] Sync result:', syncResult)
 
-      console.log('[Auth] Fetching user...')
+      // console.log('[Auth] Fetching user...')
       const response = await apiClient.getUser()
-      console.log('[Auth] User response:', response)
+      // console.log('[Auth] User response:', response)
 
       if (response.data) {
         setUser(response.data)

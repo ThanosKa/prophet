@@ -22,8 +22,8 @@ class ApiClient {
       })
       const token = tokenResponse?.token
 
-      console.log('[API] Token retrieved:', token ? 'yes' : 'no')
-      console.log('[API] Request:', endpoint)
+      // console.log('[API] Token retrieved:', token ? 'yes' : 'no')
+      // console.log('[API] Request:', endpoint)
 
       const url = new URL(endpoint, this._baseUrl)
       const headers: Record<string, string> = {
@@ -101,8 +101,8 @@ class ApiClient {
     })
     const token = tokenResponse?.token
 
-    console.log('[API] Stream token retrieved:', token ? 'yes' : 'no')
-    console.log('[API] Stream request:', chatId)
+    // console.log('[API] Stream token retrieved:', token ? 'yes' : 'no')
+    // console.log('[API] Stream request:', chatId)
 
     const url = new URL('/api/chat/stream', this._baseUrl)
     const headers: Record<string, string> = {
