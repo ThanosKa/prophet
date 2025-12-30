@@ -196,7 +196,7 @@ export const MessageBranchPage = ({ className, ...props }: MessageBranchPageProp
 
 export function MessageResponse({ children }: { children: string }) {
   return (
-    <div className="prose prose-sm prose-invert max-w-none break-words">
+    <div className="prose prose-sm dark:prose-invert max-w-none break-words">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

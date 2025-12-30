@@ -133,7 +133,7 @@ export function PromptInput({
         onSubmit={handleSubmit}
         className={cn(
           "relative flex flex-col",
-          "bg-[var(--chatbot-muted)] rounded-lg border-2 border-border/60 shadow-sm",
+          "bg-[var(--chatbot-muted)] rounded-lg border-2 border-border/60",
           "focus-within:border-border focus-within:ring-[1px] focus-within:ring-white/10",
           "transition-all duration-200",
           className
@@ -212,7 +212,7 @@ export function PromptInputTextarea({
       rows={rows}
       className={cn(
         "min-h-[44px] max-h-[120px] resize-none",
-        "bg-transparent border-0 focus-visible:ring-0",
+        "bg-transparent border-0 shadow-none focus-visible:ring-0",
         "px-4 pt-3 pb-1",
         "placeholder:text-muted-foreground/60",
         className

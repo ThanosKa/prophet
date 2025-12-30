@@ -61,7 +61,7 @@ export function EnhancedChatMessage({
             {isStreaming && streamingContent ? (
               <StreamingText text={displayContent} isStreaming />
             ) : isAssistant ? (
-              <div className="prose prose-sm prose-invert max-w-none break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+              <div className="prose prose-sm dark:prose-invert max-w-none break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{

@@ -57,6 +57,12 @@
     --input: hsl(0 0% 90%);
     --ring: hsl(0 0% 8%);
     --radius: 0.5rem;
+
+    /* Chatbot specific variables */
+    --chatbot-bg: hsl(0 0% 98.5%);
+    --chatbot-card: hsl(0 0% 100%);
+    --chatbot-muted: hsl(0 0% 92%);
+    --chatbot-accent: hsl(0 0% 88%);
   }
   .dark {
     --background: hsl(0 0% 12%);
