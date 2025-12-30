@@ -133,8 +133,8 @@ export function PromptInput({
         onSubmit={handleSubmit}
         className={cn(
           "relative flex flex-col",
-          "bg-[var(--chatbot-muted)] rounded-lg border border-border/50 shadow-sm",
-          "focus-within:border-border/80 focus-within:ring-2 focus-within:ring-white/10",
+          "bg-[var(--chatbot-muted)] rounded-lg border-2 border-border/60 shadow-sm",
+          "focus-within:border-border focus-within:ring-[1px] focus-within:ring-white/10",
           "transition-all duration-200",
           className
         )}

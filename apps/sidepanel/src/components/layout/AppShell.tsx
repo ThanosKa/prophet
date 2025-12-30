@@ -24,7 +24,7 @@ export function AppShell({
 }: AppShellProps) {
   return (
     <div className="flex flex-col h-screen w-screen bg-[var(--chatbot-bg)]">
-      <Header title={chatTitle} className="bg-[var(--chatbot-bg)]/95" />
+      <Header title={chatTitle} className="bg-[var(--chatbot-muted)]/95" />
 
       <ChatDrawer
         chats={chats}

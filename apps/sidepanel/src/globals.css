@@ -63,7 +63,7 @@
     --foreground: hsl(0 0% 98%);
     --card: hsl(0 0% 16%);
     --card-foreground: hsl(0 0% 98%);
-    --popover: hsl(0 0% 16%);
+    --popover: hsl(0 0% 22%);
     --popover-foreground: hsl(0 0% 98%);
     --primary: hsl(0 0% 98%);
     --primary-foreground: hsl(0 0% 12%);
@@ -75,14 +75,14 @@
     --accent-foreground: hsl(0 0% 98%);
     --destructive: hsl(0 62.8% 30.6%);
     --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(0 0% 100% / 10%);
+    --border: hsl(0 0% 100% / 15%);
     --input: hsl(0 0% 100% / 15%);
     --ring: hsl(0 0% 83%);
 
     /* Chatbot specific variables */
     --chatbot-bg: hsl(0 0% 18%);
     --chatbot-card: hsl(0 0% 22%);
-    --chatbot-muted: hsl(0 0% 14%);
+    --chatbot-muted: hsl(0 0% 16%);
     --chatbot-accent: hsl(0 0% 25%);
   }
 }

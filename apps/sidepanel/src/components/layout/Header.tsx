@@ -16,7 +16,7 @@ export function Header({ title, className }: HeaderProps) {
   return (
     <header
       className={cn(
-        'flex items-center justify-between h-12 px-3 border-b bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/60',
+        'flex items-center justify-between h-12 px-3 border-b bg-[var(--chatbot-muted)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--chatbot-muted)]/60',
         className
       )}
     >
