@@ -14,7 +14,7 @@ export interface MessageProps extends React.HTMLAttributes<HTMLDivElement> {
 export const Message = ({ className, from, children, ...props }: MessageProps) => (
   <div
     className={cn(
-      "group flex w-full max-w-full flex-col gap-2 px-4 py-4 transition-colors duration-200 hover:bg-accent/40",
+      "group flex w-full max-w-full flex-col gap-2 px-4 py-4 transition-colors duration-200 hover:bg-[var(--chatbot-accent)]/40",
       from === "user" ? "is-user ml-auto justify-end" : "is-assistant",
       className
     )}
@@ -31,7 +31,7 @@ export const MessageContent = ({ children, className, ...props }: MessageContent
   <div
     className={cn(
       "flex w-fit max-w-full min-w-0 flex-col gap-2 text-sm",
-      "group-[.is-user]:ml-auto group-[.is-user]:rounded-lg group-[.is-user]:bg-secondary group-[.is-user]:px-4 group-[.is-user]:py-3",
+      "group-[.is-user]:ml-auto group-[.is-user]:rounded-lg group-[.is-user]:bg-[var(--chatbot-muted)] group-[.is-user]:px-4 group-[.is-user]:py-3",
       "group-[.is-assistant]:text-foreground",
       className
     )}
