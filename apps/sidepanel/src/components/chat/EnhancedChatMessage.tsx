@@ -40,7 +40,7 @@ export function EnhancedChatMessage({
   return (
     <div
       className={cn(
-        'group flex gap-3 py-4 px-4',
+        'group flex gap-3 py-4 px-4 transition-colors duration-200 hover:bg-accent/40',
         isAssistant ? 'bg-muted/30' : ''
       )}
     >

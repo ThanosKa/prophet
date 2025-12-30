@@ -68,7 +68,7 @@ export function ChatDrawer({
 
   return (
     <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-      <SheetContent side="left" className="w-72 p-0">
+      <SheetContent side="left" className="w-72 p-0 bg-muted border-r border-border">
         <SheetHeader className="p-4 pb-2">
           <SheetTitle className="text-lg font-semibold">Prophet</SheetTitle>
         </SheetHeader>
@@ -99,8 +99,9 @@ export function ChatDrawer({
                       <div
                         key={chat.id}
                         className={cn(
-                          'group relative flex items-center gap-2 px-2 py-2 rounded-md hover:bg-accent cursor-pointer transition-colors',
-                          activeId === chat.id && 'bg-accent'
+                          'group relative flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200',
+                          'hover:bg-accent/40 active:scale-[0.98]',
+                          activeId === chat.id ? 'bg-accent/60 ring-1 ring-border shadow-sm' : 'transparent'
                         )}
                         onClick={() => handleSelectChat(chat.id)}
                       >
