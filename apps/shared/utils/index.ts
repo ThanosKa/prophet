@@ -28,6 +28,34 @@ export function truncate(text: string, maxLength: number): string {
 }
 
 /**
+ * Sanitize an object for logging by replacing long strings (likely base64) with a placeholder
+ */
+export function sanitizeForLog(obj: any): any {
+  if (typeof obj !== 'object' || obj === null) {
+    if (typeof obj === 'string' && obj.length > 500) {
+      return `[LONG_STRING_TRUNCATED: ${obj.length} chars]`
+    }
+    return obj
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeForLog)
+  }
+
+  const sanitized: any = {}
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'string' && value.length > 500) {
+      sanitized[key] = `[LONG_STRING_TRUNCATED: ${value.length} chars]`
+    } else if (typeof value === 'object' && value !== null) {
+      sanitized[key] = sanitizeForLog(value)
+    } else {
+      sanitized[key] = value
+    }
+  }
+  return sanitized
+}
+
+/**
  * Credit tier limits (in tokens)
  */
 export const TIER_LIMITS = {

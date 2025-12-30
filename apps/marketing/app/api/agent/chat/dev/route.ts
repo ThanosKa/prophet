@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { anthropic } from '@/lib/anthropic'
 import { AGENT_TOOLS } from '@/lib/agent/tools'
 import { AGENT_SYSTEM_PROMPT, AGENT_MAX_TOKENS } from '@/lib/agent/system-prompt'
-import { agentChatRequestSchema, DEFAULT_AGENT_MODEL } from '@prophet/shared'
+import { agentChatRequestSchema, DEFAULT_AGENT_MODEL, sanitizeForLog } from '@prophet/shared'
 import { error } from '@/types'
 import { logger } from '@/lib/logger'
 import type { ModelName } from '@/lib/pricing'
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    logger.debug({ body }, '[DEV] Request body received')
+    logger.debug({ body: sanitizeForLog(body) }, '[DEV] Request body received')
 
     const validation = agentChatRequestSchema.safeParse(body)
 

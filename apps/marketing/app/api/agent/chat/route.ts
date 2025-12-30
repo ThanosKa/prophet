@@ -10,7 +10,7 @@ import {
   AGENT_SYSTEM_PROMPT,
   AGENT_MAX_TOKENS,
 } from "@/lib/agent/system-prompt";
-import { agentChatRequestSchema, DEFAULT_AGENT_MODEL, type ToolName } from "@prophet/shared";
+import { agentChatRequestSchema, DEFAULT_AGENT_MODEL, type ToolName, sanitizeForLog } from "@prophet/shared";
 import { error } from "@/types";
 import { logger } from "@/lib/logger";
 import { calculateCostInCents, type ModelName } from "@/lib/pricing";
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
         { 
           userId, 
           errors: validation.error.format(),
-          body: JSON.stringify(body).slice(0, 2000) 
+          body: sanitizeForLog(body) 
         },
         "Validation failed for agent chat request"
       );
