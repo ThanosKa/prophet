@@ -5,11 +5,12 @@
  * Provides formatted output showing model, user messages, JSON payloads, and responses.
  */
 
-import { writeFile, appendFile } from 'fs/promises'
+import { writeFile, appendFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import type { MessageParam } from '@anthropic-ai/sdk/resources/messages'
 
-const LOG_FILE_PATH = join(process.cwd(), 'log.txt')
+const LOG_DIR = join(process.cwd(), 'logs')
+const LOG_FILE_PATH = join(LOG_DIR, 'response.txt')
 
 export class DevLogger {
     private isDev: boolean
@@ -19,17 +20,29 @@ export class DevLogger {
         this.isDev = process.env.NODE_ENV === 'development'
     }
 
+    private async ensureLogDir(): Promise<void> {
+        try {
+            await mkdir(LOG_DIR, { recursive: true })
+        } catch (err) {
+            // Ignore if directory already exists
+        }
+    }
+
     /**
      * Log an LLM request (before streaming)
      */
     async logRequest(model: string, messages: MessageParam[], systemPrompt?: string): Promise<void> {
         if (!this.isDev) return
 
+        await this.ensureLogDir()
         const timestamp = new Date().toISOString()
 
         // Extract user message
         const lastMessage = messages[messages.length - 1]
         const userMessage = this.extractTextFromMessage(lastMessage)
+
+        // LLM Input (all messages as text)
+        const llmInput = messages.map(m => `[${m.role.toUpperCase()}]: ${this.extractTextFromMessage(m)}`).join('\n')
 
         // Format JSON sent to LLM
         const jsonSent = JSON.stringify(
@@ -48,12 +61,18 @@ ${timestamp}
 MODEL: ${model}
 ===================================================================================================
 
-USER MESSAGE:
+LLM INPUT
+
+${llmInput}
+
+USER MESSAGE
+
 ${userMessage}
 
-===================================================================================================
-JSON RAW SENT TO LLM:
-===================================================================================================
+-----
+
+RAW LLM CALL (json)
+
 ${jsonSent}
 
 ---------------------------------------------------------------------------------------------------
@@ -75,9 +94,11 @@ ${jsonSent}
     async logResponse(responseText: string, usage?: { input_tokens: number; output_tokens: number }): Promise<void> {
         if (!this.isDev) return
 
+        await this.ensureLogDir()
         const responseBlock = `
-RESPONSE FROM LLM:
+RESPONSE OF LLM
 ===================================================================================================
+
 ${responseText}
 
 ${usage ? `\nTokens: Input=${usage.input_tokens}, Output=${usage.output_tokens}` : ''}

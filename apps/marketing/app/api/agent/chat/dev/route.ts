@@ -7,6 +7,7 @@ import { error } from '@/types'
 import { logger } from '@/lib/logger'
 import type { ModelName } from '@/lib/pricing'
 import type { MessageParam, ContentBlockParam } from '@anthropic-ai/sdk/resources/messages'
+import { devLogger } from '@/lib/dev-logger'
 
 export async function POST(req: Request) {
   logger.debug({}, '[DEV] Agent chat endpoint called')
@@ -81,6 +82,9 @@ export async function POST(req: Request) {
       { model, messageCount: anthropicMessages.length, hasToolResults: !!toolResults },
       '[DEV] Starting agent stream'
     )
+
+    // DEV LOGGING: Log request to LLM
+    await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT)
 
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
@@ -203,6 +207,9 @@ export async function POST(req: Request) {
             },
             '[DEV] Agent stream completed'
           )
+
+          // DEV LOGGING: Log response from LLM
+          await devLogger.logResponse(fullTextResponse, { input_tokens: inputTokens, output_tokens: outputTokens })
 
           const doneData = JSON.stringify({
             type: 'done',

@@ -9,6 +9,7 @@ import { streamMessageSchema } from '@prophet/shared'
 import { error } from '@/types'
 import { logger } from '@/lib/logger'
 import { calculateCostInCents, type ModelName } from '@/lib/pricing'
+import { devLogger } from '@/lib/dev-logger'
 
 export async function POST(req: Request) {
   try {
@@ -88,6 +89,9 @@ export async function POST(req: Request) {
     ]
 
     logger.debug({ userId, chatId, messageCount: anthropicMessages.length }, 'Starting stream')
+
+    // DEV LOGGING: Log request to LLM
+    await devLogger.logRequest(DEFAULT_MODEL, anthropicMessages as any, SYSTEM_PROMPT)
 
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
@@ -171,6 +175,9 @@ export async function POST(req: Request) {
           })
 
           logger.info({ userId, chatId, costCents, inputTokens, outputTokens }, 'Stream completed successfully')
+
+          // DEV LOGGING: Log response from LLM
+          await devLogger.logResponse(fullResponse, { input_tokens: inputTokens, output_tokens: outputTokens })
 
           const doneData = JSON.stringify({
             type: 'done',
