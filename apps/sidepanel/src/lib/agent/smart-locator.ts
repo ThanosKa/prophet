@@ -5,6 +5,48 @@ import { type BoundingBox } from './types'
 const UID_ATTRIBUTE = 'data-prophet-nodeid'
 
 export class SmartLocator {
+  private async highlightElement(tabId: number, uid: string, type: 'click' | 'hover' | 'fill' = 'click'): Promise<void> {
+    const color = type === 'fill' ? '#f59e0b' : '#3b82f6' // Amber for fill, Blue for click/hover
+
+    await cdpCommander.sendCommand<EvaluateResult>(tabId, 'Runtime.evaluate', {
+      expression: `
+        (function() {
+          const el = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
+          if (el) {
+            // Store original styles if not already stored
+            if (!el.dataset.prophetOriginalTransition) {
+              el.dataset.prophetOriginalTransition = el.style.transition || '';
+              el.dataset.prophetOriginalOutline = el.style.outline || '';
+              el.dataset.prophetOriginalBoxShadow = el.style.boxShadow || '';
+            }
+
+            // Apply "AIPex-style" visual feedback
+            el.style.transition = 'all 0.2s ease-in-out';
+            el.style.outline = '3px solid ${color}';
+            el.style.outlineOffset = '2px';
+            el.style.boxShadow = '0 0 0 4px rgba(${type === 'fill' ? '245, 158, 11' : '59, 130, 246'}, 0.2), 0 0 20px rgba(${type === 'fill' ? '245, 158, 11' : '59, 130, 246'}, 0.4)';
+            
+            // Remove highlight after animation
+            setTimeout(() => {
+              el.style.transition = el.dataset.prophetOriginalTransition;
+              el.style.outline = el.dataset.prophetOriginalOutline;
+              el.style.boxShadow = el.dataset.prophetOriginalBoxShadow;
+              
+              // Cleanup dataset attributes
+              delete el.dataset.prophetOriginalTransition;
+              delete el.dataset.prophetOriginalOutline;
+              delete el.dataset.prophetOriginalBoxShadow;
+            }, 1500);
+          }
+        })()
+      `,
+      awaitPromise: false,
+    })
+
+    // Give time for the user to see the highlight before action occurs
+    await new Promise((resolve) => setTimeout(resolve, 800))
+  }
+
   async click(tabId: number, uid: string, doubleClick: boolean = false): Promise<void> {
     const node = snapshotManager.getNodeByUid(tabId, uid)
     if (!node) {
@@ -12,6 +54,8 @@ export class SmartLocator {
     }
 
     await this.scrollIntoView(tabId, uid)
+    await this.highlightElement(tabId, uid, 'click')
+
     const box = await this.getBoundingBox(tabId, uid)
 
     if (!box || box.width === 0 || box.height === 0) {
@@ -48,6 +92,7 @@ export class SmartLocator {
     }
 
     await this.scrollIntoView(tabId, uid)
+    await this.highlightElement(tabId, uid, 'fill')
     await this.focusElement(tabId, uid)
 
     await this.selectAll(tabId)
@@ -79,6 +124,8 @@ export class SmartLocator {
     }
 
     await this.scrollIntoView(tabId, uid)
+    await this.highlightElement(tabId, uid, 'hover')
+
     const box = await this.getBoundingBox(tabId, uid)
 
     if (!box) {

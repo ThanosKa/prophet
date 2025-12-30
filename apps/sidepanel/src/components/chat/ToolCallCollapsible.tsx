@@ -81,6 +81,8 @@ export function ToolCallCollapsible({
   isExecuting = false,
 }: ToolCallCollapsibleProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [showDebug, setShowDebug] = useState(false)
+
   const Icon = toolIcons[toolCall.name] || Camera
   const label = toolLabels[toolCall.name] || toolCall.name
   const inputSummary = formatToolInput(toolCall)
@@ -104,56 +106,80 @@ export function ToolCallCollapsible({
           className={cn(
             'flex items-center gap-2 w-full px-2 py-1.5 rounded-md border text-xs transition-colors',
             getStatusStyles(),
-            'hover:bg-accent/50'
+            'hover:bg-accent/50 group'
           )}
         >
           {getStatusIcon()}
-          <Icon className="h-3 w-3 text-muted-foreground" />
-          <span className="font-medium">{label}</span>
+          <Icon className="h-3 w-3 text-muted-foreground group-hover:text-foreground transition-colors" />
+          <span className="font-medium text-foreground/90">{label}</span>
+
           {inputSummary && (
-            <span className="text-muted-foreground truncate max-w-[120px]">
+            <span className="text-muted-foreground truncate max-w-[180px] font-mono opacity-80">
               {inputSummary}
             </span>
           )}
-          <span className="ml-auto flex items-center gap-1">
+
+          <span className="ml-auto flex items-center gap-2">
             {toolCall.durationMs !== undefined && !isExecuting && (
-              <span className="text-muted-foreground">{toolCall.durationMs}ms</span>
+              <span className="text-[10px] text-muted-foreground/70 font-mono">{toolCall.durationMs}ms</span>
             )}
             <ChevronDown
               className={cn(
-                'h-3 w-3 text-muted-foreground transition-transform',
+                'h-3 w-3 text-muted-foreground/50 transition-transform duration-200',
                 isOpen && 'rotate-180'
               )}
             />
           </span>
         </button>
       </CollapsibleTrigger>
+
       <CollapsibleContent>
-        <div className="mt-1.5 px-3 py-2.5 rounded-lg bg-[var(--chatbot-muted)]/50 border border-border/50 text-[11px] font-mono leading-relaxed">
-          <Collapsible>
-            <CollapsibleTrigger className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors mb-2">
-              <ChevronDown className="h-3 w-3" />
-              <span className="font-medium">Execution Details</span>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-3">
-              <div className="space-y-1">
-                <p className="text-muted-foreground uppercase tracking-wider text-[9px] font-bold opacity-70">Parameters</p>
-                <pre className="text-foreground/80 whitespace-pre-wrap break-all bg-[var(--chatbot-muted)] p-2 rounded border border-border/30">
-                  {JSON.stringify(toolCall.input, null, 2)}
-                </pre>
-              </div>
-              {toolCall.result && (
+        <div className="mt-1 px-3 py-2 rounded-md bg-muted/30 border border-border/30 text-xs space-y-2 animate-in slide-in-from-top-1 duration-200">
+          {/* Human-readable result summary */}
+          {toolCall.name === 'take_snapshot' && toolCall.result && !isExecuting && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Camera className="h-3 w-3" />
+              <span>Snapshot captured successfully</span>
+            </div>
+          )}
+
+          {toolCall.name === 'navigate' && inputSummary && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Navigation className="h-3 w-3" />
+              <span>Navigated to <a href={toolCall.input.url as string} target="_blank" rel="noreferrer" className="underline decoration-muted-foreground/30 hover:text-primary">{inputSummary}</a></span>
+            </div>
+          )}
+
+          {/* Debug Details Toggle */}
+          <div className="pt-1 border-t border-border/20 mt-2">
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors font-medium uppercase tracking-wider"
+            >
+              {showDebug ? 'Hide Debug Details' : 'Show Debug Details'}
+            </button>
+
+            {showDebug && (
+              <div className="mt-2 space-y-3 font-mono text-[10px]">
                 <div className="space-y-1">
-                  <p className="text-muted-foreground uppercase tracking-wider text-[9px] font-bold opacity-70">Response</p>
-                  <pre className="text-foreground/80 whitespace-pre-wrap break-all max-h-40 overflow-auto bg-[var(--chatbot-muted)] p-2 rounded border border-border/30">
-                    {typeof toolCall.result === 'string' 
-                      ? (toolCall.result.length > 1000 ? toolCall.result.slice(0, 1000) + '...' : toolCall.result)
-                      : JSON.stringify(toolCall.result, null, 2)}
+                  <p className="text-muted-foreground opacity-70">Input</p>
+                  <pre className="text-foreground/70 whitespace-pre-wrap break-all bg-background/50 p-2 rounded border border-border/20">
+                    {JSON.stringify(toolCall.input, null, 2)}
                   </pre>
                 </div>
-              )}
-            </CollapsibleContent>
-          </Collapsible>
+                {toolCall.result && (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground opacity-70">Output</p>
+                    <pre className="text-foreground/70 whitespace-pre-wrap break-all max-h-40 overflow-auto bg-background/50 p-2 rounded border border-border/20">
+                      {typeof toolCall.result === 'string'
+                        ? (toolCall.result.length > 500 ? toolCall.result.slice(0, 500) + '...' : toolCall.result)
+                        : JSON.stringify(toolCall.result, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </CollapsibleContent>
     </Collapsible>
