@@ -49,8 +49,13 @@ export async function GET(
       orderBy: [asc(messages.createdAt)],
     })
 
+    const parsedMessages = chatMessages.map(msg => ({
+      ...msg,
+      toolCalls: typeof msg.toolCalls === 'string' ? JSON.parse(msg.toolCalls) : msg.toolCalls
+    }))
+
     logger.info({ userId, chatId, messageCount: chatMessages.length }, 'Messages fetched')
-    return NextResponse.json(success(chatMessages))
+    return NextResponse.json(success(parsedMessages))
   } catch (err) {
     logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to fetch messages')
     return NextResponse.json(

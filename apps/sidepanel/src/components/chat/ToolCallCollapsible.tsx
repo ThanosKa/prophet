@@ -62,7 +62,8 @@ function formatToolInput(toolCall: ToolCall): string {
     case 'hover_element_by_uid':
       return input.uid as string
     case 'navigate':
-      return (input.url as string).slice(0, 40)
+      const url = input.url as string | undefined
+      return url ? (url.length > 40 ? url.slice(0, 40) + '...' : url) : '...'
     case 'scroll_page':
       return input.direction as string
     case 'search_snapshot':
@@ -136,8 +137,9 @@ export function ToolCallCollapsible({
             <>
               <p className="font-medium mt-2 mb-1">Result:</p>
               <pre className="text-muted-foreground whitespace-pre-wrap break-all max-h-32 overflow-auto">
-                {toolCall.result.slice(0, 500)}
-                {toolCall.result.length > 500 && '...'}
+                {typeof toolCall.result === 'string' 
+                  ? (toolCall.result.length > 500 ? toolCall.result.slice(0, 500) + '...' : toolCall.result)
+                  : JSON.stringify(toolCall.result, null, 2)}
               </pre>
             </>
           )}

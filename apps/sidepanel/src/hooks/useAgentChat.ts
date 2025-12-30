@@ -91,10 +91,18 @@ export function useAgentChat() {
             case "tool_call_start":
               setStatus("executing_tools");
               if (event.toolCallId && event.toolName) {
-                setCurrentToolCall({
+                const newToolCall: ToolCall = {
                   id: event.toolCallId,
                   name: event.toolName,
                   input: event.params as Record<string, unknown>,
+                };
+                setCurrentToolCall(newToolCall);
+                
+                // Also update the message with placeholder if needed, 
+                // but usually EnhancedMessageList handles currentToolCall separately.
+                // However, to be robust for history:
+                updateMessage(chatId, assistantMessageId, {
+                  toolCalls: [...toolCalls]
                 });
               }
               break;
@@ -110,6 +118,11 @@ export function useAgentChat() {
                   result: event.result as string,
                 });
                 setCurrentToolCall(null);
+                
+                // Update the message store immediately
+                updateMessage(chatId, assistantMessageId, {
+                  toolCalls: [...toolCalls]
+                });
               }
               break;
 
