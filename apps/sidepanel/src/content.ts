@@ -6,15 +6,16 @@ const UID_ATTRIBUTE = 'data-prophet-nodeid'
 
 const HIGHLIGHT_STYLES = {
   click: {
-    outline: '3px solid #22c55e',
+    outline: '4px solid #3b82f6',
     outlineOffset: '2px',
-    backgroundColor: 'rgba(34, 197, 94, 0.15)',
-    transition: 'all 0.2s ease',
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    boxShadow: '0 0 15px rgba(59, 130, 246, 0.5)',
+    transition: 'all 0.15s ease-out',
   },
   hover: {
     outline: '3px solid #3b82f6',
     outlineOffset: '2px',
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
     transition: 'all 0.2s ease',
   },
   fill: {
@@ -25,7 +26,7 @@ const HIGHLIGHT_STYLES = {
   },
 }
 
-const ANIMATION_DURATION = 800
+const ANIMATION_DURATION = 1500
 
 // Store original styles to restore later
 const originalStyles = new Map<Element, { [key: string]: string }>()
@@ -102,14 +103,15 @@ function createClickRipple(x: number, y: number): void {
     position: fixed;
     left: ${x}px;
     top: ${y}px;
-    width: 20px;
-    height: 20px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    background: rgba(34, 197, 94, 0.5);
+    background: rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
     transform: translate(-50%, -50%) scale(0);
     pointer-events: none;
     z-index: 999999;
-    animation: prophet-ripple 0.6s ease-out forwards;
+    animation: prophet-ripple 0.8s cubic-bezier(0, 0, 0.2, 1) forwards;
   `
 
   // Add animation keyframes if not already added

@@ -107,10 +107,10 @@ export async function* runAgentLoop(
   image?: ImageData
 ): AsyncGenerator<AgentLoopEvent> {
   let previousContent: ContentBlock[] = [];
-  let currentTextContent = "";
+  let turnCount = 0;
+  let toolResults: ToolResult[] = [];
   let isFirstRequest = true;
   const maxTurns = 10;
-  let turnCount = 0;
 
   while (turnCount < maxTurns) {
     turnCount++;
@@ -127,12 +127,13 @@ export async function* runAgentLoop(
       isFirstRequest = false;
     } else {
       streamOptions.previousContent = previousContent;
+      streamOptions.toolResults = toolResults;
     }
 
     let hasToolUse = false;
-    const toolResults: ToolResult[] = [];
-    currentTextContent = "";
+    toolResults = []; // Reset for the CURRENT turn only
     const assistantContent: ContentBlock[] = [];
+    let turnTextContent = ""; // Text content for this turn only
 
     for await (const event of streamAgentChat(baseUrl, streamOptions)) {
       switch (event.type) {
@@ -143,7 +144,7 @@ export async function* runAgentLoop(
         case "content_delta": {
           const delta = event.delta || event.content || "";
           if (delta) {
-            currentTextContent += delta;
+            turnTextContent += delta;
             yield {
               type: "content_delta",
               delta,
@@ -174,12 +175,12 @@ export async function* runAgentLoop(
           if (toolUse) {
             hasToolUse = true;
 
-            if (currentTextContent) {
+            if (turnTextContent) {
               assistantContent.push({
                 type: "text",
-                text: currentTextContent,
+                text: turnTextContent,
               });
-              currentTextContent = "";
+              turnTextContent = "";
             }
 
             assistantContent.push(toolUse);
@@ -251,7 +252,7 @@ export async function* runAgentLoop(
         case "execution_complete":
           yield {
             type: "execution_complete",
-            finalOutput: event.finalOutput || currentTextContent,
+            finalOutput: event.finalOutput || turnTextContent,
             metrics: event.metrics || { inputTokens: 0, outputTokens: 0 },
           };
           break;
@@ -279,15 +280,14 @@ export async function* runAgentLoop(
       return;
     }
 
-    if (currentTextContent) {
+    if (turnTextContent) {
       assistantContent.push({
         type: "text",
-        text: currentTextContent,
+        text: turnTextContent,
       });
     }
 
     previousContent = assistantContent;
-    streamOptions.toolResults = toolResults;
-    streamOptions.previousContent = previousContent;
+    // toolResults is already populated from the loop above
   }
 }
