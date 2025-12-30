@@ -201,6 +201,121 @@ Returns matching elements with their UIDs, roles, and context. Useful when:
     },
   },
   {
+    name: 'wait_for_selector',
+    description: `Wait for an element matching a CSS selector to appear in the DOM.
+Use this when you expect dynamic content to load, especially for SPAs (React, Vue, etc).`,
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        selector: { type: 'string', description: 'CSS selector to wait for' },
+        timeout: { type: 'number', description: 'Timeout in ms (default 10000)' },
+        visible: { type: 'boolean', description: 'Wait for element to be visible (default false)' },
+      },
+      required: ['selector'],
+    },
+  },
+  {
+    name: 'wait_for_navigation',
+    description: `Wait for a page navigation to complete (readyState = complete).`,
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        timeout: { type: 'number', description: 'Timeout in ms (default 30000)' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'wait_for_timeout',
+    description: `Pause execution for a specified duration in milliseconds.`,
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        ms: { type: 'number', description: 'Milliseconds to wait' },
+      },
+      required: ['ms'],
+    },
+  },
+  {
+    name: 'list_tabs',
+    description: `List all open tabs to find one to switch to via switch_tab.`,
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'switch_tab',
+    description: `Switch focus to a specific tab by its ID.`,
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        tabId: { type: 'number', description: 'ID of tab to switch to' },
+      },
+      required: ['tabId'],
+    },
+  },
+  {
+    name: 'close_tab',
+    description: `Close a specific tab by its ID.`,
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        tabId: { type: 'number', description: 'ID of tab to close' },
+      },
+      required: ['tabId'],
+    },
+  },
+  {
+    name: 'open_new_tab',
+    description: `Open a URL in a new tab.`,
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        url: { type: 'string', description: 'URL to open' },
+        active: { type: 'boolean', description: 'Make tab active immediately (default true)' },
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'go_back',
+    description: `Navigate back in history.`,
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'go_forward',
+    description: `Navigate forward in history.`,
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'reload_page',
+    description: `Reload the current page.`,
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'get_page_info',
+    description: `Get metadata about current page (URL, title, viewport).`,
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
     name: 'press_key',
     description: `Press a keyboard key, optionally with modifiers.
 

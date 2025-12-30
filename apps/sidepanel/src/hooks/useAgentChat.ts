@@ -17,6 +17,7 @@ export function useAgentChat() {
   const { createAbortController, abort: abortAgentStore, setActive } = useAgentStore()
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<AgentStatus>('idle')
+  const [currentToolCall, setCurrentToolCall] = useState<any>(null) // Legacy support for ChatView
   const abortRef = useRef<boolean>(false)
   const activeStreamRef = useRef<{ chatId: string; abort: () => void } | null>(null)
 
@@ -38,6 +39,7 @@ export function useAgentChat() {
         setError(null)
         setStatus('submitted')
         setStreaming(true)
+        setCurrentToolCall(null)
         abortRef.current = false
 
         // Activate agent overlay
@@ -91,6 +93,17 @@ export function useAgentChat() {
         )) {
           if (abortRef.current) break
 
+          // Legacy: Handle currentToolCall
+          if (event.type === 'tool_call_start') {
+            setCurrentToolCall({
+              id: event.toolCallId,
+              name: event.toolName,
+              input: event.params || {},
+            })
+          } else if (event.type === 'tool_call_complete' || event.type === 'tool_call_error') {
+            setCurrentToolCall(null)
+          }
+
           // Process event through ChatAdapter
           const changedMessages = adapter.processEvent(event as any)
 
@@ -134,6 +147,7 @@ export function useAgentChat() {
         }
         setStreaming(false)
         if (status !== 'error') setStatus('idle')
+        setCurrentToolCall(null)
 
         // Deactivate agent overlay
         setActive(false)
@@ -154,6 +168,7 @@ export function useAgentChat() {
     }
     abortAgentStore()
     adapter.clear()
+    setCurrentToolCall(null)
   }, [abortAgentStore, adapter])
 
   return {
@@ -161,5 +176,6 @@ export function useAgentChat() {
     abort,
     error,
     setError,
+    currentToolCall,
   }
 }
