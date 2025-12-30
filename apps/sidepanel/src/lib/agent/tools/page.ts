@@ -219,3 +219,221 @@ export async function pressKey(input: {
     }
   }
 }
+
+/**
+ * Navigate back in browser history.
+ */
+export async function goBack(): Promise<ToolExecutionResult> {
+  const startTime = Date.now()
+
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (!tab?.id) {
+      return {
+        success: false,
+        error: 'No active tab found',
+        durationMs: Date.now() - startTime,
+      }
+    }
+
+    await chrome.tabs.goBack(tab.id)
+
+    // Wait for navigation to complete
+    await new Promise<void>((resolve) => {
+      const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+        if (tabId === tab.id && changeInfo.status === 'complete') {
+          chrome.tabs.onUpdated.removeListener(listener)
+          resolve()
+        }
+      }
+      chrome.tabs.onUpdated.addListener(listener)
+      setTimeout(() => {
+        chrome.tabs.onUpdated.removeListener(listener)
+        resolve()
+      }, 5000)
+    })
+
+    const updatedTab = await chrome.tabs.get(tab.id)
+
+    return {
+      success: true,
+      data: `Navigated back to: ${updatedTab.title || updatedTab.url}`,
+      durationMs: Date.now() - startTime,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to go back',
+      durationMs: Date.now() - startTime,
+    }
+  }
+}
+
+/**
+ * Navigate forward in browser history.
+ */
+export async function goForward(): Promise<ToolExecutionResult> {
+  const startTime = Date.now()
+
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (!tab?.id) {
+      return {
+        success: false,
+        error: 'No active tab found',
+        durationMs: Date.now() - startTime,
+      }
+    }
+
+    await chrome.tabs.goForward(tab.id)
+
+    // Wait for navigation to complete
+    await new Promise<void>((resolve) => {
+      const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+        if (tabId === tab.id && changeInfo.status === 'complete') {
+          chrome.tabs.onUpdated.removeListener(listener)
+          resolve()
+        }
+      }
+      chrome.tabs.onUpdated.addListener(listener)
+      setTimeout(() => {
+        chrome.tabs.onUpdated.removeListener(listener)
+        resolve()
+      }, 5000)
+    })
+
+    const updatedTab = await chrome.tabs.get(tab.id)
+
+    return {
+      success: true,
+      data: `Navigated forward to: ${updatedTab.title || updatedTab.url}`,
+      durationMs: Date.now() - startTime,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to go forward',
+      durationMs: Date.now() - startTime,
+    }
+  }
+}
+
+/**
+ * Reload the current page.
+ */
+export async function reloadPage(): Promise<ToolExecutionResult> {
+  const startTime = Date.now()
+
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (!tab?.id) {
+      return {
+        success: false,
+        error: 'No active tab found',
+        durationMs: Date.now() - startTime,
+      }
+    }
+
+    await chrome.tabs.reload(tab.id)
+
+    // Wait for reload to complete
+    await new Promise<void>((resolve) => {
+      const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+        if (tabId === tab.id && changeInfo.status === 'complete') {
+          chrome.tabs.onUpdated.removeListener(listener)
+          resolve()
+        }
+      }
+      chrome.tabs.onUpdated.addListener(listener)
+      setTimeout(() => {
+        chrome.tabs.onUpdated.removeListener(listener)
+        resolve()
+      }, 30000)
+    })
+
+    return {
+      success: true,
+      data: 'Page reloaded',
+      durationMs: Date.now() - startTime,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to reload page',
+      durationMs: Date.now() - startTime,
+    }
+  }
+}
+
+/**
+ * Get information about the current page.
+ */
+export async function getPageInfo(): Promise<ToolExecutionResult> {
+  const startTime = Date.now()
+
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (!tab?.id) {
+      return {
+        success: false,
+        error: 'No active tab found',
+        durationMs: Date.now() - startTime,
+      }
+    }
+
+    const result = await cdpCommander.sendCommand<EvaluateResult>(
+      tab.id,
+      'Runtime.evaluate',
+      {
+        expression: `
+          (function() {
+            return {
+              readyState: document.readyState,
+              viewport: {
+                width: window.innerWidth,
+                height: window.innerHeight,
+                scrollX: Math.round(window.scrollX),
+                scrollY: Math.round(window.scrollY),
+                scrollHeight: document.body.scrollHeight,
+                scrollWidth: document.body.scrollWidth
+              }
+            };
+          })()
+        `,
+        returnByValue: true,
+      }
+    )
+
+    const pageData = result.result.value as {
+      readyState: string
+      viewport: {
+        width: number
+        height: number
+        scrollX: number
+        scrollY: number
+        scrollHeight: number
+        scrollWidth: number
+      }
+    }
+
+    const info = {
+      title: tab.title || 'Untitled',
+      url: tab.url || '',
+      tabId: tab.id,
+      ...pageData,
+    }
+
+    return {
+      success: true,
+      data: JSON.stringify(info, null, 2),
+      durationMs: Date.now() - startTime,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get page info',
+      durationMs: Date.now() - startTime,
+    }
+  }
+}
+

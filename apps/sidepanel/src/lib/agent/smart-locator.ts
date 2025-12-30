@@ -1,5 +1,6 @@
 import { cdpCommander, type EvaluateResult } from './cdp-commander'
 import { snapshotManager } from './snapshot-manager'
+import { tryFillEditor } from './editor-detector'
 import { type BoundingBox } from './types'
 
 const UID_ATTRIBUTE = 'data-prophet-nodeid'
@@ -84,8 +85,18 @@ export class SmartLocator {
     const centerX = box.x + box.width / 2
     const centerY = box.y + box.height / 2
 
+    // AIPEX Pattern: Check if element is covered by overlay/popup
+    const isCovered = await this.isElementCovered(tabId, uid, centerX, centerY)
+
+    if (isCovered) {
+      console.warn(`[SmartLocator] Element covered by overlay, using DOM click fallback`)
+      await this.syntheticClick(tabId, uid, doubleClick)
+      return
+    }
+
     const clickCount = doubleClick ? 2 : 1
 
+    // CDP "Trusted" click - simulates real hardware mouse
     await cdpCommander.sendCommand(tabId, 'Input.dispatchMouseEvent', {
       type: 'mousePressed',
       x: centerX,
@@ -93,6 +104,9 @@ export class SmartLocator {
       button: 'left',
       clickCount,
     })
+
+    // Small delay for React/Angular apps to register the click
+    await new Promise(r => setTimeout(r, 50))
 
     await cdpCommander.sendCommand(tabId, 'Input.dispatchMouseEvent', {
       type: 'mouseReleased',
@@ -103,6 +117,55 @@ export class SmartLocator {
     })
   }
 
+  /**
+   * AIPEX Pattern: Check if element is covered by another element (popup, overlay, etc.)
+   * Uses document.elementFromPoint to check what's actually at the click coordinates.
+   */
+  private async isElementCovered(tabId: number, uid: string, x: number, y: number): Promise<boolean> {
+    try {
+      const result = await cdpCommander.sendCommand<EvaluateResult>(tabId, 'Runtime.evaluate', {
+        expression: `
+          (function() {
+            const target = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
+            if (!target) return { isCovered: false, reason: 'target_not_found' };
+            
+            const topElement = document.elementFromPoint(${x}, ${y});
+            if (!topElement) return { isCovered: false, reason: 'no_element_at_point' };
+            
+            // Check if topElement is the target or a descendant of target
+            if (topElement === target) return { isCovered: false };
+            if (target.contains(topElement)) return { isCovered: false };
+            
+            // Check if target contains the topElement (topElement is inside target)
+            if (topElement.contains(target)) return { isCovered: false };
+            
+            // Element is covered by something else
+            return { 
+              isCovered: true, 
+              coveredBy: topElement.tagName,
+              coveredByClass: topElement.className
+            };
+          })()
+        `,
+        returnByValue: true,
+      })
+
+      if (result.exceptionDetails) {
+        return false // If check fails, proceed with normal click
+      }
+
+      const value = result.result.value as { isCovered: boolean; coveredBy?: string }
+
+      if (value.isCovered && value.coveredBy) {
+        console.warn(`[SmartLocator] Element covered by <${value.coveredBy}>`)
+      }
+
+      return value.isCovered
+    } catch {
+      return false // If check fails, proceed with normal click
+    }
+  }
+
   async fill(tabId: number, uid: string, value: string): Promise<void> {
     const node = snapshotManager.getNodeByUid(tabId, uid)
     if (!node) {
@@ -111,8 +174,17 @@ export class SmartLocator {
 
     await this.scrollIntoView(tabId, uid)
     await this.highlightElement(tabId, uid, 'fill')
-    await this.focusElement(tabId, uid)
 
+    // AIPEX Pattern: Try rich text editor APIs first (Monaco, CodeMirror, Ace)
+    const filledViaEditor = await tryFillEditor(tabId, uid, value)
+    if (filledViaEditor) {
+      console.log('[SmartLocator] Filled via editor API')
+      await this.dispatchInputEvents(tabId, uid, value)
+      return
+    }
+
+    // Generic fill for standard inputs
+    await this.focusElement(tabId, uid)
     await this.selectAll(tabId)
 
     if (value) {

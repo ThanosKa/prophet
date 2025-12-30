@@ -79,7 +79,40 @@ class DebuggerManagerClass {
     }
   }
 
+  /**
+   * AIPEX Pattern: Clean Room Debugger
+   * Removes extension iframes to prevent "Debugger detached" errors.
+   */
+  private async ensureNoExtensionFrame(tabId: number): Promise<boolean> {
+    try {
+      const result = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+          const frames = document.querySelectorAll('iframe[src^="chrome-extension://"]')
+          let removedAny = false
+          frames.forEach((frame) => {
+            frame.remove()
+            removedAny = true
+          })
+          return removedAny
+        },
+      })
+
+      return result?.[0]?.result === true
+    } catch {
+      // Scripting may fail on some pages (chrome://, etc.)
+      return false
+    }
+  }
+
   private async doAttach(tabId: number): Promise<void> {
+    // Clean room: Remove extension frames before attaching
+    const removedFrames = await this.ensureNoExtensionFrame(tabId)
+    if (removedFrames) {
+      console.log('[DebuggerManager] Removed extension frames, waiting for DOM to settle')
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    }
+
     try {
       await chrome.debugger.attach({ tabId }, CDP_VERSION)
       this.attachedTabs.add(tabId)
