@@ -177,14 +177,9 @@ export async function* runAgentLoop(
         }
 
         case "tool_call_start":
-          if (event.toolName && event.toolCallId) {
-            yield {
-              type: "tool_call_start",
-              toolName: event.toolName,
-              params: event.params,
-              toolCallId: event.toolCallId,
-            };
-          }
+          // Ignore server-provided tool_call_start events.
+          // We emit tool_call_start deterministically from the corresponding tool_use
+          // so the UI always has real params and we avoid duplicate tool rows.
           break;
 
         case "tool_use": {

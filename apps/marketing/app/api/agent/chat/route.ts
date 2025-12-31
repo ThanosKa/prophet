@@ -229,13 +229,6 @@ export async function POST(req: Request) {
                   name: event.content_block.name,
                   input: "",
                 };
-                const data = JSON.stringify({
-                  type: "tool_call_start",
-                  toolCallId: event.content_block.id,
-                  toolName: event.content_block.name,
-                  params: {}, // Will be populated as deltas arrive
-                });
-                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
               }
             } else if (event.type === "content_block_delta") {
               if (event.delta.type === "text_delta") {

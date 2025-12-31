@@ -10,6 +10,13 @@ import {
   scrollPageInputSchema,
   searchSnapshotInputSchema,
   pressKeyInputSchema,
+  toolNameSchema,
+  waitForSelectorInputSchema,
+  waitForNavigationInputSchema,
+  waitForTimeoutInputSchema,
+  switchTabInputSchema,
+  closeTabInputSchema,
+  openNewTabInputSchema,
   toolResultSchema,
   toolUseSchema,
 } from './agent'
@@ -525,25 +532,28 @@ describe('toolUseSchema', () => {
   })
 
   it('validates all valid tool names', () => {
-    const toolNames = [
-      'take_snapshot',
-      'click_element_by_uid',
-      'fill_element_by_uid',
-      'hover_element_by_uid',
-      'navigate',
-      'take_screenshot',
-      'scroll_page',
-      'get_page_content',
-      'search_snapshot',
-      'press_key',
-    ] as const
+    const validInputByTool: Partial<Record<(typeof toolNameSchema.options)[number], Record<string, unknown>>> = {
+      click_element_by_uid: { uid: 'Ab12Cd3E', doubleClick: false } satisfies typeof clickElementInputSchema._type,
+      fill_element_by_uid: { uid: 'Ab12Cd3E', value: 'test' } satisfies typeof fillElementInputSchema._type,
+      hover_element_by_uid: { uid: 'Ab12Cd3E' } satisfies typeof hoverElementInputSchema._type,
+      navigate: { url: 'https://example.com' } satisfies typeof navigateInputSchema._type,
+      scroll_page: { direction: 'down', pixels: 500 } satisfies typeof scrollPageInputSchema._type,
+      search_snapshot: { query: 'hello' } satisfies typeof searchSnapshotInputSchema._type,
+      press_key: { key: 'Enter' } satisfies typeof pressKeyInputSchema._type,
+      wait_for_selector: { selector: 'body', timeout: 1000, visible: false } satisfies typeof waitForSelectorInputSchema._type,
+      wait_for_navigation: { timeout: 1000 } satisfies typeof waitForNavigationInputSchema._type,
+      wait_for_timeout: { ms: 1 } satisfies typeof waitForTimeoutInputSchema._type,
+      switch_tab: { tabId: 1 } satisfies typeof switchTabInputSchema._type,
+      close_tab: { tabId: 1 } satisfies typeof closeTabInputSchema._type,
+      open_new_tab: { url: 'https://example.com', active: true } satisfies typeof openNewTabInputSchema._type,
+    }
 
-    for (const name of toolNames) {
+    for (const name of toolNameSchema.options) {
       const result = toolUseSchema.safeParse({
         type: 'tool_use',
         id: 'tool_123',
         name,
-        input: {},
+        input: validInputByTool[name] ?? {},
       })
       expect(result.success).toBe(true)
     }

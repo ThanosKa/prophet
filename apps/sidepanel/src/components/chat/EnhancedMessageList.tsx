@@ -58,7 +58,17 @@ function MessageWithActions({
     <Message from={message.role} key={message.id}>
       {isAssistant && (hasToolCalls || isExecutingTool) && (
         <Reasoning isStreaming={isExecutingTool} defaultOpen={isExecutingTool}>
-          <ReasoningTrigger />
+          <ReasoningTrigger
+            getThinkingMessage={(isToolStreaming) =>
+              isToolStreaming ? (
+                <Shimmer duration={1} className="text-sm">
+                  Running actions…
+                </Shimmer>
+              ) : (
+                <p>Actions</p>
+              )
+            }
+          />
           <ReasoningContent>
             <div className="space-y-1">
               {message.toolCalls?.map((tc) => (
@@ -79,10 +89,16 @@ function MessageWithActions({
           </p>
         ) : !displayContent && isStreaming ? (
           <Shimmer duration={1.5} className="text-sm">
-            Planning next moves
+            Working…
           </Shimmer>
         ) : displayContent ? (
-          <MessageResponse>{displayContent}</MessageResponse>
+          isStreaming ? (
+            <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground italic">
+              {displayContent}
+            </p>
+          ) : (
+            <MessageResponse>{displayContent}</MessageResponse>
+          )
         ) : null}
       </MessageContent>
 

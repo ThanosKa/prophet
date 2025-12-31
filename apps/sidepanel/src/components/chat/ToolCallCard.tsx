@@ -116,17 +116,19 @@ function formatToolInput(toolCall: ToolCall): string {
 
   switch (name) {
     case 'click_element_by_uid':
+      return 'Click element'
     case 'fill_element_by_uid':
+      return typeof input.value === 'string' ? `Type "${input.value}"` : 'Type text'
     case 'hover_element_by_uid':
-      return `uid=${input.uid}${input.value ? ` "${input.value}"` : ''}`
+      return 'Hover element'
     case 'navigate':
-      return input.url as string
+      return typeof input.url === 'string' ? input.url : ''
     case 'scroll_page':
-      return input.direction as string
+      return typeof input.direction === 'string' ? input.direction : ''
     case 'search_snapshot':
-      return `"${input.query}"`
+      return typeof input.query === 'string' ? `"${input.query}"` : ''
     case 'press_key':
-      return input.key as string
+      return typeof input.key === 'string' ? input.key : ''
     default:
       return ''
   }

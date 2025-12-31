@@ -87,23 +87,62 @@ function formatToolInput(toolCall: ToolCall): string {
   const { name, input } = toolCall
   switch (name) {
     case 'click_element_by_uid':
-      return `Click: ${input.uid}`
+      return 'Click element'
     case 'fill_element_by_uid':
-      return `Fill ${input.uid} with "${input.value}"`
+      return typeof input.value === 'string' ? `Type "${input.value}"` : 'Type text'
     case 'hover_element_by_uid':
-      return `Hover: ${input.uid}`
+      return 'Hover element'
     case 'navigate': {
-      const url = input.url as string | undefined
+      const url = typeof input.url === 'string' ? input.url : undefined
       return `Go to ${url ? (url.length > 30 ? url.slice(0, 30) + '...' : url) : '...'}`
     }
     case 'scroll_page':
-      return `Scroll ${input.direction}`
+      return typeof input.direction === 'string' ? `Scroll ${input.direction}` : 'Scroll'
     case 'search_snapshot':
-      return `Search "${input.query}"`
+      return typeof input.query === 'string' ? `Search "${input.query}"` : 'Search'
     case 'press_key':
-      return `Press ${input.key}`
+      return typeof input.key === 'string' ? `Press ${input.key}` : 'Press key'
     default:
       return ''
+  }
+}
+
+function formatToolResult(toolCall: ToolCall): string | null {
+  if (toolCall.isError) {
+    if (typeof toolCall.result === 'string' && toolCall.result.trim()) return toolCall.result
+    return 'Tool failed'
+  }
+
+  switch (toolCall.name) {
+    case 'take_snapshot':
+      return 'Snapshot captured'
+    case 'take_screenshot':
+      return 'Screenshot captured'
+    case 'wait_for_navigation':
+      return 'Navigation complete'
+    case 'wait_for_timeout':
+      return 'Wait complete'
+    case 'wait_for_selector':
+      return 'Selector found'
+    case 'navigate':
+      return 'Navigation complete'
+    case 'search_snapshot': {
+      if (typeof toolCall.result !== 'string') return 'Search complete'
+      const m = toolCall.result.match(/Found\s+(\d+)\s+elements?/i)
+      if (m?.[1]) return `Found ${m[1]} matches`
+      if (/No elements found/i.test(toolCall.result)) return 'No matches'
+      return 'Search complete'
+    }
+    case 'fill_element_by_uid':
+      return 'Typed'
+    case 'click_element_by_uid':
+      return 'Clicked'
+    case 'hover_element_by_uid':
+      return 'Hovered'
+    case 'press_key':
+      return 'Key pressed'
+    default:
+      return null
   }
 }
 
@@ -112,11 +151,11 @@ export function ToolCallCollapsible({
   isExecuting = false,
 }: ToolCallCollapsibleProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [showDebug, setShowDebug] = useState(false)
 
   const Icon = toolIcons[toolCall.name] || Camera
   const label = toolLabels[toolCall.name] || toolCall.name
   const inputSummary = formatToolInput(toolCall)
+  const resultSummary = !isExecuting ? formatToolResult(toolCall) : null
 
   const getStatusStyles = () => {
     if (isExecuting) return 'border-zinc-500/20 bg-zinc-500/5'
@@ -166,51 +205,26 @@ export function ToolCallCollapsible({
 
       <CollapsibleContent>
         <div className="mt-1 px-3 py-2 rounded-md bg-muted/30 border border-border/30 text-xs space-y-2 animate-in slide-in-from-top-1 duration-200">
-          {/* Human-readable result summary */}
-          {toolCall.name === 'take_snapshot' && toolCall.result && !isExecuting && (
+          {inputSummary && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Camera className="h-3 w-3" />
-              <span>Snapshot captured successfully</span>
+              <Icon className="h-3 w-3" />
+              <span>{inputSummary}</span>
             </div>
           )}
 
-          {toolCall.name === 'navigate' && inputSummary && (
+          {isExecuting && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Navigation className="h-3 w-3" />
-              <span>Navigated to <a href={toolCall.input.url as string} target="_blank" rel="noreferrer" className="underline decoration-muted-foreground/30 hover:text-primary">{inputSummary}</a></span>
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Running…</span>
             </div>
           )}
 
-          {/* Debug Details Toggle */}
-          <div className="pt-2 mt-2 border-t border-border/10">
-            <button
-              onClick={() => setShowDebug(!showDebug)}
-              className="flex items-center gap-1 text-[9px] text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors font-medium tracking-tighter"
-            >
-              {showDebug ? 'HIDE DEBUG' : 'DEBUG DETAILS'}
-            </button>
-
-            {showDebug && (
-              <div className="mt-2 space-y-3 font-mono text-[10px]">
-                <div className="space-y-1">
-                  <p className="text-muted-foreground opacity-70">Input</p>
-                  <pre className="text-foreground/70 whitespace-pre-wrap break-all bg-background/50 p-2 rounded border border-border/20">
-                    {JSON.stringify(toolCall.input, null, 2)}
-                  </pre>
-                </div>
-                {toolCall.result && (
-                  <div className="space-y-1">
-                    <p className="text-muted-foreground opacity-70">Output</p>
-                    <pre className="text-foreground/70 whitespace-pre-wrap break-all max-h-40 overflow-auto bg-background/50 p-2 rounded border border-border/20">
-                      {typeof toolCall.result === 'string'
-                        ? (toolCall.result.length > 500 ? toolCall.result.slice(0, 500) + '...' : toolCall.result)
-                        : JSON.stringify(toolCall.result, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          {!isExecuting && resultSummary && (
+            <div className={cn('flex items-center gap-2', toolCall.isError ? 'text-red-400' : 'text-muted-foreground')}>
+              {toolCall.isError ? <X className="h-3 w-3" /> : <Check className="h-3 w-3" />}
+              <span>{resultSummary}</span>
+            </div>
+          )}
         </div>
       </CollapsibleContent>
     </Collapsible>

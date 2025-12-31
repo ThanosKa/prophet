@@ -136,6 +136,7 @@ function createAgentOverlay(): void {
       border-radius: 30px;
       padding: 14px 48px;
       min-width: 200px;
+      width: max-content;
       color: white;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 16px;
@@ -152,6 +153,11 @@ function createAgentOverlay(): void {
       justify-content: center;
       gap: 12px;
       text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .pause-button > span {
+      white-space: nowrap;
     }
     
     @keyframes slide-up {

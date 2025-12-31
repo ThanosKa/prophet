@@ -114,7 +114,7 @@ export async function POST(req: Request) {
           if (!controllerClosed) {
             try {
               controller.enqueue(encoder.encode(`data: ${data}\n\n`))
-            } catch (_err) {
+            } catch {
               controllerClosed = true
             }
           }
@@ -124,7 +124,7 @@ export async function POST(req: Request) {
           if (!controllerClosed) {
             try {
               controller.close()
-            } catch (_err) {
+            } catch {
               // Ignore
             }
             controllerClosed = true
@@ -175,12 +175,6 @@ export async function POST(req: Request) {
                   { toolUseId: event.content_block.id, toolName: event.content_block.name },
                   '[DEV] Tool use started'
                 )
-                safeEnqueue(JSON.stringify({
-                  type: 'tool_call_start',
-                  toolCallId: event.content_block.id,
-                  toolName: event.content_block.name,
-                  params: {},
-                }))
               }
             } else if (event.type === 'content_block_delta') {
               if (event.delta.type === 'text_delta') {
