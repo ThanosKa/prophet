@@ -158,7 +158,7 @@ export function useAgentChat() {
         })
       }
     },
-    [addLegacyMessage, updateLegacyMessage, setStreaming, selectedModel, addContextUsage, status, adapter, createAbortController, setActive]
+    [addLegacyMessage, updateLegacyMessage, setStreaming, selectedModel, addContextUsage, status, adapter, createAbortController, setActive, clearActions]
   )
 
   const abort = useCallback(() => {

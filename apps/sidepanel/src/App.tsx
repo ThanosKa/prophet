@@ -40,6 +40,16 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    const handleAbortFromPage = (message: { type?: string }) => {
+      if (message?.type === 'AGENT_ABORT') {
+        abort()
+      }
+    }
+    chrome.runtime.onMessage.addListener(handleAbortFromPage)
+    return () => chrome.runtime.onMessage.removeListener(handleAbortFromPage)
+  }, [abort])
+
+  useEffect(() => {
     document.documentElement.classList.remove('light', 'dark')
     document.documentElement.classList.add(theme)
   }, [theme])
@@ -190,6 +200,7 @@ export default function App() {
           isStreaming={isStreaming}
           currentToolCall={currentToolCall}
           onSend={handleSendMessage}
+          onAbort={abort}
           disabled={isStreaming}
           inputPlaceholder={
             user?.creditsRemaining === 0

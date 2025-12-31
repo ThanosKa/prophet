@@ -15,6 +15,7 @@ import {
 import { useUIStore } from '@/store/uiStore'
 import {
   PromptInput,
+  PromptInputButton,
   PromptInputActionAddAttachments,
   PromptInputActionMenu,
   PromptInputActionMenuContent,
@@ -37,14 +38,18 @@ interface ImageData {
 
 interface EnhancedChatInputProps {
   onSend: (message: string, image?: ImageData) => void
+  onAbort?: () => void
   disabled?: boolean
   placeholder?: string
+  isRunning?: boolean
 }
 
 export function EnhancedChatInput({
   onSend,
+  onAbort,
   disabled,
   placeholder = 'Ask anything...',
+  isRunning = false,
 }: EnhancedChatInputProps) {
   const {
     contextTokens,
@@ -85,7 +90,13 @@ export function EnhancedChatInput({
 
   return (
     <div className="p-3 bg-[var(--chatbot-bg)] shrink-0">
-      <PromptInput onSubmit={handleSubmit} disabled={disabled} globalDrop multiple={false}>
+      <PromptInput
+        onSubmit={handleSubmit}
+        inputDisabled={disabled}
+        submitDisabled={disabled || isRunning}
+        globalDrop
+        multiple={false}
+      >
         <PromptInputHeader>
           <PromptInputAttachments>
             {(attachment) => <PromptInputAttachment data={attachment} />}
@@ -131,10 +142,22 @@ export function EnhancedChatInput({
             </Context>
           </PromptInputTools>
 
-          <PromptInputSubmit disabled={disabled}>
-            <ArrowUp className="h-4 w-4" />
-            <span className="sr-only">Send message</span>
-          </PromptInputSubmit>
+          {isRunning ? (
+            <PromptInputButton
+              onClick={() => onAbort?.()}
+              disabled={!onAbort}
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                <rect x="4" y="4" width="16" height="16" rx="2" />
+              </svg>
+              <span className="sr-only">Stop</span>
+            </PromptInputButton>
+          ) : (
+            <PromptInputSubmit disabled={disabled}>
+              <ArrowUp className="h-4 w-4" />
+              <span className="sr-only">Send message</span>
+            </PromptInputSubmit>
+          )}
         </PromptInputFooter>
       </PromptInput>
     </div>

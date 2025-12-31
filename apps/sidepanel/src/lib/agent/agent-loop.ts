@@ -272,11 +272,16 @@ export async function* runAgentLoop(
           break;
 
         case "execution_complete":
-          yield {
-            type: "execution_complete",
-            finalOutput: event.finalOutput || turnTextContent,
-            metrics: event.metrics || { inputTokens: 0, outputTokens: 0 },
-          };
+          // The backend emits execution_complete at the end of EVERY streamed request/turn.
+          // But for tool-use turns, this is not the final assistant answer yet (the loop continues).
+          // Emitting execution_complete mid-run causes the UI to "finalize" and then reset on the next turn.
+          if (!hasToolUse) {
+            yield {
+              type: "execution_complete",
+              finalOutput: event.finalOutput || turnTextContent,
+              metrics: event.metrics || { inputTokens: 0, outputTokens: 0 },
+            };
+          }
           break;
 
         case "done":

@@ -47,6 +47,8 @@ export function PromptInput({
   children,
   onSubmit,
   disabled,
+  inputDisabled,
+  submitDisabled,
   multiple,
   globalDrop,
   className,
@@ -54,6 +56,8 @@ export function PromptInput({
   children: React.ReactNode
   onSubmit: (message: PromptInputMessage) => void | Promise<void>
   disabled?: boolean
+  inputDisabled?: boolean
+  submitDisabled?: boolean
   multiple?: boolean
   globalDrop?: boolean
   className?: string
@@ -91,9 +95,12 @@ export function PromptInput({
     })
   }, [])
 
+  const resolvedInputDisabled = disabled ?? inputDisabled
+  const resolvedSubmitDisabled = disabled ?? submitDisabled
+
   const handleSubmit = React.useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
-    if (disabled) return
+    if (resolvedSubmitDisabled) return
 
     const hasText = Boolean(text.trim())
     const hasAttachments = attachments.length > 0
@@ -104,7 +111,7 @@ export function PromptInput({
       files: attachments.map((a) => a.file),
     })
     clear()
-  }, [attachments, clear, disabled, onSubmit, text])
+  }, [attachments, clear, onSubmit, resolvedSubmitDisabled, text])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -117,14 +124,14 @@ export function PromptInput({
     () => ({
       text,
       setText,
-      disabled,
+      disabled: resolvedInputDisabled,
       attachments,
       addFiles,
       removeAttachment,
       clear,
       openFilePicker,
     }),
-    [addFiles, attachments, clear, disabled, openFilePicker, removeAttachment, text]
+    [addFiles, attachments, clear, openFilePicker, removeAttachment, resolvedInputDisabled, text]
   )
 
   return (

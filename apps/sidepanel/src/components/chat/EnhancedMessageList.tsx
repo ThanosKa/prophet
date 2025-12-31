@@ -52,6 +52,7 @@ function MessageWithActions({
   const displayContent = message.content;
   const hasToolCalls = message.toolCalls && message.toolCalls.length > 0;
   const isExecutingTool = Boolean(currentToolCall);
+  const hasActions = hasToolCalls || isExecutingTool;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(displayContent);
@@ -62,10 +63,10 @@ function MessageWithActions({
   return (
     <Message from={message.role} key={message.id}>
       {isAssistant && (hasToolCalls || isExecutingTool) && (
-        <Reasoning isStreaming={isExecutingTool} defaultOpen={isExecutingTool}>
+        <Reasoning isStreaming={Boolean(isStreaming)} defaultOpen={Boolean(isStreaming)}>
           <ReasoningTrigger
-            getThinkingMessage={(isToolStreaming) =>
-              isToolStreaming ? (
+            getThinkingMessage={() =>
+              isStreaming ? (
                 <Shimmer duration={1} className="text-sm">
                   Running actions…
                 </Shimmer>
@@ -92,7 +93,7 @@ function MessageWithActions({
           <p className="whitespace-pre-wrap break-words text-sm">
             {displayContent}
           </p>
-        ) : !displayContent && isStreaming ? (
+        ) : !displayContent && isStreaming && !hasActions ? (
           <Shimmer duration={1.5} className="text-sm">
             Working…
           </Shimmer>

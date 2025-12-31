@@ -18,6 +18,7 @@ interface ChatViewProps {
   isStreaming?: boolean
   currentToolCall?: ToolCall | null
   onSend: (message: string, image?: ImageData) => void
+  onAbort?: () => void
   disabled?: boolean
   inputPlaceholder?: string
   suggestions?: string[]
@@ -32,6 +33,7 @@ export function ChatView({
   isStreaming,
   currentToolCall,
   onSend,
+  onAbort,
   disabled,
   inputPlaceholder,
   suggestions,
@@ -71,7 +73,9 @@ export function ChatView({
       )}
       <EnhancedChatInput
         onSend={onSend}
-        disabled={disabled || isStreaming}
+        disabled={disabled}
+        isRunning={Boolean(isStreaming)}
+        onAbort={onAbort}
         placeholder={inputPlaceholder}
       />
     </div>

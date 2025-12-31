@@ -37,7 +37,14 @@ export function useMessages(chatId: string | null) {
     if (data && chatId) {
       const existing = useChatStore.getState().messages[chatId]
       if (!existing || existing.length === 0) {
-        const allMessages = data.pages.flatMap(page => page.messages).reverse()
+        const byId = new Map<string, (typeof data.pages)[number]['messages'][number]>()
+        for (const msg of data.pages.flatMap((page) => page.messages)) {
+          byId.set(msg.id, msg)
+        }
+
+        const allMessages = Array.from(byId.values()).sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        )
         if (allMessages.length > 0) {
           setMessages(chatId, allMessages)
         }

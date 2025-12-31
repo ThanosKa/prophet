@@ -79,7 +79,8 @@ export class ChatAdapter {
                             // Otherwise push a new text part
                             // Add a newline if there's already content to separate turns
                             const hasContent = m.parts.length > 0
-                            const text = hasContent ? `\n\n${event.delta!}` : event.delta!
+                            // Avoid double-newlines here; markdown rendering + prose spacing amplifies it.
+                            const text = hasContent ? `\n${event.delta!}` : event.delta!
                             m.parts.push({ type: 'text', text })
                         }
 
@@ -262,7 +263,8 @@ export class ChatAdapter {
         result?: string
     }> {
         return message.parts
-            .filter((p): p is ToolPart => p.type === 'tool')
+            // Keep tool history stable: executing tool is rendered separately as `currentToolCall`.
+            .filter((p): p is ToolPart => p.type === 'tool' && p.state !== 'executing')
             .map((p) => ({
                 id: p.toolCallId,
                 name: p.toolName,
