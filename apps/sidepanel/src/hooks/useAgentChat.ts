@@ -5,7 +5,6 @@ import { useAgentStore } from '@/store/agentStore'
 import { runAgentLoop } from '@/lib/agent'
 import { config } from '@/lib/config'
 import { chatAdapter } from '@/lib/agent/chat-adapter'
-import { logFrontendEvent } from '@/lib/frontend-logger'
 import type { Message, ImageData, AgentStatus, ToolCall } from '@prophet/shared'
 
 export interface AgentMessage extends Message {
@@ -21,8 +20,6 @@ export function useAgentChat() {
   const [currentToolCall, setCurrentToolCall] = useState<ToolCall | null>(null) // Legacy support for ChatView
   const abortRef = useRef<boolean>(false)
   const activeStreamRef = useRef<{ chatId: string; abort: () => void } | null>(null)
-  const streamLogBufferRef = useRef<string>('')
-  const streamLogFlushTimerRef = useRef<number | null>(null)
 
   // AIPEX Pattern: Use ChatAdapter for event processing
   const adapter = useMemo(() => chatAdapter, [])
@@ -39,7 +36,6 @@ export function useAgentChat() {
       activeStreamRef.current = { chatId, abort: abortStream }
 
       try {
-        await logFrontendEvent(chatId, 'user_message', content)
         setError(null)
         setStatus('submitted')
         setStreaming(true)
@@ -97,61 +93,6 @@ export function useAgentChat() {
         )) {
           if (abortRef.current) break
 
-          // Frontend-visible logging (dev only)
-          if (event.type === 'content_delta' && event.delta) {
-            streamLogBufferRef.current += event.delta
-            if (streamLogFlushTimerRef.current === null) {
-              streamLogFlushTimerRef.current = window.setTimeout(async () => {
-                const buffered = streamLogBufferRef.current
-                streamLogBufferRef.current = ''
-                streamLogFlushTimerRef.current = null
-                if (buffered.trim()) {
-                  await logFrontendEvent(chatId, 'assistant_stream', buffered)
-                }
-              }, 750)
-            }
-          }
-
-          if (event.type === 'tool_call_start') {
-            const params = (event.params as Record<string, unknown> | undefined) ?? {}
-            const url = typeof params.url === 'string' ? params.url : undefined
-            const value = typeof params.value === 'string' ? params.value : undefined
-            const key = typeof params.key === 'string' ? params.key : undefined
-            const summary =
-              event.toolName === 'navigate' && url ? `Navigate: ${url}`
-                : event.toolName === 'fill_element_by_uid' && value ? `Type: "${value}"`
-                  : event.toolName === 'press_key' && key ? `Press: ${key}`
-                    : `${event.toolName}`
-            await logFrontendEvent(chatId, 'tool_start', summary)
-          }
-
-          if (event.type === 'tool_call_complete') {
-            const resultText =
-              typeof event.result === 'string'
-                ? event.result.replace(/uid="[^"]+"/g, 'uid="[hidden]"')
-                : 'Done'
-            await logFrontendEvent(chatId, 'tool_complete', `${event.toolName}: ${resultText}`)
-          }
-
-          if (event.type === 'tool_call_error') {
-            await logFrontendEvent(chatId, 'tool_error', `${event.toolName}: ${event.error}`)
-          }
-
-          if (event.type === 'execution_complete') {
-            if (streamLogFlushTimerRef.current !== null) {
-              window.clearTimeout(streamLogFlushTimerRef.current)
-              streamLogFlushTimerRef.current = null
-            }
-            const buffered = streamLogBufferRef.current
-            streamLogBufferRef.current = ''
-            if (buffered.trim()) {
-              await logFrontendEvent(chatId, 'assistant_stream', buffered)
-            }
-            if (event.finalOutput) {
-              await logFrontendEvent(chatId, 'assistant_final', event.finalOutput)
-            }
-          }
-
           // Legacy: Handle currentToolCall
           if (event.type === 'tool_call_start') {
             setCurrentToolCall({
@@ -201,11 +142,6 @@ export function useAgentChat() {
         setStatus('error')
         setError(err instanceof Error ? err.message : 'Agent error')
       } finally {
-        if (streamLogFlushTimerRef.current !== null) {
-          window.clearTimeout(streamLogFlushTimerRef.current)
-          streamLogFlushTimerRef.current = null
-        }
-        streamLogBufferRef.current = ''
         if (activeStreamRef.current?.chatId === chatId) {
           activeStreamRef.current = null
         }

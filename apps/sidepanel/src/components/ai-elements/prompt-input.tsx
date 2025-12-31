@@ -134,7 +134,7 @@ export function PromptInput({
         className={cn(
           "relative flex flex-col",
           "bg-[var(--chatbot-muted)] rounded-lg border-2 border-border/60",
-          "focus-within:border-border focus-within:ring-[1px] focus-within:ring-white/10",
+          "focus-within:border-border focus-within:ring-[1px] focus-within:ring-ring/20",
           "transition-all duration-200",
           className
         )}

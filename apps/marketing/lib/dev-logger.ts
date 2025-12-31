@@ -6,10 +6,11 @@
  */
 
 import { writeFile, appendFile, mkdir } from 'fs/promises'
-import { join } from 'path'
+import { join, resolve } from 'path'
 import type { MessageParam } from '@anthropic-ai/sdk/resources/messages'
 
-const LOG_DIR = join(process.cwd(), 'logs')
+// Use absolute path to ensure consistency across different route contexts
+const LOG_DIR = resolve(process.cwd(), 'logs')
 const LOG_FILE_PATH = join(LOG_DIR, 'response.txt')
 
 export class DevLogger {
@@ -17,7 +18,12 @@ export class DevLogger {
     private buffer: string[] = []
 
     constructor() {
-        this.isDev = process.env.NODE_ENV === 'development'
+        // More permissive check for development logging
+        this.isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
+        
+        if (this.isDev) {
+            console.log(`[DevLogger] Initialized. Logs will be written to: ${LOG_DIR}`)
+        }
     }
 
     private async ensureLogDir(): Promise<void> {

@@ -134,9 +134,9 @@ function createAgentOverlay(): void {
       background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
       border: none;
       border-radius: 30px;
-      padding: 14px 48px;
-      min-width: 200px;
-      width: max-content;
+      padding: 14px 40px;
+      min-width: max-content;
+      width: auto;
       color: white;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 16px;
@@ -148,16 +148,20 @@ function createAgentOverlay(): void {
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
       letter-spacing: 1px;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 12px;
       text-transform: uppercase;
-      white-space: nowrap;
+      white-space: nowrap !important;
+      flex-wrap: nowrap !important;
+      box-sizing: border-box;
     }
 
     .pause-button > span {
-      white-space: nowrap;
+      display: inline-block;
+      white-space: nowrap !important;
+      flex-shrink: 0;
     }
     
     @keyframes slide-up {
@@ -175,10 +179,12 @@ function createAgentOverlay(): void {
     }
 
     .stop-icon {
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
       background: white;
       border-radius: 2px;
+      flex-shrink: 0;
+      display: inline-block;
     }
   `
 
@@ -212,7 +218,7 @@ function createAgentOverlay(): void {
 
   pauseButton = document.createElement('button')
   pauseButton.className = 'pause-button'
-  pauseButton.innerHTML = '<div class="stop-icon"></div><span>STOP AGENT</span>'
+  pauseButton.innerHTML = '<div class="stop-icon"></div><span>STOP&nbsp;AGENT</span>'
   pauseButton.style.display = 'none'
   pauseButton.addEventListener('click', () => {
     chrome.runtime.sendMessage({ type: 'AGENT_ABORT' })
