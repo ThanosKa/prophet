@@ -90,6 +90,19 @@ export async function POST(req: Request) {
       '[DEV] Starting agent stream'
     )
 
+    // Save user message to DB if it exists
+    if (userMessage) {
+      await db.insert(messages).values({
+        chatId,
+        role: "user",
+        content: userMessage,
+        model: null,
+        inputTokens: 0,
+        outputTokens: 0,
+        costCents: 0,
+      });
+    }
+
     // DEV LOGGING: Log request to LLM
     await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT)
 
@@ -243,6 +256,21 @@ export async function POST(req: Request) {
 
           // DEV LOGGING: Log response from LLM
           await devLogger.logResponse(fullTextResponse, { input_tokens: inputTokens, output_tokens: outputTokens })
+
+          // Save assistant message with tool calls if any
+          const assistantContent = fullTextResponse || "";
+          const assistantToolCalls = contentBlocks.filter(b => b.type === "tool_use");
+
+          await db.insert(messages).values({
+            chatId,
+            role: "assistant",
+            content: assistantContent,
+            model,
+            inputTokens,
+            outputTokens,
+            costCents,
+            toolCalls: assistantToolCalls.length > 0 ? JSON.stringify(assistantToolCalls) : null,
+          });
 
           const executionCompleteData = JSON.stringify({
             type: 'execution_complete',

@@ -57,7 +57,12 @@ export function EnhancedChatMessage({
 
       <div className="flex-1 space-y-2 overflow-hidden">
         <div className="flex items-start justify-between gap-2">
-          <div className="text-sm leading-relaxed flex-1 overflow-hidden">
+          <div
+            className={cn(
+              'text-sm leading-relaxed flex-1 overflow-hidden transition-colors duration-300',
+              isStreaming ? 'text-muted-foreground italic' : 'text-foreground'
+            )}
+          >
             {isStreaming && streamingContent ? (
               <StreamingText text={displayContent} isStreaming />
             ) : isAssistant ? (

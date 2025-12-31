@@ -6,6 +6,7 @@ import { useMessages } from '@/hooks/useMessages'
 import { useAgentChat } from '@/hooks/useAgentChat'
 import { useChatStore } from '@/store/chatStore'
 import { useUIStore } from '@/store/uiStore'
+import { useAgentStore } from '@/store/agentStore'
 import { AppShell } from '@/components/layout'
 import { WelcomeScreen } from '@/components/chat/WelcomeScreen'
 import { ChatView } from '@/components/chat/ChatView'
@@ -25,6 +26,16 @@ export default function App() {
   const { resetContextTokens, theme } = useUIStore()
   const { isLoading: messagesLoading } = useMessages(activeChatId)
   const { sendMessage, abort, currentToolCall } = useAgentChat()
+
+  useEffect(() => {
+    const handleStatusUpdate = (message: { type: string; status: string }) => {
+      if (message.type === 'AGENT_STATUS_UPDATE') {
+        useAgentStore.getState().setCurrentAction(message.status)
+      }
+    }
+    chrome.runtime.onMessage.addListener(handleStatusUpdate)
+    return () => chrome.runtime.onMessage.removeListener(handleStatusUpdate)
+  }, [])
 
   useEffect(() => {
     document.documentElement.classList.remove('light', 'dark')

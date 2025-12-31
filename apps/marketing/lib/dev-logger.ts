@@ -23,7 +23,7 @@ export class DevLogger {
     private async ensureLogDir(): Promise<void> {
         try {
             await mkdir(LOG_DIR, { recursive: true })
-        } catch (err) {
+        } catch {
             // Ignore if directory already exists
         }
     }
@@ -83,8 +83,8 @@ ${jsonSent}
         // Write immediately in case of crash
         try {
             await appendFile(LOG_FILE_PATH, logBlock, 'utf-8')
-        } catch (err) {
-            console.error('[DevLogger] Failed to write to log file:', err)
+        } catch (_err) {
+            console.error('[DevLogger] Failed to write to log file:', _err)
         }
     }
 
@@ -113,8 +113,8 @@ END OF RESPONSE
 
         try {
             await appendFile(LOG_FILE_PATH, responseBlock, 'utf-8')
-        } catch (err) {
-            console.error('[DevLogger] Failed to write response to log file:', err)
+        } catch (_err) {
+            console.error('[DevLogger] Failed to write response to log file:', _err)
         }
     }
 
@@ -137,8 +137,8 @@ ${error instanceof Error && error.stack ? `\nStack:\n${error.stack}` : ''}
 
         try {
             await appendFile(LOG_FILE_PATH, errorBlock, 'utf-8')
-        } catch (err) {
-            console.error('[DevLogger] Failed to write error to log file:', err)
+        } catch (_err) {
+            console.error('[DevLogger] Failed to write error to log file:', _err)
         }
     }
 
@@ -159,8 +159,8 @@ Each request shows: Model, User Message, JSON Sent, and Response.
 
 `
             await writeFile(LOG_FILE_PATH, header, 'utf-8')
-        } catch (err) {
-            console.error('[DevLogger] Failed to clear log file:', err)
+        } catch (_err) {
+            console.error('[DevLogger] Failed to clear log file:', _err)
         }
     }
 
@@ -175,7 +175,7 @@ Each request shows: Model, User Message, JSON Sent, and Response.
         if (Array.isArray(message.content)) {
             const textParts = message.content
                 .filter((block) => block.type === 'text')
-                .map((block: any) => block.text)
+                .map((block) => (block.type === 'text' ? block.text : ''))
 
             const hasImage = message.content.some((block) => block.type === 'image')
 

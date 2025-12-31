@@ -5,7 +5,7 @@ import { useAgentStore } from '@/store/agentStore'
 import { runAgentLoop } from '@/lib/agent'
 import { config } from '@/lib/config'
 import { chatAdapter } from '@/lib/agent/chat-adapter'
-import type { Message, ImageData, AgentStatus } from '@prophet/shared'
+import type { Message, ImageData, AgentStatus, ToolCall } from '@prophet/shared'
 
 export interface AgentMessage extends Message {
   streamingContent?: string
@@ -17,7 +17,7 @@ export function useAgentChat() {
   const { createAbortController, abort: abortAgentStore, setActive } = useAgentStore()
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<AgentStatus>('idle')
-  const [currentToolCall, setCurrentToolCall] = useState<any>(null) // Legacy support for ChatView
+  const [currentToolCall, setCurrentToolCall] = useState<ToolCall | null>(null) // Legacy support for ChatView
   const abortRef = useRef<boolean>(false)
   const activeStreamRef = useRef<{ chatId: string; abort: () => void } | null>(null)
 
@@ -98,14 +98,14 @@ export function useAgentChat() {
             setCurrentToolCall({
               id: event.toolCallId,
               name: event.toolName,
-              input: event.params || {},
+              input: (event.params as Record<string, unknown>) || {},
             })
           } else if (event.type === 'tool_call_complete' || event.type === 'tool_call_error') {
             setCurrentToolCall(null)
           }
 
           // Process event through ChatAdapter
-          const changedMessages = adapter.processEvent(event as any)
+          const changedMessages = adapter.processEvent(event)
 
           // Update status from adapter
           const adapterStatus = adapter.getStatus()
@@ -118,7 +118,7 @@ export function useAgentChat() {
             const toolCalls = adapter.extractToolCalls(uiMessage)
             updateLegacyMessage(chatId, uiMessage.id, {
               content: adapter.getTextContent(uiMessage),
-              toolCalls: toolCalls.length > 0 ? (toolCalls as any) : undefined,
+              toolCalls: toolCalls.length > 0 ? (toolCalls as ToolCall[]) : undefined,
               inputTokens: uiMessage.inputTokens,
               outputTokens: uiMessage.outputTokens,
             })
@@ -158,7 +158,7 @@ export function useAgentChat() {
         })
       }
     },
-    [addLegacyMessage, updateLegacyMessage, setStreaming, selectedModel, addContextUsage, status, adapter]
+    [addLegacyMessage, updateLegacyMessage, setStreaming, selectedModel, addContextUsage, status, adapter, createAbortController, setActive]
   )
 
   const abort = useCallback(() => {

@@ -58,19 +58,21 @@ function formatToolInput(toolCall: ToolCall): string {
   const { name, input } = toolCall
   switch (name) {
     case 'click_element_by_uid':
+      return `Click: ${input.uid}`
     case 'fill_element_by_uid':
+      return `Fill ${input.uid} with "${input.value}"`
     case 'hover_element_by_uid':
-      return input.uid as string
+      return `Hover: ${input.uid}`
     case 'navigate': {
       const url = input.url as string | undefined
-      return url ? (url.length > 40 ? url.slice(0, 40) + '...' : url) : '...'
+      return `Go to ${url ? (url.length > 30 ? url.slice(0, 30) + '...' : url) : '...'}`
     }
     case 'scroll_page':
-      return input.direction as string
+      return `Scroll ${input.direction}`
     case 'search_snapshot':
-      return `"${input.query}"`
+      return `Search "${input.query}"`
     case 'press_key':
-      return input.key as string
+      return `Press ${input.key}`
     default:
       return ''
   }
@@ -151,12 +153,12 @@ export function ToolCallCollapsible({
           )}
 
           {/* Debug Details Toggle */}
-          <div className="pt-1 border-t border-border/20 mt-2">
+          <div className="pt-2 mt-2 border-t border-border/10">
             <button
               onClick={() => setShowDebug(!showDebug)}
-              className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors font-medium uppercase tracking-wider"
+              className="flex items-center gap-1 text-[9px] text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors font-medium tracking-tighter"
             >
-              {showDebug ? 'Hide Debug Details' : 'Show Debug Details'}
+              {showDebug ? 'HIDE DEBUG' : 'DEBUG DETAILS'}
             </button>
 
             {showDebug && (

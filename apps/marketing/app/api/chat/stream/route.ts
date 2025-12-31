@@ -10,6 +10,7 @@ import { error } from '@/types'
 import { logger } from '@/lib/logger'
 import { calculateCostInCents, type ModelName } from '@/lib/pricing'
 import { devLogger } from '@/lib/dev-logger'
+import type { MessageParam } from '@anthropic-ai/sdk/resources/messages'
 
 export async function POST(req: Request) {
   try {
@@ -77,7 +78,7 @@ export async function POST(req: Request) {
       orderBy: (messages, { asc }) => [asc(messages.createdAt)],
     })
 
-    const anthropicMessages = [
+    const anthropicMessages: MessageParam[] = [
       ...chatMessages.map((msg) => ({
         role: msg.role as 'user' | 'assistant',
         content: msg.content,
@@ -91,7 +92,7 @@ export async function POST(req: Request) {
     logger.debug({ userId, chatId, messageCount: anthropicMessages.length }, 'Starting stream')
 
     // DEV LOGGING: Log request to LLM
-    await devLogger.logRequest(DEFAULT_MODEL, anthropicMessages as any, SYSTEM_PROMPT)
+    await devLogger.logRequest(DEFAULT_MODEL, anthropicMessages, SYSTEM_PROMPT)
 
     const encoder = new TextEncoder()
     const stream = new ReadableStream({

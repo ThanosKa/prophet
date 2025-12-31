@@ -134,21 +134,24 @@ function createAgentOverlay(): void {
       background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
       border: none;
       border-radius: 30px;
-      padding: 12px 32px;
+      padding: 14px 48px;
+      min-width: 200px;
       color: white;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 15px;
-      font-weight: 600;
+      font-size: 16px;
+      font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+      box-shadow: 0 10px 30px rgba(239, 68, 68, 0.5);
       z-index: 2147483647;
       pointer-events: all;
-      transition: all 0.2s ease;
-      animation: slide-up 0.3s ease-out;
-      letter-spacing: 0.5px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      letter-spacing: 1px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
+      gap: 12px;
+      text-transform: uppercase;
     }
     
     @keyframes slide-up {
@@ -226,14 +229,9 @@ function hideAgentOverlay(): void {
   if (pauseButton) pauseButton.style.display = 'none'
 }
 
-function updateAgentStatus(status: string): void {
-  createAgentOverlay()
-  if (statusText) {
-    statusText.textContent = status
-    if (statusText.parentElement) {
-      statusText.parentElement.style.display = 'block'
-    }
-  }
+function updateAgentStatus(_status: string): void {
+  // Status updates are now handled by the sidepanel UI.
+  // We keep this function but remove the visual update to the overlay.
 }
 
 // ============================================================================

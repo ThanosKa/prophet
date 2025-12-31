@@ -1,7 +1,8 @@
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Shimmer } from "@/components/ai-elements/shimmer";
+import { useAgentStore } from "@/store/agentStore";
 import {
   Conversation,
   ConversationContent,
@@ -135,8 +136,25 @@ export function EnhancedMessageList({
             />
           );
         })}
+        {isStreaming && (
+          <AgentStatusDisplay />
+        )}
       </ConversationContent>
       <ConversationScrollButton />
     </Conversation>
+  );
+}
+
+function AgentStatusDisplay() {
+  const currentAction = useAgentStore((state) => state.currentAction);
+  if (!currentAction) return null;
+
+  return (
+    <div className="flex items-center gap-2 px-4 py-2 mt-1 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <Loader2 className="h-3 w-3 animate-spin text-primary/60" />
+      <span className="text-[11px] font-medium text-muted-foreground/80 tracking-tight italic">
+        {currentAction}
+      </span>
+    </div>
   );
 }

@@ -40,8 +40,8 @@ export interface AgentEvent {
     delta?: string
     toolCallId?: string
     toolName?: string
-    params?: Record<string, unknown>
-    result?: string
+    params?: unknown
+    result?: unknown
     error?: string
     metrics?: {
         inputTokens?: number
@@ -98,7 +98,7 @@ export class ChatAdapter {
                             toolCallId: event.toolCallId!,
                             toolName: event.toolName!,
                             state: 'executing',
-                            input: event.params,
+                            input: event.params as Record<string, unknown>,
                         })
                         return m
                     })
@@ -117,7 +117,7 @@ export class ChatAdapter {
 
                         if (part) {
                             part.state = 'completed'
-                            part.output = event.result
+                            part.output = event.result as string
                         }
 
                         return m
@@ -179,7 +179,7 @@ export class ChatAdapter {
                 this.status = 'idle'
                 break
 
-            case 'error':
+            case 'error': {
                 const msg = this.updateCurrentAssistant((m) => {
                     m.parts.push({ type: 'text', text: event.error || 'Unknown error' })
                     return m
@@ -187,6 +187,7 @@ export class ChatAdapter {
                 if (msg) changedMessages.push(msg)
                 this.status = 'error'
                 break
+            }
 
             case 'done':
                 this.currentAssistantId = null
@@ -261,7 +262,7 @@ export class ChatAdapter {
             .map((p) => ({
                 id: p.toolCallId,
                 name: p.toolName,
-                input: p.input || {},
+                input: (p.input as Record<string, unknown>) || {},
                 result: p.output,
             }))
     }
