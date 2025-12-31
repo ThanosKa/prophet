@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useChatStore } from '@/store/chatStore'
 import { apiClient } from '@/lib/api'
+import { Chat } from '@prophet/shared'
 
 export function useChats() {
   const queryClient = useQueryClient()
@@ -31,11 +32,31 @@ export function useChats() {
 
   const deleteMutation = useMutation({
     mutationFn: (chatId: string) => apiClient.deleteChat(chatId),
-    onSuccess: (response, chatId) => {
-      if (response.data) {
-        removeChat(chatId)
-        queryClient.invalidateQueries({ queryKey: ['chats'] })
+    onMutate: async (chatId: string) => {
+      await queryClient.cancelQueries({ queryKey: ['chats'] })
+      const previousChats = queryClient.getQueryData<Chat[]>(['chats'])
+      
+      if (previousChats) {
+        queryClient.setQueryData(['chats'], previousChats.filter((c) => c.id !== chatId))
       }
+      removeChat(chatId)
+      
+      return { previousChats }
+    },
+    onError: (_error, _chatId, context) => {
+      if (context?.previousChats) {
+        queryClient.setQueryData(['chats'], context.previousChats)
+        // Re-add to Zustand
+        context.previousChats.forEach((chat) => {
+          const state = useChatStore.getState()
+          if (!state.chats.find((c) => c.id === chat.id)) {
+            state.addChat(chat)
+          }
+        })
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['chats'] })
     },
   })
 

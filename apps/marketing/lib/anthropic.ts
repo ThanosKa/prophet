@@ -1,4 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { CLAUDE_MODELS } from '@prophet/shared'
+
+export { CLAUDE_MODELS }
 
 if (!process.env.ANTHROPIC_API_KEY) {
   throw new Error('ANTHROPIC_API_KEY environment variable is not set')
@@ -6,7 +9,7 @@ if (!process.env.ANTHROPIC_API_KEY) {
 
 /**
  * Anthropic SDK client instance
- * Uses Claude Sonnet 4 for optimal balance of speed and quality
+ * Uses Claude Haiku for optimal balance of speed and quality
  */
 export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -14,9 +17,9 @@ export const anthropic = new Anthropic({
 
 /**
  * Default model for chat completions
- * Claude Sonnet 4.5 - Latest and most capable model
+ * Claude Haiku 4.5 - Fast and efficient for most tasks
  */
-export const DEFAULT_MODEL = 'claude-sonnet-4-20250514'
+export const DEFAULT_MODEL = CLAUDE_MODELS.HAIKU
 
 /**
  * Default max tokens for responses

@@ -68,21 +68,21 @@ export function ChatDrawer({
 
   return (
     <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-      <SheetContent side="left" className="w-72 p-0 bg-[var(--chatbot-bg)] border-r border-border">
-        <SheetHeader className="p-4 pb-2">
+      <SheetContent side="left" className="w-72 p-0 flex flex-col bg-[var(--chatbot-muted)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--chatbot-muted)]/60 border-r border-border">
+        <SheetHeader className="p-4 pb-2 shrink-0">
           <SheetTitle className="text-lg font-semibold">Prophet</SheetTitle>
         </SheetHeader>
 
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4 shrink-0">
           <Button onClick={handleNewChat} className="w-full" size="sm">
             <Plus className="h-4 w-4 mr-2" />
             New Chat
           </Button>
         </div>
 
-        <Separator />
+        <Separator className="shrink-0" />
 
-        <ScrollArea className="h-[calc(100vh-140px)]">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="p-2 space-y-4">
             {chats.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-8">
@@ -100,20 +100,22 @@ export function ChatDrawer({
                         key={chat.id}
                         className={cn(
                           'group relative flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200',
-                          'hover:bg-[var(--chatbot-accent)]/40 active:scale-[0.98]',
-                          activeId === chat.id ? 'bg-[var(--chatbot-accent)]/60 ring-1 ring-border shadow-sm' : 'transparent'
+                          'hover:bg-[var(--chatbot-accent)]/80 active:scale-[0.98]',
+                          activeId === chat.id ? 'bg-[var(--chatbot-accent)] ring-1 ring-border shadow-sm' : 'transparent'
                         )}
                         onClick={() => handleSelectChat(chat.id)}
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm truncate">{chat.title}</p>
+                          <p className="text-sm truncate" title={chat.title}>{chat.title}</p>
                         </div>
                         <button
-                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive/20 rounded transition-opacity"
+                          className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 p-1 hover:bg-destructive/20 rounded transition-opacity"
                           onClick={(e) => {
                             e.stopPropagation()
                             onDeleteChat(chat.id)
                           }}
+                          title="Delete chat"
+                          aria-label="Delete chat"
                         >
                           <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
                         </button>

@@ -12,6 +12,8 @@ import { WelcomeScreen } from '@/components/chat/WelcomeScreen'
 import { ChatView } from '@/components/chat/ChatView'
 import { SignInButton } from '@/components/auth/SignInButton'
 import { Skeleton } from '@/components/ui/skeleton'
+import { apiClient } from '@/lib/api'
+import type { Chat } from '@prophet/shared'
 
 interface ImageData {
   base64: string
@@ -89,9 +91,34 @@ export default function App() {
       if (chat) {
         setActiveChatId(chat.id)
         await sendMessage(chat.id, content, image)
+        await triggerAutoTitle(chat.id)
       }
     } else {
       await sendMessage(activeChatId, content, image)
+      await triggerAutoTitle(activeChatId)
+    }
+  }
+
+  const triggerAutoTitle = async (chatId: string) => {
+    const currentChat = chats.find((c) => c.id === chatId)
+    if (!currentChat) return
+
+    if (currentChat.title.startsWith('New Chat')) {
+      try {
+        const response = await apiClient.autoTitleChat(chatId)
+        const newTitle = response.data?.title
+        if (newTitle) {
+          const { updateChat } = useChatStore.getState()
+          updateChat(chatId, { title: newTitle })
+          queryClient.setQueryData(['chats'], (oldChats: Chat[] | undefined) =>
+            (oldChats ?? []).map((c) =>
+              c.id === chatId ? { ...c, title: newTitle } : c
+            )
+          )
+        }
+      } catch (err) {
+        console.error('Failed to auto-generate title:', err)
+      }
     }
   }
 

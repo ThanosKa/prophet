@@ -88,6 +88,12 @@ class ApiClient {
     })
   }
 
+  async autoTitleChat(chatId: string): Promise<ApiResponse<{ chatId: string; title: string }>> {
+    return this.request(`/api/chats/${chatId}/title/auto`, {
+      method: 'POST',
+    })
+  }
+
   async getMessages(chatId: string): Promise<ApiResponse<Message[]>> {
     return this.request(`/api/chats/${chatId}/messages`)
   }
