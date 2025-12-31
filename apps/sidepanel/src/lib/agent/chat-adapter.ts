@@ -1,5 +1,4 @@
 /**
- * ChatAdapter - The "Nervous System" from AIPEX Pattern
  * 
  * Converts raw agent events into structured UI messages.
  * Bundles multiple tool calls into a single message.
@@ -78,7 +77,10 @@ export class ChatAdapter {
                             lastPart.text += event.delta
                         } else {
                             // Otherwise push a new text part
-                            m.parts.push({ type: 'text', text: event.delta! })
+                            // Add a newline if there's already content to separate turns
+                            const hasContent = m.parts.length > 0
+                            const text = hasContent ? `\n\n${event.delta!}` : event.delta!
+                            m.parts.push({ type: 'text', text })
                         }
 
                         return m
@@ -162,24 +164,13 @@ export class ChatAdapter {
             case 'execution_complete':
                 if (event.finalOutput) {
                     const msg = this.updateCurrentAssistant((m) => {
-                        // Check if finalOutput already exists in the text parts
-                        const existingText = m.parts
-                            .filter((p): p is TextPart => p.type === 'text')
-                            .map((p) => p.text)
-                            .join('')
-
-                        // Only add finalOutput if it's different from what we already have
-                        if (existingText !== event.finalOutput) {
-                            // If we have no text yet, add it
-                            if (!existingText) {
-                                const textPartIndex = m.parts.findIndex((p) => p.type === 'text')
-                                if (textPartIndex >= 0) {
-                                    m.parts[textPartIndex] = { type: 'text', text: event.finalOutput! }
-                                } else {
-                                    m.parts.unshift({ type: 'text', text: event.finalOutput! })
-                                }
-                            }
-                        }
+                        // Replace all text parts with final output
+                        // This removes intermediate narration (thinking) and keeps only the final response
+                        const toolParts = m.parts.filter((p): p is ToolPart => p.type === 'tool')
+                        m.parts = [
+                            { type: 'text', text: event.finalOutput! },
+                            ...toolParts,
+                        ]
                         
                         if (event.metrics) {
                             m.inputTokens = event.metrics.inputTokens

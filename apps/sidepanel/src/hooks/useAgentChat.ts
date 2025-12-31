@@ -14,14 +14,13 @@ export interface AgentMessage extends Message {
 export function useAgentChat() {
   const { addMessage: addLegacyMessage, updateMessage: updateLegacyMessage, setStreaming } = useChatStore()
   const { selectedModel, addContextUsage } = useUIStore()
-  const { createAbortController, abort: abortAgentStore, setActive } = useAgentStore()
+  const { createAbortController, abort: abortAgentStore, setActive, clearActions } = useAgentStore()
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<AgentStatus>('idle')
   const [currentToolCall, setCurrentToolCall] = useState<ToolCall | null>(null) // Legacy support for ChatView
   const abortRef = useRef<boolean>(false)
   const activeStreamRef = useRef<{ chatId: string; abort: () => void } | null>(null)
 
-  // AIPEX Pattern: Use ChatAdapter for event processing
   const adapter = useMemo(() => chatAdapter, [])
 
   const sendMessage = useCallback(
@@ -41,6 +40,7 @@ export function useAgentChat() {
         setStreaming(true)
         setCurrentToolCall(null)
         abortRef.current = false
+        clearActions()
 
         // Activate agent overlay
         setActive(true)

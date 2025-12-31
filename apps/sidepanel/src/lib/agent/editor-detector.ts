@@ -1,5 +1,4 @@
 /**
- * Editor Detector - Rich Text Editor Handler from AIPEX Pattern
  * 
  * Detects Monaco, CodeMirror, and Ace editors and provides
  * specialized fill methods that use the editor's internal API

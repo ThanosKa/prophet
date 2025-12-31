@@ -77,7 +77,6 @@ function createAgentOverlay(): void {
       50% { opacity: 0.3; transform: scale(1.05); transform-origin: center; }
     }
     
-    /* AIPEX Glassmorphism Pattern */
     .status-container {
       position: fixed;
       top: 20px;
@@ -193,7 +192,6 @@ function createAgentOverlay(): void {
   viewportBorder = document.createElement('div')
   viewportBorder.className = 'viewport-border'
   viewportBorder.style.display = 'none'
-  // AIPEX Wavy Look SVG
   viewportBorder.innerHTML = `
     <svg style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;" preserveAspectRatio="none">
       <!-- Wavy Ring 1 -->

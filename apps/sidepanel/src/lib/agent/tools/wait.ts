@@ -6,7 +6,6 @@ const DEFAULT_TIMEOUT_MS = 10000
 
 /**
  * Wait for a CSS selector to appear in the DOM.
- * Uses MutationObserver pattern from AIPEX for efficiency.
  */
 export async function waitForSelector(input: {
     selector: string

@@ -80,7 +80,6 @@ class DebuggerManagerClass {
   }
 
   /**
-   * AIPEX Pattern: Clean Room Debugger
    * Removes extension iframes to prevent "Debugger detached" errors.
    */
   private async ensureNoExtensionFrame(tabId: number): Promise<boolean> {

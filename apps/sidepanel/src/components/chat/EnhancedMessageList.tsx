@@ -8,6 +8,7 @@ import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
+  ConversationEmptyState,
 } from "@/components/ai-elements/conversation";
 import {
   Message,
@@ -158,9 +159,10 @@ export function EnhancedMessageList({
 
   if (messages.length === 0 && !isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
-        Start a conversation
-      </div>
+      <ConversationEmptyState
+        title="Start a conversation"
+        description="Ask Prophet anything to get started with your browser tasks."
+      />
     );
   }
 
@@ -205,9 +207,9 @@ function AgentStatusDisplay() {
   if (actions.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-1 px-4 py-2 mt-1 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="flex flex-col gap-2.5 px-4 py-4 mt-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {actions.map((action, i) => (
-        <div key={i} className="flex items-center gap-2 opacity-100 transition-opacity">
+        <div key={i} className="flex items-center gap-2.5 opacity-100 transition-opacity">
           {i === actions.length - 1 ? (
             <Loader2 className="h-3 w-3 animate-spin text-primary/60" />
           ) : (

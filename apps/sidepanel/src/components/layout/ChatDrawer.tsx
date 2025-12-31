@@ -109,7 +109,7 @@ export function ChatDrawer({
                           <p className="text-sm truncate" title={chat.title}>{chat.title}</p>
                         </div>
                         <button
-                          className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 p-1 hover:bg-destructive/20 rounded transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 p-1.5 hover:bg-destructive/10 rounded-md transition-all duration-200"
                           onClick={(e) => {
                             e.stopPropagation()
                             onDeleteChat(chat.id)
@@ -117,7 +117,7 @@ export function ChatDrawer({
                           title="Delete chat"
                           aria-label="Delete chat"
                         >
-                          <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive transition-colors" />
                         </button>
                       </div>
                     ))}

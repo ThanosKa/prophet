@@ -9,7 +9,6 @@ export class SmartLocator {
   private async highlightElement(tabId: number, uid: string, type: 'click' | 'hover' | 'fill' = 'click'): Promise<void> {
     console.warn(`[SmartLocator] Highlight requested (WARNING): uid="${uid}" type=${type} tab=${tabId}`)
 
-    // const color = type === 'fill' ? '#f59e0b' : '#3b82f6' // Kept hardcoded blue per AIPEX spec
 
     try {
       await cdpCommander.sendCommand<EvaluateResult>(tabId, 'Runtime.evaluate', {
@@ -29,11 +28,9 @@ export class SmartLocator {
                   el.dataset.prophetOriginalBoxShadow = el.style.boxShadow || '';
                 }
 
-                // Apply "AIPex-style" visual feedback
                 el.style.transition = 'all 0.2s ease-in-out';
                 el.style.outline = '3px solid #3b82f6';
                 el.style.outlineOffset = '2px';
-                // AIPex "Blueish Glow" - Multi-layered shadow
                 el.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.2), 0 0 20px rgba(59, 130, 246, 0.4)';
                 
                 // Remove highlight after animation
@@ -86,7 +83,6 @@ export class SmartLocator {
     const centerX = box.x + box.width / 2
     const centerY = box.y + box.height / 2
 
-    // AIPEX Pattern: Check if element is covered by overlay/popup
     const isCovered = await this.isElementCovered(tabId, uid, centerX, centerY)
 
     if (isCovered) {
@@ -119,7 +115,6 @@ export class SmartLocator {
   }
 
   /**
-   * AIPEX Pattern: Check if element is covered by another element (popup, overlay, etc.)
    * Uses document.elementFromPoint to check what's actually at the click coordinates.
    */
   private async isElementCovered(tabId: number, uid: string, x: number, y: number): Promise<boolean> {
@@ -176,7 +171,6 @@ export class SmartLocator {
     await this.scrollIntoView(tabId, uid)
     await this.highlightElement(tabId, uid, 'fill')
 
-    // AIPEX Pattern: Try rich text editor APIs first (Monaco, CodeMirror, Ace)
     const filledViaEditor = await tryFillEditor(tabId, uid, value)
     if (filledViaEditor) {
       console.log('[SmartLocator] Filled via editor API')

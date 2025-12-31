@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { useChatStore } from '@/store/chatStore'
 import { apiClient } from '@/lib/api'
 
@@ -32,13 +33,17 @@ export function useMessages(chatId: string | null) {
   })
 
   // Hydrate store with initial page
-  if (data && chatId) {
-    const existing = useChatStore.getState().messages[chatId]
-    if (!existing || existing.length === 0) {
-      const allMessages = data.pages.flatMap(page => page.messages).reverse()
-      setMessages(chatId, allMessages)
+  useEffect(() => {
+    if (data && chatId) {
+      const existing = useChatStore.getState().messages[chatId]
+      if (!existing || existing.length === 0) {
+        const allMessages = data.pages.flatMap(page => page.messages).reverse()
+        if (allMessages.length > 0) {
+          setMessages(chatId, allMessages)
+        }
+      }
     }
-  }
+  }, [data, chatId, setMessages])
 
   const loadOlder = () => {
     if (hasNextPage && !isFetchingNextPage) {
