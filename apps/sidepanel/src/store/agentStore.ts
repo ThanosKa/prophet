@@ -2,11 +2,12 @@ import { create } from 'zustand'
 
 interface AgentState {
     isActive: boolean
-    currentAction: string | null
+    actions: string[]
     abortController: AbortController | null
 
     setActive: (active: boolean) => void
-    setCurrentAction: (action: string | null) => void
+    addAction: (action: string) => void
+    clearActions: () => void
     createAbortController: () => AbortController
     abort: () => void
     reset: () => void
@@ -14,7 +15,7 @@ interface AgentState {
 
 export const useAgentStore = create<AgentState>((set, get) => ({
     isActive: false,
-    currentAction: null,
+    actions: [],
     abortController: null,
 
     setActive: (active) => {
@@ -24,7 +25,11 @@ export const useAgentStore = create<AgentState>((set, get) => ({
         }
     },
 
-    setCurrentAction: (action) => set({ currentAction: action }),
+    addAction: (action) => set((state) => ({
+        actions: [...state.actions, action].slice(-10),
+    })),
+
+    clearActions: () => set({ actions: [] }),
 
     createAbortController: () => {
         const controller = new AbortController()
@@ -36,13 +41,13 @@ export const useAgentStore = create<AgentState>((set, get) => ({
         const { abortController } = get()
         if (abortController) {
             abortController.abort()
-            set({ abortController: null, isActive: false, currentAction: null })
+            set({ abortController: null, isActive: false, actions: [] })
         }
     },
 
     reset: () => set({
         isActive: false,
-        currentAction: null,
+        actions: [],
         abortController: null
     }),
 }))

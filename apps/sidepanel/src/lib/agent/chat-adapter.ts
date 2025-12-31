@@ -162,12 +162,25 @@ export class ChatAdapter {
             case 'execution_complete':
                 if (event.finalOutput) {
                     const msg = this.updateCurrentAssistant((m) => {
-                        // Replace all text parts with final output
-                        const toolParts = m.parts.filter((p): p is ToolPart => p.type === 'tool')
-                        m.parts = [
-                            { type: 'text', text: event.finalOutput! },
-                            ...toolParts,
-                        ]
+                        // Check if finalOutput already exists in the text parts
+                        const existingText = m.parts
+                            .filter((p): p is TextPart => p.type === 'text')
+                            .map((p) => p.text)
+                            .join('')
+
+                        // Only add finalOutput if it's different from what we already have
+                        if (existingText !== event.finalOutput) {
+                            // If we have no text yet, add it
+                            if (!existingText) {
+                                const textPartIndex = m.parts.findIndex((p) => p.type === 'text')
+                                if (textPartIndex >= 0) {
+                                    m.parts[textPartIndex] = { type: 'text', text: event.finalOutput! }
+                                } else {
+                                    m.parts.unshift({ type: 'text', text: event.finalOutput! })
+                                }
+                            }
+                        }
+                        
                         if (event.metrics) {
                             m.inputTokens = event.metrics.inputTokens
                             m.outputTokens = event.metrics.outputTokens

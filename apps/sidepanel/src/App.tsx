@@ -32,7 +32,7 @@ export default function App() {
   useEffect(() => {
     const handleStatusUpdate = (message: { type: string; status: string }) => {
       if (message.type === 'AGENT_STATUS_UPDATE') {
-        useAgentStore.getState().setCurrentAction(message.status)
+        useAgentStore.getState().addAction(message.status)
       }
     }
     chrome.runtime.onMessage.addListener(handleStatusUpdate)
