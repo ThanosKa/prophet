@@ -107,8 +107,30 @@ export async function POST(req: Request) {
     await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT)
 
     const encoder = new TextEncoder()
+    let controllerClosed = false
     const stream = new ReadableStream({
       async start(controller) {
+        const safeEnqueue = (data: string) => {
+          if (!controllerClosed) {
+            try {
+              controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+            } catch (_err) {
+              controllerClosed = true
+            }
+          }
+        }
+
+        const safeClose = () => {
+          if (!controllerClosed) {
+            try {
+              controller.close()
+            } catch (_err) {
+              // Ignore
+            }
+            controllerClosed = true
+          }
+        }
+
         let fullTextResponse = ''
         let inputTokens = 0
         let outputTokens = 0
@@ -132,11 +154,10 @@ export async function POST(req: Request) {
           let currentToolUse: { id: string; name: string; input: string } | null = null
 
           // Send session_created at the start
-          const sessionData = JSON.stringify({
+          safeEnqueue(JSON.stringify({
             type: 'session_created',
             sessionId: chatId,
-          })
-          controller.enqueue(encoder.encode(`data: ${sessionData}\n\n`))
+          }))
 
           for await (const event of anthropicStream) {
             if (event.type === 'message_start') {
@@ -154,24 +175,22 @@ export async function POST(req: Request) {
                   { toolUseId: event.content_block.id, toolName: event.content_block.name },
                   '[DEV] Tool use started'
                 )
-                const data = JSON.stringify({
+                safeEnqueue(JSON.stringify({
                   type: 'tool_call_start',
                   toolCallId: event.content_block.id,
                   toolName: event.content_block.name,
                   params: {},
-                })
-                controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+                }))
               }
             } else if (event.type === 'content_block_delta') {
               if (event.delta.type === 'text_delta') {
                 contentDeltaCount++
                 const text = event.delta.text
                 fullTextResponse += text
-                const data = JSON.stringify({
+                safeEnqueue(JSON.stringify({
                   type: 'content_delta',
                   delta: text,
-                })
-                controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+                }))
               } else if (event.delta.type === 'input_json_delta' && currentToolUse) {
                 currentToolUse.input += event.delta.partial_json
               }
@@ -199,7 +218,7 @@ export async function POST(req: Request) {
                   '[DEV] Tool use completed'
                 )
 
-                const data = JSON.stringify({
+                safeEnqueue(JSON.stringify({
                   type: 'tool_use',
                   toolUse: {
                     type: 'tool_use',
@@ -207,8 +226,7 @@ export async function POST(req: Request) {
                     name: currentToolUse.name,
                     input: parsedInput,
                   },
-                })
-                controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+                }))
                 currentToolUse = null
               } else if (fullTextResponse) {
                 contentBlocks.push({
@@ -219,15 +237,14 @@ export async function POST(req: Request) {
             } else if (event.type === 'message_delta') {
               if (event.usage) {
                 outputTokens = event.usage.output_tokens
-                const metricsData = JSON.stringify({
+                safeEnqueue(JSON.stringify({
                   type: 'metrics_update',
                   metrics: {
                     inputTokens,
                     outputTokens,
                     costCents: calculateCostInCents(model, inputTokens, outputTokens),
                   },
-                })
-                controller.enqueue(encoder.encode(`data: ${metricsData}\n\n`))
+                }))
               }
             }
           }
@@ -272,7 +289,7 @@ export async function POST(req: Request) {
             toolCalls: assistantToolCalls.length > 0 ? JSON.stringify(assistantToolCalls) : null,
           });
 
-          const executionCompleteData = JSON.stringify({
+          safeEnqueue(JSON.stringify({
             type: 'execution_complete',
             finalOutput: fullTextResponse,
             metrics: {
@@ -280,10 +297,9 @@ export async function POST(req: Request) {
               outputTokens,
               costCents,
             },
-          })
-          controller.enqueue(encoder.encode(`data: ${executionCompleteData}\n\n`))
+          }))
 
-          const doneData = JSON.stringify({
+          safeEnqueue(JSON.stringify({
             type: 'done',
             stopReason,
             usage: {
@@ -292,10 +308,9 @@ export async function POST(req: Request) {
               costCents,
             },
             contentBlocks,
-          })
-          controller.enqueue(encoder.encode(`data: ${doneData}\n\n`))
+          }))
 
-          controller.close()
+          safeClose()
         } catch (err) {
           logger.error(
             {
@@ -305,15 +320,17 @@ export async function POST(req: Request) {
             '[DEV] Agent streaming error'
           )
 
-          const errorData = JSON.stringify({
+          safeEnqueue(JSON.stringify({
             type: 'error',
             error: err instanceof Error ? err.message : 'Streaming failed',
-          })
-          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
+          }))
 
-          controller.close()
+          safeClose()
         }
       },
+      cancel() {
+        controllerClosed = true
+      }
     })
 
     logger.debug({}, '[DEV] Stream response created, returning to client')

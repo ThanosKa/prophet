@@ -1,63 +1,52 @@
 #!/bin/bash
 
-# Test script for Prophet Agent Dev Endpoint
+# Prophet Agent Test Suite (Bash)
+# This script tests the Agent Dev Endpoint with various scenarios.
 # Usage: ./scripts/test-agent.sh
 
 set -e
 
 API_URL="http://localhost:3000/api/agent/chat/dev"
+CHAT_ID="07903456-e5f6-4dfc-bdf3-417a4c65ac43"
 
-echo "🤖 Testing Prophet Agent Dev Endpoint"
-echo "======================================"
-echo ""
+echo -e "\n🤖 Prophet Agent Test Suite (Bash)"
+echo "===================================="
 
-# Test 1: Simple response with Haiku (default)
-echo "1️⃣  Testing Haiku (default model)..."
-curl -s "$API_URL" \
+# Test 1: Basic Chat
+echo "1️⃣  Testing Basic Chat (Haiku)..."
+curl -s -X POST "$API_URL" \
   -H 'Content-Type: application/json' \
-  -d '{"chatId":"00000000-0000-0000-0000-000000000000","userMessage":"Say hello in 2 words"}' \
-  | grep -o '"type":"[^"]*"' | head -5
-echo "   ✅ Haiku test complete"
-echo ""
+  -d "{\"chatId\":\"$CHAT_ID\",\"model\":\"claude-haiku-4-5\",\"userMessage\":\"Say hello in 2 words\"}" \
+  | grep -q "content_delta" && echo "   ✅ Success" || echo "   ❌ Failed"
 
-# Test 2: Explicit Sonnet model
-echo "2️⃣  Testing Sonnet (explicit model)..."
-curl -s "$API_URL" \
+# Test 2: Tool Continuation (Validation Test)
+echo -e "\n2️⃣  Testing Tool Continuation (Strict Validation)..."
+curl -s -X POST "$API_URL" \
   -H 'Content-Type: application/json' \
-  -d '{"chatId":"00000000-0000-0000-0000-000000000000","model":"claude-sonnet-4-5","userMessage":"Say hello in 2 words"}' \
-  | grep -o '"type":"[^"]*"' | head -5
-echo "   ✅ Sonnet test complete"
-echo ""
+  -d "{\"chatId\":\"$CHAT_ID\",\"model\":\"claude-haiku-4-5\",\"previousContent\":[{\"type\":\"tool_use\",\"id\":\"t1\",\"name\":\"navigate\",\"input\":{\"url\":\"https://google.com\"}}],\"toolResults\":[{\"type\":\"tool_result\",\"tool_use_id\":\"t1\",\"content\":\"done\"}]}" \
+  | grep -q "session_created" && echo "   ✅ Success" || echo "   ❌ Failed"
 
-# Test 3: Tool use (navigation)
-echo "3️⃣  Testing navigation tool..."
-curl -s "$API_URL" \
+# Test 3: Malformed Tool Input (Navigate missing URL)
+echo -e "\n3️⃣  Testing Malformed Tool Input (Navigate missing URL)..."
+RESPONSE=$(curl -s -X POST "$API_URL" \
   -H 'Content-Type: application/json' \
-  -d '{"chatId":"00000000-0000-0000-0000-000000000000","userMessage":"Navigate to github.com"}' \
-  | grep -o '"name":"[^"]*"' | head -3
-echo "   ✅ Tool use test complete"
-echo ""
+  -d "{\"chatId\":\"$CHAT_ID\",\"model\":\"claude-haiku-4-5\",\"previousContent\":[{\"type\":\"tool_use\",\"id\":\"t2\",\"name\":\"navigate\",\"input\":{\"not_url\":\"ops\"}}],\"toolResults\":[{\"type\":\"tool_result\",\"tool_use_id\":\"t2\",\"content\":\"failed\"}]}")
 
-# Test 4: Full streaming response
-echo "4️⃣  Full streaming response (navigate to google)..."
-curl -s "$API_URL" \
+echo "$RESPONSE" | grep -q "VALIDATION_ERROR" && echo "   ✅ Success (Caught validation error)" || echo "   ❌ Failed (Should have caught error)"
+
+# Test 4: Malformed Tool Input (Fill Element missing UID)
+echo -e "\n4️⃣  Testing Malformed Tool Input (Fill Element missing UID)..."
+RESPONSE=$(curl -s -X POST "$API_URL" \
   -H 'Content-Type: application/json' \
-  -d '{"chatId":"00000000-0000-0000-0000-000000000000","userMessage":"Navigate to google.com"}' \
-  | head -20
-echo ""
-echo "   ✅ Full response test complete"
-echo ""
+  -d "{\"chatId\":\"$CHAT_ID\",\"model\":\"claude-haiku-4-5\",\"previousContent\":[{\"type\":\"tool_use\",\"id\":\"t3\",\"name\":\"fill_element_by_uid\",\"input\":{\"value\":\"hello\"}}],\"toolResults\":[{\"type\":\"tool_result\",\"tool_use_id\":\"t3\",\"content\":\"failed\"}]}")
 
-echo "✅ All tests passed!"
-echo ""
-echo "💡 Tip: Check backend logs with:"
-echo "   tail -f /tmp/backend.log"
-echo "   OR just run 'pnpm -F @prophet/backend dev' in a terminal to see live logs"
+echo "$RESPONSE" | grep -q "UID is required" && echo "   ✅ Success (Caught UID validation error)" || echo "   ❌ Failed"
 
+# Test 5: Valid Complex Tool (Scroll Page)
+echo -e "\n5️⃣  Testing Valid Complex Tool (Scroll Page)..."
+curl -s -X POST "$API_URL" \
+  -H 'Content-Type: application/json' \
+  -d "{\"chatId\":\"$CHAT_ID\",\"model\":\"claude-haiku-4-5\",\"previousContent\":[{\"type\":\"tool_use\",\"id\":\"t4\",\"name\":\"scroll_page\",\"input\":{\"direction\":\"down\",\"pixels\":500}}],\"toolResults\":[{\"type\":\"tool_result\",\"tool_use_id\":\"t4\",\"content\":\"scrolled\"}]}" \
+  | grep "session_created" > /dev/null && echo "   ✅ Success" || echo "   ❌ Failed"
 
-
-
-#curl -s "http://localhost:3000/api/agent/chat/dev" \
-#  -H 'Content-Type: application/json' \
-#  -d '{"chatId":"00000000-0000-0000-0000-000000000000","userMessage":"Navigate to google.com"}' \
-#  | head -20
+echo -e "\n🏁 All tests completed!\n"

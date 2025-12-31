@@ -12,6 +12,13 @@ import {
   Loader2,
   Check,
   X,
+  Clock,
+  Layout,
+  PlusSquare,
+  ArrowLeft,
+  ArrowRight,
+  RefreshCw,
+  Info,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ToolCall, ToolName } from '@prophet/shared'
@@ -32,6 +39,17 @@ const toolIcons: Record<ToolName, React.ComponentType<{ className?: string }>> =
   search_snapshot: Search,
   press_key: Keyboard,
   hover_element_by_uid: Move,
+  wait_for_selector: Search,
+  wait_for_navigation: Clock,
+  wait_for_timeout: Clock,
+  list_tabs: Layout,
+  switch_tab: Layout,
+  close_tab: X,
+  open_new_tab: PlusSquare,
+  go_back: ArrowLeft,
+  go_forward: ArrowRight,
+  reload_page: RefreshCw,
+  get_page_info: Info,
 }
 
 const toolLabels: Record<ToolName, string> = {
@@ -45,6 +63,17 @@ const toolLabels: Record<ToolName, string> = {
   search_snapshot: 'Searching',
   press_key: 'Pressing key',
   hover_element_by_uid: 'Hovering element',
+  wait_for_selector: 'Waiting for selector',
+  wait_for_navigation: 'Waiting for navigation',
+  wait_for_timeout: 'Waiting',
+  list_tabs: 'Listing tabs',
+  switch_tab: 'Switching tab',
+  close_tab: 'Closing tab',
+  open_new_tab: 'Opening tab',
+  go_back: 'Going back',
+  go_forward: 'Going forward',
+  reload_page: 'Reloading page',
+  get_page_info: 'Getting page info',
 }
 
 export function ToolCallCard({ toolCall, isExecuting = false }: ToolCallCardProps) {

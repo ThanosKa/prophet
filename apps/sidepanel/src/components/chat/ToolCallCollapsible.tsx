@@ -14,6 +14,13 @@ import {
   Check,
   X,
   ChevronDown,
+  Clock,
+  Layout,
+  PlusSquare,
+  ArrowLeft,
+  ArrowRight,
+  RefreshCw,
+  Info,
 } from 'lucide-react'
 import {
   Collapsible,
@@ -39,6 +46,17 @@ const toolIcons: Record<ToolName, React.ComponentType<{ className?: string }>> =
   search_snapshot: Search,
   press_key: Keyboard,
   hover_element_by_uid: Move,
+  wait_for_selector: Search,
+  wait_for_navigation: Clock,
+  wait_for_timeout: Clock,
+  list_tabs: Layout,
+  switch_tab: Layout,
+  close_tab: X,
+  open_new_tab: PlusSquare,
+  go_back: ArrowLeft,
+  go_forward: ArrowRight,
+  reload_page: RefreshCw,
+  get_page_info: Info,
 }
 
 const toolLabels: Record<ToolName, string> = {
@@ -52,6 +70,17 @@ const toolLabels: Record<ToolName, string> = {
   search_snapshot: 'Search',
   press_key: 'Key Press',
   hover_element_by_uid: 'Hover',
+  wait_for_selector: 'Wait for Selector',
+  wait_for_navigation: 'Wait for Navigation',
+  wait_for_timeout: 'Wait',
+  list_tabs: 'List Tabs',
+  switch_tab: 'Switch Tab',
+  close_tab: 'Close Tab',
+  open_new_tab: 'Open Tab',
+  go_back: 'Go Back',
+  go_forward: 'Go Forward',
+  reload_page: 'Reload',
+  get_page_info: 'Page Info',
 }
 
 function formatToolInput(toolCall: ToolCall): string {

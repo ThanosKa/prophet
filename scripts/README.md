@@ -1,116 +1,58 @@
-# Development Scripts
+# Development & Testing Scripts
+
+This directory contains scripts for testing the Prophet Agent and monitoring system behavior.
 
 ## Test Agent Endpoint
 
-Quick test script for the dev-only agent endpoint.
+The `dev` endpoint bypasses credit checks and rate limits for easier local development.
 
-### Usage
+### Usage (Cross-Platform)
 
+#### Windows (PowerShell)
+```powershell
+./scripts/test-agent.ps1
+```
+
+#### macOS / Linux (Bash)
 ```bash
-# From project root:
-pnpm test:agent
-
-# Or directly:
 ./scripts/test-agent.sh
 ```
 
 ### What it tests
 
-1. ✅ Haiku model (default)
-2. ✅ Sonnet model (explicit)
-3. ✅ Tool use (navigation)
-4. ✅ Full streaming response
+1.  **Basic Chat**: Verifies the LLM responds to simple text messages.
+2.  **Strict Tool Validation**: Ensures that tool calls sent in `previousContent` match their defined schemas (e.g., `navigate` must have a valid `url`).
+3.  **Error Handling**: Verifies that invalid models or malformed requests return proper 400/500 errors.
 
 ---
 
-## Logs: Where Are They?
+## Logs & Monitoring
 
-### Development (Local)
+### LLM Interaction Logs
+All raw requests and responses to Anthropic are captured in:
+`apps/marketing/logs/response.txt`
 
-**Normal workflow** - Logs appear in your **terminal**, NOT in files:
+This file is automatically created and appended to when running in `NODE_ENV=development`.
 
+### Server Logs
+To see real-time database queries and application logic:
 ```bash
-# Terminal 1: Start backend (you'll see logs here)
-pnpm -F @prophet/backend dev
-
-# Terminal 2: Start sidepanel
-pnpm -F @prophet/sidepanel dev
-
-# Terminal 3: Test with curl
-pnpm test:agent
-```
-
-**What you'll see in Terminal 1 (backend):**
-```
-[10:48:42.135] DEBUG: [DEV] Starting agent stream
-    model: "claude-haiku-4-5"
-    messageCount: 1
-[10:48:42.907] INFO: [DEV] Agent stream completed
-    model: "claude-haiku-4-5"
-    inputTokens: 2745
-    outputTokens: 5
-```
-
-### Why No Log Files in IDE?
-
-**In development:**
-- ❌ Logs are NOT saved to files/folders by default
-- ✅ Logs go to **stdout/stderr** (terminal output)
-- ✅ You see them in real-time where you run `pnpm dev`
-- 🎯 **This is normal!** Developers read logs in the terminal
-
-**In production (deployed):**
-- ✅ Logs ARE saved to files or log services
-- ✅ Examples: CloudWatch (AWS), Datadog, Vercel Logs, etc.
-- ✅ Persistent storage for debugging issues
-
-### How to View Logs
-
-**Option 1: Terminal (recommended for dev)**
-```bash
-# Just run the dev server in a terminal - you'll see logs
 pnpm -F @prophet/backend dev
 ```
 
-**Option 2: Save to file (if you prefer)**
+### Drizzle Studio (Database GUI)
+To inspect the database state (chats, messages, users):
 ```bash
-# Redirect logs to a file
-pnpm -F @prophet/backend dev > logs/backend.log 2>&1
-
-# View logs in real-time
-tail -f logs/backend.log
-```
-
-**Option 3: Use IDE Terminal**
-Most IDEs (VS Code, Cursor, etc.) have built-in terminals - just run `pnpm dev` there!
-
-### Current Setup
-
-Our backend uses **pino** logger:
-- Pretty-printed in dev (colored, readable)
-- JSON in production (machine-readable)
-- Configured in `apps/backend/lib/logger.ts`
-
-### Log Levels
-
-```typescript
-logger.debug() // Development details
-logger.info()  // Important events
-logger.warn()  // Warning, not critical
-logger.error() // Errors that need attention
+pnpm -F @prophet/backend db:studio
 ```
 
 ---
 
-## Summary
+## Tip: Running individual tests
+You can use `curl` directly for quick checks:
 
-**For Development:**
-1. Open terminal in your IDE
-2. Run `pnpm -F @prophet/backend dev`
-3. Logs appear in that terminal
-4. No files needed!
-
-**For Testing:**
-1. Run `pnpm test:agent`
-2. Check the terminal where backend is running
-3. Or add `| tail -f /tmp/backend.log` if running in background
+```powershell
+curl.exe -X POST http://localhost:3000/api/agent/chat/dev `
+  -H "Content-Type: application/json" `
+  -d '{\"chatId\": \"[UUID]\", \"userMessage\": \"Hi\"}'
+```
