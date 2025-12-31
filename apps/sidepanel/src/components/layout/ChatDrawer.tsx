@@ -68,7 +68,7 @@ export function ChatDrawer({
 
   return (
     <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-      <SheetContent side="left" className="w-72 p-0 flex flex-col bg-background border-r border-border">
+      <SheetContent side="left" className="w-72 max-w-full p-0 flex flex-col bg-background border-r border-border">
         <SheetHeader className="p-4 pb-2 shrink-0">
           <SheetTitle className="text-lg font-semibold">Prophet</SheetTitle>
         </SheetHeader>
@@ -109,7 +109,7 @@ export function ChatDrawer({
                           <p className="text-sm truncate" title={chat.title}>{chat.title}</p>
                         </div>
                         <button
-                          className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 p-1.5 hover:bg-destructive/10 rounded-md transition-all duration-200"
+                          className="shrink-0 opacity-70 hover:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 p-1.5 hover:bg-destructive/10 rounded-md transition-all duration-200"
                           onClick={(e) => {
                             e.stopPropagation()
                             onDeleteChat(chat.id)
