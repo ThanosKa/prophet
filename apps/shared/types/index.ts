@@ -30,6 +30,11 @@ export interface Chat {
   id: string
   userId: string
   title: string
+  contextTokens: number
+  contextInputTokens: number
+  contextOutputTokens: number
+  contextReasoningTokens: number
+  contextCachedInputTokens: number
   createdAt: Date
   updatedAt: Date
 }

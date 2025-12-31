@@ -68,7 +68,7 @@ export function ChatDrawer({
 
   return (
     <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-      <SheetContent side="left" className="w-72 p-0 flex flex-col bg-[var(--chatbot-muted)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--chatbot-muted)]/60 border-r border-border">
+      <SheetContent side="left" className="w-72 p-0 flex flex-col bg-background border-r border-border">
         <SheetHeader className="p-4 pb-2 shrink-0">
           <SheetTitle className="text-lg font-semibold">Prophet</SheetTitle>
         </SheetHeader>

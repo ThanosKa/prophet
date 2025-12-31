@@ -55,6 +55,11 @@ export const chats = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }), // Cascade delete chats when user is deleted
     title: text('title').notNull(),
+    contextTokens: integer('context_tokens').notNull().default(0),
+    contextInputTokens: integer('context_input_tokens').notNull().default(0),
+    contextOutputTokens: integer('context_output_tokens').notNull().default(0),
+    contextReasoningTokens: integer('context_reasoning_tokens').notNull().default(0),
+    contextCachedInputTokens: integer('context_cached_input_tokens').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

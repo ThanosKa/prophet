@@ -23,6 +23,7 @@ interface UIState {
   setSelectedModel: (model: AgentModel) => void
   addContextTokens: (tokens: number) => void
   addContextUsage: (usage: { inputTokens: number; outputTokens: number; reasoningTokens?: number; cachedInputTokens?: number }) => void
+  setContextUsage: (usage: { contextTokens: number; contextInputTokens: number; contextOutputTokens: number; contextReasoningTokens: number; contextCachedInputTokens: number }) => void
   resetContextTokens: () => void
   getContextPercentage: () => number
   setTheme: (theme: Theme) => void
@@ -68,6 +69,15 @@ export const useUIStore = create<UIState>()(
             contextReasoningTokens: state.contextReasoningTokens + reasoning,
             contextCachedInputTokens: state.contextCachedInputTokens + cached,
           }
+        }),
+
+      setContextUsage: (usage) =>
+        set({
+          contextTokens: Math.min(usage.contextTokens, MAX_CONTEXT_TOKENS),
+          contextInputTokens: usage.contextInputTokens,
+          contextOutputTokens: usage.contextOutputTokens,
+          contextReasoningTokens: usage.contextReasoningTokens,
+          contextCachedInputTokens: usage.contextCachedInputTokens,
         }),
 
       resetContextTokens: () =>

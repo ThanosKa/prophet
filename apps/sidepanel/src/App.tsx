@@ -25,7 +25,7 @@ export default function App() {
   const { isSignedIn, user } = useAuth()
   const { chats, isLoading: chatsLoading, createChatAsync, deleteChat } = useChats()
   const { activeChatId, setActiveChatId, isStreaming, messages: messagesByChat } = useChatStore()
-  const { resetContextTokens, theme } = useUIStore()
+  const { resetContextTokens, setContextUsage, theme } = useUIStore()
   const { isLoading: messagesLoading } = useMessages(activeChatId)
   const { sendMessage, abort, currentToolCall } = useAgentChat()
 
@@ -60,9 +60,20 @@ export default function App() {
 
   useEffect(() => {
     if (activeChatId) {
-      resetContextTokens()
+      const activeChat = chats.find((c) => c.id === activeChatId)
+      if (activeChat) {
+        setContextUsage({
+          contextTokens: activeChat.contextTokens,
+          contextInputTokens: activeChat.contextInputTokens,
+          contextOutputTokens: activeChat.contextOutputTokens,
+          contextReasoningTokens: activeChat.contextReasoningTokens,
+          contextCachedInputTokens: activeChat.contextCachedInputTokens,
+        })
+      } else {
+        resetContextTokens()
+      }
     }
-  }, [activeChatId, resetContextTokens])
+  }, [activeChatId, chats, setContextUsage, resetContextTokens])
 
   const handleNewChat = async () => {
     const chat = await createChatAsync(`New Chat ${new Date().toLocaleTimeString()}`)

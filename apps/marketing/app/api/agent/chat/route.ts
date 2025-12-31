@@ -329,6 +329,7 @@ export async function POST(req: Request) {
           const assistantContent = fullTextResponse || "";
           const assistantToolCalls = contentBlocks.filter(b => b.type === "tool_use");
 
+          const MAX_CONTEXT_TOKENS = 200000;
           await db.transaction(async (tx) => {
             await tx.insert(messages).values({
               chatId,
@@ -357,9 +358,13 @@ export async function POST(req: Request) {
               model,
             });
 
+            const newContextTokens = Math.min(inputTokens + outputTokens, MAX_CONTEXT_TOKENS);
             await tx
               .update(chats)
               .set({
+                contextTokens: newContextTokens,
+                contextInputTokens: inputTokens,
+                contextOutputTokens: outputTokens,
                 updatedAt: new Date(),
               })
               .where(eq(chats.id, chatId));

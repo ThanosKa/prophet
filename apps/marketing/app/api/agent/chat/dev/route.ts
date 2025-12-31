@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { messages } from '@/lib/db/schema'
+import { messages, chats } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { anthropic } from '@/lib/anthropic'
 import { AGENT_TOOLS } from '@/lib/agent/tools'
@@ -272,15 +272,30 @@ export async function POST(req: Request) {
           const assistantContent = fullTextResponse || "";
           const assistantToolCalls = contentBlocks.filter(b => b.type === "tool_use");
 
-          await db.insert(messages).values({
-            chatId,
-            role: "assistant",
-            content: assistantContent,
-            model,
-            inputTokens,
-            outputTokens,
-            costCents,
-            toolCalls: assistantToolCalls.length > 0 ? JSON.stringify(assistantToolCalls) : null,
+          const MAX_CONTEXT_TOKENS = 200000;
+          const newContextTokens = Math.min(inputTokens + outputTokens, MAX_CONTEXT_TOKENS);
+
+          await db.transaction(async (tx) => {
+            await tx.insert(messages).values({
+              chatId,
+              role: "assistant",
+              content: assistantContent,
+              model,
+              inputTokens,
+              outputTokens,
+              costCents,
+              toolCalls: assistantToolCalls.length > 0 ? JSON.stringify(assistantToolCalls) : null,
+            });
+
+            await tx
+              .update(chats)
+              .set({
+                contextTokens: newContextTokens,
+                contextInputTokens: inputTokens,
+                contextOutputTokens: outputTokens,
+                updatedAt: new Date(),
+              })
+              .where(eq(chats.id, chatId));
           });
 
           safeEnqueue(JSON.stringify({

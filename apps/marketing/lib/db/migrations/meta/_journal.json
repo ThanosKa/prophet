@@ -15,6 +15,13 @@
       "when": 1767022011127,
       "tag": "0001_stale_hydra",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1767204160182,
+      "tag": "0002_graceful_steve_rogers",
+      "breakpoints": true
     }
   ]
 }
