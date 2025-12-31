@@ -218,7 +218,7 @@ function createAgentOverlay(): void {
 
   pauseButton = document.createElement('button')
   pauseButton.className = 'pause-button'
-  pauseButton.innerHTML = '<div class="stop-icon"></div><span>STOP&nbsp;AGENT</span>'
+  pauseButton.innerHTML = '<div class="stop-icon"></div><span>Pause</span>'
   pauseButton.style.display = 'none'
   pauseButton.addEventListener('click', () => {
     chrome.runtime.sendMessage({ type: 'AGENT_ABORT' })
