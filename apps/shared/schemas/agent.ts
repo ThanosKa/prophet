@@ -45,6 +45,27 @@ export const CLAUDE_MODELS = {
 
 export const DEFAULT_AGENT_MODEL = CLAUDE_MODELS.HAIKU;
 
+// Consolidated model configuration with labels and descriptions
+export const MODEL_CONFIG = [
+  {
+    id: CLAUDE_MODELS.HAIKU,
+    label: 'Haiku 4.5',
+    description: 'Fast & efficient',
+  },
+  {
+    id: CLAUDE_MODELS.SONNET,
+    label: 'Sonnet 4.5',
+    description: 'Balanced',
+  },
+  {
+    id: CLAUDE_MODELS.OPUS,
+    label: 'Opus 4.5',
+    description: 'Most capable',
+  },
+] as const;
+
+export type ModelConfig = typeof MODEL_CONFIG[number];
+
 export const agentModelSchema = z.enum([
   CLAUDE_MODELS.HAIKU,
   CLAUDE_MODELS.SONNET,

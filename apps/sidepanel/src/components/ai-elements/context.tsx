@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { MODEL_CONFIG } from "@prophet/shared";
 
 interface ContextProps {
   maxTokens: number;
@@ -82,7 +83,7 @@ export function ContextTrigger() {
             r={radius}
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="4"
             className="text-muted-foreground/40"
           />
           {/* Progress circle */}
@@ -92,8 +93,8 @@ export function ContextTrigger() {
             r={radius}
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
-            className={cn("transition-all duration-300 text-foreground")}
+            strokeWidth="4"
+            className={cn("transition-all duration-300 text-muted-foreground")}
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
@@ -129,7 +130,7 @@ export function ContextContentHeader() {
 
   return (
     <div className="px-3 py-2 border-b bg-muted/50">
-      <p className="text-xs font-medium text-muted-foreground">{modelId}</p>
+      <p className="text-xs font-medium text-muted-foreground">{MODEL_CONFIG.find(model => model.id === modelId)?.label || modelId}</p>
       <div className="mt-2 h-1.5 w-full rounded-full bg-muted-foreground/20 overflow-hidden">
         <div
           className="h-full rounded-full bg-foreground transition-all duration-300"

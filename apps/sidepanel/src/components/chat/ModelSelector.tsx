@@ -6,21 +6,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { useUIStore, CLAUDE_MODELS } from '@/store/uiStore'
+import { useUIStore } from '@/store/uiStore'
+import { MODEL_CONFIG } from '@prophet/shared'
 import { cn } from '@/lib/utils'
-import type { AgentModel } from '@/store/uiStore'
-
-const MODEL_LABELS: Record<AgentModel, string> = {
-  [CLAUDE_MODELS.HAIKU]: 'Haiku 4.5',
-  [CLAUDE_MODELS.SONNET]: 'Sonnet 4.5',
-  [CLAUDE_MODELS.OPUS]: 'Opus 4.5',
-}
-
-const MODEL_DESCRIPTIONS: Record<AgentModel, string> = {
-  [CLAUDE_MODELS.HAIKU]: 'Fast & efficient',
-  [CLAUDE_MODELS.SONNET]: 'Balanced',
-  [CLAUDE_MODELS.OPUS]: 'Most capable',
-}
 
 interface ModelSelectorProps {
   disabled?: boolean
@@ -42,20 +30,20 @@ export function ModelSelector({ disabled, compact }: ModelSelectorProps) {
           )}
           disabled={disabled}
         >
-          {MODEL_LABELS[selectedModel]}
+          {MODEL_CONFIG.find(model => model.id === selectedModel)?.label}
           <ChevronDown className="h-3 w-3 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-44">
-        {Object.values(CLAUDE_MODELS).map((model) => (
+        {MODEL_CONFIG.map((model) => (
           <DropdownMenuItem
-            key={model}
-            onClick={() => setSelectedModel(model)}
+            key={model.id}
+            onClick={() => setSelectedModel(model.id)}
             className="flex flex-col items-start"
           >
-            <span className="font-medium">{MODEL_LABELS[model]}</span>
+            <span className="font-medium">{model.label}</span>
             <span className="text-xs text-muted-foreground">
-              {MODEL_DESCRIPTIONS[model]}
+              {model.description}
             </span>
           </DropdownMenuItem>
         ))}
