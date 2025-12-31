@@ -47,7 +47,7 @@ export function UserAvatar() {
           </p>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled className="text-xs">
+        <DropdownMenuItem disabled>
           Credits: ${((user?.creditsRemaining || 0) / 100).toFixed(2)}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
