@@ -207,21 +207,19 @@ function AgentStatusDisplay() {
   if (actions.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-2.5 px-4 py-4 mt-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="flex items-center gap-3 px-4 py-2 mt-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {actions.map((action, i) => (
-        <div key={i} className="flex items-center gap-2.5 opacity-100 transition-opacity">
+        <span key={i} className={cn(
+          "text-[11px] font-medium tracking-tight flex items-center gap-1.5",
+          i === actions.length - 1 ? "text-muted-foreground/90" : "text-muted-foreground/40"
+        )}>
           {i === actions.length - 1 ? (
             <Loader2 className="h-3 w-3 animate-spin text-primary/60" />
           ) : (
-            <div className="h-1 w-1 rounded-full bg-muted-foreground/40 ml-1" />
+            <div className="h-1 w-1 rounded-full bg-muted-foreground/40" />
           )}
-          <span className={cn(
-            "text-[11px] font-medium tracking-tight",
-            i === actions.length - 1 ? "text-muted-foreground/90" : "text-muted-foreground/40"
-          )}>
-            {action}
-          </span>
-        </div>
+          {action}
+        </span>
       ))}
     </div>
   );

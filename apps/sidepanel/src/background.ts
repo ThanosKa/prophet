@@ -12,7 +12,6 @@ import {
   isGetAgentStateRequest,
   isStopAgentLoopRequest,
 } from './lib/agent/messages'
-import type { ToolExecutionResult } from './lib/agent/types'
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
@@ -202,9 +201,6 @@ async function handleToolExecution(
 
     console.log(`[Background] Tool ${toolName} completed in ${durationMs}ms`, result.success)
 
-    // Send visual feedback to content script for element interactions
-    await sendVisualFeedback(toolName, toolInput, result)
-
     const response: ToolExecutionResponse = {
       type: 'TOOL_RESULT',
       requestId,
@@ -255,71 +251,6 @@ async function sendAgentStatus(status: string): Promise<void> {
     } catch {
       sidepanelPorts.delete(port)
     }
-  }
-
-  // 2. Update content script (for the overlay if needed, though we moved detail to sidepanel)
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    if (!tab?.id) return
-
-    await chrome.tabs.sendMessage(tab.id, statusEvent)
-  } catch (error) {
-    console.debug('[Background] Could not send status update to tab:', error)
-  }
-}
-
-async function sendVisualFeedback(
-  toolName: string,
-  toolInput: Record<string, unknown>,
-  result: ToolExecutionResult
-): Promise<void> {
-  if (!result.success) return
-
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    if (!tab?.id) return
-
-    const uid = toolInput.uid as string | undefined
-
-    switch (toolName) {
-      case 'click_element_by_uid':
-        if (uid) {
-          await chrome.tabs.sendMessage(tab.id, {
-            type: 'SHOW_CLICK_INDICATOR',
-            uid,
-          })
-        }
-        break
-
-      case 'fill_element_by_uid':
-        if (uid) {
-          await chrome.tabs.sendMessage(tab.id, {
-            type: 'SHOW_FILL_INDICATOR',
-            uid,
-            value: toolInput.value as string,
-          })
-        }
-        break
-
-      case 'hover_element_by_uid':
-        if (uid) {
-          await chrome.tabs.sendMessage(tab.id, {
-            type: 'SHOW_HOVER_INDICATOR',
-            uid,
-          })
-        }
-        break
-
-      case 'take_snapshot':
-        // Clear all highlights when taking a new snapshot
-        await chrome.tabs.sendMessage(tab.id, {
-          type: 'CLEAR_HIGHLIGHTS',
-        })
-        break
-    }
-  } catch (error) {
-    // Content script might not be loaded, ignore
-    console.debug('[Background] Could not send visual feedback:', error)
   }
 }
 

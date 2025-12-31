@@ -47,7 +47,6 @@ describe('SmartLocator', () => {
 
       vi.mocked(cdpCommander.sendCommand)
         .mockResolvedValueOnce(undefined) // scrollIntoViewIfNeeded
-        .mockResolvedValueOnce(undefined) // highlightElement
         .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } }) // getBoundingBox
         .mockResolvedValueOnce({ result: { value: { isCovered: false } } }) // isElementCovered
         .mockResolvedValueOnce(undefined) // mousePressed
@@ -73,7 +72,6 @@ describe('SmartLocator', () => {
 
       vi.mocked(cdpCommander.sendCommand)
         .mockResolvedValueOnce(undefined) // scrollIntoViewIfNeeded
-        .mockResolvedValueOnce(undefined) // highlightElement
         .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } }) // getBoundingBox
         .mockResolvedValueOnce({ result: { value: { isCovered: false } } }) // isElementCovered
         .mockResolvedValueOnce(undefined) // mousePressed
@@ -104,7 +102,6 @@ describe('SmartLocator', () => {
 
       vi.mocked(cdpCommander.sendCommand)
         .mockResolvedValueOnce(undefined) // scrollIntoViewIfNeeded
-        .mockResolvedValueOnce(undefined) // highlightElement
         .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } }) // getBoundingBox
         .mockResolvedValueOnce({ result: { value: { isCovered: false } } }) // isElementCovered
         .mockResolvedValueOnce(undefined) // mousePressed
@@ -136,7 +133,6 @@ describe('SmartLocator', () => {
 
       vi.mocked(cdpCommander.sendCommand)
         .mockResolvedValueOnce(undefined) // scrollIntoViewIfNeeded
-        .mockResolvedValueOnce(undefined) // highlightElement
         .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } }) // getBoundingBox
         .mockResolvedValueOnce({ result: { value: { isCovered: false } } }) // isElementCovered
         .mockResolvedValueOnce(undefined) // mousePressed
@@ -162,7 +158,6 @@ describe('SmartLocator', () => {
 
       vi.mocked(cdpCommander.sendCommand)
         .mockResolvedValueOnce(undefined) // scrollIntoViewIfNeeded
-        .mockResolvedValueOnce(undefined) // highlightElement
         .mockResolvedValueOnce({ result: { value: { x: 0, y: 0, width: 0, height: 0 } } }) // getBoundingBox
         .mockResolvedValueOnce(undefined) // Runtime.evaluate (synthetic click)
 
@@ -314,7 +309,6 @@ describe('SmartLocator', () => {
 
       vi.mocked(cdpCommander.sendCommand)
         .mockResolvedValueOnce(undefined) // scrollIntoViewIfNeeded
-        .mockResolvedValueOnce(undefined) // highlightElement
         .mockResolvedValueOnce({ result: { value: null } }) // getBoundingBox returns null
 
       await expect(smartLocator.hover(1, 'abc123')).rejects.toThrow(
@@ -333,7 +327,6 @@ describe('SmartLocator', () => {
 
       vi.mocked(cdpCommander.sendCommand)
         .mockResolvedValueOnce(undefined) // scrollIntoViewIfNeeded
-        .mockResolvedValueOnce(undefined) // highlightElement
         .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } }) // getBoundingBox
         .mockResolvedValueOnce(undefined) // mouseMoved
 

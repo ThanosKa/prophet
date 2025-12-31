@@ -72,40 +72,17 @@ export type BackgroundToSidepanelMessage =
 // Background → Content Script Messages
 // ============================================================================
 
-export interface HighlightElementRequest {
-  type: 'HIGHLIGHT_ELEMENT'
-  uid: string
-  color?: string
+export interface AgentActiveRequest {
+  type: 'AGENT_ACTIVE'
 }
 
-export interface ClearHighlightsRequest {
-  type: 'CLEAR_HIGHLIGHTS'
-}
-
-export interface ShowClickIndicatorRequest {
-  type: 'SHOW_CLICK_INDICATOR'
-  x: number
-  y: number
-  uid?: string
-}
-
-export interface ShowHoverIndicatorRequest {
-  type: 'SHOW_HOVER_INDICATOR'
-  uid: string
-}
-
-export interface ShowFillIndicatorRequest {
-  type: 'SHOW_FILL_INDICATOR'
-  uid: string
-  value: string
+export interface AgentInactiveRequest {
+  type: 'AGENT_INACTIVE'
 }
 
 export type BackgroundToContentMessage =
-  | HighlightElementRequest
-  | ClearHighlightsRequest
-  | ShowClickIndicatorRequest
-  | ShowHoverIndicatorRequest
-  | ShowFillIndicatorRequest
+  | AgentActiveRequest
+  | AgentInactiveRequest
 
 // ============================================================================
 // Agent State (stored in chrome.storage.local)

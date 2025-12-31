@@ -6,64 +6,6 @@ import { type BoundingBox } from './types'
 const UID_ATTRIBUTE = 'data-prophet-nodeid'
 
 export class SmartLocator {
-  private async highlightElement(tabId: number, uid: string, type: 'click' | 'hover' | 'fill' = 'click'): Promise<void> {
-    console.warn(`[SmartLocator] Highlight requested (WARNING): uid="${uid}" type=${type} tab=${tabId}`)
-
-
-    try {
-      await cdpCommander.sendCommand<EvaluateResult>(tabId, 'Runtime.evaluate', {
-        expression: `
-          (function() {
-            try {
-              console.warn('[Prophet Content] Searching for element with uid="${uid}"');
-              const el = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
-              
-              if (el) {
-                console.warn('[Prophet Content] Element FOUND, applying styles');
-                
-                // Store original styles if not already stored
-                if (!el.dataset.prophetOriginalTransition) {
-                  el.dataset.prophetOriginalTransition = el.style.transition || '';
-                  el.dataset.prophetOriginalOutline = el.style.outline || '';
-                  el.dataset.prophetOriginalBoxShadow = el.style.boxShadow || '';
-                }
-
-                el.style.transition = 'all 0.2s ease-in-out';
-                el.style.outline = '3px solid #3b82f6';
-                el.style.outlineOffset = '2px';
-                el.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.2), 0 0 20px rgba(59, 130, 246, 0.4)';
-                
-                // Remove highlight after animation
-                setTimeout(() => {
-                  el.style.transition = el.dataset.prophetOriginalTransition;
-                  el.style.outline = el.dataset.prophetOriginalOutline;
-                  el.style.boxShadow = el.dataset.prophetOriginalBoxShadow;
-                  
-                  // Cleanup dataset attributes
-                  delete el.dataset.prophetOriginalTransition;
-                  delete el.dataset.prophetOriginalOutline;
-                  delete el.dataset.prophetOriginalBoxShadow;
-                  // console.log('[Prophet Debug] Highlight removed');
-                }, 1500);
-              } else {
-                console.error('[Prophet Content] Element NOT found for uid="${uid}"');
-              }
-            } catch (err) {
-              console.error('[Prophet Content] Error in highlight script:', err);
-            }
-          })()
-        `,
-        awaitPromise: false,
-      })
-      console.warn(`[SmartLocator] Highlight command SENT successfully`)
-    } catch (error) {
-      console.error(`[SmartLocator] Failed to send highlight command:`, error)
-    }
-
-    // Give time for the user to see the highlight before action occurs
-    await new Promise((resolve) => setTimeout(resolve, 800))
-  }
-
   async click(tabId: number, uid: string, doubleClick: boolean = false): Promise<void> {
     const node = snapshotManager.getNodeByUid(tabId, uid)
     if (!node) {
@@ -71,7 +13,6 @@ export class SmartLocator {
     }
 
     await this.scrollIntoView(tabId, uid)
-    await this.highlightElement(tabId, uid, 'click')
 
     const box = await this.getBoundingBox(tabId, uid)
 
@@ -169,7 +110,6 @@ export class SmartLocator {
     }
 
     await this.scrollIntoView(tabId, uid)
-    await this.highlightElement(tabId, uid, 'fill')
 
     const filledViaEditor = await tryFillEditor(tabId, uid, value)
     if (filledViaEditor) {
@@ -209,7 +149,6 @@ export class SmartLocator {
     }
 
     await this.scrollIntoView(tabId, uid)
-    await this.highlightElement(tabId, uid, 'hover')
 
     const box = await this.getBoundingBox(tabId, uid)
 
