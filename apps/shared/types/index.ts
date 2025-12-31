@@ -51,6 +51,12 @@ export interface Message {
   createdAt: Date
 }
 
+export interface PaginatedMessages {
+  messages: Message[]
+  nextCursor?: { beforeCreatedAt: string } | null
+  hasMore: boolean
+}
+
 export interface ApiResponse<T> {
   data?: T
   error?: string

@@ -1,5 +1,5 @@
 import { config } from './config'
-import type { ApiResponse, Chat, Message, User } from '@prophet/shared'
+import type { ApiResponse, Chat, User, PaginatedMessages } from '@prophet/shared'
 
 class ApiClient {
   private _baseUrl: string
@@ -94,8 +94,13 @@ class ApiClient {
     })
   }
 
-  async getMessages(chatId: string): Promise<ApiResponse<Message[]>> {
-    return this.request(`/api/chats/${chatId}/messages`)
+  async getMessages(chatId: string, limit?: number, beforeCreatedAt?: string): Promise<ApiResponse<PaginatedMessages>> {
+    const params = new URLSearchParams()
+    if (limit) params.append('limit', limit.toString())
+    if (beforeCreatedAt) params.append('beforeCreatedAt', beforeCreatedAt)
+    const query = params.toString()
+    const endpoint = query ? `/api/chats/${chatId}/messages?${query}` : `/api/chats/${chatId}/messages`
+    return this.request(endpoint)
   }
 
   async *streamChat(

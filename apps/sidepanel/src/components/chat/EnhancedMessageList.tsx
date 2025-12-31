@@ -1,5 +1,5 @@
 import { Copy, Check, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { useAgentStore } from "@/store/agentStore";
@@ -31,6 +31,9 @@ interface EnhancedMessageListProps {
   isLoading?: boolean;
   isStreaming?: boolean;
   currentToolCall?: ToolCall | null;
+  hasMore?: boolean;
+  isLoadingOlder?: boolean;
+  onLoadOlder?: () => void;
 }
 
 function MessageWithActions({
@@ -127,7 +130,31 @@ export function EnhancedMessageList({
   isLoading,
   isStreaming,
   currentToolCall,
+  hasMore,
+  isLoadingOlder,
+  onLoadOlder,
 }: EnhancedMessageListProps) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!hasMore || isLoadingOlder || !onLoadOlder) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onLoadOlder();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingOlder, onLoadOlder]);
+
   if (messages.length === 0 && !isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
@@ -139,6 +166,17 @@ export function EnhancedMessageList({
   return (
     <Conversation>
       <ConversationContent>
+        <div ref={sentinelRef} className="h-1" />
+        {isLoadingOlder && (
+          <div className="flex items-center justify-center py-2">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        )}
+        {!isLoadingOlder && hasMore && (
+          <div className="h-8 flex items-center justify-center">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/20" />
+          </div>
+        )}
         {messages.map((message, index) => {
           const isLast = index === messages.length - 1;
           const isLastAssistant = isLast && message.role === "assistant";

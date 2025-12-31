@@ -2,13 +2,13 @@ import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { chats, messages } from '@/lib/db/schema'
-import { and, eq, asc } from 'drizzle-orm'
+import { and, eq, desc, lt } from 'drizzle-orm'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { error, success } from '@/types'
 import { logger } from '@/lib/logger'
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ chatId: string }> }
 ) {
   let userId: string | null = null
@@ -44,18 +44,42 @@ export async function GET(
       return NextResponse.json(error('Chat not found', 'CHAT_NOT_FOUND'), { status: 404 })
     }
 
+    const url = new URL(req.url)
+    const limitParam = url.searchParams.get('limit')
+    const beforeCreatedAtParam = url.searchParams.get('beforeCreatedAt')
+
+    const limit = Math.min(Math.max(parseInt(limitParam || '50'), 1), 200)
+    const beforeCreatedAt = beforeCreatedAtParam ? new Date(beforeCreatedAtParam) : null
+
+    const whereCondition = beforeCreatedAt
+      ? and(eq(messages.chatId, chatId), lt(messages.createdAt, beforeCreatedAt))
+      : eq(messages.chatId, chatId)
+
     const chatMessages = await db.query.messages.findMany({
-      where: eq(messages.chatId, chatId),
-      orderBy: [asc(messages.createdAt)],
+      where: whereCondition,
+      orderBy: [desc(messages.createdAt)],
+      limit: limit + 1,
     })
 
-    const parsedMessages = chatMessages.map(msg => ({
+    const hasMore = chatMessages.length > limit
+    const paginatedMessages = chatMessages.slice(0, limit)
+    const reversed = paginatedMessages.reverse()
+
+    const nextCursor = hasMore && paginatedMessages.length > 0
+      ? { beforeCreatedAt: paginatedMessages[0].createdAt.toISOString() }
+      : null
+
+    const parsedMessages = reversed.map(msg => ({
       ...msg,
       toolCalls: typeof msg.toolCalls === 'string' ? JSON.parse(msg.toolCalls) : msg.toolCalls
     }))
 
-    logger.info({ userId, chatId, messageCount: chatMessages.length }, 'Messages fetched')
-    return NextResponse.json(success(parsedMessages))
+    logger.info({ userId, chatId, messageCount: parsedMessages.length, hasMore }, 'Messages fetched with pagination')
+    return NextResponse.json(success({
+      messages: parsedMessages,
+      nextCursor,
+      hasMore,
+    }))
   } catch (err) {
     logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to fetch messages')
     return NextResponse.json(

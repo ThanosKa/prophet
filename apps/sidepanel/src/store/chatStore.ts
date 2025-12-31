@@ -17,6 +17,7 @@ interface ChatState {
   updateChat: (id: string, chat: Partial<Chat>) => void
   setMessages: (chatId: string, messages: StoredMessage[]) => void
   addMessage: (chatId: string, message: StoredMessage) => void
+  prependMessages: (chatId: string, olderMessages: StoredMessage[]) => void
   updateMessage: (
     chatId: string,
     messageId: string,
@@ -69,6 +70,19 @@ export const useChatStore = create<ChatState>((set) => ({
         [chatId]: [...(state.messages[chatId] || []), message],
       },
     })),
+
+  prependMessages: (chatId, olderMessages) =>
+    set((state) => {
+      const existing = state.messages[chatId] || []
+      const existingIds = new Set(existing.map(m => m.id))
+      const dedupedOlder = olderMessages.filter(m => !existingIds.has(m.id))
+      return {
+        messages: {
+          ...state.messages,
+          [chatId]: [...dedupedOlder, ...existing],
+        },
+      }
+    }),
 
   updateMessage: (chatId, messageId, patch) =>
     set((state) => ({

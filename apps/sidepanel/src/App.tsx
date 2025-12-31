@@ -26,7 +26,7 @@ export default function App() {
   const { chats, isLoading: chatsLoading, createChatAsync, deleteChat } = useChats()
   const { activeChatId, setActiveChatId, isStreaming, messages: messagesByChat } = useChatStore()
   const { resetContextTokens, setContextUsage, theme } = useUIStore()
-  const { isLoading: messagesLoading } = useMessages(activeChatId)
+  const { isLoading: messagesLoading, loadOlder, hasMore, isLoadingOlder } = useMessages(activeChatId)
   const { sendMessage, abort, currentToolCall } = useAgentChat()
 
   useEffect(() => {
@@ -196,6 +196,9 @@ export default function App() {
               ? 'Upgrade to continue chatting'
               : 'Ask anything...'
           }
+          hasMore={hasMore}
+          isLoadingOlder={isLoadingOlder}
+          onLoadOlder={loadOlder}
         />
       ) : (
         <WelcomeScreen

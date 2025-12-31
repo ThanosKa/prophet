@@ -21,6 +21,9 @@ interface ChatViewProps {
   disabled?: boolean
   inputPlaceholder?: string
   suggestions?: string[]
+  hasMore?: boolean
+  isLoadingOlder?: boolean
+  onLoadOlder?: () => void
 }
 
 export function ChatView({
@@ -32,6 +35,9 @@ export function ChatView({
   disabled,
   inputPlaceholder,
   suggestions,
+  hasMore,
+  isLoadingOlder,
+  onLoadOlder,
 }: ChatViewProps) {
   const showSuggestions = suggestions && suggestions.length > 0 && messages.length === 0
 
@@ -46,6 +52,9 @@ export function ChatView({
         isLoading={isLoading}
         isStreaming={isStreaming}
         currentToolCall={currentToolCall}
+        hasMore={hasMore}
+        isLoadingOlder={isLoadingOlder}
+        onLoadOlder={onLoadOlder}
       />
       {showSuggestions && (
         <div className="px-4 pb-2">
