@@ -1,6 +1,5 @@
 import { Header } from '@/components/Header'
 import { FAQ } from '@/components/FAQ'
-import { CTASection } from '@/components/CTASection'
 import { Footer } from '@/components/Footer'
 import type { Metadata } from 'next'
 
@@ -22,7 +21,6 @@ export default function FAQPage() {
         </div>
         <FAQ />
       </div>
-      <CTASection />
       <Footer />
     </main>
   )

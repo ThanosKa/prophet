@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils"
 import type { DateRange } from "react-day-picker"
 import type { UsageRecord } from "@prophet/shared"
 
-const ROWS_PER_PAGE_OPTIONS = [25, 50, 100, 500] as const
+const ROWS_PER_PAGE_OPTIONS = [10, 25, 50, 100, 500] as const
 
 function formatTokens(tokens: number): string {
   if (tokens >= 1000000) {
@@ -34,7 +34,7 @@ export default function UsagePage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalRecords, setTotalRecords] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState<number>(25)
+  const [rowsPerPage, setRowsPerPage] = useState<number>(10)
 
   const fetchUsage = useCallback(async (page: number = 1) => {
     setLoading(true)

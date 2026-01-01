@@ -6,11 +6,13 @@ import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Sparkles } from 'lucide-react'
+import { BGPattern } from './BGPattern'
 
 export function Hero() {
   return (
     <section className="relative overflow-hidden py-20 sm:py-32">
       <div className="absolute inset-0 bg-gradient-to-br from-background via-muted/20 to-background -z-10" />
+      <BGPattern variant="grid" mask="fade-edges" size={64} className="-z-10" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
