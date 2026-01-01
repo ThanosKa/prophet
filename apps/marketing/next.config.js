@@ -1,26 +1,31 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Disable strict mode in development
-  reactStrictMode: process.env.NODE_ENV === 'production',
+  reactStrictMode: process.env.NODE_ENV === "production",
 
   // Enable image optimization
   images: {
     unoptimized: true,
   },
 
+  // Move dev indicator to bottom right
+  devIndicators: {
+    position: "bottom-right",
+  },
+
   // Configure headers for security and CORS
   async headers() {
     return [
       {
-        source: '/:path*',
+        source: "/:path*",
         headers: [
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
-          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-XSS-Protection", value: "1; mode=block" },
         ],
       },
-    ]
+    ];
   },
-}
+};
 
-export default nextConfig
+export default nextConfig;
