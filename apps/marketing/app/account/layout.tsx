@@ -1,4 +1,3 @@
-import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { auth } from "@clerk/nextjs/server"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
@@ -22,21 +21,18 @@ export default async function AccountLayout({
     await ensureDbUser()
   } catch (error) {
     console.error("Failed to ensure DB user in layout:", error)
-    // We could redirect to an error page or just let it fail
   }
 
-  const cookieStore = await cookies()
-  const sidebarCookie = cookieStore.get("sidebar_state")?.value
-  const defaultOpen = sidebarCookie ? sidebarCookie === "true" : true
-
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
+    <SidebarProvider>
       <AccountSidebar />
       <SidebarInset>
         <AccountHeader />
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="mx-auto w-full max-w-5xl">
-            {children}
+        <div className="flex flex-1 flex-col">
+          <div className="flex-1 px-4 py-4 md:px-6 md:py-6">
+            <div className="mx-auto w-full max-w-5xl">
+              {children}
+            </div>
           </div>
         </div>
       </SidebarInset>

@@ -6,11 +6,9 @@ import {
   CreditCard,
   LayoutDashboard,
   Lock,
-  ChevronUp,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { SignOutButton, useUser } from "@clerk/nextjs"
 
 import {
   Sidebar,
@@ -25,14 +23,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { NavUser } from "./NavUser"
 
 const navItems = [
   {
@@ -59,24 +50,25 @@ const navItems = [
 
 export function AccountSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
-  const { user } = useUser()
-
-  const initials = user
-    ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`
-    : 'U'
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader className="h-14 flex items-center px-4 border-b group-data-[collapsible=icon]:justify-center">
-        <Link
-          href="/"
-          className="flex items-center gap-2 font-bold text-xl group-data-[collapsible=icon]:hidden"
-        >
-          <span>Prophet</span>
-        </Link>
-        <div className="hidden group-data-[collapsible=icon]:flex items-center justify-center w-full">
-          <span className="font-bold text-xl">P</span>
-        </div>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <Link href="/">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <span className="font-bold text-sm">P</span>
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">Prophet</span>
+                  <span className="truncate text-xs">Dashboard</span>
+                </div>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
 
       <SidebarContent>
@@ -94,7 +86,7 @@ export function AccountSidebar({ ...props }: React.ComponentProps<typeof Sidebar
                       tooltip={item.title}
                     >
                       <Link href={item.url}>
-                        <Icon className="h-4 w-4" />
+                        <Icon />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -106,66 +98,11 @@ export function AccountSidebar({ ...props }: React.ComponentProps<typeof Sidebar
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent"
-                >
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage
-                      src={user?.imageUrl}
-                      alt={user?.fullName || 'User'}
-                    />
-                    <AvatarFallback className="rounded-lg text-xs font-semibold">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                    <span className="truncate font-semibold">
-                      {user?.firstName || 'User'}
-                    </span>
-                    <span className="truncate text-xs text-sidebar-foreground/60">
-                      {user?.emailAddresses[0]?.emailAddress}
-                    </span>
-                  </div>
-                  <ChevronUp className="ml-auto h-4 w-4 group-data-[collapsible=icon]:hidden" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                side="top"
-                align="end"
-                className="w-[--radix-popper-anchor-width]"
-              >
-                <DropdownMenuItem asChild>
-                  <Link href="/account">
-                    <span>Account Settings</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/account/billing">
-                    <span>Billing & Subscription</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <SignOutButton>
-                    <button className="w-full text-left cursor-pointer">
-                      <span>Sign out</span>
-                    </button>
-                  </SignOutButton>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarFooter>
+        <NavUser />
       </SidebarFooter>
 
       <SidebarRail />
     </Sidebar>
   )
 }
-
