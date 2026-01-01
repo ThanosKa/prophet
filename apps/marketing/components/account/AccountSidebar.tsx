@@ -92,7 +92,6 @@ export function AccountSidebar({ ...props }: React.ComponentProps<typeof Sidebar
                       asChild
                       isActive={pathname === item.url}
                       tooltip={item.title}
-                      className="transition-all duration-200 ease-out hover:bg-sidebar-accent"
                     >
                       <Link href={item.url}>
                         <Icon className="h-4 w-4" />
@@ -107,14 +106,14 @@ export function AccountSidebar({ ...props }: React.ComponentProps<typeof Sidebar
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="border-t">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="transition-all duration-200 ease-out hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent"
+                  className="data-[state=open]:bg-sidebar-accent"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage

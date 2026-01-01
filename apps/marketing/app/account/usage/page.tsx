@@ -89,7 +89,6 @@ export default function UsagePage() {
           onClick={handleExport}
           variant="outline"
           size="sm"
-          className="transition-all duration-200 hover:shadow-md active:scale-95"
         >
           <Download className="mr-2 h-4 w-4" />
           Export CSV
@@ -101,7 +100,7 @@ export default function UsagePage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3, delay: 0.1 }}
       >
-        <Card className="border hover:shadow-sm transition-shadow duration-200">
+        <Card className="border">
           <CardHeader>
             <CardTitle className="text-sm font-medium">Date Range</CardTitle>
           </CardHeader>
@@ -113,7 +112,6 @@ export default function UsagePage() {
                   type="date"
                   value={fromFilter}
                   onChange={(e) => setFromFilter(e.target.value)}
-                  className="transition-all duration-150 focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               <div className="flex-1 space-y-2">
@@ -122,21 +120,16 @@ export default function UsagePage() {
                   type="date"
                   value={toFilter}
                   onChange={(e) => setToFilter(e.target.value)}
-                  className="transition-all duration-150 focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               <div className="flex gap-2">
-                <Button
-                  onClick={fetchUsage}
-                  className="transition-all duration-200 hover:shadow-md active:scale-95"
-                >
+                <Button onClick={fetchUsage}>
                   Filter
                 </Button>
                 <Button
                   onClick={handleReset}
                   variant="ghost"
                   size="icon"
-                  className="transition-all duration-200 hover:bg-muted active:scale-95"
                 >
                   <RotateCcw className="h-4 w-4" />
                 </Button>
@@ -151,7 +144,7 @@ export default function UsagePage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3, delay: 0.2 }}
       >
-        <Card className="border hover:shadow-sm transition-shadow duration-200">
+        <Card className="border">
           <CardContent className="p-0">
             <Table>
               <TableHeader>
@@ -165,7 +158,7 @@ export default function UsagePage() {
               <TableBody>
                 {loading ? (
                   Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
-                    <TableRow key={i} className="hover:bg-muted/30">
+                    <TableRow key={i}>
                       <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
                       <TableCell className="text-right"><Skeleton className="h-4 w-[80px] ml-auto" /></TableCell>
@@ -185,7 +178,7 @@ export default function UsagePage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2, delay: index * 0.05 }}
-                      className="hover:bg-muted/50 transition-colors duration-150"
+                      className="border-b last:border-b-0"
                     >
                       <TableCell className="font-medium text-xs">
                         {new Date(record.createdAt).toLocaleString()}
@@ -223,7 +216,6 @@ export default function UsagePage() {
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-50"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -235,7 +227,6 @@ export default function UsagePage() {
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-50"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>

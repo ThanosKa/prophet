@@ -34,11 +34,11 @@ export default async function AccountLayout({
       <AccountSidebar />
       <SidebarInset>
         <AccountHeader />
-        <main className="flex-1 p-6 md:p-8">
-          <div className="mx-auto max-w-5xl">
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <div className="mx-auto w-full max-w-5xl">
             {children}
           </div>
-        </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )

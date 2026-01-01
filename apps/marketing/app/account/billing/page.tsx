@@ -136,7 +136,7 @@ export default function BillingPage() {
                 <Button
                   type="submit"
                   variant="outline"
-                  className="w-full transition-all duration-200 hover:shadow-md active:scale-95"
+                  className="w-full"
                   disabled={!user.stripeCustomerId}
                 >
                   <CreditCard className="mr-2 h-4 w-4" />
@@ -209,7 +209,7 @@ export default function BillingPage() {
 
         {currentTier === 'free' && (
           <motion.div variants={itemVariants}>
-            <Card className="border-primary bg-primary/5 hover:shadow-md transition-all duration-200 hover:-translate-y-1">
+            <Card className="border-primary bg-primary/5">
               <CardHeader>
                 <CardTitle>Ready for more?</CardTitle>
                 <CardDescription>
@@ -219,7 +219,7 @@ export default function BillingPage() {
               <CardFooter>
                 <Button
                   asChild
-                  className="w-full transition-all duration-200 hover:shadow-md active:scale-95"
+                  className="w-full"
                 >
                   <Link href="/pricing">View Plans & Upgrade</Link>
                 </Button>

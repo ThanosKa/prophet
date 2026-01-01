@@ -155,7 +155,7 @@ export default function AccountOverviewPage() {
               <Button
                 asChild
                 variant="outline"
-                className="w-full transition-all duration-200 hover:shadow-md active:scale-95"
+                className="w-full"
               >
                 <Link href="/account/usage">
                   <BarChart3 className="mr-2 h-4 w-4" />
@@ -177,7 +177,7 @@ export default function AccountOverviewPage() {
             <CardContent>
               <Button
                 asChild
-                className="w-full transition-all duration-200 hover:shadow-md active:scale-95"
+                className="w-full"
               >
                 <Link href="/account/billing">
                   <CreditCard className="mr-2 h-4 w-4" />
@@ -190,7 +190,7 @@ export default function AccountOverviewPage() {
       </motion.div>
 
       <motion.div variants={itemVariants}>
-        <Card className="border hover:shadow-md transition-all duration-200 hover:-translate-y-1">
+        <Card className="border">
           <CardHeader>
             <CardTitle>Chrome Extension</CardTitle>
             <CardDescription>
@@ -201,7 +201,7 @@ export default function AccountOverviewPage() {
           <CardContent>
             <Button
               variant="secondary"
-              className="w-full transition-all duration-200 hover:shadow-md active:scale-95"
+              className="w-full"
               asChild
             >
               <a href="#" target="_blank" rel="noopener noreferrer">
