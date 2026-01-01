@@ -1,19 +1,43 @@
+'use client'
+
 import { SignInButton, SignedIn, SignedOut } from '@clerk/nextjs'
+import { Menu } from 'lucide-react'
+import { useState } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { UserMenu } from '@/components/account/UserMenu'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 export function Header() {
+  const [open, setOpen] = useState(false)
+
+  const navigation = [
+    { name: 'Features', href: '/#features' },
+    { name: 'Pricing', href: '/#pricing' },
+    { name: 'About', href: '/about' },
+    { name: 'Contact', href: '/contact' },
+    { name: 'FAQ', href: '/faq' },
+  ]
+
   return (
-    <header className="border-b">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-        <div className="text-2xl font-bold">Prophet</div>
-        <nav className="flex items-center gap-4">
-          <a href="/#features" className="text-sm hover:text-muted-foreground transition-colors">
-            Features
-          </a>
-          <a href="/#pricing" className="text-sm hover:text-muted-foreground transition-colors">
-            Pricing
-          </a>
+        <Link href="/" className="text-2xl font-bold">
+          Prophet
+        </Link>
+
+        <nav className="hidden md:flex items-center gap-6">
+          {navigation.map((item) => (
+            <a
+              key={item.name}
+              href={item.href}
+              className="text-sm font-medium hover:text-muted-foreground transition-colors"
+            >
+              {item.name}
+            </a>
+          ))}
+          <ThemeToggle />
           <SignedOut>
             <SignInButton mode="modal">
               <Button size="sm">Sign In</Button>
@@ -23,6 +47,40 @@ export function Header() {
             <UserMenu />
           </SignedIn>
         </nav>
+
+        <div className="flex md:hidden items-center gap-2">
+          <ThemeToggle />
+          <SignedIn>
+            <UserMenu />
+          </SignedIn>
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <nav className="flex flex-col gap-4 mt-8">
+                {navigation.map((item) => (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="text-lg font-medium hover:text-muted-foreground transition-colors"
+                  >
+                    {item.name}
+                  </a>
+                ))}
+                <SignedOut>
+                  <SignInButton mode="modal">
+                    <Button className="w-full mt-4">Sign In</Button>
+                  </SignInButton>
+                </SignedOut>
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </header>
   )

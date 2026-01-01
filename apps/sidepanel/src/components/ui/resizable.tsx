@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { GripVertical } from "lucide-react"
-import { Group, Panel, Separator } from "react-resizable-panels"
+import { GripVertical } from "lucide-react";
+import { Group, Panel, Separator } from "react-resizable-panels";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 const ResizablePanelGroup = ({
   className,
@@ -16,16 +16,16 @@ const ResizablePanelGroup = ({
     )}
     {...props}
   />
-)
+);
 
-const ResizablePanel = Panel
+const ResizablePanel = Panel;
 
 const ResizableHandle = ({
   withHandle,
   className,
   ...props
 }: React.ComponentProps<typeof Separator> & {
-  withHandle?: boolean
+  withHandle?: boolean;
 }) => (
   <Separator
     className={cn(
@@ -40,6 +40,6 @@ const ResizableHandle = ({
       </div>
     )}
   </Separator>
-)
+);
 
-export { ResizablePanelGroup, ResizablePanel, ResizableHandle }
+export { ResizablePanelGroup, ResizablePanel, ResizableHandle };
