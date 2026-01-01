@@ -1,14 +1,9 @@
-'use client'
+"use client";
 
-import * as React from "react"
-import {
-  BarChart3,
-  CreditCard,
-  LayoutDashboard,
-  Lock,
-} from "lucide-react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import * as React from "react";
+import { BarChart3, CreditCard, LayoutDashboard, Lock } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import {
   Sidebar,
@@ -22,8 +17,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-} from "@/components/ui/sidebar"
-import { NavUser } from "./NavUser"
+} from "@/components/ui/sidebar";
+import { NavUser } from "./NavUser";
 
 const navItems = [
   {
@@ -46,15 +41,20 @@ const navItems = [
     url: "/account/security",
     icon: Lock,
   },
-]
+];
 
-export function AccountSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const pathname = usePathname()
+export function AccountSidebar({
+  ...props
+}: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname();
 
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="px-2">
-        <Link href="/" className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-sidebar-accent">
+        <Link
+          href="/"
+          className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-sidebar-accent"
+        >
           <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
             <span className="text-sm font-bold">P</span>
           </div>
@@ -70,7 +70,7 @@ export function AccountSidebar({ ...props }: React.ComponentProps<typeof Sidebar
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => {
-                const Icon = item.icon
+                const Icon = item.icon;
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
@@ -84,17 +84,17 @@ export function AccountSidebar({ ...props }: React.ComponentProps<typeof Sidebar
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                )
+                );
               })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarSeparator className="mx-4 max-w-[80%]" />
+      <SidebarSeparator className="mx-4" />
       <SidebarFooter>
         <NavUser />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
