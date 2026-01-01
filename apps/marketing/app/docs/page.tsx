@@ -1,6 +1,6 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Book, Download, HelpCircle, Settings, Zap } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
