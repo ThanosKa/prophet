@@ -51,6 +51,16 @@ export interface Message {
   createdAt: Date
 }
 
+export interface UsageRecord {
+  id: string
+  userId: string
+  inputTokens: number
+  outputTokens: number
+  costCents: number
+  model: string
+  createdAt: Date
+}
+
 export interface PaginatedMessages {
   messages: Message[]
   nextCursor?: { beforeCreatedAt: string } | null
