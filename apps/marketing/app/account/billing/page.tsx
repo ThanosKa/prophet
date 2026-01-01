@@ -83,7 +83,7 @@ export default function BillingPage() {
 
       <motion.div className="grid gap-6" variants={containerVariants}>
         <motion.div variants={itemVariants}>
-          <Card className="border hover:shadow-md transition-all duration-200 hover:-translate-y-1">
+          <Card className="border">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -149,7 +149,7 @@ export default function BillingPage() {
 
         <motion.div className="grid gap-6 md:grid-cols-2" variants={containerVariants}>
           <motion.div variants={itemVariants}>
-            <Card className="border hover:shadow-md transition-all duration-200 hover:-translate-y-1">
+            <Card className="border">
               <CardHeader>
                 <CardTitle>Usage Caps</CardTitle>
                 <CardDescription>
@@ -182,7 +182,7 @@ export default function BillingPage() {
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <Card className="border hover:shadow-md transition-all duration-200 hover:-translate-y-1">
+            <Card className="border">
               <CardHeader>
                 <CardTitle>Payment Method</CardTitle>
                 <CardDescription>

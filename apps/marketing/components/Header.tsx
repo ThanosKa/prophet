@@ -27,7 +27,7 @@ export function Header() {
           Prophet
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
           {navigation.map((item) => (
             <a
               key={item.name}
@@ -37,6 +37,9 @@ export function Header() {
               {item.name}
             </a>
           ))}
+        </nav>
+
+        <div className="hidden md:flex items-center gap-3">
           <ThemeToggle />
           <SignedOut>
             <SignInButton mode="modal">
@@ -46,7 +49,7 @@ export function Header() {
           <SignedIn>
             <UserMenu />
           </SignedIn>
-        </nav>
+        </div>
 
         <div className="flex md:hidden items-center gap-2">
           <ThemeToggle />

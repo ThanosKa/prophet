@@ -87,7 +87,7 @@ export default function AccountOverviewPage() {
         variants={containerVariants}
       >
         <motion.div variants={itemVariants}>
-          <Card className="border hover:shadow-md transition-all duration-200 hover:-translate-y-1">
+          <Card className="border">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Credits Remaining</CardTitle>
               <div className="p-2 rounded-lg bg-primary/10">
@@ -113,7 +113,7 @@ export default function AccountOverviewPage() {
         </motion.div>
 
         <motion.div variants={itemVariants}>
-          <Card className="border hover:shadow-md transition-all duration-200 hover:-translate-y-1">
+          <Card className="border">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Current Tier</CardTitle>
               <div className="p-2 rounded-lg bg-primary/10">
@@ -144,7 +144,7 @@ export default function AccountOverviewPage() {
         variants={containerVariants}
       >
         <motion.div variants={itemVariants}>
-          <Card className="border hover:shadow-md transition-all duration-200 hover:-translate-y-1">
+          <Card className="border">
             <CardHeader>
               <CardTitle>Usage History</CardTitle>
               <CardDescription>
@@ -167,7 +167,7 @@ export default function AccountOverviewPage() {
         </motion.div>
 
         <motion.div variants={itemVariants}>
-          <Card className="border hover:shadow-md transition-all duration-200 hover:-translate-y-1">
+          <Card className="border">
             <CardHeader>
               <CardTitle>Subscription</CardTitle>
               <CardDescription>

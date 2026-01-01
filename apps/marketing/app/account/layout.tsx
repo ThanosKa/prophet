@@ -26,7 +26,8 @@ export default async function AccountLayout({
   }
 
   const cookieStore = await cookies()
-  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
+  const sidebarCookie = cookieStore.get("sidebar_state")?.value
+  const defaultOpen = sidebarCookie ? sidebarCookie === "true" : true
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>

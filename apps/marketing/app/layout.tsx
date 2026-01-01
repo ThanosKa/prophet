@@ -15,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
+      <html lang="en" suppressHydrationWarning className="scroll-smooth">
         <body className="antialiased">
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             {children}

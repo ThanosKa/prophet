@@ -67,7 +67,7 @@ export function AccountSidebar({ ...props }: React.ComponentProps<typeof Sidebar
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader className="h-14 flex items-center px-4 group-data-[collapsible=icon]:justify-center">
+      <SidebarHeader className="h-14 flex items-center px-4 border-b group-data-[collapsible=icon]:justify-center">
         <Link
           href="/"
           className="flex items-center gap-2 font-bold text-xl group-data-[collapsible=icon]:hidden"
@@ -75,7 +75,7 @@ export function AccountSidebar({ ...props }: React.ComponentProps<typeof Sidebar
           <span>Prophet</span>
         </Link>
         <div className="hidden group-data-[collapsible=icon]:flex items-center justify-center w-full">
-          <span className="font-bold text-lg">P</span>
+          <span className="font-bold text-xl">P</span>
         </div>
       </SidebarHeader>
 

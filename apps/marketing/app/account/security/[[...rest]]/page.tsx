@@ -39,7 +39,7 @@ export default function SecurityPage() {
       </motion.div>
 
       <motion.div
-        className="flex justify-center border rounded-lg bg-card p-4 overflow-hidden transition-all duration-200 hover:shadow-md"
+        className="flex justify-center border rounded-lg bg-card p-4 overflow-hidden"
         variants={itemVariants}
       >
         <UserProfile
