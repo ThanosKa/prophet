@@ -20,8 +20,32 @@ export function useAgentChat() {
   const [currentToolCall, setCurrentToolCall] = useState<ToolCall | null>(null) // Legacy support for ChatView
   const abortRef = useRef<boolean>(false)
   const activeStreamRef = useRef<{ chatId: string; abort: () => void } | null>(null)
+  const overlayTabIdRef = useRef<number | null>(null)
+  const overlayListenersRef = useRef<{
+    onUpdated: (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => void
+    onActivated: (activeInfo: chrome.tabs.TabActiveInfo) => void
+  } | null>(null)
 
   const adapter = useMemo(() => chatAdapter, [])
+
+  const cleanupOverlayListeners = useCallback(() => {
+    const listeners = overlayListenersRef.current
+    if (listeners) {
+      chrome.tabs.onUpdated.removeListener(listeners.onUpdated)
+      chrome.tabs.onActivated.removeListener(listeners.onActivated)
+      overlayListenersRef.current = null
+    }
+    overlayTabIdRef.current = null
+  }, [])
+
+  const sendAgentActiveToTab = useCallback((tabId: number) => {
+    chrome.tabs.sendMessage(tabId, { type: 'AGENT_ACTIVE' }).catch(() => {
+      // Content script may not be ready immediately after navigation; retry once.
+      setTimeout(() => {
+        chrome.tabs.sendMessage(tabId, { type: 'AGENT_ACTIVE' }).catch(() => { })
+      }, 250)
+    })
+  }, [])
 
   const sendMessage = useCallback(
     async (chatId: string, content: string, image?: ImageData) => {
@@ -46,11 +70,36 @@ export function useAgentChat() {
         setActive(true)
         const abortController = createAbortController()
 
-        // Send AGENT_ACTIVE to content script
+        cleanupOverlayListeners()
+
+        // Ensure the overlay persists through full navigations and tab switches while running.
         chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
-          if (tab?.id) {
-            chrome.tabs.sendMessage(tab.id, { type: 'AGENT_ACTIVE' }).catch(() => { })
+          if (!tab?.id) return
+
+          overlayTabIdRef.current = tab.id
+          sendAgentActiveToTab(tab.id)
+
+          const onUpdated = (updatedTabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+            if (updatedTabId !== overlayTabIdRef.current) return
+            if (changeInfo.status === 'complete') {
+              sendAgentActiveToTab(updatedTabId)
+            }
           }
+
+          const onActivated = (activeInfo: chrome.tabs.TabActiveInfo) => {
+            const prevTabId = overlayTabIdRef.current
+            overlayTabIdRef.current = activeInfo.tabId
+
+            if (prevTabId && prevTabId !== activeInfo.tabId) {
+              chrome.tabs.sendMessage(prevTabId, { type: 'AGENT_INACTIVE' }).catch(() => { })
+            }
+
+            sendAgentActiveToTab(activeInfo.tabId)
+          }
+
+          chrome.tabs.onUpdated.addListener(onUpdated)
+          chrome.tabs.onActivated.addListener(onActivated)
+          overlayListenersRef.current = { onUpdated, onActivated }
         })
 
         // Create user message via adapter
@@ -151,14 +200,33 @@ export function useAgentChat() {
 
         // Deactivate agent overlay
         setActive(false)
-        chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
-          if (tab?.id) {
-            chrome.tabs.sendMessage(tab.id, { type: 'AGENT_INACTIVE' }).catch(() => { })
-          }
-        })
+        const lastOverlayTabId = overlayTabIdRef.current
+        cleanupOverlayListeners()
+        if (lastOverlayTabId) {
+          chrome.tabs.sendMessage(lastOverlayTabId, { type: 'AGENT_INACTIVE' }).catch(() => { })
+        } else {
+          chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
+            if (tab?.id) {
+              chrome.tabs.sendMessage(tab.id, { type: 'AGENT_INACTIVE' }).catch(() => { })
+            }
+          })
+        }
       }
     },
-    [addLegacyMessage, updateLegacyMessage, setStreaming, selectedModel, addContextUsage, status, adapter, createAbortController, setActive, clearActions]
+    [
+      addLegacyMessage,
+      updateLegacyMessage,
+      setStreaming,
+      selectedModel,
+      addContextUsage,
+      status,
+      adapter,
+      createAbortController,
+      setActive,
+      clearActions,
+      cleanupOverlayListeners,
+      sendAgentActiveToTab,
+    ]
   )
 
   const abort = useCallback(() => {

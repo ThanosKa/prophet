@@ -83,7 +83,7 @@ export function ChatDrawer({
         <Separator className="shrink-0" />
 
         <ScrollArea className="flex-1 min-h-0">
-          <div className="p-2 space-y-4">
+          <div className="p-2 space-y-4 w-full">
             {chats.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-8">
                 No chats yet
@@ -99,17 +99,17 @@ export function ChatDrawer({
                       <div
                         key={chat.id}
                         className={cn(
-                          'group relative flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200',
+                          'group relative flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 w-full',
                           'hover:bg-[var(--chatbot-accent)]/80 active:scale-[0.98]',
                           activeId === chat.id ? 'bg-[var(--chatbot-accent)] ring-1 ring-border shadow-sm' : 'transparent'
                         )}
                         onClick={() => handleSelectChat(chat.id)}
                       >
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 overflow-hidden">
                           <p className="text-sm truncate" title={chat.title}>{chat.title}</p>
                         </div>
                         <button
-                          className="shrink-0 opacity-70 hover:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 p-1.5 hover:bg-destructive/10 rounded-md transition-all duration-200"
+                          className="shrink-0 opacity-70 hover:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 p-1.5 hover:bg-destructive/10 rounded-md transition-all duration-200 ml-auto"
                           onClick={(e) => {
                             e.stopPropagation()
                             onDeleteChat(chat.id)

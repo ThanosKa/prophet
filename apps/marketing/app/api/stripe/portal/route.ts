@@ -6,7 +6,7 @@ import { users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const { userId } = await auth()
 
@@ -26,11 +26,12 @@ export async function POST() {
       return NextResponse.json({ error: 'No subscription found' }, { status: 400 })
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+    const url_ = new URL(request.url)
+    const appUrl = `${url_.protocol}//${url_.host}`
 
     const session = await stripe.billingPortal.sessions.create({
       customer: user.stripeCustomerId,
-      return_url: `${appUrl}/settings`,
+      return_url: `${appUrl}/account/billing`,
     })
 
     logger.info({ userId, customerId: user.stripeCustomerId }, 'Portal session created')
