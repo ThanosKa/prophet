@@ -56,12 +56,12 @@ export function Hero() {
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
             >
               <SignedOut>
-                <SignUpButton mode="modal">
+                <SignUpButton mode="modal" forceRedirectUrl="/account">
                   <Button size="lg" className="px-8">
                     Get Started Free
                   </Button>
                 </SignUpButton>
-                <SignInButton mode="modal">
+                <SignInButton mode="modal" forceRedirectUrl="/account">
                   <Button size="lg" variant="outline" className="px-8">
                     Sign In
                   </Button>

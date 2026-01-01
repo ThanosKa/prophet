@@ -1,19 +1,25 @@
 'use client'
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Download, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react"
+import { Download, RotateCcw, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
 import type { UsageRecord } from "@prophet/shared"
 
 const ITEMS_PER_PAGE = 10
 
 function formatTokens(tokens: number): string {
+  if (tokens >= 1000000) {
+    return (tokens / 1000000).toFixed(1) + 'M'
+  }
   if (tokens >= 1000) {
     return (tokens / 1000).toFixed(1) + 'K'
   }
@@ -23,53 +29,56 @@ function formatTokens(tokens: number): string {
 export default function UsagePage() {
   const [records, setRecords] = useState<UsageRecord[]>([])
   const [loading, setLoading] = useState(true)
-  const [fromFilter, setFromFilter] = useState("")
-  const [toFilter, setToFilter] = useState("")
+  const [fromDate, setFromDate] = useState<Date | undefined>(undefined)
+  const [toDate, setToDate] = useState<Date | undefined>(undefined)
   const [currentPage, setCurrentPage] = useState(1)
+  const [totalRecords, setTotalRecords] = useState(0)
 
-  const fetchUsage = async () => {
+  const fetchUsage = useCallback(async (page: number = 1) => {
     setLoading(true)
     const params = new URLSearchParams()
-    if (fromFilter) params.append("from", fromFilter)
-    if (toFilter) params.append("to", toFilter)
+    params.append("limit", ITEMS_PER_PAGE.toString())
+    params.append("offset", ((page - 1) * ITEMS_PER_PAGE).toString())
+    if (fromDate) params.append("from", fromDate.toISOString())
+    if (toDate) params.append("to", toDate.toISOString())
 
     try {
       const response = await fetch(`/api/usage?${params.toString()}`)
       const data = await response.json()
       if (data.data) {
         setRecords(data.data.records)
-        setCurrentPage(1)
+        setTotalRecords(data.data.pagination?.total || data.data.records.length)
       }
     } catch (err) {
       console.error("Failed to fetch usage:", err)
     } finally {
       setLoading(false)
     }
-  }
+  }, [fromDate, toDate])
 
   useEffect(() => {
-    fetchUsage()
-  }, [])
+    fetchUsage(currentPage)
+  }, [currentPage, fetchUsage])
 
   const handleExport = () => {
     const params = new URLSearchParams()
-    if (fromFilter) params.append("from", fromFilter)
-    if (toFilter) params.append("to", toFilter)
+    if (fromDate) params.append("from", fromDate.toISOString())
+    if (toDate) params.append("to", toDate.toISOString())
     window.location.href = `/api/usage/export?${params.toString()}`
   }
 
   const handleReset = () => {
-    setFromFilter("")
-    setToFilter("")
+    setFromDate(undefined)
+    setToDate(undefined)
     setCurrentPage(1)
-    fetchUsage()
   }
 
-  const paginatedRecords = records.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  )
-  const totalPages = Math.ceil(records.length / ITEMS_PER_PAGE)
+  const handleFilter = () => {
+    setCurrentPage(1)
+    fetchUsage(1)
+  }
+
+  const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE)
 
   return (
     <motion.div
@@ -108,22 +117,54 @@ export default function UsagePage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-end">
               <div className="flex-1 space-y-2">
                 <label className="text-xs font-medium">From</label>
-                <Input
-                  type="date"
-                  value={fromFilter}
-                  onChange={(e) => setFromFilter(e.target.value)}
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !fromDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {fromDate ? format(fromDate, "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={fromDate}
+                      onSelect={setFromDate}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="flex-1 space-y-2">
                 <label className="text-xs font-medium">To</label>
-                <Input
-                  type="date"
-                  value={toFilter}
-                  onChange={(e) => setToFilter(e.target.value)}
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !toDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {toDate ? format(toDate, "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={toDate}
+                      onSelect={setToDate}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="flex gap-2">
-                <Button onClick={fetchUsage}>
+                <Button onClick={handleFilter}>
                   Filter
                 </Button>
                 <Button
@@ -151,7 +192,7 @@ export default function UsagePage() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Date</TableHead>
                   <TableHead>Model</TableHead>
-                  <TableHead className="text-right">Tokens (In/Out)</TableHead>
+                  <TableHead className="text-right">Tokens</TableHead>
                   <TableHead className="text-right">Cost</TableHead>
                 </TableRow>
               </TableHeader>
@@ -172,7 +213,7 @@ export default function UsagePage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedRecords.map((record, index) => (
+                  records.map((record, index) => (
                     <motion.tr
                       key={record.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -189,7 +230,7 @@ export default function UsagePage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right text-xs font-medium">
-                        {formatTokens(record.inputTokens)} / {formatTokens(record.outputTokens)}
+                        {formatTokens(record.inputTokens + record.outputTokens)}
                       </TableCell>
                       <TableCell className="text-right font-semibold text-sm">
                         ${(record.costCents / 100).toFixed(4)}
@@ -208,7 +249,7 @@ export default function UsagePage() {
                 className="flex items-center justify-between border-t px-4 py-4"
               >
                 <p className="text-sm text-muted-foreground">
-                  Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, records.length)}-{Math.min(currentPage * ITEMS_PER_PAGE, records.length)} of {records.length} records
+                  Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalRecords)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalRecords)} of {totalRecords} records
                 </p>
                 <div className="flex items-center gap-2">
                   <Button

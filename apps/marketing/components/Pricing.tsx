@@ -59,10 +59,6 @@ export function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              whileHover={{
-                scale: 1.05,
-                boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
-              }}
               className={`p-6 rounded-lg border relative ${
                 plan.popular ? 'border-primary bg-primary/5 ring-2 ring-primary' : 'bg-card'
               }`}
@@ -75,7 +71,7 @@ export function Pricing() {
               <h3 className="text-2xl font-bold mb-2 mt-2">{plan.name}</h3>
               <p className="text-3xl font-bold mb-2">{plan.price}</p>
               <p className="text-sm text-muted-foreground mb-6">{plan.credits}</p>
-              <SignInButton mode="modal">
+              <SignInButton mode="modal" forceRedirectUrl="/account">
                 <Button className="w-full mb-6" variant={plan.popular ? 'default' : 'outline'}>
                   Get Started
                 </Button>

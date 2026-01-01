@@ -42,7 +42,7 @@ export function Header() {
         <div className="hidden md:flex items-center gap-3">
           <ThemeToggle />
           <SignedOut>
-            <SignInButton mode="modal">
+            <SignInButton mode="modal" forceRedirectUrl="/account">
               <Button size="sm">Sign In</Button>
             </SignInButton>
           </SignedOut>
@@ -76,7 +76,7 @@ export function Header() {
                   </a>
                 ))}
                 <SignedOut>
-                  <SignInButton mode="modal">
+                  <SignInButton mode="modal" forceRedirectUrl="/account">
                     <Button className="w-full mt-4">Sign In</Button>
                   </SignInButton>
                 </SignedOut>
