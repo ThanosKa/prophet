@@ -89,7 +89,7 @@ export default function AccountOverviewPage() {
         <motion.div variants={itemVariants}>
           <Card className="border">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Credits Remaining</CardTitle>
+              <CardTitle className="text-sm font-medium">Balance</CardTitle>
               <div className="p-2 rounded-lg bg-primary/10">
                 <Zap className="h-4 w-4 text-primary" />
               </div>

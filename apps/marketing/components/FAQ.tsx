@@ -10,20 +10,20 @@ import {
 
 const faqs = [
   {
-    question: 'How do credits work?',
-    answer: 'Credits are consumed based on the AI API costs. 1 credit = $0.01 of API usage. Input and output tokens are tracked and charged at the Claude API rates.',
+    question: 'How does my balance work?',
+    answer: 'Your balance is consumed based on AI API usage. Token usage is tracked and charged at competitive rates with a small service fee. You only pay for what you use.',
   },
   {
     question: 'Can I use Prophet without a subscription?',
-    answer: 'Yes! The Free plan includes $0.50 in credits to get started. You can upgrade anytime for more credits and features.',
+    answer: 'Yes! The Free plan includes $0.50 in balance to get started. You can upgrade anytime for more balance and features.',
   },
   {
     question: 'How do I install the Chrome extension?',
     answer: 'Visit the Chrome Web Store, search for "Prophet", and click "Add to Chrome". After installation, sign in with your account.',
   },
   {
-    question: 'What happens when I run out of credits?',
-    answer: 'You\'ll receive a notification when your credits are low. You can upgrade your plan or purchase additional credits in your account dashboard.',
+    question: 'What happens when I run out of balance?',
+    answer: 'You\'ll receive a notification when your balance is low. You can upgrade your plan or purchase additional balance in your account dashboard.',
   },
   {
     question: 'Is my data secure?',
@@ -38,8 +38,8 @@ const faqs = [
     answer: 'Prophet uses Claude Sonnet 4.5, Anthropic\'s latest and most capable model, providing fast and intelligent responses.',
   },
   {
-    question: 'Do unused credits roll over?',
-    answer: 'Credits are reset monthly with your subscription. Make sure to use your allocation before the end of each billing period.',
+    question: 'Does my balance roll over?',
+    answer: 'Your balance resets monthly with your subscription. Make sure to use your allocation before the end of each billing period.',
   },
 ]
 

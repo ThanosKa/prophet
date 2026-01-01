@@ -178,7 +178,7 @@ export default function UsagePage() {
         transition={{ duration: 0.3, delay: 0.2 }}
       >
         <Card className="border">
-          <CardContent className="p-0">
+          <CardContent className="p-4">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">

@@ -99,7 +99,7 @@ export default function BillingPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
-                <div className="text-sm font-medium">Monthly Allowance</div>
+                <div className="text-sm font-medium">Monthly Balance</div>
                 <motion.div
                   className="text-2xl font-bold"
                   initial={{ scale: 0.5, opacity: 0 }}
@@ -153,7 +153,7 @@ export default function BillingPage() {
               <CardHeader>
                 <CardTitle>Usage Limits</CardTitle>
                 <CardDescription>
-                  Your monthly API usage allowance.
+                  Your monthly API usage balance.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -164,7 +164,7 @@ export default function BillingPage() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3, duration: 0.2 }}
                   >
-                    <span className="text-muted-foreground">Monthly allowance:</span>
+                    <span className="text-muted-foreground">Monthly balance:</span>
                     <span className="font-medium">${(tierInfo.credits / 100).toFixed(2)}</span>
                   </motion.li>
                   <motion.li

@@ -55,13 +55,13 @@ export default function TermsPage() {
                   <h3 className="text-lg font-medium mb-2 mt-4">Usage-Based Pricing</h3>
                   <p className="text-muted-foreground leading-relaxed">
                     Prophet charges based on actual API usage. Costs are calculated per token used in your AI conversations.
-                    Your monthly plan includes a usage allowance in dollars.
+                    Your monthly plan includes a usage balance in dollars.
                   </p>
 
                   <h3 className="text-lg font-medium mb-2 mt-4">Subscription Plans</h3>
                   <p className="text-muted-foreground leading-relaxed">
                     We offer multiple subscription tiers (Free, Pro, Premium, Ultra). Each plan includes a monthly usage
-                    allowance. Unused allowance does not roll over to the next billing period.
+                    balance. Unused balance does not roll over to the next billing period.
                   </p>
 
                   <h3 className="text-lg font-medium mb-2 mt-4">Refunds</h3>
