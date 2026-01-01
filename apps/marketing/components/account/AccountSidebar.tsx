@@ -53,22 +53,15 @@ export function AccountSidebar({ ...props }: React.ComponentProps<typeof Sidebar
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <span className="font-bold text-sm">P</span>
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Prophet</span>
-                  <span className="truncate text-xs">Dashboard</span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarHeader className="px-2">
+        <Link href="/" className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-sidebar-accent">
+          <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+            <span className="text-sm font-bold">P</span>
+          </div>
+          <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-semibold">Prophet</span>
+          </div>
+        </Link>
       </SidebarHeader>
 
       <SidebarContent>
