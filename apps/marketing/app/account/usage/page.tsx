@@ -150,7 +150,7 @@ export default function UsagePage() {
                       mode="range"
                       selected={dateRange}
                       onSelect={setDateRange}
-                      numberOfMonths={2}
+                      numberOfMonths={1}
                     />
                   </PopoverContent>
                 </Popover>

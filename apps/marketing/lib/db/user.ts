@@ -20,7 +20,7 @@ export async function ensureDbUser() {
   }
 
   // Try to find user first
-  let user = await db.query.users.findFirst({
+  const user = await db.query.users.findFirst({
     where: eq(users.id, userId),
   })
 
