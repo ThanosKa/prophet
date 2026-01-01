@@ -356,7 +356,7 @@ describe('POST /api/agent/chat', () => {
       const data = await response.json()
 
       expect(response.status).toBe(402)
-      expect(data.error).toContain('Insufficient credits')
+      expect(data.error).toContain('Insufficient balance')
     })
 
     it('accepts request when user has exactly 10 credits', async () => {

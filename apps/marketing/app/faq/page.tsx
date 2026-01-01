@@ -19,7 +19,7 @@ export default function FAQPage() {
             Everything you need to know about using Prophet
           </p>
         </div>
-        <FAQ />
+        <FAQ showHeader={false} />
       </div>
       <Footer />
     </main>

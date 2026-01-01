@@ -99,17 +99,17 @@ export function ChatDrawer({
                       <div
                         key={chat.id}
                         className={cn(
-                          'group relative flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 w-full',
-                          'hover:bg-[var(--chatbot-accent)]/80 active:scale-[0.98]',
-                          activeId === chat.id ? 'bg-[var(--chatbot-accent)] ring-1 ring-border shadow-sm' : 'transparent'
+                          'group relative flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-all duration-200',
+                          'hover:bg-accent/80 active:scale-[0.98]',
+                          activeId === chat.id ? 'bg-accent ring-1 ring-border shadow-sm' : 'transparent'
                         )}
                         onClick={() => handleSelectChat(chat.id)}
                       >
-                        <div className="flex-1 min-w-0 overflow-hidden">
+                        <div className="flex-1 min-w-0">
                           <p className="text-sm truncate" title={chat.title}>{chat.title}</p>
                         </div>
                         <button
-                          className="shrink-0 opacity-70 hover:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 p-1.5 hover:bg-destructive/10 rounded-md transition-all duration-200 ml-auto"
+                          className="shrink-0 p-1.5 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 rounded-md transition-all"
                           onClick={(e) => {
                             e.stopPropagation()
                             onDeleteChat(chat.id)
@@ -117,7 +117,7 @@ export function ChatDrawer({
                           title="Delete chat"
                           aria-label="Delete chat"
                         >
-                          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive transition-colors" />
+                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive transition-colors" />
                         </button>
                       </div>
                     ))}

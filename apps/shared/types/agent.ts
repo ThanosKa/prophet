@@ -36,7 +36,7 @@ export type AgentLoopEvent =
   | { type: "tool_call_error"; toolName: ToolName; error: string; toolCallId: string }
   | { type: "metrics_update"; metrics: AgentMetrics }
   | { type: "execution_complete"; finalOutput: string; metrics: AgentMetrics }
-  | { type: "error"; error: string }
+  | { type: "error"; error: string; code?: string; details?: { pricingUrl?: string } }
   | { type: "done"; usage?: { inputTokens: number; outputTokens: number; costCents?: number } };
 
 export type AgentEvent = AgentLoopEvent;
@@ -61,6 +61,8 @@ export interface AgentStreamEvent {
   name?: ToolName;
   toolUse?: ToolUse;
   error?: string;
+  code?: string;
+  details?: { pricingUrl?: string };
   usage?: {
     inputTokens: number;
     outputTokens: number;

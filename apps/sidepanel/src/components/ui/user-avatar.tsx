@@ -48,13 +48,13 @@ export function UserAvatar() {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled>
-          Credits: ${((user?.creditsRemaining || 0) / 100).toFixed(2)}
+          Balance: ${((user?.creditsRemaining || 0) / 100).toFixed(2)}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleAccountClick}>
           Account
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleSignOut}>
+        <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>

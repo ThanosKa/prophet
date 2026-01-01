@@ -63,6 +63,8 @@ async function* streamAgentChat(
     yield {
       type: "error",
       error: errorData.error || `HTTP ${response.status}`,
+      code: errorData.code,
+      details: errorData.details,
     };
     return;
   }

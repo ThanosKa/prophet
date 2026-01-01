@@ -1,46 +1,60 @@
-'use client'
+"use client";
 
-import React from 'react'
+import React from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useUser, useAuth } from '@clerk/nextjs'
-import Link from 'next/link'
-import { LayoutDashboard, CreditCard, BarChart3, LogOut, Shield } from 'lucide-react'
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useUser, useAuth } from "@clerk/nextjs";
+import Link from "next/link";
+import {
+  LayoutDashboard,
+  CreditCard,
+  BarChart3,
+  LogOut,
+  Shield,
+} from "lucide-react";
 
 export function UserMenu() {
-  const { user: clerkUser } = useUser()
-  const { signOut } = useAuth()
+  const { user: clerkUser } = useUser();
+  const { signOut } = useAuth();
 
   // Fetch DB user for credits
   // Note: We'll use a simple fetch since we might not have a global QueryClient setup in marketing yet
   // If we do, we should use it. Let's check package.json for tanstack/react-query.
-  const [dbUser, setDbUser] = React.useState<any>(null)
+  const [dbUser, setDbUser] = React.useState<any>(null);
 
   React.useEffect(() => {
-    fetch('/api/auth/user')
-      .then(res => res.json())
-      .then(data => {
-        if (data.data) setDbUser(data.data)
+    fetch("/api/auth/user")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.data) setDbUser(data.data);
       })
-      .catch(err => console.error('Failed to fetch user in menu:', err))
-  }, [])
+      .catch((err) => console.error("Failed to fetch user in menu:", err));
+  }, []);
 
-  if (!clerkUser) return null
+  if (!clerkUser) return null;
 
-  const initials = `${clerkUser.firstName?.[0] || ''}${clerkUser.lastName?.[0] || ''}`.toUpperCase() || 'U'
-  const creditsRemaining = dbUser ? (dbUser.creditsRemaining / 100).toFixed(2) : '...'
+  const initials =
+    `${clerkUser.firstName?.[0] || ""}${
+      clerkUser.lastName?.[0] || ""
+    }`.toUpperCase() || "U";
+  const creditsRemaining = dbUser
+    ? (dbUser.creditsRemaining / 100).toFixed(2)
+    : "...";
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
-          <AvatarImage src={clerkUser.imageUrl} alt={clerkUser.fullName || 'User'} />
+          <AvatarImage
+            src={clerkUser.imageUrl}
+            alt={clerkUser.fullName || "User"}
+          />
           <AvatarFallback className="text-xs bg-primary text-primary-foreground">
             {initials}
           </AvatarFallback>
@@ -48,17 +62,15 @@ export function UserMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <div className="px-2 py-1.5 space-y-1">
-          <p className="text-sm font-medium truncate">
-            {clerkUser.fullName}
-          </p>
+          <p className="text-sm font-medium truncate">{clerkUser.fullName}</p>
           <p className="text-xs text-muted-foreground truncate">
             {clerkUser.primaryEmailAddress?.emailAddress}
           </p>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled className="flex justify-between items-center">
+        <DropdownMenuItem className="flex justify-between items-center pointer-events-none opacity-100">
           <span className="text-xs font-semibold">Balance</span>
-          <span className="font-bold text-primary">${creditsRemaining}</span>
+          <span className="font-bold">${creditsRemaining}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
@@ -86,12 +98,14 @@ export function UserMenu() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut()} className="text-destructive focus:text-destructive">
+        <DropdownMenuItem
+          onClick={() => signOut()}
+          className="text-destructive focus:text-destructive"
+        >
           <LogOut className="mr-2 h-4 w-4" />
           <span>Sign out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
-

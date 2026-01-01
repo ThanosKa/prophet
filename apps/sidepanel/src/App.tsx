@@ -27,7 +27,7 @@ export default function App() {
   const { activeChatId, setActiveChatId, isStreaming, messages: messagesByChat } = useChatStore()
   const { resetContextTokens, setContextUsage, theme } = useUIStore()
   const { isLoading: messagesLoading, loadOlder, hasMore, isLoadingOlder } = useMessages(activeChatId)
-  const { sendMessage, abort, currentToolCall } = useAgentChat()
+  const { sendMessage, abort, currentToolCall, error, setError, errorInfo } = useAgentChat()
 
   useEffect(() => {
     const handleStatusUpdate = (message: { type: string; status: string }) => {
@@ -210,6 +210,9 @@ export default function App() {
           hasMore={hasMore}
           isLoadingOlder={isLoadingOlder}
           onLoadOlder={loadOlder}
+          error={error}
+          errorInfo={errorInfo}
+          onDismissError={() => setError(null)}
         />
       ) : (
         <WelcomeScreen

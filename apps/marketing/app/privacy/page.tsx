@@ -1,6 +1,5 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
-import { Card, CardContent } from '@/components/ui/card'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -19,9 +18,7 @@ export default function PrivacyPage() {
             <p className="text-sm text-muted-foreground">Last updated: January 2026</p>
           </div>
 
-          <Card>
-            <CardContent className="p-8 sm:p-12">
-              <div className="space-y-8">
+          <div className="space-y-8">
                 <section>
                   <h2 className="text-xl font-semibold mb-3">Introduction</h2>
                   <p className="text-muted-foreground leading-relaxed">
@@ -126,9 +123,7 @@ export default function PrivacyPage() {
                     If you have questions about this Privacy Policy, please contact us through our contact form.
                   </p>
                 </section>
-              </div>
-            </CardContent>
-          </Card>
+          </div>
         </div>
       </div>
       <Footer />

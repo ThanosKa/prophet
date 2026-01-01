@@ -105,12 +105,13 @@ export async function POST(req: Request) {
     if (user.creditsRemaining < 10) {
       logger.warn(
         { userId, creditsRemaining: user.creditsRemaining },
-        "Insufficient credits for agent chat"
+        "Insufficient balance for agent chat"
       );
       return NextResponse.json(
         error(
-          "Insufficient credits. Please upgrade your plan.",
-          "INSUFFICIENT_CREDITS"
+          "Insufficient balance. Please upgrade your plan.",
+          "INSUFFICIENT_BALANCE",
+          { pricingUrl: "/pricing" }
         ),
         { status: 402 }
       );

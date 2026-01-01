@@ -91,7 +91,7 @@ export function AccountSidebar({ ...props }: React.ComponentProps<typeof Sidebar
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarSeparator />
+      <SidebarSeparator className="mx-4 max-w-[80%]" />
       <SidebarFooter>
         <NavUser />
       </SidebarFooter>
