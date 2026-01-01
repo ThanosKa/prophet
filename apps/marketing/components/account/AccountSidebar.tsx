@@ -21,7 +21,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { NavUser } from "./NavUser"
@@ -96,8 +95,6 @@ export function AccountSidebar({ ...props }: React.ComponentProps<typeof Sidebar
       <SidebarFooter>
         <NavUser />
       </SidebarFooter>
-
-      <SidebarRail />
     </Sidebar>
   )
 }

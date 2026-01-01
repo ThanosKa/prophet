@@ -57,7 +57,7 @@ export function UserMenu() {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled className="flex justify-between items-center">
-          <span className="text-xs font-semibold">Credits</span>
+          <span className="text-xs font-semibold">Balance</span>
           <span className="font-bold text-primary">${creditsRemaining}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

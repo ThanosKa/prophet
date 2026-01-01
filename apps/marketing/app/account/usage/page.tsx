@@ -10,11 +10,13 @@ import { Download, RotateCcw, ChevronLeft, ChevronRight, Calendar as CalendarIco
 import { Skeleton } from "@/components/ui/skeleton"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import type { DateRange } from "react-day-picker"
 import type { UsageRecord } from "@prophet/shared"
 
-const ITEMS_PER_PAGE = 10
+const ROWS_PER_PAGE_OPTIONS = [25, 50, 100, 500] as const
 
 function formatTokens(tokens: number): string {
   if (tokens >= 1000000) {
@@ -29,18 +31,18 @@ function formatTokens(tokens: number): string {
 export default function UsagePage() {
   const [records, setRecords] = useState<UsageRecord[]>([])
   const [loading, setLoading] = useState(true)
-  const [fromDate, setFromDate] = useState<Date | undefined>(undefined)
-  const [toDate, setToDate] = useState<Date | undefined>(undefined)
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalRecords, setTotalRecords] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState<number>(25)
 
   const fetchUsage = useCallback(async (page: number = 1) => {
     setLoading(true)
     const params = new URLSearchParams()
-    params.append("limit", ITEMS_PER_PAGE.toString())
-    params.append("offset", ((page - 1) * ITEMS_PER_PAGE).toString())
-    if (fromDate) params.append("from", fromDate.toISOString())
-    if (toDate) params.append("to", toDate.toISOString())
+    params.append("limit", rowsPerPage.toString())
+    params.append("offset", ((page - 1) * rowsPerPage).toString())
+    if (dateRange?.from) params.append("from", dateRange.from.toISOString())
+    if (dateRange?.to) params.append("to", dateRange.to.toISOString())
 
     try {
       const response = await fetch(`/api/usage?${params.toString()}`)
@@ -54,7 +56,7 @@ export default function UsagePage() {
     } finally {
       setLoading(false)
     }
-  }, [fromDate, toDate])
+  }, [dateRange, rowsPerPage])
 
   useEffect(() => {
     fetchUsage(currentPage)
@@ -62,14 +64,13 @@ export default function UsagePage() {
 
   const handleExport = () => {
     const params = new URLSearchParams()
-    if (fromDate) params.append("from", fromDate.toISOString())
-    if (toDate) params.append("to", toDate.toISOString())
+    if (dateRange?.from) params.append("from", dateRange.from.toISOString())
+    if (dateRange?.to) params.append("to", dateRange.to.toISOString())
     window.location.href = `/api/usage/export?${params.toString()}`
   }
 
   const handleReset = () => {
-    setFromDate(undefined)
-    setToDate(undefined)
+    setDateRange(undefined)
     setCurrentPage(1)
   }
 
@@ -78,7 +79,12 @@ export default function UsagePage() {
     fetchUsage(1)
   }
 
-  const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE)
+  const handleRowsPerPageChange = (value: string) => {
+    setRowsPerPage(Number(value))
+    setCurrentPage(1)
+  }
+
+  const totalPages = Math.ceil(totalRecords / rowsPerPage)
 
   return (
     <motion.div
@@ -91,7 +97,7 @@ export default function UsagePage() {
         <div className="flex flex-col gap-1">
           <h2 className="text-3xl font-bold tracking-tight">Usage History</h2>
           <p className="text-muted-foreground">
-            Monitor your AI credit consumption and token usage.
+            Monitor your API usage and costs.
           </p>
         </div>
         <Button
@@ -116,49 +122,35 @@ export default function UsagePage() {
           <CardContent>
             <div className="flex flex-col gap-4 md:flex-row md:items-end">
               <div className="flex-1 space-y-2">
-                <label className="text-xs font-medium">From</label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !fromDate && "text-muted-foreground"
+                        !dateRange && "text-muted-foreground"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {fromDate ? format(fromDate, "PPP") : "Pick a date"}
+                      {dateRange?.from ? (
+                        dateRange.to ? (
+                          <>
+                            {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
+                          </>
+                        ) : (
+                          format(dateRange.from, "LLL dd, y")
+                        )
+                      ) : (
+                        "Select date range"
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
-                      mode="single"
-                      selected={fromDate}
-                      onSelect={setFromDate}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="flex-1 space-y-2">
-                <label className="text-xs font-medium">To</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !toDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {toDate ? format(toDate, "PPP") : "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={toDate}
-                      onSelect={setToDate}
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      numberOfMonths={2}
                     />
                   </PopoverContent>
                 </Popover>
@@ -198,7 +190,7 @@ export default function UsagePage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
+                  Array.from({ length: Math.min(rowsPerPage, 10) }).map((_, i) => (
                     <TableRow key={i}>
                       <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
@@ -222,7 +214,7 @@ export default function UsagePage() {
                       className="border-b last:border-b-0"
                     >
                       <TableCell className="font-medium text-xs">
-                        {new Date(record.createdAt).toLocaleString()}
+                        {format(new Date(record.createdAt), "MMMM d, yyyy")}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="font-mono text-[10px] bg-primary/5">
@@ -248,9 +240,26 @@ export default function UsagePage() {
                 transition={{ duration: 0.2, delay: 0.3 }}
                 className="flex items-center justify-between border-t px-4 py-4"
               >
-                <p className="text-sm text-muted-foreground">
-                  Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalRecords)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalRecords)} of {totalRecords} records
-                </p>
+                <div className="flex items-center gap-4">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {Math.min((currentPage - 1) * rowsPerPage + 1, totalRecords)}-{Math.min(currentPage * rowsPerPage, totalRecords)} of {totalRecords} records
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Rows per page:</span>
+                    <Select value={rowsPerPage.toString()} onValueChange={handleRowsPerPageChange}>
+                      <SelectTrigger className="w-[80px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ROWS_PER_PAGE_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option.toString()}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"

@@ -34,13 +34,13 @@ export async function GET(req: Request) {
     })
 
     // Create CSV content
-    const headers = ['Date', 'Model', 'Input Tokens', 'Output Tokens', 'Cost (Credits)']
+    const headers = ['Date', 'Model', 'Input Tokens', 'Output Tokens', 'Cost ($)']
     const rows = records.map(r => [
       r.createdAt.toISOString(),
       r.model,
       r.inputTokens.toString(),
       r.outputTokens.toString(),
-      (r.costCents).toString(), // Credits = cents in this system
+      (r.costCents / 100).toFixed(4), // Convert cents to dollars
     ])
 
     const csvContent = [

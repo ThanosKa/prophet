@@ -26,7 +26,7 @@ export default function TermsPage() {
             <h2>Description of Service</h2>
             <p>
               Prophet is a Chrome browser extension that provides AI assistance through integration with Claude AI.
-              The service operates on a credit-based system where users purchase credits to access AI capabilities.
+              The service operates on a usage-based pricing model where you pay for API usage.
             </p>
 
             <h2>Account Registration</h2>
@@ -38,22 +38,22 @@ export default function TermsPage() {
               <li>Accept responsibility for all activities under your account</li>
             </ul>
 
-            <h2>Credits and Billing</h2>
-            <h3>Credit System</h3>
+            <h2>Billing</h2>
+            <h3>Usage-Based Pricing</h3>
             <p>
-              Prophet operates on a credit-based system where 1 credit = $0.01 of API usage. Credits are consumed
-              based on the tokens used in your AI conversations.
+              Prophet charges based on actual API usage. Costs are calculated per token used in your AI conversations.
+              Your monthly plan includes a usage allowance in dollars.
             </p>
 
             <h3>Subscription Plans</h3>
             <p>
-              We offer multiple subscription tiers (Free, Pro, Premium, Ultra). Each plan includes a monthly credit
-              allocation. Unused credits do not roll over to the next billing period.
+              We offer multiple subscription tiers (Free, Pro, Premium, Ultra). Each plan includes a monthly usage
+              allowance. Unused allowance does not roll over to the next billing period.
             </p>
 
             <h3>Refunds</h3>
             <p>
-              Credits are non-refundable once purchased. Subscription cancellations take effect at the end of the
+              Subscription payments are non-refundable. Cancellations take effect at the end of the
               current billing period.
             </p>
 
