@@ -53,7 +53,7 @@
     --muted-foreground: hsl(0 0% 45%);
     --accent: hsl(0 0% 96%);
     --accent-foreground: hsl(0 0% 8%);
-    --destructive: hsl(0 84.2% 60.2%);
+    --destructive: hsl(12 100% 57%);
     --destructive-foreground: hsl(0 0% 98.5%);
     --border: hsl(0 0% 90%);
     --input: hsl(0 0% 90%);
@@ -81,7 +81,7 @@
     --muted-foreground: hsl(0 0% 64%);
     --accent: hsl(0 0% 15%);
     --accent-foreground: hsl(0 0% 98%);
-    --destructive: hsl(0 62.8% 30.6%);
+    --destructive: hsl(15 85% 45%);
     --destructive-foreground: hsl(0 0% 98%);
     --border: hsl(0 0% 100% / 15%);
     --input: hsl(0 0% 100% / 15%);
@@ -114,7 +114,9 @@
 }
 
 @keyframes bounce-dot {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     transform: translateY(0);
   }
   40% {
@@ -197,9 +199,15 @@
     margin-bottom: 0.5em;
   }
 
-  .prose h1 { font-size: 1.5em; }
-  .prose h2 { font-size: 1.25em; }
-  .prose h3 { font-size: 1.125em; }
+  .prose h1 {
+    font-size: 1.5em;
+  }
+  .prose h2 {
+    font-size: 1.25em;
+  }
+  .prose h3 {
+    font-size: 1.125em;
+  }
 
   .prose p {
     margin-top: 0.5em;
@@ -277,6 +285,16 @@
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
 
+/* Fix for Radix UI ScrollArea breaking flexbox truncation */
+/* See: https://github.com/radix-ui/primitives/issues/926 */
+[data-radix-scroll-area-viewport] {
+  display: block !important;
+}
+[data-radix-scroll-area-viewport] > div {
+  display: block !important;
+  min-width: 0 !important;
+}
+
 @theme inline {
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -308,11 +326,3 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}

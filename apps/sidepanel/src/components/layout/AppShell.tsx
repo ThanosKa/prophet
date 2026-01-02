@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Header } from './Header'
-import { ChatDrawer } from './ChatDrawer'
 import type { Chat } from '@prophet/shared'
+import { ChatHistory } from './ChatHistory'
 
 interface AppShellProps {
   children: ReactNode
@@ -26,9 +26,9 @@ export function AppShell({
     <div className="flex flex-col h-screen w-screen bg-[var(--chatbot-bg)]">
       <Header title={chatTitle} className="bg-[var(--chatbot-muted)]/95" />
 
-      <ChatDrawer
+      <ChatHistory
         chats={chats}
-        activeId={activeChatId}
+        activeChatId={activeChatId}
         onSelectChat={onSelectChat}
         onDeleteChat={onDeleteChat}
         onNewChat={onNewChat}

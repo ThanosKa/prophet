@@ -97,11 +97,10 @@ export function ChatDrawer({
                   <div className="space-y-1">
                     {group.chats.map((chat) => (
                       <div
-                        key={chat.id}
                         className={cn(
                           'group relative flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-all duration-200',
                           'hover:bg-accent/80 active:scale-[0.98]',
-                          activeId === chat.id ? 'bg-accent ring-1 ring-border shadow-sm' : 'transparent'
+                          activeId === chat.id ? 'bg-accent ring-1 ring-border shadow-sm' : 'bg-transparent'
                         )}
                         onClick={() => handleSelectChat(chat.id)}
                       >
@@ -109,7 +108,7 @@ export function ChatDrawer({
                           <p className="text-sm truncate" title={chat.title}>{chat.title}</p>
                         </div>
                         <button
-                          className="shrink-0 p-1.5 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 rounded-md transition-all"
+                          className="shrink-0 p-1.5 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 rounded-md transition-all"
                           onClick={(e) => {
                             e.stopPropagation()
                             onDeleteChat(chat.id)
@@ -117,7 +116,7 @@ export function ChatDrawer({
                           title="Delete chat"
                           aria-label="Delete chat"
                         >
-                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive transition-colors" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     ))}
