@@ -1,31 +1,33 @@
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { useAuth } from '@/hooks/useAuth'
-import { config } from '@/lib/config'
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
+import { config } from "@/lib/config";
 
 export function UserAvatar() {
-  const { clerkUser, user, signOut } = useAuth()
+  const { clerkUser, user, signOut } = useAuth();
 
   const initials = clerkUser
-    ? `${clerkUser.firstName?.[0] || ''}${clerkUser.lastName?.[0] || ''}`.toUpperCase() || 'U'
-    : 'U'
+    ? `${clerkUser.firstName?.[0] || ""}${
+        clerkUser.lastName?.[0] || ""
+      }`.toUpperCase() || "U"
+    : "U";
 
-  const imageUrl = clerkUser?.imageUrl
+  const imageUrl = clerkUser?.imageUrl;
 
   const handleAccountClick = () => {
-    const accountUrl = `${config.syncHost}/account`
-    chrome.tabs.create({ url: accountUrl })
-  }
+    const accountUrl = `${config.syncHost}/account`;
+    chrome.tabs.create({ url: accountUrl });
+  };
 
   const handleSignOut = async () => {
-    await signOut()
-  }
+    await signOut();
+  };
 
   return (
     <DropdownMenu>
@@ -47,17 +49,20 @@ export function UserAvatar() {
           </p>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled>
+        <DropdownMenuItem className="pointer-events-none">
           Balance: ${((user?.creditsRemaining || 0) / 100).toFixed(2)}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleAccountClick}>
           Account
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+        <DropdownMenuItem
+          onClick={handleSignOut}
+          className="text-destructive focus:text-destructive"
+        >
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

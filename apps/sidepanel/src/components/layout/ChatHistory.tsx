@@ -1,5 +1,5 @@
 
-import { Trash2, MessageSquare, Plus } from 'lucide-react'
+import { Trash2, Plus } from 'lucide-react'
 import {
     Sheet,
     SheetContent,
@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/uiStore'
 import type { Chat } from '@prophet/shared'
@@ -80,27 +81,23 @@ export function ChatHistory({
 
     return (
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-            <SheetContent side="left" className="w-[300px] sm:w-[350px] p-0 flex flex-col gap-0 bg-background border-r">
-                <SheetHeader className="p-4 bg-muted/30 border-b">
-                    <div className="flex items-center justify-between">
-                        <SheetTitle className="text-sm font-semibold flex items-center gap-2">
-                            <MessageSquare className="w-4 h-4" />
-                            History
-                        </SheetTitle>
-                        {/* Close button is automatically added by SheetContent usually, but we can customize header */}
-                    </div>
+            <SheetContent side="left" className="w-72 max-w-full p-0 flex flex-col bg-background border-r border-border">
+                <SheetHeader className="p-4 pb-2 shrink-0">
+                    <SheetTitle className="text-lg font-semibold">Prophet</SheetTitle>
                 </SheetHeader>
 
-                <div className="p-4 pb-2">
+                <div className="px-4 pb-4 shrink-0">
                     <Button
                         onClick={handleNew}
-                        className="w-full justify-start gap-2 h-10 shadow-sm"
-                        variant="outline"
+                        className="w-full"
+                        size="sm"
                     >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="h-4 w-4 mr-2" />
                         New Chat
                     </Button>
                 </div>
+
+                <Separator className="shrink-0" />
 
                 <ScrollArea className="flex-1 px-4">
                     <div className="pb-4 flex flex-col gap-6 min-w-0">
@@ -150,18 +147,6 @@ export function ChatHistory({
                         )}
                     </div>
                 </ScrollArea>
-
-                <div className="p-4 border-t bg-muted/10 mt-auto">
-                    <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-card border shadow-sm">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-                            PR
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-xs font-medium">Prophet User</span>
-                            <span className="text-[10px] text-muted-foreground">Pro Plan</span>
-                        </div>
-                    </div>
-                </div>
 
             </SheetContent>
         </Sheet>
