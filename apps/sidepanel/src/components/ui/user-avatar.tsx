@@ -21,7 +21,7 @@ export function UserAvatar() {
   const imageUrl = clerkUser?.imageUrl;
 
   const handleAccountClick = () => {
-    const accountUrl = `${config.syncHost}/account`;
+    const accountUrl = `${config.apiUrl}/account`;
     chrome.tabs.create({ url: accountUrl });
   };
 

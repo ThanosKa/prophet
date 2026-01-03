@@ -5,6 +5,7 @@ import { useAgentStore } from '@/store/agentStore'
 import { runAgentLoop } from '@/lib/agent'
 import { config } from '@/lib/config'
 import { chatAdapter } from '@/lib/agent/chat-adapter'
+import { mockAgentStream } from '@/lib/agent/mock-agent'
 import type { Message, ImageData, AgentStatus, ToolCall } from '@prophet/shared'
 
 export interface AgentMessage extends Message {
@@ -129,26 +130,30 @@ export function useAgentChat() {
           createdAt: assistantMessage.createdAt,
         })
 
+        // Use mock agent when VITE_USE_DEV_API=mock for UI/UX testing
         // Use dev endpoint when VITE_USE_DEV_API=true to bypass credits
-        const apiUrl = config.useDevApi
-          ? `${config.apiUrl}/api/agent/chat/dev`
-          : `${config.apiUrl}/api/agent/chat`
+        // Otherwise use production endpoint
+        const eventStream = config.useMockApi
+          ? mockAgentStream(chatId, content, selectedModel, abortController.signal)
+          : runAgentLoop(
+              config.useDevApi
+                ? `${config.apiUrl}/api/agent/chat/dev`
+                : `${config.apiUrl}/api/agent/chat`,
+              chatId,
+              content,
+              selectedModel,
+              image,
+              abortController.signal
+            )
 
-        for await (const event of runAgentLoop(
-          apiUrl,
-          chatId,
-          content,
-          selectedModel,
-          image,
-          abortController.signal
-        )) {
+        for await (const event of eventStream) {
           if (abortRef.current) break
 
           // Legacy: Handle currentToolCall
-          if (event.type === 'tool_call_start') {
+          if (event.type === 'tool_call_start' && event.toolCallId && event.toolName) {
             setCurrentToolCall({
               id: event.toolCallId,
-              name: event.toolName,
+              name: event.toolName as ToolCall['name'],
               input: (event.params as Record<string, unknown>) || {},
             })
           } else if (event.type === 'tool_call_complete' || event.type === 'tool_call_error') {

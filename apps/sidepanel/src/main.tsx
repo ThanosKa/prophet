@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 import { ClerkProvider } from '@clerk/chrome-extension'
 import { dark } from '@clerk/themes'
+import { config } from '@/lib/config'
 import App from './App'
 import './globals.css'
 
@@ -24,8 +25,8 @@ if (!root) {
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <ClerkProvider
-      publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
-      syncHost={import.meta.env.VITE_SYNC_HOST}
+      publishableKey={config.clerkPublishableKey}
+      syncHost={config.apiUrl}
       appearance={{
         baseTheme: dark,
       }}
