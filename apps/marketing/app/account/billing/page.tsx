@@ -1,15 +1,13 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ensureDbUser } from "@/lib/db/user"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CreditCard, CheckCircle2 } from "lucide-react"
 import { TIER_CONFIG } from "@/lib/pricing"
 import Link from "next/link"
-import { useEffect, useState } from 'react'
-import type { User } from "@prophet/shared"
+import { useUser } from "@/contexts/UserContext"
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -32,25 +30,9 @@ const itemVariants = {
 }
 
 export default function BillingPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, isLoading } = useUser()
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await ensureDbUser()
-        setUser(userData)
-      } catch (error) {
-        console.error("Failed to load user:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadUser()
-  }, [])
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="h-10 bg-muted animate-pulse rounded" />

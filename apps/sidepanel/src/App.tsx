@@ -54,19 +54,8 @@ export default function App() {
     document.documentElement.classList.add(theme)
   }, [theme])
 
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        queryClient.invalidateQueries({ queryKey: ['user'] })
-        if (isSignedIn) {
-          queryClient.invalidateQueries({ queryKey: ['chats'] })
-        }
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [isSignedIn, queryClient])
+  // Removed: Aggressive visibility-based invalidation
+  // Let staleTime manage data freshness instead of forcing refetch on every tab switch
 
   useEffect(() => {
     if (activeChatId) {

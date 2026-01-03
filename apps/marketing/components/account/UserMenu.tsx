@@ -9,7 +9,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useUser, useAuth } from "@clerk/nextjs";
+import { useUser as useClerkUser, useAuth } from "@clerk/nextjs";
+import { useUserOptional } from "@/contexts/UserContext";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -18,24 +19,29 @@ import {
   LogOut,
   Shield,
 } from "lucide-react";
+import type { User } from "@prophet/shared";
 
 export function UserMenu() {
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser } = useClerkUser();
   const { signOut } = useAuth();
+  const userContext = useUserOptional();
 
-  // Fetch DB user for credits
-  // Note: We'll use a simple fetch since we might not have a global QueryClient setup in marketing yet
-  // If we do, we should use it. Let's check package.json for tanstack/react-query.
-  const [dbUser, setDbUser] = React.useState<any>(null);
+  // Use context if available (inside account layout), otherwise fetch
+  const [fetchedUser, setFetchedUser] = React.useState<User | null>(null);
 
   React.useEffect(() => {
+    // Skip fetch if we have context (inside account layout)
+    if (userContext?.user) return;
+
     fetch("/api/auth/user")
       .then((res) => res.json())
       .then((data) => {
-        if (data.data) setDbUser(data.data);
+        if (data.data) setFetchedUser(data.data);
       })
       .catch((err) => console.error("Failed to fetch user in menu:", err));
-  }, []);
+  }, [userContext?.user]);
+
+  const dbUser = userContext?.user || fetchedUser;
 
   if (!clerkUser) return null;
 

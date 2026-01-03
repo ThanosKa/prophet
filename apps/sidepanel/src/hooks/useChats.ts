@@ -17,7 +17,7 @@ export function useChats() {
       }
       return []
     },
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 60 * 5,  // 5 minutes - consistent with other queries
   })
 
   const createMutation = useMutation({
