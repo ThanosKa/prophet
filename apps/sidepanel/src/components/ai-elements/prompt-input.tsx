@@ -28,6 +28,7 @@ type PromptInputContextValue = {
   text: string;
   setText: (text: string) => void;
   disabled?: boolean;
+  submitDisabled?: boolean;
   attachments: Attachment[];
   addFiles: (files: FileList | File[]) => void;
   removeAttachment: (id: string) => void;
@@ -136,6 +137,7 @@ export function PromptInput({
       text,
       setText,
       disabled: resolvedInputDisabled,
+      submitDisabled: resolvedSubmitDisabled,
       attachments,
       addFiles,
       removeAttachment,
@@ -149,6 +151,7 @@ export function PromptInput({
       openFilePicker,
       removeAttachment,
       resolvedInputDisabled,
+      resolvedSubmitDisabled,
       text,
     ]
   );
@@ -346,7 +349,7 @@ export function PromptInputButton({
       size={size}
       onClick={onClick}
       disabled={disabled}
-      className={cn("cursor-pointer h-8 w-8 rounded-full", className)}
+      className={cn("h-8 w-8 rounded-full", className)}
     >
       {children}
     </Button>
@@ -400,26 +403,27 @@ export function PromptInputActionAddAttachments({
 }
 
 export function PromptInputSubmit({
-  disabled,
   className,
   children,
 }: {
-  disabled?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
+  const { text, attachments } = usePromptInputContext();
+  const hasText = Boolean(text.trim());
+  const hasAttachments = attachments.length > 0;
+  const shouldBeDisabled = !hasText && !hasAttachments;
+
   return (
     <Button
       type="submit"
       size="icon"
       variant="ghost"
       className={cn(
-        "cursor-pointer h-8 w-8 rounded-full",
-        "bg-primary text-primary-foreground hover:bg-primary/80 hover:scale-105",
-        "disabled:opacity-30 disabled:bg-primary disabled:hover:scale-100",
+        "flex items-center justify-center h-8 w-8 rounded-full bg-black text-white hover:bg-black/80 hover:text-white dark:bg-white dark:hover:bg-white/90 dark:text-black transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
         className
       )}
-      disabled={disabled}
+      disabled={shouldBeDisabled}
     >
       {children}
     </Button>

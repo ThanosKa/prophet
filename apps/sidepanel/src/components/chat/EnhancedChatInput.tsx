@@ -191,10 +191,13 @@ export function EnhancedChatInput({
               type="button"
               onClick={() => onAbort?.()}
               disabled={!onAbort}
-              className="flex items-center justify-center h-8 w-8 rounded-full bg-muted hover:bg-muted/60 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-4 border-border"
+              className="flex items-center justify-center h-8 w-8 rounded-full bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               title="Stop generating"
             >
-              <svg viewBox="0 0 24 24" className="h-5 w-5 text-foreground">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5 text-white dark:text-black"
+              >
                 <rect
                   x="5"
                   y="5"
@@ -207,7 +210,7 @@ export function EnhancedChatInput({
               <span className="sr-only">Stop</span>
             </button>
           ) : (
-            <PromptInputSubmit disabled={disabled}>
+            <PromptInputSubmit>
               <ArrowUp className="h-4 w-4" />
               <span className="sr-only">Send message</span>
             </PromptInputSubmit>
