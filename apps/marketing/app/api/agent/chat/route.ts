@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { chatId, userMessage, toolResults, previousContent, image } =
+    const { chatId, userMessage, toolResults, previousContent, image, enableThinking } =
       validation.data;
     const model = (validation.data.model ?? DEFAULT_AGENT_MODEL) as ModelName;
 
@@ -188,7 +188,7 @@ export async function POST(req: Request) {
     );
 
     // DEV LOGGING: Log request to LLM
-    await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT);
+    await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking });
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -201,10 +201,22 @@ export async function POST(req: Request) {
         try {
           const anthropicStream = await anthropic.messages.stream({
             model,
-            max_tokens: AGENT_MAX_TOKENS,
-            system: AGENT_SYSTEM_PROMPT,
+            max_tokens: enableThinking ? 16000 : AGENT_MAX_TOKENS,
+            system: [
+              {
+                type: "text",
+                text: AGENT_SYSTEM_PROMPT,
+                cache_control: { type: "ephemeral" },
+              },
+            ],
             tools: AGENT_TOOLS,
             messages: anthropicMessages,
+            ...(enableThinking && {
+              thinking: {
+                type: "enabled",
+                budget_tokens: 8000,
+              },
+            }),
           });
 
           let currentToolUse: {
@@ -238,6 +250,12 @@ export async function POST(req: Request) {
                 const data = JSON.stringify({
                   type: "content_delta",
                   delta: text,
+                });
+                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+              } else if (event.delta.type === "thinking_delta") {
+                const data = JSON.stringify({
+                  type: "thinking_delta",
+                  delta: event.delta.thinking,
                 });
                 controller.enqueue(encoder.encode(`data: ${data}\n\n`));
               } else if (
@@ -327,21 +345,25 @@ export async function POST(req: Request) {
           }
 
           // Save assistant message with tool calls if any
-          const assistantContent = fullTextResponse || "";
+          // Only save if there's actual content (text or tool calls)
           const assistantToolCalls = contentBlocks.filter(b => b.type === "tool_use");
+          const hasContent = fullTextResponse.trim().length > 0 || assistantToolCalls.length > 0;
 
           const MAX_CONTEXT_TOKENS = 200000;
           await db.transaction(async (tx) => {
-            await tx.insert(messages).values({
-              chatId,
-              role: "assistant",
-              content: assistantContent,
-              model,
-              inputTokens,
-              outputTokens,
-              costCents,
-              toolCalls: assistantToolCalls.length > 0 ? JSON.stringify(assistantToolCalls) : null,
-            });
+            // Only save assistant message if it has meaningful content
+            if (hasContent) {
+              await tx.insert(messages).values({
+                chatId,
+                role: "assistant",
+                content: fullTextResponse,
+                model,
+                inputTokens,
+                outputTokens,
+                costCents,
+                toolCalls: assistantToolCalls.length > 0 ? JSON.stringify(assistantToolCalls) : null,
+              });
+            }
 
             await tx
               .update(users)

@@ -37,7 +37,12 @@ export class DevLogger {
     /**
      * Log an LLM request (before streaming)
      */
-    async logRequest(model: string, messages: MessageParam[], systemPrompt?: string): Promise<void> {
+    async logRequest(
+        model: string,
+        messages: MessageParam[],
+        systemPrompt?: string,
+        options?: { enableThinking?: boolean; [key: string]: unknown }
+    ): Promise<void> {
         if (!this.isDev) return
 
         await this.ensureLogDir()
@@ -50,12 +55,22 @@ export class DevLogger {
         // LLM Input (all messages as text)
         const llmInput = messages.map(m => `[${m.role.toUpperCase()}]: ${this.extractTextFromMessage(m)}`).join('\n')
 
-        // Format JSON sent to LLM
+        // Format JSON sent to LLM (sanitize base64 data and truncate system prompt)
+        const sanitizedMessages = this.sanitizeMessagesForLogging(messages)
+        const MAX_SYSTEM_PROMPT_LENGTH = 1000
+        const truncatedSystemPrompt = systemPrompt && systemPrompt.length > MAX_SYSTEM_PROMPT_LENGTH
+            ? `${systemPrompt.slice(0, MAX_SYSTEM_PROMPT_LENGTH)}...\n\n[TRUNCATED - Original length: ${systemPrompt.length} chars]`
+            : systemPrompt
+
         const jsonSent = JSON.stringify(
             {
                 model,
-                system: systemPrompt,
-                messages,
+                system: truncatedSystemPrompt,
+                messages: sanitizedMessages,
+                enableThinking: options?.enableThinking ?? false,
+                ...Object.fromEntries(
+                    Object.entries(options ?? {}).filter(([k]) => k !== 'enableThinking')
+                ),
             },
             null,
             2
@@ -189,6 +204,48 @@ Each request shows: Model, User Message, JSON Sent, and Response.
         }
 
         return '[Complex message]'
+    }
+
+    /**
+     * Sanitize messages for logging - replace base64 data with placeholders and truncate long content
+     * Returns a simplified structure for logging purposes only (not for API calls)
+     */
+    private sanitizeMessagesForLogging(messages: MessageParam[]): unknown[] {
+        const MAX_CONTENT_LENGTH = 500 // Show first 500 chars of tool results
+
+        return messages.map(message => {
+            if (typeof message.content === 'string') {
+                return message
+            }
+
+            if (Array.isArray(message.content)) {
+                const sanitizedContent = message.content.map(block => {
+                    // Sanitize base64 images
+                    if (block.type === 'image' && 'source' in block) {
+                        return {
+                            type: 'image',
+                            source: '[BASE64_IMAGE_DATA]',
+                        }
+                    }
+
+                    // Truncate long tool results
+                    if (block.type === 'tool_result' && 'content' in block) {
+                        const content = (block as { content: unknown }).content
+                        if (typeof content === 'string' && content.length > MAX_CONTENT_LENGTH) {
+                            return {
+                                ...block,
+                                content: `${content.slice(0, MAX_CONTENT_LENGTH)}...\n\n[TRUNCATED - Original length: ${content.length} chars]`,
+                            }
+                        }
+                    }
+
+                    return block
+                })
+                return { ...message, content: sanitizedContent }
+            }
+
+            return message
+        })
     }
 }
 

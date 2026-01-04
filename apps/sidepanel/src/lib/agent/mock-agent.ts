@@ -9,11 +9,16 @@
  * - Type "/snap" to trigger snapshot tools
  * - Type "/nav" to trigger navigation tools
  * - Type "/tabs" to trigger tab tools
+ * - Type "/think" to force extended thinking (also triggers with brain toggle)
  * - Any other message picks a random response
+ *
+ * Extended thinking is simulated when:
+ * - The brain toggle is enabled (enableThinking=true)
+ * - Or you use the "/think" command
  */
 
 export interface MockAgentEvent {
-  type: 'session_created' | 'content_delta' | 'tool_use' | 'metrics_update' | 'execution_complete' | 'done' | 'error' | 'tool_call_start' | 'tool_call_complete' | 'tool_call_error'
+  type: 'session_created' | 'content_delta' | 'thinking_delta' | 'tool_use' | 'metrics_update' | 'execution_complete' | 'done' | 'error' | 'tool_call_start' | 'tool_call_complete' | 'tool_call_error'
   sessionId?: string
   delta?: string
   toolUse?: {
@@ -126,7 +131,8 @@ export async function* mockAgentStream(
   chatId: string,
   userMessage: string,
   _model: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  enableThinking?: boolean
 ): AsyncGenerator<MockAgentEvent> {
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -149,6 +155,7 @@ export async function* mockAgentStream(
     const lowerMessage = userMessage.toLowerCase().trim()
     let tools: string[] = []
     let text = ''
+    let forceThinking = false
 
     if (lowerMessage === '/all') {
       tools = [...ALL_TOOLS]
@@ -171,12 +178,32 @@ export async function* mockAgentStream(
     } else if (lowerMessage === '/page') {
       tools = TOOL_GROUPS.page
       text = "Testing page content tools."
+    } else if (lowerMessage === '/think') {
+      forceThinking = true
+      tools = ['take_snapshot']
+      text = "I've analyzed the page structure after deep consideration."
     } else {
       // Random response
       const responseIndex = Math.floor(Math.random() * MOCK_RESPONSES.length)
       const mockResponse = MOCK_RESPONSES[responseIndex]
       tools = mockResponse.tools
       text = mockResponse.text
+    }
+
+    // 2.5 Simulate thinking if enabled
+    const shouldThink = enableThinking || forceThinking
+    if (shouldThink) {
+      const thinkingContent = generateMockThinking(userMessage, tools)
+      for (const char of thinkingContent) {
+        checkAbort()
+        yield {
+          type: 'thinking_delta',
+          delta: char,
+        }
+        await delay(Math.random() * 15 + 5) // 5-20ms per character (faster than content)
+      }
+      await delay(300)
+      checkAbort()
     }
 
     // 3. Stream the text content
@@ -311,6 +338,38 @@ export async function* mockAgentStream(
       }
     }
   }
+}
+
+/**
+ * Generate mock thinking content based on user message and tools
+ */
+function generateMockThinking(userMessage: string, tools: string[]): string {
+  const thoughts = [
+    `Let me analyze this request: "${userMessage.slice(0, 50)}${userMessage.length > 50 ? '...' : ''}"`,
+    '',
+    'Breaking down the task:',
+    '1. First, I need to understand what the user is asking for',
+    '2. Then determine which browser actions are needed',
+    '3. Finally, execute the actions in the correct order',
+    '',
+  ]
+
+  if (tools.length > 0) {
+    thoughts.push(`I'll need to use ${tools.length} tool(s): ${tools.slice(0, 3).join(', ')}${tools.length > 3 ? '...' : ''}`)
+    thoughts.push('')
+    thoughts.push('Reasoning through the approach:')
+    thoughts.push('- The user wants me to interact with the browser')
+    thoughts.push('- I should be careful not to make unnecessary API calls')
+    thoughts.push('- Let me proceed with the minimal set of actions needed')
+  } else {
+    thoughts.push('This appears to be a simple query that I can answer directly.')
+    thoughts.push('No browser tools are needed for this response.')
+  }
+
+  thoughts.push('')
+  thoughts.push('Proceeding with the response...')
+
+  return thoughts.join('\n')
 }
 
 /**

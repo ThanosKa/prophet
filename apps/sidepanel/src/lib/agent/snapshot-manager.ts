@@ -127,6 +127,13 @@ class SnapshotManagerClass {
       if (!node.role?.value) continue
       if (!node.backendDOMNodeId) continue
 
+      // Skip our Prophet overlay elements - the STOP button has text-transform: uppercase
+      const nodeName = node.name?.value
+      if (typeof nodeName === 'string') {
+        const lowerName = nodeName.toLowerCase()
+        if (lowerName === 'stop' || lowerName.includes('prophet-agent')) continue
+      }
+
       const role = node.role.value.toLowerCase()
 
       if (INTERACTIVE_ROLES.has(role) || SEMANTIC_ROLES.has(role)) {

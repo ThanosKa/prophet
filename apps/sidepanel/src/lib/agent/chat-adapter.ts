@@ -29,6 +29,7 @@ export interface UIMessage {
     id: string
     role: 'user' | 'assistant'
     parts: MessagePart[]
+    thinkingContent?: string
     createdAt: Date
     inputTokens?: number
     outputTokens?: number
@@ -84,6 +85,17 @@ export class ChatAdapter {
                             m.parts.push({ type: 'text', text })
                         }
 
+                        return m
+                    })
+                    if (msg) changedMessages.push(msg)
+                    this.status = 'streaming'
+                }
+                break
+
+            case 'thinking_delta':
+                if (event.delta) {
+                    const msg = this.updateCurrentAssistant((m) => {
+                        m.thinkingContent = (m.thinkingContent || '') + event.delta
                         return m
                     })
                     if (msg) changedMessages.push(msg)
@@ -163,20 +175,11 @@ export class ChatAdapter {
                 break
 
             case 'execution_complete':
-                if (event.finalOutput) {
+                // Update metrics only - keep accumulated streaming content
+                if (event.metrics) {
                     const msg = this.updateCurrentAssistant((m) => {
-                        // Replace all text parts with final output
-                        // This removes intermediate narration (thinking) and keeps only the final response
-                        const toolParts = m.parts.filter((p): p is ToolPart => p.type === 'tool')
-                        m.parts = [
-                            { type: 'text', text: event.finalOutput! },
-                            ...toolParts,
-                        ]
-                        
-                        if (event.metrics) {
-                            m.inputTokens = event.metrics.inputTokens
-                            m.outputTokens = event.metrics.outputTokens
-                        }
+                        m.inputTokens = event.metrics!.inputTokens
+                        m.outputTokens = event.metrics!.outputTokens
                         return m
                     })
                     if (msg) changedMessages.push(msg)

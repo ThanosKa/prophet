@@ -17,6 +17,7 @@ interface UIState {
   maxContextTokens: number
   selectedModel: AgentModel
   theme: Theme
+  enableThinking: boolean
 
   setDrawerOpen: (open: boolean) => void
   toggleDrawer: () => void
@@ -28,6 +29,8 @@ interface UIState {
   getContextPercentage: () => number
   setTheme: (theme: Theme) => void
   toggleTheme: () => void
+  setEnableThinking: (enable: boolean) => void
+  toggleThinking: () => void
 }
 
 export const useUIStore = create<UIState>()(
@@ -42,6 +45,7 @@ export const useUIStore = create<UIState>()(
       maxContextTokens: MAX_CONTEXT_TOKENS,
       selectedModel: DEFAULT_AGENT_MODEL,
       theme: 'dark' as Theme,
+      enableThinking: false,
 
       setDrawerOpen: (open) => set({ drawerOpen: open }),
 
@@ -100,12 +104,20 @@ export const useUIStore = create<UIState>()(
         set((state) => ({
           theme: state.theme === 'dark' ? 'light' : 'dark',
         })),
+
+      setEnableThinking: (enable) => set({ enableThinking: enable }),
+
+      toggleThinking: () =>
+        set((state) => ({
+          enableThinking: !state.enableThinking,
+        })),
     }),
     {
       name: 'prophet-ui-store',
       partialize: (state) => ({
         selectedModel: state.selectedModel,
         theme: state.theme,
+        enableThinking: state.enableThinking,
       }),
     }
   )

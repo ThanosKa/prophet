@@ -18,6 +18,7 @@ interface StreamAgentChatOptions {
   toolResults?: ToolResult[];
   previousContent?: ContentBlock[];
   image?: ImageData;
+  enableThinking?: boolean;
 }
 
 async function* streamAgentChat(
@@ -31,7 +32,7 @@ async function* streamAgentChat(
 
   // baseUrl can be full URL like "http://localhost:3000/api/agent/chat/dev"
   // or base URL like "http://localhost:3000" - handle both cases
-  const url = baseUrl.includes('/api/')
+  const url = baseUrl.includes("/api/")
     ? new URL(baseUrl)
     : new URL("/api/agent/chat", baseUrl);
 
@@ -121,7 +122,8 @@ export async function* runAgentLoop(
   userMessage: string,
   model: AgentModel = DEFAULT_AGENT_MODEL,
   image?: ImageData,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  enableThinking?: boolean
 ): AsyncGenerator<AgentLoopEvent> {
   let previousContent: ContentBlock[] = [];
   let turnCount = 0;
@@ -132,16 +134,17 @@ export async function* runAgentLoop(
   while (turnCount < maxTurns) {
     if (signal?.aborted) {
       yield {
-        type: 'error',
-        error: 'Agent execution cancelled by user',
-      }
-      return
+        type: "error",
+        error: "Agent execution cancelled by user",
+      };
+      return;
     }
 
     turnCount++;
     const streamOptions: StreamAgentChatOptions = {
       chatId,
       model,
+      enableThinking,
     };
 
     if (isFirstRequest) {
@@ -153,6 +156,9 @@ export async function* runAgentLoop(
     } else {
       streamOptions.previousContent = previousContent;
       streamOptions.toolResults = toolResults;
+      // Disable thinking on continuation turns - Claude's API requires thinking blocks
+      // to be included in previousContent, but we only have text/tool_use blocks
+      streamOptions.enableThinking = false;
     }
 
     let hasToolUse = false;
@@ -163,7 +169,10 @@ export async function* runAgentLoop(
     for await (const event of streamAgentChat(baseUrl, streamOptions)) {
       switch (event.type) {
         case "session_created":
-          yield { type: "session_created", sessionId: event.sessionId || chatId };
+          yield {
+            type: "session_created",
+            sessionId: event.sessionId || chatId,
+          };
           break;
 
         case "content_delta": {
@@ -178,6 +187,17 @@ export async function* runAgentLoop(
           break;
         }
 
+        case "thinking_delta": {
+          const delta = event.delta || "";
+          if (delta) {
+            yield {
+              type: "thinking_delta",
+              delta,
+            };
+          }
+          break;
+        }
+
         case "tool_call_start":
           // Ignore server-provided tool_call_start events.
           // We emit tool_call_start deterministically from the corresponding tool_use
@@ -185,12 +205,16 @@ export async function* runAgentLoop(
           break;
 
         case "tool_use": {
-          let toolUse = event.toolUse || (event.id && event.name ? {
-            type: "tool_use" as const,
-            id: event.id,
-            name: event.name as ToolName,
-            input: event.input || {}
-          } : null);
+          let toolUse =
+            event.toolUse ||
+            (event.id && event.name
+              ? {
+                  type: "tool_use" as const,
+                  id: event.id,
+                  name: event.name as ToolName,
+                  input: event.input || {},
+                }
+              : null);
 
           if (toolUse) {
             // Ensure the type property is set for message history persistence
@@ -225,10 +249,7 @@ export async function* runAgentLoop(
               );
 
               let resultContent: string;
-              if (
-                toolUse.name === "take_screenshot" &&
-                toolResult.success
-              ) {
+              if (toolUse.name === "take_screenshot" && toolResult.success) {
                 const screenshot = toolResult.data as ScreenshotResult;
                 resultContent = `[Screenshot captured: ${screenshot.mimeType}, base64 data available]`;
               } else if (toolResult.success) {

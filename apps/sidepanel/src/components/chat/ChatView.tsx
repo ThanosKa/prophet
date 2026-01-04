@@ -1,5 +1,6 @@
+import { useRef } from 'react'
 import { ExternalLink, X } from 'lucide-react'
-import { EnhancedMessageList } from './EnhancedMessageList'
+import { EnhancedMessageList, type EnhancedMessageListHandle } from './EnhancedMessageList'
 import { EnhancedChatInput } from './EnhancedChatInput'
 import { Suggestions, Suggestion } from '@/components/ai-elements/suggestion'
 import { config } from '@/lib/config'
@@ -49,6 +50,7 @@ export function ChatView({
   errorInfo,
   onDismissError,
 }: ChatViewProps) {
+  const messageListRef = useRef<EnhancedMessageListHandle>(null)
   const showSuggestions = suggestions && suggestions.length > 0 && messages.length === 0
 
   const handleUpgradeClick = () => {
@@ -59,12 +61,19 @@ export function ChatView({
   }
 
   const handleSuggestionClick = (suggestion: string) => {
+    messageListRef.current?.scrollToBottom()
     onSend(suggestion)
+  }
+
+  const handleSend = (message: string, image?: ImageData) => {
+    messageListRef.current?.scrollToBottom()
+    onSend(message, image)
   }
 
   return (
     <div className="flex flex-col h-full min-h-0">
       <EnhancedMessageList
+        ref={messageListRef}
         messages={messages}
         isLoading={isLoading}
         isStreaming={isStreaming}
@@ -112,7 +121,7 @@ export function ChatView({
         </div>
       )}
       <EnhancedChatInput
-        onSend={onSend}
+        onSend={handleSend}
         disabled={disabled}
         isRunning={Boolean(isStreaming)}
         onAbort={onAbort}

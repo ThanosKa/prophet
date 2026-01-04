@@ -44,6 +44,7 @@ export interface Message {
   chatId: string
   role: 'user' | 'assistant'
   content: string
+  thinkingContent?: string
   model?: string | null
   inputTokens?: number | null
   outputTokens?: number | null

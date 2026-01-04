@@ -14,7 +14,7 @@ export interface AgentMessage extends Message {
 
 export function useAgentChat() {
   const { addMessage: addLegacyMessage, updateMessage: updateLegacyMessage, setStreaming } = useChatStore()
-  const { selectedModel, addContextUsage } = useUIStore()
+  const { selectedModel, addContextUsage, enableThinking } = useUIStore()
   const { createAbortController, abort: abortAgentStore, setActive, clearActions } = useAgentStore()
   const [error, setError] = useState<string | null>(null)
   const [errorInfo, setErrorInfo] = useState<{ code?: string; pricingUrl?: string } | null>(null)
@@ -134,7 +134,7 @@ export function useAgentChat() {
         // Use dev endpoint when VITE_USE_DEV_API=true to bypass credits
         // Otherwise use production endpoint
         const eventStream = config.useMockApi
-          ? mockAgentStream(chatId, content, selectedModel, abortController.signal)
+          ? mockAgentStream(chatId, content, selectedModel, abortController.signal, enableThinking)
           : runAgentLoop(
               config.useDevApi
                 ? `${config.apiUrl}/api/agent/chat/dev`
@@ -143,7 +143,8 @@ export function useAgentChat() {
               content,
               selectedModel,
               image,
-              abortController.signal
+              abortController.signal,
+              enableThinking
             )
 
         for await (const event of eventStream) {
@@ -174,7 +175,9 @@ export function useAgentChat() {
             const toolCalls = adapter.extractToolCalls(uiMessage)
             updateLegacyMessage(chatId, uiMessage.id, {
               content: adapter.getTextContent(uiMessage),
+              thinkingContent: uiMessage.thinkingContent,
               toolCalls: toolCalls.length > 0 ? (toolCalls as ToolCall[]) : undefined,
+              parts: uiMessage.parts,
               inputTokens: uiMessage.inputTokens,
               outputTokens: uiMessage.outputTokens,
             })
@@ -237,10 +240,12 @@ export function useAgentChat() {
       clearActions,
       cleanupOverlayListeners,
       sendAgentActiveToTab,
+      enableThinking,
     ]
   )
 
   const abort = useCallback(() => {
+    setStreaming(false)  // Immediate feedback - stop spinner
     if (activeStreamRef.current) {
       activeStreamRef.current.abort()
       activeStreamRef.current = null
@@ -248,7 +253,7 @@ export function useAgentChat() {
     abortAgentStore()
     adapter.clear()
     setCurrentToolCall(null)
-  }, [abortAgentStore, adapter])
+  }, [abortAgentStore, adapter, setStreaming])
 
   return {
     sendMessage,

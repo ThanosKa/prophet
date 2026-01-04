@@ -1,5 +1,5 @@
-import { ArrowUp } from 'lucide-react'
-import { ModelSelector } from './ModelSelector'
+import { ArrowUp, Brain } from "lucide-react";
+import { ModelSelector } from "./ModelSelector";
 import {
   Context,
   ContextContent,
@@ -11,11 +11,10 @@ import {
   ContextOutputUsage,
   ContextReasoningUsage,
   ContextTrigger,
-} from '@/components/ai-elements/context'
-import { useUIStore } from '@/store/uiStore'
+} from "@/components/ai-elements/context";
+import { useUIStore } from "@/store/uiStore";
 import {
   PromptInput,
-  PromptInputButton,
   PromptInputActionAddAttachments,
   PromptInputActionMenu,
   PromptInputActionMenuContent,
@@ -29,26 +28,26 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
-} from '@/components/ai-elements/prompt-input'
+} from "@/components/ai-elements/prompt-input";
 
 interface ImageData {
-  base64: string
-  mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+  base64: string;
+  mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 }
 
 interface EnhancedChatInputProps {
-  onSend: (message: string, image?: ImageData) => void
-  onAbort?: () => void
-  disabled?: boolean
-  placeholder?: string
-  isRunning?: boolean
+  onSend: (message: string, image?: ImageData) => void;
+  onAbort?: () => void;
+  disabled?: boolean;
+  placeholder?: string;
+  isRunning?: boolean;
 }
 
 export function EnhancedChatInput({
   onSend,
   onAbort,
   disabled,
-  placeholder = 'Ask anything...',
+  placeholder = "Ask anything...",
   isRunning = false,
 }: EnhancedChatInputProps) {
   const {
@@ -59,34 +58,36 @@ export function EnhancedChatInput({
     contextCachedInputTokens,
     maxContextTokens,
     selectedModel,
-  } = useUIStore()
+    enableThinking,
+    toggleThinking,
+  } = useUIStore();
 
   const fileToImageData = async (file: File): Promise<ImageData> => {
     const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = () => reject(new Error('Failed to read file'))
-      reader.readAsDataURL(file)
-    })
-    const base64 = dataUrl.split(',')[1] ?? ''
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+    const base64 = dataUrl.split(",")[1] ?? "";
     return {
       base64,
-      mediaType: file.type as ImageData['mediaType'],
-    }
-  }
+      mediaType: file.type as ImageData["mediaType"],
+    };
+  };
 
   const handleSubmit = async (message: PromptInputMessage) => {
-    if (disabled) return
-    const file = message.files?.[0]
-    const imageForApi = file ? await fileToImageData(file) : undefined
+    if (disabled) return;
+    const file = message.files?.[0];
+    const imageForApi = file ? await fileToImageData(file) : undefined;
     const text =
       message.text && message.text.trim().length > 0
         ? message.text
         : file
-          ? 'Sent with attachments'
-          : ''
-    onSend(text, imageForApi)
-  }
+        ? "Sent with attachments"
+        : "";
+    onSend(text, imageForApi);
+  };
 
   return (
     <div className="p-3 bg-[var(--chatbot-bg)] shrink-0">
@@ -116,6 +117,23 @@ export function EnhancedChatInput({
               </PromptInputActionMenuContent>
             </PromptInputActionMenu>
             <ModelSelector disabled={disabled} compact />
+            <button
+              type="button"
+              onClick={toggleThinking}
+              disabled={disabled}
+              className={`flex items-center justify-center h-7 w-7 rounded-md transition-colors ${
+                enableThinking
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              } disabled:opacity-50`}
+              title={
+                enableThinking
+                  ? "Deep thinking enabled"
+                  : "Enable deep thinking"
+              }
+            >
+              <Brain className="h-3.5 w-3.5" />
+            </button>
             <Context
               maxTokens={maxContextTokens}
               modelId={selectedModel}
@@ -143,15 +161,25 @@ export function EnhancedChatInput({
           </PromptInputTools>
 
           {isRunning ? (
-            <PromptInputButton
+            <button
+              type="button"
               onClick={() => onAbort?.()}
               disabled={!onAbort}
+              className="flex items-center justify-center h-8 w-8 rounded-full bg-muted hover:bg-muted/80 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-4 border-border"
+              title="Stop generating"
             >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                <rect x="4" y="4" width="16" height="16" rx="2" />
+              <svg viewBox="0 0 24 24" className="h-5 w-5 text-foreground">
+                <rect
+                  x="5"
+                  y="5"
+                  width="14"
+                  height="14"
+                  rx="2"
+                  fill="currentColor"
+                />
               </svg>
               <span className="sr-only">Stop</span>
-            </PromptInputButton>
+            </button>
           ) : (
             <PromptInputSubmit disabled={disabled}>
               <ArrowUp className="h-4 w-4" />
@@ -161,5 +189,5 @@ export function EnhancedChatInput({
         </PromptInputFooter>
       </PromptInput>
     </div>
-  )
+  );
 }

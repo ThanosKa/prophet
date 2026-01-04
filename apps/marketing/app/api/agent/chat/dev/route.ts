@@ -42,7 +42,7 @@ export async function POST(req: Request) {
 
     logger.debug({}, '[DEV] Request validation passed')
 
-    const { chatId, userMessage, toolResults, previousContent } = validation.data
+    const { chatId, userMessage, toolResults, previousContent, enableThinking } = validation.data
     const model = (validation.data.model ?? DEFAULT_AGENT_MODEL) as ModelName
 
     // Load message history for the chat
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
     }
 
     // DEV LOGGING: Log request to LLM
-    await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT)
+    await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking })
 
     const encoder = new TextEncoder()
     let controllerClosed = false
@@ -139,14 +139,26 @@ export async function POST(req: Request) {
         const contentBlocks: ContentBlockParam[] = []
 
         try {
-          logger.debug({ model, maxTokens: AGENT_MAX_TOKENS }, '[DEV] Creating Anthropic stream')
+          logger.debug({ model, maxTokens: enableThinking ? 16000 : AGENT_MAX_TOKENS, enableThinking }, '[DEV] Creating Anthropic stream')
 
           const anthropicStream = await anthropic.messages.stream({
             model,
-            max_tokens: AGENT_MAX_TOKENS,
-            system: AGENT_SYSTEM_PROMPT,
+            max_tokens: enableThinking ? 16000 : AGENT_MAX_TOKENS,
+            system: [
+              {
+                type: 'text',
+                text: AGENT_SYSTEM_PROMPT,
+                cache_control: { type: 'ephemeral' },
+              },
+            ],
             tools: AGENT_TOOLS,
             messages: anthropicMessages,
+            ...(enableThinking && {
+              thinking: {
+                type: 'enabled',
+                budget_tokens: 8000,
+              },
+            }),
           })
 
           logger.debug({}, '[DEV] Anthropic stream created, processing events')
@@ -184,6 +196,11 @@ export async function POST(req: Request) {
                 safeEnqueue(JSON.stringify({
                   type: 'content_delta',
                   delta: text,
+                }))
+              } else if (event.delta.type === 'thinking_delta') {
+                safeEnqueue(JSON.stringify({
+                  type: 'thinking_delta',
+                  delta: event.delta.thinking,
                 }))
               } else if (event.delta.type === 'input_json_delta' && currentToolUse) {
                 currentToolUse.input += event.delta.partial_json
@@ -269,23 +286,27 @@ export async function POST(req: Request) {
           await devLogger.logResponse(fullTextResponse, { input_tokens: inputTokens, output_tokens: outputTokens })
 
           // Save assistant message with tool calls if any
-          const assistantContent = fullTextResponse || "";
+          // Only save if there's actual content (text or tool calls)
           const assistantToolCalls = contentBlocks.filter(b => b.type === "tool_use");
+          const hasContent = fullTextResponse.trim().length > 0 || assistantToolCalls.length > 0;
 
           const MAX_CONTEXT_TOKENS = 200000;
           const newContextTokens = Math.min(inputTokens + outputTokens, MAX_CONTEXT_TOKENS);
 
           await db.transaction(async (tx) => {
-            await tx.insert(messages).values({
-              chatId,
-              role: "assistant",
-              content: assistantContent,
-              model,
-              inputTokens,
-              outputTokens,
-              costCents,
-              toolCalls: assistantToolCalls.length > 0 ? JSON.stringify(assistantToolCalls) : null,
-            });
+            // Only save assistant message if it has meaningful content
+            if (hasContent) {
+              await tx.insert(messages).values({
+                chatId,
+                role: "assistant",
+                content: fullTextResponse,
+                model,
+                inputTokens,
+                outputTokens,
+                costCents,
+                toolCalls: assistantToolCalls.length > 0 ? JSON.stringify(assistantToolCalls) : null,
+              });
+            }
 
             await tx
               .update(chats)

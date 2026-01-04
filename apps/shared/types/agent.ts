@@ -31,6 +31,7 @@ export type AgentLoopEvent =
   | { type: "session_created"; sessionId: string }
   | { type: "session_resumed"; sessionId: string; itemCount: number }
   | { type: "content_delta"; delta: string }
+  | { type: "thinking_delta"; delta: string }
   | { type: "tool_call_start"; toolName: ToolName; params: unknown; toolCallId: string }
   | { type: "tool_call_complete"; toolName: ToolName; result: unknown; toolCallId: string }
   | { type: "tool_call_error"; toolName: ToolName; error: string; toolCallId: string }
@@ -44,6 +45,7 @@ export type AgentEvent = AgentLoopEvent;
 export interface AgentStreamEvent {
   type:
     | "content_delta"
+    | "thinking_delta"
     | "tool_use_start"
     | "tool_use"
     | "tool_use_complete"

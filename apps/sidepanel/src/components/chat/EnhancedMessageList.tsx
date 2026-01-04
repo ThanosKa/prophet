@@ -1,5 +1,5 @@
 import { Copy, Check, Loader2 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { useAgentStore } from "@/store/agentStore";
@@ -16,16 +16,19 @@ import {
   MessageActions,
   MessageResponse,
 } from "@/components/ai-elements/message";
-import {
-  Reasoning,
-  ReasoningTrigger,
-  ReasoningContent,
-} from "@/components/ai-elements/reasoning";
 import { ToolCallCollapsible } from "./ToolCallCollapsible";
+import { useStickToBottomContext } from "use-stick-to-bottom";
 import type { Message as MessageType, ToolCall } from "@prophet/shared";
+import type { MessagePart, TextPart, ToolPart } from "@/lib/agent/chat-adapter";
 
 interface AgentMessage extends MessageType {
   toolCalls?: ToolCall[];
+  thinkingContent?: string;
+  parts?: MessagePart[];
+}
+
+export interface EnhancedMessageListHandle {
+  scrollToBottom: () => void;
 }
 
 interface EnhancedMessageListProps {
@@ -36,6 +39,18 @@ interface EnhancedMessageListProps {
   hasMore?: boolean;
   isLoadingOlder?: boolean;
   onLoadOlder?: () => void;
+}
+
+function ScrollTrigger({ scrollRef }: { scrollRef: React.RefObject<{ scrollToBottom: () => void } | null> }) {
+  const { scrollToBottom } = useStickToBottomContext();
+
+  useEffect(() => {
+    if (scrollRef.current === null) {
+      (scrollRef as React.MutableRefObject<{ scrollToBottom: () => void } | null>).current = { scrollToBottom };
+    }
+  }, [scrollToBottom, scrollRef]);
+
+  return null;
 }
 
 function MessageWithActions({
@@ -50,9 +65,10 @@ function MessageWithActions({
   const [copied, setCopied] = useState(false);
   const isAssistant = message.role === "assistant";
   const displayContent = message.content;
-  const hasToolCalls = message.toolCalls && message.toolCalls.length > 0;
-  const isExecutingTool = Boolean(currentToolCall);
-  const hasActions = hasToolCalls || isExecutingTool;
+  const hasParts = message.parts && message.parts.length > 0;
+  const hasThinking = Boolean(message.thinkingContent);
+  // Only show thinking while streaming AND before we have actual content
+  const showThinking = hasThinking && isStreaming && !displayContent && !hasParts;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(displayContent);
@@ -60,51 +76,76 @@ function MessageWithActions({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const renderInlineParts = () => {
+    if (!message.parts || message.parts.length === 0) {
+      if (!displayContent && isStreaming) {
+        return (
+          <Shimmer duration={1.5} className="text-sm">
+            Working…
+          </Shimmer>
+        );
+      }
+      return displayContent ? (
+        <MessageResponse>{displayContent}</MessageResponse>
+      ) : null;
+    }
+
+    return (
+      <div className="space-y-2">
+        {message.parts.map((part, index) => {
+          if (part.type === "text") {
+            const textPart = part as TextPart;
+            return textPart.text.trim() ? (
+              <MessageResponse key={index}>{textPart.text}</MessageResponse>
+            ) : null;
+          } else {
+            const toolPart = part as ToolPart;
+            const toolCall: ToolCall = {
+              id: toolPart.toolCallId,
+              name: toolPart.toolName as ToolCall["name"],
+              input: toolPart.input || {},
+              result: toolPart.output,
+            };
+            return (
+              <ToolCallCollapsible
+                key={toolPart.toolCallId}
+                toolCall={toolCall}
+                isExecuting={toolPart.state === "executing"}
+              />
+            );
+          }
+        })}
+        {currentToolCall && !message.parts.some(
+          (p) => p.type === "tool" && (p as ToolPart).toolCallId === currentToolCall.id
+        ) && (
+          <ToolCallCollapsible toolCall={currentToolCall} isExecuting />
+        )}
+      </div>
+    );
+  };
+
   return (
     <Message from={message.role} key={message.id}>
-      {isAssistant && (hasToolCalls || isExecutingTool) && (
-        <Reasoning isStreaming={Boolean(isStreaming)} defaultOpen={Boolean(isStreaming)}>
-          <ReasoningTrigger
-            getThinkingMessage={() =>
-              isStreaming ? (
-                <Shimmer duration={1} className="text-sm">
-                  Running actions…
-                </Shimmer>
-              ) : (
-                <p>Actions</p>
-              )
-            }
-          />
-          <ReasoningContent>
-            <div className="space-y-1">
-              {message.toolCalls?.map((tc) => (
-                <ToolCallCollapsible key={tc.id} toolCall={tc} />
-              ))}
-              {currentToolCall && (
-                <ToolCallCollapsible toolCall={currentToolCall} isExecuting />
-              )}
-            </div>
-          </ReasoningContent>
-        </Reasoning>
-      )}
-
       <MessageContent>
         {message.role === "user" ? (
           <p className="whitespace-pre-wrap break-words text-sm">
             {displayContent}
           </p>
-        ) : !displayContent && isStreaming && !hasActions ? (
-          <Shimmer duration={1.5} className="text-sm">
-            Working…
-          </Shimmer>
-        ) : displayContent ? (
-          isStreaming ? (
-            <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
-              {displayContent}
-            </p>
-          ) : (
+        ) : showThinking ? (
+          // Show thinking content while waiting for actual response
+          <p className="whitespace-pre-wrap break-words text-xs text-muted-foreground/70">
+            {message.thinkingContent}
+          </p>
+        ) : isAssistant ? (
+          hasParts ? (
+            renderInlineParts()
+          ) : displayContent ? (
             <MessageResponse>{displayContent}</MessageResponse>
-          )
+          ) : isStreaming ? (
+            <Shimmer duration={1.5} className="text-sm">Working…</Shimmer>
+          ) : null
+        ) : displayContent ? (
+          <MessageResponse>{displayContent}</MessageResponse>
         ) : null}
       </MessageContent>
 
@@ -128,80 +169,89 @@ function MessageWithActions({
   );
 }
 
-export function EnhancedMessageList({
-  messages,
-  isLoading,
-  isStreaming,
-  currentToolCall,
-  hasMore,
-  isLoadingOlder,
-  onLoadOlder,
-}: EnhancedMessageListProps) {
-  const sentinelRef = useRef<HTMLDivElement>(null);
+export const EnhancedMessageList = forwardRef<EnhancedMessageListHandle, EnhancedMessageListProps>(
+  function EnhancedMessageList(
+    {
+      messages,
+      isLoading,
+      isStreaming,
+      currentToolCall,
+      hasMore,
+      isLoadingOlder,
+      onLoadOlder,
+    },
+    ref
+  ) {
+    const sentinelRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<{ scrollToBottom: () => void } | null>(null);
 
-  useEffect(() => {
-    if (!hasMore || isLoadingOlder || !onLoadOlder) return;
+    useImperativeHandle(ref, () => ({
+      scrollToBottom: () => scrollRef.current?.scrollToBottom(),
+    }));
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          onLoadOlder();
-        }
-      },
-      { threshold: 0.1 }
-    );
+    useEffect(() => {
+      if (!hasMore || isLoadingOlder || !onLoadOlder) return;
 
-    if (sentinelRef.current) {
-      observer.observe(sentinelRef.current);
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            onLoadOlder();
+          }
+        },
+        { threshold: 0.1 }
+      );
+
+      if (sentinelRef.current) {
+        observer.observe(sentinelRef.current);
+      }
+
+      return () => observer.disconnect();
+    }, [hasMore, isLoadingOlder, onLoadOlder]);
+
+    if (messages.length === 0 && !isLoading) {
+      return (
+        <ConversationEmptyState
+          title="Start a conversation"
+          description="Ask Prophet anything to get started with your browser tasks."
+        />
+      );
     }
 
-    return () => observer.disconnect();
-  }, [hasMore, isLoadingOlder, onLoadOlder]);
-
-  if (messages.length === 0 && !isLoading) {
     return (
-      <ConversationEmptyState
-        title="Start a conversation"
-        description="Ask Prophet anything to get started with your browser tasks."
-      />
+      <Conversation>
+        <ScrollTrigger scrollRef={scrollRef} />
+        <ConversationContent>
+          <div ref={sentinelRef} className="h-1" />
+          {isLoadingOlder && (
+            <div className="flex items-center justify-center py-2">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          )}
+          {!isLoadingOlder && hasMore && (
+            <div className="h-8 flex items-center justify-center">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/20" />
+            </div>
+          )}
+          {messages.map((message, index) => {
+            const isLast = index === messages.length - 1;
+            const isLastAssistant = isLast && message.role === "assistant";
+
+            return (
+              <MessageWithActions
+                key={message.id}
+                message={message}
+                isStreaming={isLastAssistant && isStreaming}
+                currentToolCall={isLastAssistant ? currentToolCall : undefined}
+              />
+            );
+          })}
+          {isStreaming && <AgentStatusDisplay />}
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
     );
   }
-
-  return (
-    <Conversation>
-      <ConversationContent>
-        <div ref={sentinelRef} className="h-1" />
-        {isLoadingOlder && (
-          <div className="flex items-center justify-center py-2">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </div>
-        )}
-        {!isLoadingOlder && hasMore && (
-          <div className="h-8 flex items-center justify-center">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/20" />
-          </div>
-        )}
-        {messages.map((message, index) => {
-          const isLast = index === messages.length - 1;
-          const isLastAssistant = isLast && message.role === "assistant";
-
-          return (
-            <MessageWithActions
-              key={message.id}
-              message={message}
-              isStreaming={isLastAssistant && isStreaming}
-              currentToolCall={isLastAssistant ? currentToolCall : undefined}
-            />
-          );
-        })}
-        {isStreaming && (
-          <AgentStatusDisplay />
-        )}
-      </ConversationContent>
-      <ConversationScrollButton />
-    </Conversation>
-  );
-}
+);
 
 function AgentStatusDisplay() {
   const actions = useAgentStore((state) => state.actions);

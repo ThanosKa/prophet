@@ -183,6 +183,7 @@ export const agentChatRequestSchema = z.object({
   toolResults: z.array(toolResultSchema).optional(),
   previousContent: z.array(contentBlockSchema).optional(),
   image: imageDataSchema.optional(),
+  enableThinking: z.boolean().optional().default(false),
 });
 
 export const agentInitialMessageSchema = z.object({

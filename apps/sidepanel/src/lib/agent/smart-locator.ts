@@ -178,12 +178,15 @@ export class SmartLocator {
     if (modifiers.includes('shift')) modifierFlags |= 8
 
     const keyCode = this.getKeyCode(key)
+    const virtualKeyCode = this.getVirtualKeyCode(key)
 
     await cdpCommander.sendCommand(tabId, 'Input.dispatchKeyEvent', {
       type: 'keyDown',
       key,
       code: keyCode,
       modifiers: modifierFlags,
+      windowsVirtualKeyCode: virtualKeyCode,
+      nativeVirtualKeyCode: virtualKeyCode,
     })
 
     if (key.length === 1 && modifierFlags === 0) {
@@ -200,6 +203,8 @@ export class SmartLocator {
       key,
       code: keyCode,
       modifiers: modifierFlags,
+      windowsVirtualKeyCode: virtualKeyCode,
+      nativeVirtualKeyCode: virtualKeyCode,
     })
   }
 
@@ -352,6 +357,42 @@ export class SmartLocator {
     }
 
     return key
+  }
+
+  private getVirtualKeyCode(key: string): number {
+    const virtualKeyMap: Record<string, number> = {
+      Enter: 13,
+      Tab: 9,
+      Escape: 27,
+      Backspace: 8,
+      Delete: 46,
+      ArrowUp: 38,
+      ArrowDown: 40,
+      ArrowLeft: 37,
+      ArrowRight: 39,
+      Home: 36,
+      End: 35,
+      PageUp: 33,
+      PageDown: 34,
+      Space: 32,
+      ' ': 32,
+    }
+
+    if (virtualKeyMap[key] !== undefined) {
+      return virtualKeyMap[key]
+    }
+
+    if (key.length === 1) {
+      const code = key.toUpperCase()
+      if (code >= 'A' && code <= 'Z') {
+        return code.charCodeAt(0)
+      }
+      if (code >= '0' && code <= '9') {
+        return code.charCodeAt(0)
+      }
+    }
+
+    return 0
   }
 }
 
