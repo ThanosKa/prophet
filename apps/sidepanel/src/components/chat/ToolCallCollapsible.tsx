@@ -174,7 +174,7 @@ export function ToolCallCollapsible({
       <CollapsibleTrigger asChild>
         <button
           className={cn(
-            'flex items-center gap-2 w-full px-2 py-1.5 rounded-md border text-xs transition-colors',
+            'cursor-pointer flex items-center gap-2 w-full px-2 py-1.5 rounded-md border text-xs transition-colors',
             getStatusStyles(),
             'hover:bg-accent/50 group'
           )}

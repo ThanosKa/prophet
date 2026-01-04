@@ -1,14 +1,14 @@
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import type { Chat } from '@prophet/shared'
-import { cn } from '@/lib/utils'
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import type { Chat } from "@prophet/shared";
+import { cn } from "@/lib/utils";
 
 interface ChatListProps {
-  chats: Chat[]
-  activeId?: string | null
-  onSelectChat: (chatId: string) => void
-  onDeleteChat: (chatId: string) => void
-  onNewChat: () => void
+  chats: Chat[];
+  activeId?: string | null;
+  onSelectChat: (chatId: string) => void;
+  onDeleteChat: (chatId: string) => void;
+  onNewChat: () => void;
 }
 
 export function ChatList({
@@ -37,8 +37,8 @@ export function ChatList({
               <div
                 key={chat.id}
                 className={cn(
-                  'group relative flex items-center gap-2 px-2 py-2 rounded-md hover:bg-accent cursor-pointer transition-colors',
-                  activeId === chat.id && 'bg-accent'
+                  "group relative flex items-center gap-2 px-2 py-2 rounded-md hover:bg-accent cursor-pointer transition-colors",
+                  activeId === chat.id && "bg-accent"
                 )}
                 onClick={() => onSelectChat(chat.id)}
               >
@@ -49,10 +49,10 @@ export function ChatList({
                   </p>
                 </div>
                 <button
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive rounded transition-opacity"
+                  className="cursor-pointer opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive rounded transition-opacity"
                   onClick={(e) => {
-                    e.stopPropagation()
-                    onDeleteChat(chat.id)
+                    e.stopPropagation();
+                    onDeleteChat(chat.id);
                   }}
                 >
                   ✕
@@ -63,5 +63,5 @@ export function ChatList({
         </div>
       </ScrollArea>
     </div>
-  )
+  );
 }

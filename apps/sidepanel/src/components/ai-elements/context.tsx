@@ -74,7 +74,7 @@ export function ContextTrigger() {
 
   return (
     <TooltipTrigger asChild>
-      <button className="inline-flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
+      <button className="inline-flex items-center justify-center hover:opacity-80 transition-opacity">
         <svg width="14" height="14" viewBox="0 0 24 24" className="relative">
           {/* Background circle */}
           <circle
@@ -130,7 +130,9 @@ export function ContextContentHeader() {
 
   return (
     <div className="px-3 py-2 border-b bg-muted/50">
-      <p className="text-xs font-medium text-muted-foreground">{MODEL_CONFIG.find(model => model.id === modelId)?.label || modelId}</p>
+      <p className="text-xs font-medium text-muted-foreground">
+        {MODEL_CONFIG.find((model) => model.id === modelId)?.label || modelId}
+      </p>
       <div className="mt-2 h-1.5 w-full rounded-full bg-muted-foreground/20 overflow-hidden">
         <div
           className="h-full rounded-full bg-foreground transition-all duration-300"

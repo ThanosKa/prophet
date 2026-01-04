@@ -109,7 +109,7 @@ export function ChatView({
             {errorInfo?.code === 'INSUFFICIENT_BALANCE' && (
               <button
                 onClick={handleUpgradeClick}
-                className="mt-2 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                className="cursor-pointer mt-2 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
               >
                 Upgrade your plan
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -119,7 +119,7 @@ export function ChatView({
           {onDismissError && (
             <button
               onClick={onDismissError}
-              className="shrink-0 p-1 hover:bg-destructive/10 rounded transition-colors"
+              className="cursor-pointer shrink-0 p-1 hover:bg-destructive/10 rounded transition-colors"
               aria-label="Dismiss error"
             >
               <X className="h-4 w-4 text-destructive" />

@@ -124,7 +124,7 @@ export function EnhancedChatInput({
               onClick={toggleThinking}
               disabled={disabled}
               className={cn(
-                "rounded-full transition-all flex items-center gap-2 px-1.5 py-1 border h-8",
+                "cursor-pointer rounded-full transition-all flex items-center gap-2 px-1.5 py-1 border h-8",
                 enableThinking
                   ? "bg-sky-500/15 border-sky-400 text-sky-500"
                   : "border-transparent text-muted-foreground hover:text-foreground"
@@ -191,7 +191,7 @@ export function EnhancedChatInput({
               type="button"
               onClick={() => onAbort?.()}
               disabled={!onAbort}
-              className="flex items-center justify-center h-8 w-8 rounded-full bg-muted hover:bg-muted/80 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-4 border-border"
+              className="flex items-center justify-center h-8 w-8 rounded-full bg-muted hover:bg-muted/60 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-4 border-border"
               title="Stop generating"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5 text-foreground">
