@@ -1,4 +1,6 @@
 import { ArrowUp, Brain } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { ModelSelector } from "./ModelSelector";
 import {
   Context,
@@ -121,18 +123,42 @@ export function EnhancedChatInput({
               type="button"
               onClick={toggleThinking}
               disabled={disabled}
-              className={`flex items-center justify-center h-7 w-7 rounded-md transition-colors ${
+              className={cn(
+                "rounded-full transition-all flex items-center gap-2 px-1.5 py-1 border h-8",
                 enableThinking
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              } disabled:opacity-50`}
+                  ? "bg-sky-500/15 border-sky-400 text-sky-500"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
               title={
                 enableThinking
                   ? "Deep thinking enabled"
                   : "Enable deep thinking"
               }
             >
-              <Brain className="h-3.5 w-3.5" />
+              <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+                <Brain
+                  className={cn(
+                    "w-4 h-4 transition-colors",
+                    enableThinking ? "text-sky-500" : "text-inherit"
+                  )}
+                />
+              </div>
+              <AnimatePresence>
+                {enableThinking && (
+                  <motion.span
+                    initial={{ width: 0, opacity: 0 }}
+                    animate={{
+                      width: "auto",
+                      opacity: 1,
+                    }}
+                    exit={{ width: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-sm overflow-hidden whitespace-nowrap text-sky-500 flex-shrink-0"
+                  >
+                    Thinking
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
             <Context
               maxTokens={maxContextTokens}

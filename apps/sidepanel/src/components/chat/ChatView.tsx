@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { ExternalLink, X } from 'lucide-react'
 import { EnhancedMessageList, type EnhancedMessageListHandle } from './EnhancedMessageList'
 import { EnhancedChatInput } from './EnhancedChatInput'
@@ -52,6 +52,13 @@ export function ChatView({
 }: ChatViewProps) {
   const messageListRef = useRef<EnhancedMessageListHandle>(null)
   const showSuggestions = suggestions && suggestions.length > 0 && messages.length === 0
+
+  useEffect(() => {
+    // Auto-scroll when new messages are added
+    if (messages.length > 0) {
+      messageListRef.current?.scrollToBottom()
+    }
+  }, [messages.length])
 
   const handleUpgradeClick = () => {
     const pricingUrl = errorInfo?.pricingUrl || '/pricing'
