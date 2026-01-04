@@ -112,17 +112,30 @@ ${jsonSent}
     /**
      * Log LLM response (after streaming completes)
      */
-    async logResponse(responseText: string, usage?: { input_tokens: number; output_tokens: number }): Promise<void> {
+    async logResponse(
+        responseText: string,
+        usage?: {
+            input_tokens: number
+            output_tokens: number
+            cache_read_input_tokens?: number
+            cache_creation_input_tokens?: number
+        }
+    ): Promise<void> {
         if (!this.isDev) return
 
         await this.ensureLogDir()
+
+        const cacheInfo = usage?.cache_read_input_tokens || usage?.cache_creation_input_tokens
+            ? `\n🎯 Cache Read: ${usage.cache_read_input_tokens || 0} tokens | Cache Creation: ${usage.cache_creation_input_tokens || 0} tokens`
+            : ''
+
         const responseBlock = `
 RESPONSE OF LLM
 ===================================================================================================
 
 ${responseText}
 
-${usage ? `\nTokens: Input=${usage.input_tokens}, Output=${usage.output_tokens}` : ''}
+${usage ? `\nTokens: Input=${usage.input_tokens}, Output=${usage.output_tokens}${cacheInfo}` : ''}
 
 ===================================================================================================
 END OF RESPONSE

@@ -1,5 +1,5 @@
 import { Copy, Check } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import {
@@ -23,6 +23,13 @@ interface EnhancedMessageListProps {
   isLoading?: boolean;
   isStreaming?: boolean;
   currentToolCall?: ToolCall | null;
+  hasMore?: boolean;
+  isLoadingOlder?: boolean;
+  onLoadOlder?: () => void;
+}
+
+export interface EnhancedMessageListHandle {
+  scrollToBottom: () => void;
 }
 
 function MessageWithActions({
@@ -91,37 +98,59 @@ function MessageWithActions({
   );
 }
 
-export function EnhancedMessageList({
-  messages,
-  isLoading,
-  isStreaming,
-  currentToolCall,
-}: EnhancedMessageListProps) {
-  if (messages.length === 0 && !isLoading) {
+export const EnhancedMessageList = forwardRef<
+  EnhancedMessageListHandle,
+  EnhancedMessageListProps
+>(
+  (
+    {
+      messages,
+      isLoading,
+      isStreaming,
+      currentToolCall,
+    },
+    ref
+  ) => {
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    useImperativeHandle(ref, () => ({
+      scrollToBottom: () => {
+        if (contentRef.current) {
+          contentRef.current.scrollTop = contentRef.current.scrollHeight;
+        }
+      },
+    }));
+
+    if (messages.length === 0 && !isLoading) {
+      return (
+        <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+          Start a conversation
+        </div>
+      );
+    }
+
     return (
-      <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
-        Start a conversation
+      <div ref={contentRef} className="flex-1 overflow-y-auto">
+        <Conversation>
+          <ConversationContent>
+            {messages.map((message, index) => {
+              const isLast = index === messages.length - 1;
+              const isLastAssistant = isLast && message.role === "assistant";
+
+              return (
+                <MessageWithActions
+                  key={message.id}
+                  message={message}
+                  isStreaming={isLastAssistant && isStreaming}
+                  currentToolCall={isLastAssistant ? currentToolCall : undefined}
+                />
+              );
+            })}
+          </ConversationContent>
+        </Conversation>
       </div>
     );
   }
+)
 
-  return (
-    <Conversation>
-      <ConversationContent>
-        {messages.map((message, index) => {
-          const isLast = index === messages.length - 1;
-          const isLastAssistant = isLast && message.role === "assistant";
-
-          return (
-            <MessageWithActions
-              key={message.id}
-              message={message}
-              isStreaming={isLastAssistant && isStreaming}
-              currentToolCall={isLastAssistant ? currentToolCall : undefined}
-            />
-          );
-        })}
-      </ConversationContent>
-    </Conversation>
-  );
-}
+EnhancedMessageList.displayName = "EnhancedMessageList"

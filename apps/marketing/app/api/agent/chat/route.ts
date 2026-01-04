@@ -324,6 +324,8 @@ export async function POST(req: Request) {
 
           const finalMessage = await anthropicStream.finalMessage();
           const stopReason = finalMessage.stop_reason;
+          const cacheReadTokens = finalMessage.usage.cache_read_input_tokens || 0;
+          const cacheCreationTokens = finalMessage.usage.cache_creation_input_tokens || 0;
 
           const costCents = calculateCostInCents(
             model,
@@ -401,13 +403,20 @@ export async function POST(req: Request) {
               costCents,
               inputTokens,
               outputTokens,
+              cacheReadTokens,
+              cacheCreationTokens,
               stopReason,
             },
             "Agent stream completed"
           );
 
           // DEV LOGGING: Log response from LLM
-          await devLogger.logResponse(fullTextResponse, { input_tokens: inputTokens, output_tokens: outputTokens });
+          await devLogger.logResponse(fullTextResponse, {
+            input_tokens: inputTokens,
+            output_tokens: outputTokens,
+            cache_read_input_tokens: cacheReadTokens,
+            cache_creation_input_tokens: cacheCreationTokens,
+          });
 
           const executionCompleteData = JSON.stringify({
             type: "execution_complete",

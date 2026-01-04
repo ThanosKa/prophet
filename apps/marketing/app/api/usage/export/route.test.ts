@@ -47,8 +47,10 @@ describe('GET /api/usage/export', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get('Content-Type')).toBe('text/csv')
-    expect(text).toContain('Date,Model,Input Tokens,Output Tokens,Cost (Credits)')
+    expect(text).toContain('Date,Model,Input Tokens,Output Tokens')
     expect(text).toContain('claude-sonnet')
+    expect(text).toContain('"100"')
+    expect(text).toContain('"50"')
   })
 
   it('returns 401 if unauthorized', async () => {
