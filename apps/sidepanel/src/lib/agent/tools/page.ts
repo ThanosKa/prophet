@@ -1,5 +1,4 @@
 import { cdpCommander, type EvaluateResult } from '../cdp-commander'
-import { smartLocator } from '../smart-locator'
 import { type ToolExecutionResult, type ScrollDirection, type PageContent } from '../types'
 
 export async function navigate(input: { url: string }): Promise<ToolExecutionResult> {
@@ -184,45 +183,6 @@ export async function getPageContent(): Promise<ToolExecutionResult> {
   }
 }
 
-export async function pressKey(input: {
-  key: string
-  modifiers?: Array<'ctrl' | 'alt' | 'shift' | 'meta'>
-}): Promise<ToolExecutionResult> {
-  const startTime = Date.now()
-
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    if (!tab?.id) {
-      return {
-        success: false,
-        error: 'No active tab found',
-        durationMs: Date.now() - startTime,
-      }
-    }
-
-    await smartLocator.pressKey(tab.id, input.key, input.modifiers || [])
-
-    const modifierStr = input.modifiers?.length
-      ? `${input.modifiers.join('+')}+`
-      : ''
-
-    return {
-      success: true,
-      data: `Pressed key: ${modifierStr}${input.key}`,
-      durationMs: Date.now() - startTime,
-    }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to press key',
-      durationMs: Date.now() - startTime,
-    }
-  }
-}
-
-/**
- * Navigate back in browser history.
- */
 export async function goBack(): Promise<ToolExecutionResult> {
   const startTime = Date.now()
 

@@ -5,7 +5,6 @@ import type {
   AgentModel,
   ToolResult,
   ContentBlock,
-  ScreenshotResult,
   ImageData,
   AgentLoopEvent,
   ToolName,
@@ -249,10 +248,7 @@ export async function* runAgentLoop(
               );
 
               let resultContent: string;
-              if (toolUse.name === "take_screenshot" && toolResult.success) {
-                const screenshot = toolResult.data as ScreenshotResult;
-                resultContent = `[Screenshot captured: ${screenshot.mimeType}, base64 data available]`;
-              } else if (toolResult.success) {
+              if (toolResult.success) {
                 resultContent =
                   typeof toolResult.data === "string"
                     ? toolResult.data

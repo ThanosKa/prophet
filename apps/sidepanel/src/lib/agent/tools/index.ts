@@ -1,8 +1,7 @@
 import { type ToolExecutionResult } from '../types'
 import { takeSnapshot, searchSnapshot } from './snapshot'
 import { clickElementByUid, fillElementByUid, hoverElementByUid } from './element'
-import { navigate, scrollPage, getPageContent, pressKey, goBack, goForward, reloadPage, getPageInfo } from './page'
-import { takeScreenshot } from './screenshot'
+import { navigate, scrollPage, getPageContent, goBack, goForward, reloadPage, getPageInfo } from './page'
 import { waitForSelector, waitForNavigation, waitForTimeout } from './wait'
 import { listTabs, switchTab, closeTab, openNewTab } from './tabs'
 
@@ -28,10 +27,6 @@ export const toolExecutors: Record<string, ToolExecutor<unknown>> = {
   scroll_page: scrollPage as ToolExecutor<unknown>,
   get_page_content: getPageContent,
   get_page_info: getPageInfo,
-  press_key: pressKey as ToolExecutor<unknown>,
-
-  // Screenshot
-  take_screenshot: takeScreenshot,
 
   // Wait
   wait_for_selector: waitForSelector as ToolExecutor<unknown>,
@@ -87,9 +82,6 @@ export {
   scrollPage,
   getPageContent,
   getPageInfo,
-  pressKey,
-  // Screenshot
-  takeScreenshot,
   // Wait
   waitForSelector,
   waitForNavigation,

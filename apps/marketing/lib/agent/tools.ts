@@ -123,20 +123,6 @@ The page will load and you should call take_snapshot afterward to see the new pa
     },
   },
   {
-    name: 'take_screenshot',
-    description: `Take a screenshot of the current browser tab.
-
-Returns a base64-encoded image of the visible portion of the page. Useful for:
-- Verifying visual state
-- Capturing page content
-- Debugging interaction issues`,
-    input_schema: {
-      type: 'object' as const,
-      properties: {},
-      required: [],
-    },
-  },
-  {
     name: 'scroll_page',
     description: `Scroll the current page in a specified direction.
 
@@ -313,36 +299,6 @@ Use this when you expect dynamic content to load, especially for SPAs (React, Vu
       type: 'object' as const,
       properties: {},
       required: [],
-    },
-  },
-  {
-    name: 'press_key',
-    description: `Press a keyboard key, optionally with modifiers.
-
-Use for:
-- Pressing Enter to submit
-- Keyboard shortcuts (Ctrl+A, Cmd+C, etc.)
-- Tab to move between fields
-- Escape to close modals
-
-Common keys: Enter, Tab, Escape, Backspace, Delete, ArrowUp, ArrowDown, ArrowLeft, ArrowRight`,
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        key: {
-          type: 'string',
-          description: 'The key to press (e.g., "Enter", "Tab", "Escape", "a", "A")',
-        },
-        modifiers: {
-          type: 'array',
-          items: {
-            type: 'string',
-            enum: ['ctrl', 'alt', 'shift', 'meta'],
-          },
-          description: 'Modifier keys to hold. "meta" is Cmd on Mac, Win on Windows.',
-        },
-      },
-      required: ['key'],
     },
   },
 ]

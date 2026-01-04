@@ -136,49 +136,6 @@ describe('runAgentLoop', () => {
       expect(toolComplete.toolName).toBe('take_snapshot')
     })
 
-    it('handles screenshot result specially', async () => {
-      const mockResponseText = `data: {"type":"tool_use","toolUse":{"type":"tool_use","id":"tool_1","name":"take_screenshot","input":{}}}\n\ndata: {"type":"done"}\n\n`
-
-      global.fetch = vi.fn(() =>
-        Promise.resolve({
-          ok: true,
-          body: {
-            getReader: () => ({
-              read: vi
-                .fn()
-                .mockResolvedValueOnce({
-                  done: false,
-                  value: new TextEncoder().encode(mockResponseText),
-                })
-                .mockResolvedValueOnce({ done: true, value: undefined }),
-              releaseLock: vi.fn(),
-            }),
-          },
-        } as any)
-      )
-
-      vi.mocked(executeToolViaBackground).mockResolvedValue({
-        success: true,
-        data: {
-          base64: 'iVBORw0KGgo...',
-          mimeType: 'image/png',
-          width: 1920,
-          height: 1080,
-        },
-        durationMs: 200,
-      })
-
-      const events: any[] = []
-      for await (const event of runAgentLoop('http://localhost:3000', 'chat-1', 'Screenshot')) {
-        events.push(event)
-        if (events.length > 10) break
-      }
-
-      const toolComplete = events.find((e) => e.type === 'tool_call_complete')
-      expect(toolComplete.result).toContain('[Screenshot captured')
-      expect(toolComplete.result).toContain('image/png')
-      expect(toolComplete.result).not.toContain('iVBORw0KGgo')
-    })
   })
 
   describe('History / Continuation', () => {
