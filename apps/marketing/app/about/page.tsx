@@ -1,6 +1,5 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
-import { CTASection } from '@/components/CTASection'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -12,53 +11,91 @@ export default function AboutPage() {
   return (
     <main className="flex flex-col min-h-screen">
       <Header />
-      <div className="py-20">
+      <div className="py-20 flex-1">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-8 text-center">About Prophet</h1>
+          <div className="text-center mb-12">
+            <h1 className="text-4xl sm:text-5xl font-bold mb-4">About Prophet</h1>
+            <p className="text-sm text-muted-foreground">AI assistance, integrated into your browser</p>
+          </div>
 
-          <div className="prose prose-lg dark:prose-invert mx-auto">
-            <h2>Our Mission</h2>
-            <p>
-              At Prophet, we believe AI assistance should be seamlessly integrated into your daily workflow.
-              Our mission is to make Claude&apos;s powerful AI capabilities accessible right from your browser,
-              without disrupting your productivity.
-            </p>
+          <div className="space-y-8">
+            <section>
+              <h2 className="text-xl font-semibold mb-3">What is Prophet?</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                Prophet is a Chrome browser extension that brings Claude AI directly into your browser&apos;s side panel.
+                Access powerful AI assistance without switching tabs, maintaining focus on your work while getting instant help.
+              </p>
+            </section>
 
-            <h2>Why Prophet?</h2>
-            <p>
-              We built Prophet because we were frustrated with constantly switching between tabs to use AI assistants.
-              Prophet brings Claude directly into your browser&apos;s side panel, allowing you to get help,
-              generate content, and solve problems without ever leaving your current task.
-            </p>
+            <section>
+              <h2 className="text-xl font-semibold mb-3">Core Features</h2>
+              <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+                <li>Side panel integration for seamless workflow</li>
+                <li>Real-time streaming responses powered by Claude Sonnet 4.5</li>
+                <li>Usage-based pricing with transparent costs</li>
+                <li>Secure authentication and data handling</li>
+                <li>Multiple subscription tiers to fit your needs</li>
+              </ul>
+            </section>
 
-            <h2>Our Values</h2>
-            <ul>
-              <li><strong>Transparency:</strong> We believe in clear, honest pricing. You only pay for what you use.</li>
-              <li><strong>Privacy:</strong> Your data is yours. We don&apos;t store your conversations or use them for training.</li>
-              <li><strong>Quality:</strong> We use the latest Claude models to ensure you get the best AI assistance available.</li>
-              <li><strong>Simplicity:</strong> Complex technology should have simple interfaces. We focus on making AI accessible to everyone.</li>
-            </ul>
+            <section>
+              <h2 className="text-xl font-semibold mb-3">Our Approach</h2>
+              <p className="text-muted-foreground leading-relaxed mb-3">
+                Prophet is built on principles that prioritize user experience and trust:
+              </p>
+              <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+                <li><strong className="text-foreground">Transparency:</strong> Clear, usage-based pricing with no hidden fees</li>
+                <li><strong className="text-foreground">Privacy:</strong> Your conversations are processed but not stored</li>
+                <li><strong className="text-foreground">Quality:</strong> Powered by Anthropic&apos;s latest Claude models</li>
+                <li><strong className="text-foreground">Accessibility:</strong> Simple interface for advanced AI capabilities</li>
+              </ul>
+            </section>
 
-            <h2>The Technology</h2>
-            <p>
-              Prophet is built on cutting-edge technology:
-            </p>
-            <ul>
-              <li>Powered by Claude Sonnet 4.5, Anthropic&apos;s most advanced AI model</li>
-              <li>Real-time streaming responses for instant feedback</li>
-              <li>Secure authentication with Clerk</li>
-              <li>Built with modern web technologies for a fast, responsive experience</li>
-            </ul>
+            <section>
+              <h2 className="text-xl font-semibold mb-3">Technology Stack</h2>
+              <p className="text-muted-foreground leading-relaxed mb-3">
+                Prophet leverages modern technologies to deliver a reliable, secure experience:
+              </p>
+              <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+                <li><strong className="text-foreground">Anthropic Claude:</strong> State-of-the-art AI model (Sonnet 4.5)</li>
+                <li><strong className="text-foreground">Chrome Extension API:</strong> Native browser integration</li>
+                <li><strong className="text-foreground">Clerk:</strong> Enterprise-grade authentication</li>
+                <li><strong className="text-foreground">Stripe:</strong> Secure payment processing</li>
+                <li><strong className="text-foreground">Real-time Streaming:</strong> Instant response feedback</li>
+              </ul>
+            </section>
 
-            <h2>Get Started</h2>
-            <p>
-              Join thousands of users who are already experiencing the power of AI assistance in their browser.
-              Start with our free plan today and see how Prophet can transform your workflow.
-            </p>
+            <section>
+              <h2 className="text-xl font-semibold mb-3">Pricing Model</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                Prophet operates on a usage-based pricing model. You purchase credits that cover actual API costs,
+                with subscription tiers offering bonus credits. This ensures you only pay for what you use, with complete
+                cost transparency.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-semibold mb-3">Getting Started</h2>
+              <p className="text-muted-foreground leading-relaxed mb-3">
+                Begin using Prophet in three simple steps:
+              </p>
+              <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+                <li>Install the Prophet Chrome extension</li>
+                <li>Create an account and choose your plan</li>
+                <li>Start chatting with Claude directly from your browser</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-semibold mb-3">Support</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                For questions, feature requests, or technical support, please contact us through our contact form.
+                We continuously improve Prophet based on user feedback.
+              </p>
+            </section>
           </div>
         </div>
       </div>
-      <CTASection />
       <Footer />
     </main>
   )
