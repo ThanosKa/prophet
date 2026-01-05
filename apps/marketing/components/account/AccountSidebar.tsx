@@ -17,6 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { NavUser } from "./NavUser";
 
@@ -43,6 +44,29 @@ const navItems = [
   },
 ];
 
+function SidebarLogo() {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+
+  return (
+    <Link
+      href="/"
+      className={`flex items-center gap-2 rounded-lg py-1.5 hover:bg-sidebar-accent ${
+        isCollapsed ? "justify-center px-0" : "px-2"
+      }`}
+    >
+      <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+        <span className="text-sm font-bold">P</span>
+      </div>
+      {!isCollapsed && (
+        <div className="grid flex-1 text-left text-sm leading-tight">
+          <span className="truncate font-semibold">Prophet</span>
+        </div>
+      )}
+    </Link>
+  );
+}
+
 export function AccountSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
@@ -51,17 +75,7 @@ export function AccountSidebar({
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="px-2">
-        <Link
-          href="/"
-          className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-sidebar-accent"
-        >
-          <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-            <span className="text-sm font-bold">P</span>
-          </div>
-          <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-semibold">Prophet</span>
-          </div>
-        </Link>
+        <SidebarLogo />
       </SidebarHeader>
 
       <SidebarContent>

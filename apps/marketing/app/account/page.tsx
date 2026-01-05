@@ -1,31 +1,12 @@
 'use client'
 
 import { motion } from "framer-motion"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { BarChart3, CreditCard, ExternalLink, Zap } from "lucide-react"
+import { BarChart3, CreditCard, ChevronRight, Chrome } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.3, ease: 'easeOut' },
-  },
-}
 
 export default function AccountOverviewPage() {
   const { user, isLoading } = useUser()
@@ -45,155 +26,109 @@ export default function AccountOverviewPage() {
   const creditsRemaining = (user.creditsRemaining / 100).toFixed(2)
   const tierName = user.tier.charAt(0).toUpperCase() + user.tier.slice(1)
   const creditPercentage = user.creditsIncluded > 0
-    ? ((user.creditsRemaining / user.creditsIncluded) * 100).toFixed(0)
+    ? Math.round((user.creditsRemaining / user.creditsIncluded) * 100)
     : 0
 
   return (
     <motion.div
-      className="space-y-6"
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
+      className="space-y-8"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
     >
-      <motion.div className="flex flex-col gap-2" variants={itemVariants}>
+      <div>
         <h2 className="text-3xl font-bold tracking-tight">
           Welcome back, {user.firstName || 'User'}
         </h2>
-        <p className="text-muted-foreground">
-          Manage your account, view your usage, and configure your subscription.
+        <p className="text-muted-foreground mt-1">
+          Here&apos;s an overview of your account.
         </p>
-      </motion.div>
+      </div>
 
-      <motion.div
-        className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
-        variants={containerVariants}
-      >
-        <motion.div variants={itemVariants}>
-          <Card className="border">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Balance</CardTitle>
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Zap className="h-4 w-4 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <motion.div
-                className="text-2xl font-bold"
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.3 }}
+      <Card className="border-0 shadow-sm bg-gradient-to-br from-background to-muted/30">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-2 gap-8">
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Balance</p>
+              <p className="text-4xl font-bold">${creditsRemaining}</p>
+              {user.creditsIncluded > 0 && (
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all"
+                      style={{ width: `${Math.min(creditPercentage, 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">{creditPercentage}%</span>
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Plan</p>
+              <p className="text-4xl font-bold">{tierName}</p>
+              <Badge
+                variant={user.subscriptionStatus === 'active' ? 'default' : 'secondary'}
+                className="mt-3"
               >
-                ${creditsRemaining}
-              </motion.div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {user.creditsIncluded > 0
-                  ? `${creditPercentage}% of monthly limit`
-                  : 'No limit set'}
-              </p>
-            </CardContent>
-          </Card>
-        </motion.div>
+                {user.subscriptionStatus === 'active' ? 'Active' : 'Free Plan'}
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        <motion.div variants={itemVariants}>
-          <Card className="border">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Current Tier</CardTitle>
-              <div className="p-2 rounded-lg bg-primary/10">
-                <CreditCard className="h-4 w-4 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <motion.div
-                className="text-2xl font-bold"
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.3 }}
-              >
-                {tierName}
-              </motion.div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {user.subscriptionStatus === 'active'
-                  ? 'Active subscription'
-                  : 'Free plan'}
-              </p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </motion.div>
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-muted-foreground px-1">Quick Actions</h3>
+        <div className="grid gap-2">
+          <Link href="/account/usage" className="group">
+            <Card className="border hover:bg-muted/50 transition-colors">
+              <CardContent className="py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Usage History</p>
+                    <p className="text-sm text-muted-foreground">View token consumption and costs</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+              </CardContent>
+            </Card>
+          </Link>
 
-      <motion.div
-        className="grid gap-4 md:grid-cols-2"
-        variants={containerVariants}
-      >
-        <motion.div variants={itemVariants}>
-          <Card className="border">
-            <CardHeader>
-              <CardTitle>Usage History</CardTitle>
-              <CardDescription>
-                View your recent AI usage and token consumption.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                asChild
-                variant="outline"
-                className="w-full"
-              >
-                <Link href="/account/usage">
-                  <BarChart3 className="mr-2 h-4 w-4" />
-                  View Detailed Usage
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
+          <Link href="/account/billing" className="group">
+            <Card className="border hover:bg-muted/50 transition-colors">
+              <CardContent className="py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <CreditCard className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Billing & Subscription</p>
+                    <p className="text-sm text-muted-foreground">Manage your plan and payment method</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+      </div>
 
-        <motion.div variants={itemVariants}>
-          <Card className="border">
-            <CardHeader>
-              <CardTitle>Subscription</CardTitle>
-              <CardDescription>
-                Manage your billing, invoices and subscription plan.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                asChild
-                className="w-full"
-              >
-                <Link href="/account/billing">
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Manage Billing
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </motion.div>
-
-      <motion.div variants={itemVariants}>
-        <Card className="border">
-          <CardHeader>
-            <CardTitle>Chrome Extension</CardTitle>
-            <CardDescription>
-              Make sure you have the latest version of the Prophet extension
-              installed.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              variant="secondary"
-              className="w-full"
-              asChild
-            >
-              <a href="#" target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Open Chrome Web Store
-              </a>
-            </Button>
-          </CardContent>
-        </Card>
-      </motion.div>
+      <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+        <div className="flex items-center gap-3">
+          <Chrome className="h-5 w-5 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            Get the Chrome extension to use Prophet in your browser
+          </p>
+        </div>
+        <Button variant="outline" size="sm" asChild>
+          <a href="https://chrome.google.com/webstore" target="_blank" rel="noopener noreferrer">
+            Install Extension
+          </a>
+        </Button>
+      </div>
     </motion.div>
   )
 }

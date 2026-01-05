@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react"
 import { motion } from "framer-motion"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -74,9 +74,19 @@ export default function UsagePage() {
     setCurrentPage(1)
   }
 
-  const handleFilter = () => {
+  const setQuickFilter = (days: number) => {
+    const now = new Date()
+    const from = new Date()
+    from.setDate(now.getDate() - days)
+    setDateRange({ from, to: now })
     setCurrentPage(1)
-    fetchUsage(1)
+  }
+
+  const handleDateRangeSelect = (range: DateRange | undefined) => {
+    setDateRange(range)
+    if (range?.from && range?.to) {
+      setCurrentPage(1)
+    }
   }
 
   const handleRowsPerPageChange = (value: string) => {
@@ -116,18 +126,15 @@ export default function UsagePage() {
         transition={{ duration: 0.3, delay: 0.1 }}
       >
         <Card className="border">
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Date Range</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4 md:flex-row md:items-end">
-              <div className="flex-1 space-y-2">
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "justify-start text-left font-normal min-w-[200px]",
                         !dateRange && "text-muted-foreground"
                       )}
                     >
@@ -135,10 +142,10 @@ export default function UsagePage() {
                       {dateRange?.from ? (
                         dateRange.to ? (
                           <>
-                            {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
+                            {format(dateRange.from, "MMM dd")} - {format(dateRange.to, "MMM dd")}
                           </>
                         ) : (
-                          format(dateRange.from, "LLL dd, y")
+                          format(dateRange.from, "MMM dd, y")
                         )
                       ) : (
                         "Select date range"
@@ -149,23 +156,47 @@ export default function UsagePage() {
                     <Calendar
                       mode="range"
                       selected={dateRange}
-                      onSelect={setDateRange}
+                      onSelect={handleDateRangeSelect}
                       numberOfMonths={1}
                     />
                   </PopoverContent>
                 </Popover>
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={handleFilter}>
-                  Filter
-                </Button>
-                <Button
-                  onClick={handleReset}
-                  variant="ghost"
-                  size="icon"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1 border rounded-md p-1">
+                  <Button
+                    variant={dateRange?.from && Math.abs((dateRange.to?.getTime() || 0) - dateRange.from.getTime()) < 2 * 24 * 60 * 60 * 1000 ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setQuickFilter(1)}
+                  >
+                    1d
+                  </Button>
+                  <Button
+                    variant={dateRange?.from && Math.abs((dateRange.to?.getTime() || 0) - dateRange.from.getTime()) >= 6 * 24 * 60 * 60 * 1000 && Math.abs((dateRange.to?.getTime() || 0) - dateRange.from.getTime()) < 8 * 24 * 60 * 60 * 1000 ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setQuickFilter(7)}
+                  >
+                    7d
+                  </Button>
+                  <Button
+                    variant={dateRange?.from && Math.abs((dateRange.to?.getTime() || 0) - dateRange.from.getTime()) >= 29 * 24 * 60 * 60 * 1000 ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setQuickFilter(30)}
+                  >
+                    30d
+                  </Button>
+                </div>
+                {dateRange && (
+                  <Button
+                    onClick={handleReset}
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>

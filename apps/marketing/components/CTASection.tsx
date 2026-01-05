@@ -33,17 +33,12 @@ export function CTASection() {
               </SignUpButton>
             </SignedOut>
             <SignedIn>
-              <Link href="/account/billing">
+              <Link href="/pricing">
                 <Button size="lg" className="px-8">
                   View Plans
                 </Button>
               </Link>
             </SignedIn>
-            <Link href="/contact">
-              <Button size="lg" variant="outline" className="px-8">
-                Contact Sales
-              </Button>
-            </Link>
           </div>
         </motion.div>
       </div>

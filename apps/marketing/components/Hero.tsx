@@ -2,10 +2,10 @@
 
 import { SignInButton, SignUpButton, SignedOut, SignedIn } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Sparkles } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { BGPattern } from './BGPattern'
 
 export function Hero() {
@@ -15,22 +15,30 @@ export function Hero() {
       <BGPattern variant="grid" mask="fade-edges" size={64} className="-z-10" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="flex flex-col items-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-center lg:text-left"
+            className="text-center max-w-3xl"
           >
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
+              className="mb-4 flex justify-center"
             >
-              <Badge variant="outline" className="mb-4">
-                <Sparkles className="h-3 w-3 mr-1" />
-                Now with Claude Sonnet 4.5
-              </Badge>
+              <Link
+                href="https://github.com/ThanosKa/prophet"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group rounded-full border border-black/5 bg-neutral-100 text-base transition-all ease-in hover:bg-neutral-200 dark:border-white/5 dark:bg-neutral-900 dark:hover:bg-neutral-800"
+              >
+                <AnimatedShinyText className="inline-flex items-center justify-center px-4 py-1 text-sm transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400">
+                  <span>Introducing Prophet</span>
+                  <ArrowRight className="ml-1 size-3 transition-transform duration-300 ease-in-out group-hover:translate-x-0.5" />
+                </AnimatedShinyText>
+              </Link>
             </motion.div>
 
             <motion.h1
@@ -46,7 +54,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto lg:mx-0"
+              className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto"
             >
               Prophet brings Claude&apos;s intelligence directly to your browser with a sleek side panel. Chat, analyze, and create without leaving your workflow.
             </motion.p>
@@ -55,7 +63,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+              className="flex flex-col sm:flex-row gap-4 justify-center"
             >
               <SignedOut>
                 <SignUpButton mode="modal" forceRedirectUrl="/account">
@@ -96,10 +104,10 @@ export function Hero() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="relative hidden lg:block"
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="relative mt-16 w-full max-w-4xl"
           >
-            <div className="aspect-video rounded-lg border bg-muted/50 backdrop-blur flex items-center justify-center">
+            <div className="aspect-video rounded-xl border bg-muted/50 backdrop-blur flex items-center justify-center shadow-lg">
               <p className="text-muted-foreground">Product Screenshot Placeholder</p>
             </div>
           </motion.div>
