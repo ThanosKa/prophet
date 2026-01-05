@@ -3,150 +3,25 @@ import { Footer } from '@/components/Footer'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  MousePointer2,
-  Type,
-  Navigation,
-  Scroll,
-  FileText,
-  Search,
-  Clock,
-  Layers,
-  ArrowLeft,
-  ArrowRight,
-  RefreshCw,
-  Info,
-  Eye,
-  MousePointerClick,
-  PanelTop,
+  Download,
   Shield,
-  Cpu,
-  Network,
+  Eye,
+  PlayCircle,
+  StopCircle,
+  FileText,
+  Navigation,
+  MousePointerClick,
+  Lock,
+  Unlock,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'How It Works | Prophet',
-  description: 'Deep dive into Prophet\'s browser control technology, Chrome DevTools Protocol, and AI agent capabilities.',
+  description: 'Learn how Prophet accesses your browser, what permissions it needs, and how to use it safely.',
 }
-
-const tools = [
-  {
-    name: 'take_snapshot',
-    description: 'Captures the accessibility tree of the current page, returning all interactive elements with unique UIDs.',
-    icon: Eye,
-    category: 'Observation',
-  },
-  {
-    name: 'click_element_by_uid',
-    description: 'Clicks an element using its unique identifier from the snapshot.',
-    icon: MousePointerClick,
-    category: 'Interaction',
-  },
-  {
-    name: 'fill_element_by_uid',
-    description: 'Fills text inputs and textareas with specified values.',
-    icon: Type,
-    category: 'Interaction',
-  },
-  {
-    name: 'hover_element_by_uid',
-    description: 'Triggers hover states to reveal menus or tooltips.',
-    icon: MousePointer2,
-    category: 'Interaction',
-  },
-  {
-    name: 'navigate',
-    description: 'Navigates the browser to a specified URL.',
-    icon: Navigation,
-    category: 'Navigation',
-  },
-  {
-    name: 'scroll_page',
-    description: 'Scrolls the page in any direction (up, down, left, right, top, bottom).',
-    icon: Scroll,
-    category: 'Navigation',
-  },
-  {
-    name: 'get_page_content',
-    description: 'Extracts the cleaned text content of the current page.',
-    icon: FileText,
-    category: 'Observation',
-  },
-  {
-    name: 'search_snapshot',
-    description: 'Searches the snapshot for elements matching a text query.',
-    icon: Search,
-    category: 'Observation',
-  },
-  {
-    name: 'wait_for_selector',
-    description: 'Waits for a CSS selector to appear in the DOM.',
-    icon: Clock,
-    category: 'Wait',
-  },
-  {
-    name: 'wait_for_navigation',
-    description: 'Waits for page navigation to complete.',
-    icon: Clock,
-    category: 'Wait',
-  },
-  {
-    name: 'wait_for_timeout',
-    description: 'Pauses execution for a specified duration.',
-    icon: Clock,
-    category: 'Wait',
-  },
-  {
-    name: 'list_tabs',
-    description: 'Lists all open browser tabs.',
-    icon: Layers,
-    category: 'Tabs',
-  },
-  {
-    name: 'switch_tab',
-    description: 'Switches focus to a specific tab by ID.',
-    icon: PanelTop,
-    category: 'Tabs',
-  },
-  {
-    name: 'close_tab',
-    description: 'Closes a specific tab by ID.',
-    icon: PanelTop,
-    category: 'Tabs',
-  },
-  {
-    name: 'open_new_tab',
-    description: 'Opens a URL in a new tab.',
-    icon: PanelTop,
-    category: 'Tabs',
-  },
-  {
-    name: 'go_back',
-    description: 'Navigates back in browser history.',
-    icon: ArrowLeft,
-    category: 'Navigation',
-  },
-  {
-    name: 'go_forward',
-    description: 'Navigates forward in browser history.',
-    icon: ArrowRight,
-    category: 'Navigation',
-  },
-  {
-    name: 'reload_page',
-    description: 'Reloads the current page.',
-    icon: RefreshCw,
-    category: 'Navigation',
-  },
-  {
-    name: 'get_page_info',
-    description: 'Gets metadata about the current page (URL, title, viewport).',
-    icon: Info,
-    category: 'Observation',
-  },
-]
-
-const categories = ['Observation', 'Interaction', 'Navigation', 'Wait', 'Tabs']
 
 export default function HowItWorksPage() {
   return (
@@ -155,13 +30,12 @@ export default function HowItWorksPage() {
 
       <section className="py-20 border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Badge variant="outline" className="mb-4">Technical Deep Dive</Badge>
+          <Badge variant="outline" className="mb-4">User Guide</Badge>
           <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-            How Prophet Controls Your Browser
+            How Prophet Works
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Prophet uses Chrome DevTools Protocol and an accessibility-first approach to give Claude AI
-            precise control over your browser, enabling autonomous task completion.
+            Everything you need to know about how Prophet accesses your browser, what it can do, and how to stay safe.
           </p>
         </div>
       </section>
@@ -169,78 +43,52 @@ export default function HowItWorksPage() {
       <section className="py-16 border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
-            <Network className="h-6 w-6 text-primary" />
-            Architecture Overview
+            <Download className="h-6 w-6 text-primary" />
+            Installation & Setup
           </h2>
           <div className="space-y-6">
-            <p className="text-muted-foreground">
-              Prophet operates through a multi-layer architecture that keeps your API keys secure while
-              providing Claude with powerful browser control capabilities:
-            </p>
-            <div className="grid gap-4 md:grid-cols-4">
-              {[
-                { step: '1', title: 'Side Panel', desc: 'You send a message' },
-                { step: '2', title: 'Marketing API', desc: 'Authenticated & rate-limited' },
-                { step: '3', title: 'Claude API', desc: 'AI processes request' },
-                { step: '4', title: 'Browser', desc: 'Tools execute actions' },
-              ].map((item) => (
-                <Card key={item.step} className="text-center">
-                  <CardContent className="pt-6">
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-2 font-bold">
-                      {item.step}
-                    </div>
-                    <p className="font-medium">{item.title}</p>
-                    <p className="text-sm text-muted-foreground">{item.desc}</p>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="prose prose-gray dark:prose-invert max-w-none">
+              <p className="text-muted-foreground leading-relaxed">
+                Getting started with Prophet is simple. Install the Chrome extension from the Chrome Web Store,
+                and it will add a side panel to your browser.
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              The Anthropic API key is stored securely on the marketing server and never exposed to the client.
-              All requests are authenticated via Clerk and rate-limited via Upstash Redis.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 border-b">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
-            <Cpu className="h-6 w-6 text-primary" />
-            Chrome DevTools Protocol
-          </h2>
-          <div className="space-y-6">
-            <p className="text-muted-foreground">
-              Prophet uses the Chrome DevTools Protocol (CDP) to interact with your browser. CDP is the same
-              protocol used by Chrome DevTools and provides:
-            </p>
-            <ul className="grid gap-3 md:grid-cols-2">
-              {[
-                'Direct DOM access and manipulation',
-                'Mouse and keyboard event simulation',
-                'Page navigation control',
-                'Network request interception',
-                'Accessibility tree inspection',
-                'Tab management',
-              ].map((feature) => (
-                <li key={feature} className="flex items-center gap-2 text-sm">
-                  <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-            <Card className="bg-muted/30">
-              <CardContent className="pt-6">
-                <p className="text-sm font-mono">
-                  {`// Example: CDP command to click at coordinates
-chrome.debugger.sendCommand(
-  { tabId },
-  'Input.dispatchMouseEvent',
-  { type: 'mousePressed', x: 100, y: 200, button: 'left' }
-)`}
-                </p>
-              </CardContent>
-            </Card>
+            <div className="grid gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-bold">1</span>
+                    Install the Extension
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground">
+                  Click "Add to Chrome" from the Web Store. The extension will install in seconds.
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-bold">2</span>
+                    Grant Permissions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground">
+                  Prophet will ask for permission to access the current tab and use the Chrome debugger.
+                  These permissions allow Prophet to see and interact with web pages on your behalf.
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-bold">3</span>
+                    Sign In
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground">
+                  Click the extension icon to open the side panel. Sign in with your Prophet account to get started.
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </section>
@@ -249,44 +97,80 @@ chrome.debugger.sendCommand(
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
             <Eye className="h-6 w-6 text-primary" />
-            Accessibility Tree: How Prophet &quot;Sees&quot; Pages
+            Browser Access Explained
           </h2>
           <div className="space-y-6">
             <p className="text-muted-foreground">
-              Instead of parsing raw HTML, Prophet uses the browser&apos;s accessibility tree. This provides a
-              semantic, structured view of the page that&apos;s ideal for AI interaction:
+              Prophet needs specific permissions to control your browser. Here's exactly what it can and cannot access:
             </p>
             <div className="grid gap-4 md:grid-cols-2">
-              <Card>
+              <Card className="border-green-500/20 bg-green-500/5">
                 <CardHeader>
-                  <CardTitle className="text-base">Why Accessibility Tree?</CardTitle>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Unlock className="h-5 w-5 text-green-500" />
+                    What Prophet Can Access
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm text-muted-foreground space-y-2">
-                  <p>Focuses on interactive elements (buttons, links, inputs)</p>
-                  <p>Filters out visual noise and decorative elements</p>
-                  <p>Provides semantic roles and names</p>
-                  <p>More stable than CSS selectors across page changes</p>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Page content (text, buttons, forms, links)</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Current page URL and title</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Ability to click buttons and fill forms</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Navigation and scrolling control</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Tab management (open, close, switch)</span>
+                  </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="border-red-500/20 bg-red-500/5">
                 <CardHeader>
-                  <CardTitle className="text-base">UID System</CardTitle>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Lock className="h-5 w-5 text-red-500" />
+                    What Prophet Cannot Access
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm text-muted-foreground space-y-2">
-                  <p>Each element gets a unique 8-character ID</p>
-                  <p>IDs are injected as data-prophet-nodeid attributes</p>
-                  <p>Stable across snapshots for the same elements</p>
-                  <p>Never exposed to users (internal only)</p>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Saved passwords or autofill data</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Credit card information</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Browser history or bookmarks</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Other tabs or windows without permission</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Files on your computer</span>
+                  </div>
                 </CardContent>
               </Card>
             </div>
             <Card className="bg-muted/30">
               <CardContent className="pt-6">
-                <p className="text-sm font-mono whitespace-pre">
-{`// Example snapshot output
-uid=Ab12Cd3E button "Submit" <button>
-uid=Xy98Zw7V textbox "Email" value="user@example.com" <input>
-  uid=Mn45Op6Q link "Forgot password?" <a>`}
+                <p className="text-sm text-muted-foreground">
+                  <strong className="text-foreground">Chrome Debugger Permission:</strong> Prophet uses the Chrome DevTools
+                  Protocol (the same technology Chrome DevTools uses) to interact with pages. This allows it to click buttons,
+                  fill forms, and read page content—just like a human would.
                 </p>
               </CardContent>
             </Card>
@@ -296,69 +180,49 @@ uid=Xy98Zw7V textbox "Email" value="user@example.com" <input>
 
       <section className="py-16 border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold mb-8">Agent Tools ({tools.length} Available)</h2>
-          <p className="text-muted-foreground mb-8">
-            Prophet provides Claude with {tools.length} tools for browser automation. Each tool is designed
-            for a specific type of interaction:
-          </p>
-          {categories.map((category) => (
-            <div key={category} className="mb-8">
-              <h3 className="text-lg font-semibold mb-4 text-muted-foreground">{category}</h3>
-              <div className="grid gap-3 md:grid-cols-2">
-                {tools
-                  .filter((tool) => tool.category === category)
-                  .map((tool) => {
-                    const Icon = tool.icon
-                    return (
-                      <Card key={tool.name} className="hover:bg-muted/50 transition-colors">
-                        <CardContent className="py-4 flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-                            <Icon className="h-4 w-4 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-mono text-sm font-medium">{tool.name}</p>
-                            <p className="text-xs text-muted-foreground mt-1">{tool.description}</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="py-16 border-b">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" />
-            Security Model
+            <PlayCircle className="h-6 w-6 text-primary" />
+            How to Use Prophet
           </h2>
           <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base text-green-600 dark:text-green-400">What&apos;s Protected</CardTitle>
+                  <CardTitle className="text-base">1. Open the Side Panel</CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm text-muted-foreground space-y-2">
-                  <p>API keys stored server-side only</p>
-                  <p>All requests authenticated via Clerk</p>
-                  <p>Rate limiting prevents abuse</p>
-                  <p>Conversations processed, not stored long-term</p>
-                  <p>CDP debugger auto-detaches after 30s</p>
+                <CardContent className="text-sm text-muted-foreground">
+                  Click the Prophet icon in your Chrome toolbar. The side panel will slide out from the right side of your browser.
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">User Controls</CardTitle>
+                  <CardTitle className="text-base">2. Give a Command</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground">
+                  Type what you want Prophet to do. For example: "Fill out this form with my name and email" or
+                  "Navigate to the pricing page and compare the plans."
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">3. Watch It Work</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground">
+                  Prophet will show you exactly what it's doing in real-time. You'll see a colored border around the browser
+                  when Prophet is active, and it will narrate each action it takes.
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">4. Stop Anytime</CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground space-y-2">
-                  <p>Stop button on every page during execution</p>
-                  <p>Visual border shows when agent is active</p>
-                  <p>Agent confirms destructive actions</p>
-                  <p>Never enters credentials without explicit instruction</p>
-                  <p>Maximum 10 turns per conversation</p>
+                  <p>Click the "Stop" button in the side panel to immediately halt execution. Prophet will stop all actions
+                  and return control to you.</p>
+                  <div className="flex items-center gap-2 pt-2">
+                    <StopCircle className="h-4 w-4 text-destructive" />
+                    <span className="text-xs font-medium text-destructive">The stop button is always visible during execution</span>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -366,25 +230,127 @@ uid=Xy98Zw7V textbox "Email" value="user@example.com" <input>
         </div>
       </section>
 
-      <section className="py-16">
+      <section className="py-16 border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold mb-8">Tech Stack</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            {[
-              { name: 'Chrome Extension', tech: 'Vite, React 18, CRXJS' },
-              { name: 'Marketing & API', tech: 'Next.js 16, Drizzle ORM' },
-              { name: 'AI', tech: 'Anthropic Claude Sonnet 4.5' },
-              { name: 'Authentication', tech: 'Clerk v2.0' },
-              { name: 'Database', tech: 'Supabase PostgreSQL' },
-              { name: 'Rate Limiting', tech: 'Upstash Redis' },
-            ].map((item) => (
-              <Card key={item.name}>
-                <CardContent className="pt-6">
-                  <p className="font-medium">{item.name}</p>
-                  <p className="text-sm text-muted-foreground">{item.tech}</p>
+          <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
+            <Shield className="h-6 w-6 text-primary" />
+            Privacy & Safety
+          </h2>
+          <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">What Gets Sent to Claude</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground space-y-2">
+                  <p>When you use Prophet, we send the following to Claude's API:</p>
+                  <ul className="space-y-1 pl-4">
+                    <li>• Your conversation messages</li>
+                    <li>• The current page content Prophet can see</li>
+                    <li>• Information about interactive elements (buttons, forms)</li>
+                  </ul>
                 </CardContent>
               </Card>
-            ))}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">What's NOT Stored</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground space-y-2">
+                  <p>Prophet does not store:</p>
+                  <ul className="space-y-1 pl-4">
+                    <li>• Full conversation history (processed, not stored long-term)</li>
+                    <li>• Page screenshots or recordings</li>
+                    <li>• Sensitive form data (passwords, credit cards)</li>
+                    <li>• Your browsing history</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+            <Card className="bg-muted/30">
+              <CardContent className="pt-6 space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-2">Revoking Access</h3>
+                  <p className="text-sm text-muted-foreground">
+                    You can revoke Prophet's permissions at any time by going to <code className="text-xs bg-muted px-1 py-0.5 rounded">chrome://extensions</code>,
+                    finding Prophet, and clicking "Remove" or disabling specific permissions.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">Automatic Safety Features</h3>
+                  <ul className="text-sm text-muted-foreground space-y-1 pl-4">
+                    <li>• Prophet auto-confirms before destructive actions (deleting, purchasing)</li>
+                    <li>• Maximum 10 actions per conversation to prevent runaway behavior</li>
+                    <li>• Debugger connection auto-closes after 30 seconds of inactivity</li>
+                    <li>• Visual border shows when Prophet is actively controlling the browser</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl font-bold mb-8">Common Use Cases</h2>
+          <p className="text-muted-foreground mb-8">
+            Here are some things Prophet excels at—and a few it doesn't:
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="border-green-500/20 bg-green-500/5">
+              <CardHeader>
+                <CardTitle className="text-base text-green-600 dark:text-green-400">Works Great</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-start gap-2">
+                  <FileText className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Filling out forms with provided information</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Navigation className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Navigating multi-step workflows</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <MousePointerClick className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Clicking through menus and buttons</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <FileText className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Extracting specific data from pages</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Navigation className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Comparing information across tabs</span>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-yellow-500/20 bg-yellow-500/5">
+              <CardHeader>
+                <CardTitle className="text-base text-yellow-600 dark:text-yellow-400">Limitations</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-start gap-2">
+                  <XCircle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                  <span>CAPTCHAs and anti-bot protections</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <XCircle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                  <span>Websites that require login credentials</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <XCircle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                  <span>Complex visual tasks (reading charts, images)</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <XCircle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                  <span>Highly dynamic single-page apps (may require retries)</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <XCircle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                  <span>Making purchases without explicit user confirmation</span>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>

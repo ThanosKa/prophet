@@ -11,26 +11,26 @@ const plans = [
     name: 'Free',
     price: '$0',
     credits: '$0.50 in API credits',
-    features: ['Basic support', 'Limited requests', 'Chat history'],
+    features: ['Perfect for occasional use', 'All Claude models included', 'Full browser automation', 'Community support'],
   },
   {
     name: 'Pro',
     price: '$9.99',
     credits: '$11 in API credits (+10% bonus)',
-    features: ['Priority support', 'Higher rate limits', 'Chat history', 'Token insights'],
+    features: ['Best for daily tasks', 'All Claude models included', 'Save 10% on credits', 'Priority email support'],
   },
   {
     name: 'Premium',
     price: '$29.99',
     credits: '$35 in API credits (+17% bonus)',
-    features: ['24/7 support', 'Custom rate limits', 'Chat history', 'Advanced analytics'],
+    features: ['Best for power users', 'All Claude models included', 'Save 17% on credits', 'Priority support', 'Early feature access'],
     popular: true,
   },
   {
     name: 'Ultra',
     price: '$59.99',
     credits: '$70 in API credits (+17% bonus)',
-    features: ['Dedicated support', 'Unlimited requests', 'Chat history', 'API access'],
+    features: ['Best for heavy usage', 'All Claude models included', 'Save 17% on credits', 'Priority support', 'Early feature access'],
   },
 ]
 

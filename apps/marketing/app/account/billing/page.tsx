@@ -4,8 +4,7 @@ import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CreditCard, CheckCircle2 } from "lucide-react"
-import { TIER_CONFIG } from "@/lib/pricing"
+import { CreditCard, CheckCircle2, ArrowUpRight } from "lucide-react"
 import Link from "next/link"
 import { useUser } from "@/contexts/UserContext"
 
@@ -45,7 +44,6 @@ export default function BillingPage() {
   }
 
   const currentTier = user.tier
-  const tierInfo = TIER_CONFIG[currentTier as keyof typeof TIER_CONFIG]
   const status = user.subscriptionStatus || 'none'
   const isCanceled = status === 'canceled'
 
@@ -59,9 +57,26 @@ export default function BillingPage() {
       <motion.div className="flex flex-col gap-2" variants={itemVariants}>
         <h2 className="text-3xl font-bold tracking-tight">Billing & Subscription</h2>
         <p className="text-muted-foreground">
-          Manage your subscription plan, billing information, and payment methods.
+          Manage your subscription and payment method.
         </p>
       </motion.div>
+
+      {currentTier === 'free' && (
+        <motion.div variants={itemVariants}>
+          <div className="flex items-center justify-between p-4 rounded-lg border border-primary/50 bg-primary/5">
+            <div>
+              <p className="font-medium">Ready for more?</p>
+              <p className="text-sm text-muted-foreground">Upgrade to get more credits and priority support.</p>
+            </div>
+            <Button asChild size="sm">
+              <Link href="/pricing">
+                View Plans
+                <ArrowUpRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </motion.div>
+      )}
 
       <motion.div className="grid gap-6" variants={containerVariants}>
         <motion.div variants={itemVariants}>
@@ -122,95 +137,13 @@ export default function BillingPage() {
                   disabled={!user.stripeCustomerId}
                 >
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Manage in Stripe Portal
+                  Manage Subscription & Payment
                 </Button>
               </form>
             </CardFooter>
           </Card>
         </motion.div>
-
-        <motion.div className="grid gap-6 md:grid-cols-2" variants={containerVariants}>
-          <motion.div variants={itemVariants}>
-            <Card className="border">
-              <CardHeader>
-                <CardTitle>Usage Limits</CardTitle>
-                <CardDescription>
-                  Your monthly API usage balance.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <motion.li
-                    className="flex justify-between"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3, duration: 0.2 }}
-                  >
-                    <span className="text-muted-foreground">Monthly balance:</span>
-                    <span className="font-medium">${(tierInfo.credits / 100).toFixed(2)}</span>
-                  </motion.li>
-                  <motion.li
-                    className="flex justify-between"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4, duration: 0.2 }}
-                  >
-                    <span className="text-muted-foreground">Bonus included:</span>
-                    <span className="font-medium">{tierInfo.bonus}%</span>
-                  </motion.li>
-                </ul>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <Card className="border">
-              <CardHeader>
-                <CardTitle>Payment Method</CardTitle>
-                <CardDescription>
-                  The card used for your subscription.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex items-center gap-4">
-                <motion.div
-                  className="rounded-md border p-2"
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.3, duration: 0.2 }}
-                >
-                  <CreditCard className="h-6 w-6" />
-                </motion.div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">Manage via Stripe</p>
-                  <p className="text-xs text-muted-foreground">Update your card in the portal above.</p>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </motion.div>
-
-        {currentTier === 'free' && (
-          <motion.div variants={itemVariants}>
-            <Card className="border-primary bg-primary/5">
-              <CardHeader>
-                <CardTitle>Ready for more?</CardTitle>
-                <CardDescription>
-                  Upgrade to a paid plan to get more credits and priority access to faster models.
-                </CardDescription>
-              </CardHeader>
-              <CardFooter>
-                <Button
-                  asChild
-                  className="w-full"
-                >
-                  <Link href="/pricing">View Plans & Upgrade</Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          </motion.div>
-        )}
       </motion.div>
     </motion.div>
   )
 }
-

@@ -1,33 +1,34 @@
-'use client'
+"use client";
 
-import { motion } from "framer-motion"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import Link from "next/link"
-import { BarChart3, CreditCard, ChevronRight, Chrome } from "lucide-react"
-import { useUser } from "@/contexts/UserContext"
+import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { BarChart3, CreditCard, ChevronRight, Chrome } from "lucide-react";
+import { useUser } from "@/contexts/UserContext";
 
 export default function AccountOverviewPage() {
-  const { user, isLoading } = useUser()
+  const { user, isLoading } = useUser();
 
   if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="h-10 bg-muted animate-pulse rounded" />
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
-  const creditsRemaining = (user.creditsRemaining / 100).toFixed(2)
-  const tierName = user.tier.charAt(0).toUpperCase() + user.tier.slice(1)
-  const creditPercentage = user.creditsIncluded > 0
-    ? Math.round((user.creditsRemaining / user.creditsIncluded) * 100)
-    : 0
+  const creditsRemaining = (user.creditsRemaining / 100).toFixed(2);
+  const tierName = user.tier.charAt(0).toUpperCase() + user.tier.slice(1);
+  const creditPercentage =
+    user.creditsIncluded > 0
+      ? Math.round((user.creditsRemaining / user.creditsIncluded) * 100)
+      : 0;
 
   return (
     <motion.div
@@ -38,14 +39,14 @@ export default function AccountOverviewPage() {
     >
       <div>
         <h2 className="text-3xl font-bold tracking-tight">
-          Welcome back, {user.firstName || 'User'}
+          Welcome back, {user.firstName || "User"}
         </h2>
         <p className="text-muted-foreground mt-1">
           Here&apos;s an overview of your account.
         </p>
       </div>
 
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-background to-muted/30">
+      <Card className="border transition-colors">
         <CardContent className="pt-6">
           <div className="grid grid-cols-2 gap-8">
             <div>
@@ -59,7 +60,9 @@ export default function AccountOverviewPage() {
                       style={{ width: `${Math.min(creditPercentage, 100)}%` }}
                     />
                   </div>
-                  <span className="text-xs text-muted-foreground">{creditPercentage}%</span>
+                  <span className="text-xs text-muted-foreground">
+                    {creditPercentage}%
+                  </span>
                 </div>
               )}
             </div>
@@ -67,10 +70,12 @@ export default function AccountOverviewPage() {
               <p className="text-sm text-muted-foreground mb-1">Plan</p>
               <p className="text-4xl font-bold">{tierName}</p>
               <Badge
-                variant={user.subscriptionStatus === 'active' ? 'default' : 'secondary'}
+                variant={
+                  user.subscriptionStatus === "active" ? "default" : "secondary"
+                }
                 className="mt-3"
               >
-                {user.subscriptionStatus === 'active' ? 'Active' : 'Free Plan'}
+                {user.subscriptionStatus === "active" ? "Active" : "Free Plan"}
               </Badge>
             </div>
           </div>
@@ -78,7 +83,9 @@ export default function AccountOverviewPage() {
       </Card>
 
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-muted-foreground px-1">Quick Actions</h3>
+        <h3 className="text-sm font-medium text-muted-foreground px-1">
+          Quick Actions
+        </h3>
         <div className="grid gap-2">
           <Link href="/account/usage" className="group">
             <Card className="border hover:bg-muted/50 transition-colors">
@@ -89,7 +96,9 @@ export default function AccountOverviewPage() {
                   </div>
                   <div>
                     <p className="font-medium">Usage History</p>
-                    <p className="text-sm text-muted-foreground">View token consumption and costs</p>
+                    <p className="text-sm text-muted-foreground">
+                      View token consumption and costs
+                    </p>
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
@@ -106,7 +115,9 @@ export default function AccountOverviewPage() {
                   </div>
                   <div>
                     <p className="font-medium">Billing & Subscription</p>
-                    <p className="text-sm text-muted-foreground">Manage your plan and payment method</p>
+                    <p className="text-sm text-muted-foreground">
+                      Manage your plan and payment method
+                    </p>
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
@@ -124,12 +135,15 @@ export default function AccountOverviewPage() {
           </p>
         </div>
         <Button variant="outline" size="sm" asChild>
-          <a href="https://chrome.google.com/webstore" target="_blank" rel="noopener noreferrer">
+          <a
+            href="https://chrome.google.com/webstore"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Install Extension
           </a>
         </Button>
       </div>
     </motion.div>
-  )
+  );
 }
-
