@@ -13,7 +13,6 @@ import { ChatView } from '@/components/chat/ChatView'
 import { SignInButton } from '@/components/auth/SignInButton'
 import { Skeleton } from '@/components/ui/skeleton'
 import { apiClient } from '@/lib/api'
-import type { Chat } from '@prophet/shared'
 
 interface ImageData {
   base64: string
@@ -23,11 +22,11 @@ interface ImageData {
 export default function App() {
   const queryClient = useQueryClient()
   const { isSignedIn, user } = useAuth()
-  const { chats, isLoading: chatsLoading, createChatAsync, deleteChat } = useChats()
+  const { chats, isLoading: chatsLoading, createChatAsync, deleteChat, loadMore, hasMore: chatsHasMore, isLoadingMore: isLoadingMoreChats } = useChats()
   const { activeChatId, setActiveChatId, isStreaming, messages: messagesByChat } = useChatStore()
   const { resetContextTokens, setContextUsage, theme } = useUIStore()
   const { isLoading: messagesLoading, loadOlder, hasMore, isLoadingOlder } = useMessages(activeChatId)
-  const { sendMessage, abort, currentToolCall, error, setError, errorInfo } = useAgentChat()
+  const { sendMessage, abort, currentToolCall, error, setError, errorInfo, retryAfter, remaining } = useAgentChat()
 
   useEffect(() => {
     const handleStatusUpdate = (message: { type: string; status: string }) => {
@@ -59,7 +58,7 @@ export default function App() {
 
   useEffect(() => {
     if (activeChatId) {
-      const activeChat = chats.find((c) => c.id === activeChatId)
+      const activeChat = chats.find((c) => c?.id === activeChatId)
       if (activeChat) {
         setContextUsage({
           contextTokens: activeChat.contextTokens,
@@ -110,7 +109,7 @@ export default function App() {
   }
 
   const triggerAutoTitle = async (chatId: string) => {
-    const currentChat = chats.find((c) => c.id === chatId)
+    const currentChat = chats.find((c) => c?.id === chatId)
     if (!currentChat) return
 
     if (currentChat.title.startsWith('New Chat')) {
@@ -120,11 +119,7 @@ export default function App() {
         if (newTitle) {
           const { updateChat } = useChatStore.getState()
           updateChat(chatId, { title: newTitle })
-          queryClient.setQueryData(['chats'], (oldChats: Chat[] | undefined) =>
-            (oldChats ?? []).map((c) =>
-              c.id === chatId ? { ...c, title: newTitle } : c
-            )
-          )
+          queryClient.invalidateQueries({ queryKey: ['chats'] })
         }
       } catch (err) {
         console.error('Failed to auto-generate title:', err)
@@ -170,7 +165,7 @@ export default function App() {
     )
   }
 
-  const activeChat = chats.find((c) => c.id === activeChatId)
+  const activeChat = chats.find((c) => c?.id === activeChatId)
   const activeMessages = activeChatId ? (messagesByChat[activeChatId] ?? []) : []
 
   return (
@@ -181,6 +176,9 @@ export default function App() {
       onSelectChat={handleSelectChat}
       onDeleteChat={handleDeleteChat}
       onNewChat={handleNewChat}
+      hasMore={chatsHasMore}
+      isLoadingMore={isLoadingMoreChats}
+      onLoadMore={loadMore}
     >
       {activeChatId ? (
         <ChatView
@@ -201,6 +199,8 @@ export default function App() {
           onLoadOlder={loadOlder}
           error={error}
           errorInfo={errorInfo}
+          retryAfter={retryAfter}
+          remaining={remaining}
           onDismissError={() => setError(null)}
         />
       ) : (

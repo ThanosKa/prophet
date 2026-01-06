@@ -72,6 +72,78 @@ export default function PrivacyPage() {
                 </section>
 
                 <section>
+                  <h2 className="text-xl font-semibold mb-3">Browser Access & Permissions</h2>
+
+                  <h3 className="text-lg font-medium mb-2 mt-4">What Prophet Can Access</h3>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+                    <li>Current page content (text, buttons, forms, links)</li>
+                    <li>Page URL and title</li>
+                    <li>Interactive elements on the page</li>
+                    <li>Ability to click, type, and navigate</li>
+                  </ul>
+
+                  <h3 className="text-lg font-medium mb-2 mt-4">What Prophet Cannot Access</h3>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+                    <li>Saved passwords or autofill data</li>
+                    <li>Credit card information stored in browser</li>
+                    <li>Browser history or bookmarks</li>
+                    <li>Other tabs without explicit permission</li>
+                    <li>Files on your computer</li>
+                  </ul>
+                </section>
+
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">Data Sent to Anthropic Claude API</h2>
+                  <p className="text-muted-foreground leading-relaxed mb-3">
+                    When you use Prophet, the following information is sent to Anthropic's Claude API to process your requests:
+                  </p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+                    <li>Your conversation messages</li>
+                    <li>Current page content the agent can see</li>
+                    <li>Information about interactive elements (buttons, forms)</li>
+                  </ul>
+                </section>
+
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">What We Store</h2>
+                  <p className="text-muted-foreground leading-relaxed mb-3">
+                    To provide you with convenient features like chat history and usage tracking across devices, we securely store:
+                  </p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+                    <li>Your conversation messages and chat titles (encrypted at rest)</li>
+                    <li>Usage statistics for billing transparency (token counts, API costs)</li>
+                    <li>Account information (email, subscription status)</li>
+                  </ul>
+                  <p className="text-muted-foreground leading-relaxed mt-3">
+                    <strong className="text-foreground">You maintain full control:</strong> Delete individual conversations or your entire account at any time. Deleting your account permanently removes all associated data.
+                  </p>
+
+                  <h3 className="text-lg font-medium mb-2 mt-4">What We Do NOT Store</h3>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+                    <li>Page screenshots or recordings</li>
+                    <li>Sensitive form data (passwords, credit cards)</li>
+                    <li>Your browsing history</li>
+                    <li>Data from other browser tabs</li>
+                  </ul>
+
+                  <h3 className="text-lg font-medium mb-2 mt-4">Why We Need Your Messages</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    For Claude AI to respond to your requests, it must read your message content. This is true for all AI assistants—encryption prevents the AI from understanding your request. We use industry-standard security (HTTPS, encryption at rest, secure databases) to protect your data in transit and storage.
+                  </p>
+                </section>
+
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">Security Controls</h2>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+                    <li>Maximum 10 tool calls per conversation to prevent runaway behavior</li>
+                    <li>Debugger connection auto-closes after 30 seconds of inactivity</li>
+                    <li>Visual border indicator when agent is actively controlling the browser</li>
+                    <li>Stop button always available during execution</li>
+                    <li>Agent requests confirmation before destructive actions</li>
+                  </ul>
+                </section>
+
+                <section>
                   <h2 className="text-xl font-semibold mb-3">Third-Party Services</h2>
                   <p className="text-muted-foreground leading-relaxed mb-3">We use the following third-party services:</p>
                   <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">

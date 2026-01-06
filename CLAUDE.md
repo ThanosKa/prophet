@@ -44,6 +44,8 @@ pnpm -F @prophet/marketing build
 pnpm db:generate                     # Generate migrations from schema
 pnpm db:migrate                      # Apply migrations
 pnpm db:studio                       # Open Drizzle Studio GUI
+pnpm -F @prophet/marketing db:seed   # Seed fake data for testing (dev only)
+pnpm -F @prophet/marketing db:seed:reset  # Remove seed data
 
 # Lint
 pnpm lint                            # All apps
@@ -103,7 +105,7 @@ prophet/
 Detailed coding standards organized by topic in `.claude/skills/`:
 
 - **frontend/** - UX patterns, components, accessibility
-- **backend/** - API security, database patterns, streaming, testing
+- **backend/** - API security, database patterns, streaming, testing, rate-limiting
 - **stack/** - Next.js, Chrome extension setup
 - **typescript-standards/** - Type safety across all code
 
@@ -114,7 +116,7 @@ Detailed coding standards organized by topic in `.claude/skills/`:
 - ✅ ALWAYS validate input with Zod
 - ✅ ALWAYS authenticate users
 - ✅ ALWAYS verify resource ownership
-- ✅ Rate limit by `userId`
+- ✅ Tier-based rate limiting (Free: 5 req/min, Pro: 20, Premium/Ultra: 60) + global burst protection
 - ✅ Use transactions for credit deductions
 
 ## Code Comment Standards

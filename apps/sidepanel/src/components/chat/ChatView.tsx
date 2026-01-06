@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react'
 import { ExternalLink, X } from 'lucide-react'
 import { EnhancedMessageList, type EnhancedMessageListHandle } from './EnhancedMessageList'
 import { EnhancedChatInput } from './EnhancedChatInput'
+import { RateLimitError } from './RateLimitError'
 import { Suggestions, Suggestion } from '@/components/ai-elements/suggestion'
 import { config } from '@/lib/config'
 import type { Message, ToolCall } from '@prophet/shared'
@@ -30,6 +31,8 @@ interface ChatViewProps {
   onLoadOlder?: () => void
   error?: string | null
   errorInfo?: { code?: string; pricingUrl?: string } | null
+  retryAfter?: number | null
+  remaining?: number | null
   onDismissError?: () => void
 }
 
@@ -48,6 +51,8 @@ export function ChatView({
   onLoadOlder,
   error,
   errorInfo,
+  retryAfter,
+  remaining,
   onDismissError,
 }: ChatViewProps) {
   const messageListRef = useRef<EnhancedMessageListHandle>(null)
@@ -102,7 +107,14 @@ export function ChatView({
           </Suggestions>
         </div>
       )}
-      {error && (
+      {error && retryAfter !== null && retryAfter !== undefined ? (
+        <RateLimitError
+          error={error}
+          retryAfter={retryAfter}
+          remaining={remaining}
+          onDismiss={onDismissError}
+        />
+      ) : error ? (
         <div className="mx-4 mb-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-sm text-destructive font-medium">{error}</p>
@@ -126,7 +138,7 @@ export function ChatView({
             </button>
           )}
         </div>
-      )}
+      ) : null}
       <EnhancedChatInput
         onSend={handleSend}
         disabled={disabled}

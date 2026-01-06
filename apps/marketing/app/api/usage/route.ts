@@ -2,7 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { usageRecords } from '@/lib/db/schema'
-import { eq, and, gte, lte, desc } from 'drizzle-orm'
+import { eq, and, gte, lte, desc, type SQL } from 'drizzle-orm'
 import { error, success } from '@/types'
 import { logger } from '@/lib/logger'
 
@@ -20,16 +20,16 @@ export async function GET(req: Request) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    let whereClause = eq(usageRecords.userId, userId)
+    let whereClause: SQL | undefined = eq(usageRecords.userId, userId)
 
     if (from) {
-      whereClause = and(whereClause, gte(usageRecords.createdAt, new Date(from))) as any
+      whereClause = and(whereClause, gte(usageRecords.createdAt, new Date(from)))
     }
     if (to) {
-      whereClause = and(whereClause, lte(usageRecords.createdAt, new Date(to))) as any
+      whereClause = and(whereClause, lte(usageRecords.createdAt, new Date(to)))
     }
     if (model) {
-      whereClause = and(whereClause, eq(usageRecords.model, model)) as any
+      whereClause = and(whereClause, eq(usageRecords.model, model))
     }
 
     const records = await db.query.usageRecords.findMany({

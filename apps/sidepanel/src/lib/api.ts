@@ -67,8 +67,13 @@ class ApiClient {
     })
   }
 
-  async getChats(): Promise<ApiResponse<Chat[]>> {
-    return this.request('/api/chats')
+  async getChats(limit?: number, beforeUpdatedAt?: string): Promise<ApiResponse<{ chats: Chat[]; nextCursor?: { beforeUpdatedAt: string }; hasMore: boolean }>> {
+    const params = new URLSearchParams()
+    if (limit) params.append('limit', limit.toString())
+    if (beforeUpdatedAt) params.append('beforeUpdatedAt', beforeUpdatedAt)
+    const query = params.toString()
+    const endpoint = query ? `/api/chats?${query}` : '/api/chats'
+    return this.request(endpoint)
   }
 
   async createChat(title: string): Promise<ApiResponse<Chat>> {
@@ -106,7 +111,7 @@ class ApiClient {
   async *streamChat(
     chatId: string,
     content: string
-  ): AsyncGenerator<{ type: string; content?: string; error?: string; usage?: { inputTokens: number; outputTokens: number } }> {
+  ): AsyncGenerator<{ type: string; content?: string; error?: string; usage?: { inputTokens: number; outputTokens: number }; retryAfter?: number; remaining?: number }> {
     const tokenResponse = await chrome.runtime.sendMessage({
       type: 'GET_AUTH_TOKEN',
     })
@@ -131,9 +136,23 @@ class ApiClient {
     })
 
     if (!response.ok) {
-      yield {
-        type: 'error',
-        error: `HTTP ${response.status}`,
+      const errorData = await response.json().catch(() => ({}))
+
+      if (response.status === 429) {
+        const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10)
+        const remaining = parseInt(response.headers.get('X-RateLimit-Remaining') || '0', 10)
+
+        yield {
+          type: 'error',
+          error: errorData.error || 'Too many requests. Please try again later.',
+          retryAfter,
+          remaining,
+        }
+      } else {
+        yield {
+          type: 'error',
+          error: errorData.error || `HTTP ${response.status}`,
+        }
       }
       return
     }

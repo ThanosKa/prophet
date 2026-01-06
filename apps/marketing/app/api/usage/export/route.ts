@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
 import { usageRecords } from '@/lib/db/schema'
-import { eq, and, gte, lte, desc } from 'drizzle-orm'
+import { eq, and, gte, lte, desc, type SQL } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
 
 export async function GET(req: Request) {
@@ -16,16 +16,16 @@ export async function GET(req: Request) {
     const to = searchParams.get('to')
     const model = searchParams.get('model')
 
-    let whereClause = eq(usageRecords.userId, userId)
+    let whereClause: SQL | undefined = eq(usageRecords.userId, userId)
 
     if (from) {
-      whereClause = and(whereClause, gte(usageRecords.createdAt, new Date(from))) as any
+      whereClause = and(whereClause, gte(usageRecords.createdAt, new Date(from)))
     }
     if (to) {
-      whereClause = and(whereClause, lte(usageRecords.createdAt, new Date(to))) as any
+      whereClause = and(whereClause, lte(usageRecords.createdAt, new Date(to)))
     }
     if (model) {
-      whereClause = and(whereClause, eq(usageRecords.model, model)) as any
+      whereClause = and(whereClause, eq(usageRecords.model, model))
     }
 
     const records = await db.query.usageRecords.findMany({

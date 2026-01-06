@@ -1,0 +1,36 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gold-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD700" />
+      <stop offset="50%" stop-color="#FDB931" />
+      <stop offset="100%" stop-color="#9E7C0C" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Central Diamond -->
+  <path d="M256 128 L384 256 L256 384 L128 256 Z" stroke="url(#gold-gradient)" stroke-width="16" fill="none"/>
+  
+  <!-- Cross Lines -->
+  <path d="M256 64 L256 448" stroke="url(#gold-gradient)" stroke-width="12" stroke-linecap="round"/>
+  <path d="M64 256 L448 256" stroke="url(#gold-gradient)" stroke-width="12" stroke-linecap="round"/>
+  
+  <!-- Diagonal X Lines -->
+  <path d="M128 128 L384 384" stroke="url(#gold-gradient)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M384 128 L128 384" stroke="url(#gold-gradient)" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Nodes (Circles) -->
+  <circle cx="256" cy="64" r="16" fill="url(#gold-gradient)"/>
+  <circle cx="256" cy="448" r="16" fill="url(#gold-gradient)"/>
+  <circle cx="64" cy="256" r="16" fill="url(#gold-gradient)"/>
+  <circle cx="448" cy="256" r="16" fill="url(#gold-gradient)"/>
+  
+  <circle cx="128" cy="128" r="12" fill="url(#gold-gradient)"/>
+  <circle cx="384" cy="128" r="12" fill="url(#gold-gradient)"/>
+  <circle cx="128" cy="384" r="12" fill="url(#gold-gradient)"/>
+  <circle cx="384" cy="384" r="12" fill="url(#gold-gradient)"/>
+  
+  <circle cx="256" cy="128" r="16" fill="url(#gold-gradient)"/>
+  <circle cx="256" cy="384" r="16" fill="url(#gold-gradient)"/>
+  <circle cx="128" cy="256" r="16" fill="url(#gold-gradient)"/>
+  <circle cx="384" cy="256" r="16" fill="url(#gold-gradient)"/>
+</svg>

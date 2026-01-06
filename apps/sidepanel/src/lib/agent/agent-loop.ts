@@ -60,12 +60,29 @@ async function* streamAgentChat(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    yield {
-      type: "error",
-      error: errorData.error || `HTTP ${response.status}`,
-      code: errorData.code,
-      details: errorData.details,
-    };
+
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10)
+      const remaining = parseInt(response.headers.get('X-RateLimit-Remaining') || '0', 10)
+
+      yield {
+        type: "error",
+        error: errorData.error || 'Too many requests. Please try again later.',
+        code: errorData.code,
+        details: {
+          ...errorData.details,
+          retryAfter,
+          remaining,
+        },
+      };
+    } else {
+      yield {
+        type: "error",
+        error: errorData.error || `HTTP ${response.status}`,
+        code: errorData.code,
+        details: errorData.details,
+      };
+    }
     return;
   }
 

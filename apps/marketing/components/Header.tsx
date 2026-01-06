@@ -22,7 +22,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-bold">
+        <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+          <img src="/logo.svg" alt="Prophet Logo" className="w-8 h-8 object-contain" />
           Prophet
         </Link>
 

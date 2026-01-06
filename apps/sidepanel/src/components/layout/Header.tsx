@@ -35,7 +35,10 @@ export function Header({ title, className }: HeaderProps) {
           {title}
         </span>
       ) : (
-        <span className="text-sm font-semibold">Prophet</span>
+        <div className="flex items-center gap-2">
+          <img src="/logo.svg" alt="Prophet" className="w-6 h-6 object-contain" />
+          <span className="text-sm font-semibold">Prophet AI - Assistant</span>
+        </div>
       )}
 
       <div className="flex items-center gap-1">

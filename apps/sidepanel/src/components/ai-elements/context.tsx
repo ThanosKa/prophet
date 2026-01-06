@@ -7,6 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MODEL_CONFIG } from "@prophet/shared";
 
@@ -74,7 +75,11 @@ export function ContextTrigger() {
 
   return (
     <TooltipTrigger asChild>
-      <button className="inline-flex items-center justify-center hover:opacity-80 transition-opacity">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 p-0 hover:bg-transparent hover:opacity-80 transition-opacity"
+      >
         <svg width="14" height="14" viewBox="0 0 24 24" className="relative">
           {/* Background circle */}
           <circle
@@ -102,7 +107,7 @@ export function ContextTrigger() {
           />
         </svg>
         <span className="sr-only">View token usage</span>
-      </button>
+      </Button>
     </TooltipTrigger>
   );
 }

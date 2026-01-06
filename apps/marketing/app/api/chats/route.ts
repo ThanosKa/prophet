@@ -2,13 +2,13 @@ import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { chats } from '@/lib/db/schema'
-import { eq, desc } from 'drizzle-orm'
+import { and, eq, desc, lt } from 'drizzle-orm'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { createChatSchema } from '@prophet/shared'
 import { error, success } from '@/types'
 import { logger } from '@/lib/logger'
 
-export async function GET() {
+export async function GET(req: Request) {
   let userId: string | null = null
   try {
     const auth_ = await auth()
@@ -32,12 +32,49 @@ export async function GET() {
       )
     }
 
+    const url = new URL(req.url)
+    const limitParam = url.searchParams.get('limit')
+    const beforeUpdatedAtParam = url.searchParams.get('beforeUpdatedAt')
+
+    // Validate limit parameter
+    const parsedLimit = parseInt(limitParam || '50')
+    if (isNaN(parsedLimit)) {
+      return NextResponse.json(error('Invalid limit parameter', 'INVALID_PARAM'), { status: 400 })
+    }
+    const limit = Math.min(Math.max(parsedLimit, 1), 200)
+
+    // Validate date parameter
+    let beforeUpdatedAt: Date | null = null
+    if (beforeUpdatedAtParam) {
+      beforeUpdatedAt = new Date(beforeUpdatedAtParam)
+      if (isNaN(beforeUpdatedAt.getTime())) {
+        return NextResponse.json(error('Invalid date format', 'INVALID_DATE'), { status: 400 })
+      }
+    }
+
+    const whereCondition = beforeUpdatedAt
+      ? and(eq(chats.userId, userId), lt(chats.updatedAt, beforeUpdatedAt))
+      : eq(chats.userId, userId)
+
     const userChats = await db.query.chats.findMany({
-      where: eq(chats.userId, userId),
+      where: whereCondition,
       orderBy: [desc(chats.updatedAt)],
+      limit: limit + 1,
     })
 
-    return NextResponse.json(success(userChats))
+    const hasMore = userChats.length > limit
+    const paginatedChats = userChats.slice(0, limit)
+
+    const nextCursor = hasMore && paginatedChats.length > 0
+      ? { beforeUpdatedAt: paginatedChats[paginatedChats.length - 1].updatedAt.toISOString() }
+      : null
+
+    logger.info({ userId, chatCount: paginatedChats.length, hasMore }, 'Chats fetched with pagination')
+    return NextResponse.json(success({
+      chats: paginatedChats,
+      nextCursor,
+      hasMore,
+    }))
   } catch (err) {
     logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to fetch chats')
     return NextResponse.json(

@@ -1,5 +1,8 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
+import { db } from '@/lib/db'
+import { users } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 
 const isFakeCredentials =
   process.env.UPSTASH_REDIS_REST_URL?.includes('fake') ||
@@ -21,47 +24,113 @@ const redis =
       })
     : null
 
-/**
- * Rate limiter for chat streaming endpoint
- * Limits: 10 requests per 1 minute per user
- */
-export const chatRatelimit = redis
+const chatLimits = {
+  free: { requests: 5, window: '1 m' },
+  pro: { requests: 20, window: '1 m' },
+  premium: { requests: 60, window: '1 m' },
+  ultra: { requests: 60, window: '1 m' },
+} as const
+
+const apiLimits = {
+  free: { requests: 15, window: '1 m' },
+  pro: { requests: 60, window: '1 m' },
+  premium: { requests: 120, window: '1 m' },
+  ultra: { requests: 120, window: '1 m' },
+} as const
+
+export const chatRatelimits = redis
+  ? {
+      free: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(chatLimits.free.requests, chatLimits.free.window),
+        analytics: true,
+        prefix: 'ratelimit:chat:free',
+      }),
+      pro: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(chatLimits.pro.requests, chatLimits.pro.window),
+        analytics: true,
+        prefix: 'ratelimit:chat:pro',
+      }),
+      premium: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(chatLimits.premium.requests, chatLimits.premium.window),
+        analytics: true,
+        prefix: 'ratelimit:chat:premium',
+      }),
+      ultra: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(chatLimits.ultra.requests, chatLimits.ultra.window),
+        analytics: true,
+        prefix: 'ratelimit:chat:ultra',
+      }),
+    }
+  : null
+
+export const apiRatelimits = redis
+  ? {
+      free: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(apiLimits.free.requests, apiLimits.free.window),
+        analytics: true,
+        prefix: 'ratelimit:api:free',
+      }),
+      pro: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(apiLimits.pro.requests, apiLimits.pro.window),
+        analytics: true,
+        prefix: 'ratelimit:api:pro',
+      }),
+      premium: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(apiLimits.premium.requests, apiLimits.premium.window),
+        analytics: true,
+        prefix: 'ratelimit:api:premium',
+      }),
+      ultra: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(apiLimits.ultra.requests, apiLimits.ultra.window),
+        analytics: true,
+        prefix: 'ratelimit:api:ultra',
+      }),
+    }
+  : null
+
+export const globalRatelimit = redis
   ? new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(10, '1 m'),
+      limiter: Ratelimit.slidingWindow(500, '1 m'),
       analytics: true,
-      prefix: 'ratelimit:chat',
+      prefix: 'ratelimit:global',
     })
   : null
 
-/**
- * Rate limiter for general API endpoints
- * Limits: 30 requests per 1 minute per user
- */
-export const apiRatelimit = redis
-  ? new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(30, '1 m'),
-      analytics: true,
-      prefix: 'ratelimit:api',
-    })
-  : null
-
-/**
- * Helper to check rate limit and return consistent response
- */
 export async function checkRateLimit(
-  identifier: string,
+  userId: string,
   type: 'chat' | 'api' = 'api'
 ): Promise<{ success: boolean; limit?: number; remaining?: number; reset?: number }> {
-  const limiter = type === 'chat' ? chatRatelimit : apiRatelimit
+  if (globalRatelimit) {
+    const globalCheck = await globalRatelimit.limit('global')
+    if (!globalCheck.success) {
+      return { success: false, limit: globalCheck.limit, remaining: globalCheck.remaining, reset: globalCheck.reset }
+    }
+  }
 
-  if (!limiter) {
-    // Rate limiting disabled - allow all requests
+  const limiters = type === 'chat' ? chatRatelimits : apiRatelimits
+
+  if (!limiters) {
     return { success: true }
   }
 
-  const { success, limit, remaining, reset } = await limiter.limit(identifier)
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { tier: true },
+  })
+
+  const tier = user?.tier ?? 'free'
+  const limiter = limiters[tier]
+
+  const { success, limit, remaining, reset } = await limiter.limit(userId)
 
   return { success, limit, remaining, reset }
 }

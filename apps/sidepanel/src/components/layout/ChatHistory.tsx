@@ -1,5 +1,6 @@
 
-import { Trash2, Plus } from 'lucide-react'
+import { Trash2, Plus, Loader2 } from 'lucide-react'
+import { useRef, useEffect } from 'react'
 import {
     Sheet,
     SheetContent,
@@ -19,6 +20,9 @@ interface ChatHistoryProps {
     onDeleteChat: (chatId: string) => void
     onNewChat: () => void
     activeChatId?: string | null
+    hasMore?: boolean
+    isLoadingMore?: boolean
+    onLoadMore?: () => void
 }
 
 export function ChatHistory({
@@ -26,9 +30,32 @@ export function ChatHistory({
     onSelectChat,
     onDeleteChat,
     onNewChat,
-    activeChatId
+    activeChatId,
+    hasMore,
+    isLoadingMore,
+    onLoadMore,
 }: ChatHistoryProps) {
     const { drawerOpen, setDrawerOpen } = useUIStore()
+    const sentinelRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!hasMore || isLoadingMore || !onLoadMore) return
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    onLoadMore()
+                }
+            },
+            { threshold: 0.1 }
+        )
+
+        if (sentinelRef.current) {
+            observer.observe(sentinelRef.current)
+        }
+
+        return () => observer.disconnect()
+    }, [hasMore, isLoadingMore, onLoadMore])
 
     const handleSelect = (id: string) => {
         onSelectChat(id)
@@ -106,44 +133,57 @@ export function ChatHistory({
                                 No chat history found.
                             </div>
                         ) : (
-                            groupedChats.map(group => (
-                                <div key={group.label} className="flex flex-col gap-2 min-w-0">
-                                    <h4 className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider px-2">
-                                        {group.label}
-                                    </h4>
-                                    <div className="flex flex-col gap-[2px] min-w-0">
-                                        {group.chats.map(chat => (
-                                            <div
-                                                key={chat.id}
-                                                onClick={() => handleSelect(chat.id)}
-                                                className={cn(
-                                                    "group flex items-center gap-2 p-2.5 rounded-md text-sm cursor-pointer transition-colors min-w-0 overflow-hidden",
-                                                    "hover:bg-accent hover:text-accent-foreground",
-                                                    activeChatId === chat.id ? "bg-accent font-medium text-accent-foreground" : "text-foreground/80"
-                                                )}
-                                            >
-                                                <span className="truncate flex-1 min-w-0 overflow-hidden">
-                                                    {chat.title}
-                                                </span>
-
+                            <>
+                                {groupedChats.map(group => (
+                                    <div key={group.label} className="flex flex-col gap-2 min-w-0">
+                                        <h4 className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider px-2">
+                                            {group.label}
+                                        </h4>
+                                        <div className="flex flex-col gap-[2px] min-w-0">
+                                            {group.chats.map(chat => (
                                                 <div
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    onClick={(e) => handleDelete(e, chat.id)}
+                                                    key={chat.id}
+                                                    onClick={() => handleSelect(chat.id)}
                                                     className={cn(
-                                                        "shrink-0 flex-none p-1.5 rounded-md transition-all",
-                                                        "text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10",
-                                                        "focus:ring-2 focus:ring-ring focus:outline-none"
+                                                        "group flex items-center gap-2 p-2.5 rounded-md text-sm cursor-pointer transition-colors min-w-0 overflow-hidden",
+                                                        "hover:bg-accent hover:text-accent-foreground",
+                                                        activeChatId === chat.id ? "bg-accent font-medium text-accent-foreground" : "text-foreground/80"
                                                     )}
-                                                    title="Delete chat"
                                                 >
-                                                    <Trash2 className="w-4 h-4" />
+                                                    <span className="truncate flex-1 min-w-0 overflow-hidden">
+                                                        {chat.title}
+                                                    </span>
+
+                                                    <div
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onClick={(e) => handleDelete(e, chat.id)}
+                                                        className={cn(
+                                                            "shrink-0 flex-none p-1.5 rounded-md transition-all",
+                                                            "text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10",
+                                                            "focus:ring-2 focus:ring-ring focus:outline-none"
+                                                        )}
+                                                        title="Delete chat"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            ))
+                                ))}
+                                {isLoadingMore && (
+                                    <div className="flex items-center justify-center py-2">
+                                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                    </div>
+                                )}
+                                {!isLoadingMore && hasMore && (
+                                    <div className="h-8 flex items-center justify-center">
+                                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/20" />
+                                    </div>
+                                )}
+                                <div ref={sentinelRef} className="h-1" />
+                            </>
                         )}
                     </div>
                 </ScrollArea>

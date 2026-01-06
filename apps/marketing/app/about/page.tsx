@@ -31,7 +31,7 @@ export default function AboutPage() {
               <h2 className="text-xl font-semibold mb-3">Core Features</h2>
               <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
                 <li>Side panel integration for seamless workflow</li>
-                <li>Real-time streaming responses powered by Claude Sonnet 4.5</li>
+                <li>Real-time streaming responses powered by Claude AI (Haiku 4.5, Sonnet 4.5, Opus 4.5)</li>
                 <li>Usage-based pricing with transparent costs</li>
                 <li>Secure authentication and data handling</li>
                 <li>Multiple subscription tiers to fit your needs</li>
@@ -57,7 +57,7 @@ export default function AboutPage() {
                 Prophet leverages modern technologies to deliver a reliable, secure experience:
               </p>
               <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-                <li><strong className="text-foreground">Anthropic Claude:</strong> State-of-the-art AI model (Sonnet 4.5)</li>
+                <li><strong className="text-foreground">Anthropic Claude:</strong> State-of-the-art AI models (choose from Haiku 4.5, Sonnet 4.5, or Opus 4.5)</li>
                 <li><strong className="text-foreground">Chrome Extension API:</strong> Native browser integration</li>
                 <li><strong className="text-foreground">Clerk:</strong> Enterprise-grade authentication</li>
                 <li><strong className="text-foreground">Stripe:</strong> Secure payment processing</li>

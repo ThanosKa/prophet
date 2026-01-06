@@ -9,11 +9,15 @@ import type { Message } from '@prophet/shared'
 export function useStreamChat() {
   const { addMessage, setStreaming } = useChatStore()
   const [error, setError] = useState<string | null>(null)
+  const [retryAfter, setRetryAfter] = useState<number | null>(null)
+  const [remaining, setRemaining] = useState<number | null>(null)
 
   const stream = useCallback(
     async (chatId: string, content: string) => {
       try {
         setError(null)
+        setRetryAfter(null)
+        setRemaining(null)
         setStreaming(true)
 
         let fullResponse = ''
@@ -46,6 +50,12 @@ export function useStreamChat() {
             addMessage(chatId, userMessage)
           } else if (event.type === 'error') {
             setError(event.error || 'Streaming failed')
+            if (event.retryAfter !== undefined) {
+              setRetryAfter(event.retryAfter)
+            }
+            if (event.remaining !== undefined) {
+              setRemaining(event.remaining)
+            }
           }
         }
       } catch (err) {
@@ -60,6 +70,8 @@ export function useStreamChat() {
   return {
     stream,
     error,
+    retryAfter,
+    remaining,
     setError,
   }
 }

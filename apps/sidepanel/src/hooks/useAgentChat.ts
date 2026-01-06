@@ -18,6 +18,8 @@ export function useAgentChat() {
   const { createAbortController, abort: abortAgentStore, setActive, clearActions } = useAgentStore()
   const [error, setError] = useState<string | null>(null)
   const [errorInfo, setErrorInfo] = useState<{ code?: string; pricingUrl?: string } | null>(null)
+  const [retryAfter, setRetryAfter] = useState<number | null>(null)
+  const [remaining, setRemaining] = useState<number | null>(null)
   const [status, setStatus] = useState<AgentStatus>('idle')
   const [currentToolCall, setCurrentToolCall] = useState<ToolCall | null>(null) // Legacy support for ChatView
   const abortRef = useRef<boolean>(false)
@@ -63,6 +65,8 @@ export function useAgentChat() {
       try {
         setError(null)
         setErrorInfo(null)
+        setRetryAfter(null)
+        setRemaining(null)
         setStatus('submitted')
         setStreaming(true)
         setCurrentToolCall(null)
@@ -199,6 +203,12 @@ export function useAgentChat() {
               code: event.code,
               pricingUrl: event.details?.pricingUrl,
             })
+            if (event.details && 'retryAfter' in event.details && event.details.retryAfter !== undefined) {
+              setRetryAfter(event.details.retryAfter)
+            }
+            if (event.details && 'remaining' in event.details && event.details.remaining !== undefined) {
+              setRemaining(event.details.remaining)
+            }
           }
         }
       } catch (err) {
@@ -261,6 +271,8 @@ export function useAgentChat() {
     error,
     setError,
     errorInfo,
+    retryAfter,
+    remaining,
     currentToolCall,
   }
 }

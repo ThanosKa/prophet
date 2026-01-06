@@ -1,24 +1,42 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useMemo } from 'react'
+import { useMutation, useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { useChatStore } from '@/store/chatStore'
 import { apiClient } from '@/lib/api'
-import { Chat } from '@prophet/shared'
 
 export function useChats() {
   const queryClient = useQueryClient()
   const { setChats, addChat, removeChat } = useChatStore()
 
-  const { data: chats = [], isLoading, error } = useQuery({
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error,
+  } = useInfiniteQuery({
     queryKey: ['chats'],
-    queryFn: async () => {
-      const response = await apiClient.getChats()
+    queryFn: async ({ pageParam }) => {
+      const response = await apiClient.getChats(15, pageParam)
       if (response.data) {
-        setChats(response.data)
         return response.data
       }
-      return []
+      return { chats: [], nextCursor: null, hasMore: false }
     },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor?.beforeUpdatedAt,
     staleTime: 1000 * 60 * 5,  // 5 minutes - consistent with other queries
   })
+
+  // Flatten all pages into single list
+  const chats = useMemo(() => data?.pages.flatMap(page => page.chats) ?? [], [data?.pages])
+
+  // Hydrate store on initial load
+  useEffect(() => {
+    if (chats.length > 0) {
+      setChats(chats)
+    }
+  }, [chats, setChats])
 
   const createMutation = useMutation({
     mutationFn: (title: string) => apiClient.createChat(title),
@@ -34,26 +52,7 @@ export function useChats() {
     mutationFn: (chatId: string) => apiClient.deleteChat(chatId),
     onMutate: async (chatId: string) => {
       await queryClient.cancelQueries({ queryKey: ['chats'] })
-      const previousChats = queryClient.getQueryData<Chat[]>(['chats'])
-      
-      if (previousChats) {
-        queryClient.setQueryData(['chats'], previousChats.filter((c) => c.id !== chatId))
-      }
       removeChat(chatId)
-      
-      return { previousChats }
-    },
-    onError: (_error, _chatId, context) => {
-      if (context?.previousChats) {
-        queryClient.setQueryData(['chats'], context.previousChats)
-        // Re-add to Zustand
-        context.previousChats.forEach((chat) => {
-          const state = useChatStore.getState()
-          if (!state.chats.find((c) => c.id === chat.id)) {
-            state.addChat(chat)
-          }
-        })
-      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['chats'] })
@@ -65,6 +64,12 @@ export function useChats() {
     return response.data
   }
 
+  const loadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }
+
   return {
     chats,
     isLoading,
@@ -74,5 +79,8 @@ export function useChats() {
     isCreating: createMutation.isPending,
     deleteChat: deleteMutation.mutate,
     isDeleting: deleteMutation.isPending,
+    loadMore,
+    hasMore: hasNextPage ?? false,
+    isLoadingMore: isFetchingNextPage,
   }
 }

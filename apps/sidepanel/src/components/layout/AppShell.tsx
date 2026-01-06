@@ -11,6 +11,9 @@ interface AppShellProps {
   onSelectChat: (chatId: string) => void
   onDeleteChat: (chatId: string) => void
   onNewChat: () => void
+  hasMore?: boolean
+  isLoadingMore?: boolean
+  onLoadMore?: () => void
 }
 
 export function AppShell({
@@ -21,6 +24,9 @@ export function AppShell({
   onSelectChat,
   onDeleteChat,
   onNewChat,
+  hasMore,
+  isLoadingMore,
+  onLoadMore,
 }: AppShellProps) {
   return (
     <div className="flex flex-col h-screen w-screen bg-[var(--chatbot-bg)]">
@@ -32,6 +38,9 @@ export function AppShell({
         onSelectChat={onSelectChat}
         onDeleteChat={onDeleteChat}
         onNewChat={onNewChat}
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
+        onLoadMore={onLoadMore}
       />
 
       <main className="flex-1 flex flex-col overflow-hidden">{children}</main>

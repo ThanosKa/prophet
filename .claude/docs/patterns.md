@@ -66,29 +66,111 @@ return new Response(stream.toReadableStream(), {
 
 ## Rate Limiting
 
-Upstash Redis rate limiting pattern:
+Tier-based rate limiting with Upstash Redis:
 
 ```typescript
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-const ratelimit = new Ratelimit({
-  redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(10, "1 m"),
-});
+// Define limits per tier
+const chatLimits = {
+  free: { requests: 5, window: '1 m' },
+  pro: { requests: 20, window: '1 m' },
+  premium: { requests: 60, window: '1 m' },
+  ultra: { requests: 60, window: '1 m' },
+} as const
 
-const { success } = await ratelimit.limit(userId);
-if (!success) {
-  return Response.json({ error: "Too many requests" }, { status: 429 });
+// Create separate limiters with unique prefixes
+export const chatRatelimits = redis ? {
+  free: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(chatLimits.free.requests, chatLimits.free.window),
+    analytics: true,
+    prefix: 'ratelimit:chat:free',
+  }),
+  pro: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(chatLimits.pro.requests, chatLimits.pro.window),
+    analytics: true,
+    prefix: 'ratelimit:chat:pro',
+  }),
+  // ... premium, ultra
+} : null
+
+// Global burst protection (500 req/min across ALL users)
+export const globalRatelimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(500, '1 m'),
+      analytics: true,
+      prefix: 'ratelimit:global',
+    })
+  : null
+
+// Dynamic tier lookup and rate limit check
+export async function checkRateLimit(userId: string, type: 'chat' | 'api') {
+  // Check global limit FIRST
+  if (globalRatelimit) {
+    const globalCheck = await globalRatelimit.limit('global')
+    if (!globalCheck.success) {
+      return { success: false, ...globalCheck }
+    }
+  }
+
+  const limiters = type === 'chat' ? chatRatelimits : apiRatelimits
+  if (!limiters) return { success: true }
+
+  // Fetch user tier from database
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { tier: true },
+  })
+
+  const tier = user?.tier ?? 'free'
+  const limiter = limiters[tier]
+
+  return await limiter.limit(userId)
+}
+```
+
+### API Route Usage
+
+```typescript
+export async function POST(request: Request) {
+  const { userId } = await auth()
+  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 })
+
+  const rateLimitResult = await checkRateLimit(userId, 'chat')
+
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.', code: 'RATE_LIMIT_EXCEEDED' },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(Math.ceil((rateLimitResult.reset! - Date.now()) / 1000)),
+          'X-RateLimit-Limit': String(rateLimitResult.limit ?? 0),
+          'X-RateLimit-Remaining': String(rateLimitResult.remaining ?? 0),
+          'X-RateLimit-Reset': String(rateLimitResult.reset ?? 0),
+        }
+      }
+    )
+  }
+
+  // Process request...
 }
 ```
 
 ### Key Points
 
-- Use sliding window algorithm (10 requests per minute)
-- Rate limit by `userId` (not IP)
-- Return 429 status for rate-limited requests
-- Configure in middleware or individual API routes
+- Use **sliding window** algorithm (smooth traffic, prevents burst attacks)
+- **Tier-based limits** for differentiated service (Free: 5 req/min, Pro: 20, Premium/Ultra: 60)
+- **Global burst protection** prevents DoS (500 req/min across all users)
+- Rate limit by **userId** (not IP) with dynamic tier lookup from database
+- Return **429 status** with proper headers (Retry-After, X-RateLimit-*)
+- **Separate Ratelimit instances** per tier with unique prefixes
+- **Two-layer approach** for AI SaaS: request limits (infrastructure) + credit limits (budget)
+- See `.claude/skills/backend/rate-limiting/SKILL.md` for comprehensive patterns
 
 ## Database Transactions
 
