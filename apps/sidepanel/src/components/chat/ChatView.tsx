@@ -57,12 +57,15 @@ export function ChatView({
 }: ChatViewProps) {
   const messageListRef = useRef<EnhancedMessageListHandle>(null)
   const showSuggestions = suggestions && suggestions.length > 0 && messages.length === 0
+  const prevMessagesLength = useRef(messages.length)
 
+  // Auto-scroll when NEW messages are added (not on initial load)
   useEffect(() => {
-    // Auto-scroll when new messages are added
-    if (messages.length > 0) {
+    if (messages.length > prevMessagesLength.current) {
+      // New message added - scroll to bottom
       messageListRef.current?.scrollToBottom()
     }
+    prevMessagesLength.current = messages.length
   }, [messages.length])
 
   const handleUpgradeClick = () => {
@@ -73,13 +76,13 @@ export function ChatView({
   }
 
   const handleSuggestionClick = (suggestion: string) => {
-    messageListRef.current?.scrollToBottom()
     onSend(suggestion)
+    // Scroll will happen via useEffect when message is added
   }
 
   const handleSend = (message: string, image?: ImageData) => {
-    messageListRef.current?.scrollToBottom()
     onSend(message, image)
+    // Scroll will happen via useEffect when message is added
   }
 
   return (

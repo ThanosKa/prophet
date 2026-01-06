@@ -36,10 +36,17 @@ export function ChatHistory({
     onLoadMore,
 }: ChatHistoryProps) {
     const { drawerOpen, setDrawerOpen } = useUIStore()
+    const scrollAreaRef = useRef<HTMLDivElement>(null)
     const sentinelRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         if (!hasMore || isLoadingMore || !onLoadMore) return
+
+        const scrollArea = scrollAreaRef.current
+        if (!scrollArea) return
+
+        // Targeted fix for Radix ScrollArea: use the viewport as the root
+        const viewport = scrollArea.querySelector('[data-radix-scroll-area-viewport]')
 
         const observer = new IntersectionObserver(
             (entries) => {
@@ -47,7 +54,10 @@ export function ChatHistory({
                     onLoadMore()
                 }
             },
-            { threshold: 0.1 }
+            {
+                root: viewport, // Critical: observe within this scroll container
+                threshold: 0.1
+            }
         )
 
         if (sentinelRef.current) {
@@ -86,6 +96,7 @@ export function ChatHistory({
             { label: 'Yesterday', chats: [] },
             { label: 'Previous 7 Days', chats: [] },
             { label: 'Previous 30 Days', chats: [] },
+            { label: 'Older', chats: [] },
         ]
 
         chats.forEach((chat) => {
@@ -98,6 +109,8 @@ export function ChatHistory({
                 groups[2].chats.push(chat)
             } else if (chatDate >= thirtyDaysAgo) {
                 groups[3].chats.push(chat)
+            } else {
+                groups[4].chats.push(chat)
             }
         })
 
@@ -126,7 +139,7 @@ export function ChatHistory({
 
                 <Separator className="shrink-0" />
 
-                <ScrollArea className="flex-1 px-4">
+                <ScrollArea ref={scrollAreaRef} className="flex-1 px-4">
                     <div className="pb-4 flex flex-col gap-6 min-w-0">
                         {chats.length === 0 ? (
                             <div className="text-center py-10 text-muted-foreground text-sm">
@@ -177,9 +190,9 @@ export function ChatHistory({
                                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                                     </div>
                                 )}
-                                {!isLoadingMore && hasMore && (
-                                    <div className="h-8 flex items-center justify-center">
-                                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/20" />
+                                {!isLoadingMore && !hasMore && chats.length > 0 && (
+                                    <div className="text-center py-4 text-muted-foreground/50 text-xs">
+                                        End of conversations
                                     </div>
                                 )}
                                 <div ref={sentinelRef} className="h-1" />
