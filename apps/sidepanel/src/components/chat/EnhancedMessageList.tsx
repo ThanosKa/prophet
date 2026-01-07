@@ -308,11 +308,6 @@ export const EnhancedMessageList = forwardRef<EnhancedMessageListHandle, Enhance
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/20" />
             </div>
           )}
-          {!isLoadingOlder && !hasMore && messages.length > 0 && (
-            <div className="text-center py-3 text-muted-foreground/50 text-xs">
-              — Start of conversation —
-            </div>
-          )}
           {messages.map((message, index) => {
             const isLast = index === messages.length - 1;
             const isLastAssistant = isLast && message.role === "assistant";

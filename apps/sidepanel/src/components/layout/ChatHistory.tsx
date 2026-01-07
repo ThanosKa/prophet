@@ -1,6 +1,6 @@
 
 import { Trash2, Plus, Loader2 } from 'lucide-react'
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useMemo } from 'react'
 import {
     Sheet,
     SheetContent,
@@ -65,7 +65,7 @@ export function ChatHistory({
         }
 
         return () => observer.disconnect()
-    }, [hasMore, isLoadingMore, onLoadMore])
+    }, [hasMore, isLoadingMore, onLoadMore, chats])
 
     const handleSelect = (id: string) => {
         onSelectChat(id)
@@ -117,7 +117,7 @@ export function ChatHistory({
         return groups.filter((g) => g.chats.length > 0)
     }
 
-    const groupedChats = groupChatsByDate(chats)
+    const groupedChats = useMemo(() => groupChatsByDate(chats), [chats])
 
     return (
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
