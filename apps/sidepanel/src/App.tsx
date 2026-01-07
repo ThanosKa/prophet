@@ -49,6 +49,28 @@ export default function App() {
   }, [abort])
 
   useEffect(() => {
+    const handleStorageChange = (
+      changes: { [key: string]: chrome.storage.StorageChange }
+    ) => {
+      if (changes.__clerk_client_jwt) {
+        // Reload on sign-in (new token) OR sign-out (token removed)
+        if (changes.__clerk_client_jwt.newValue) {
+          console.log('Clerk session synced, reloading sidepanel')
+        } else if (changes.__clerk_client_jwt.oldValue && !changes.__clerk_client_jwt.newValue) {
+          console.log('Clerk session signed out, reloading sidepanel')
+        }
+        window.location.reload()
+      }
+    }
+
+    chrome.storage.local.onChanged.addListener(handleStorageChange)
+
+    return () => {
+      chrome.storage.local.onChanged.removeListener(handleStorageChange)
+    }
+  }, [])
+
+  useEffect(() => {
     document.documentElement.classList.remove('light', 'dark')
     document.documentElement.classList.add(theme)
   }, [theme])
@@ -94,7 +116,7 @@ export default function App() {
 
   const handleSendMessage = async (content: string, image?: ImageData) => {
     if (!activeChatId || activeChatId.startsWith('draft-')) {
-      const chat = await createChatAsync(content.slice(0, 50) || 'Image')
+      const chat = await createChatAsync('New Chat')
       if (chat) {
         setActiveChatId(chat.id)
         await sendMessage(chat.id, content, image)
