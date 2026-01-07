@@ -17,14 +17,12 @@ Use this skill when writing or reviewing tests for any part of the Prophet monor
 pnpm test              # Run all tests in watch mode
 pnpm test:run          # Run all tests once
 pnpm test:coverage     # Run all tests with coverage
-pnpm test:backend      # Run backend tests only
 ```
 
 ### From Individual Apps
 ```bash
-pnpm -F @prophet/backend test          # Backend tests
+pnpm -F @prophet/marketing test        # Marketing/API tests
 pnpm -F @prophet/sidepanel test        # Sidepanel tests (when added)
-pnpm -F @prophet/marketing test        # Marketing tests (when added)
 pnpm -F @prophet/shared test           # Shared utilities tests (when added)
 ```
 
@@ -35,7 +33,7 @@ pnpm -F @prophet/shared test           # Shared utilities tests (when added)
 Tests are **colocated** next to their source files:
 
 ```
-apps/backend/
+apps/marketing/
 ├── app/api/stripe/webhook/
 │   ├── route.ts           # Source
 │   └── route.test.ts      # Test
@@ -56,9 +54,9 @@ apps/shared/
 
 ---
 
-## Backend Testing (Vitest + Node)
+## Backend/API Testing (Vitest + Node)
 
-### Config: `apps/backend/vitest.config.ts`
+### Config: `apps/marketing/vitest.config.ts`
 ```typescript
 import { defineConfig } from 'vitest/config'
 import path from 'path'
@@ -277,8 +275,8 @@ export default defineConfig({
 
 ## App-Specific Notes
 
-### Backend (`apps/backend`)
-- **Current status**: ✅ 27 tests passing
+### Marketing/API (`apps/marketing`)
+- **Current status**: ✅ Tests available
 - **Test files**: `route.test.ts`, `pricing.test.ts`
 - **Focus**: API routes, database logic, webhooks
 
@@ -286,10 +284,6 @@ export default defineConfig({
 - **Current status**: ⏳ No tests yet
 - **Future**: React component tests, hook tests
 - **Will need**: `@testing-library/react`, `@testing-library/jest-dom`
-
-### Marketing (`apps/marketing`)
-- **Current status**: ⏳ No tests yet
-- **Future**: Page/component tests if complex logic added
 
 ### Shared (`apps/shared`)
 - **Current status**: ⏳ No tests yet

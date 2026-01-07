@@ -79,7 +79,7 @@ usageRecords {
 ## Database Commands
 
 ```bash
-pnpm -F @prophet/backend db:generate  # Generate migrations from schema
-pnpm -F @prophet/backend db:migrate   # Apply migrations
-pnpm -F @prophet/backend db:studio    # Open Drizzle Studio GUI
+pnpm -F @prophet/marketing db:generate  # Generate migrations from schema
+pnpm -F @prophet/marketing db:migrate   # Apply migrations
+pnpm -F @prophet/marketing db:studio    # Open Drizzle Studio GUI
 ```
