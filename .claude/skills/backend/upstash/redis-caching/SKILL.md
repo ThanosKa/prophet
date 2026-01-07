@@ -475,6 +475,53 @@ async function updateUserBio(userId: string, bio: string) {
 }
 ```
 
+### Hash Field Expiration (HEXPIRE) - April 2025+
+
+Redis now supports per-field expiration in hashes - useful for mixed data with different TTLs.
+
+✅ **GOOD: Hash fields with individual expiration**
+
+```typescript
+// Store user profile with per-field expiration
+async function setUserWithMixedTTL(userId: string, profile: UserProfile) {
+  // Set permanent fields (name, email)
+  await redis.hset(`user:${userId}`, {
+    name: profile.name,
+    email: profile.email,
+  })
+
+  // Set temporary fields (verification token, OTP)
+  await redis.hset(`user:${userId}`, {
+    verificationToken: profile.token,
+    otp: profile.code,
+  })
+
+  // Expire only the temporary fields (15 minutes)
+  await redis.hexpire(`user:${userId}`, 900, ['verificationToken', 'otp'])
+}
+
+// Check if field still exists (use HTTL to get TTL)
+async function isTokenValid(userId: string) {
+  const ttl = await redis.httl(`user:${userId}`, 'verificationToken')
+  return ttl > 0 // Field still valid
+}
+
+// Get TTL for field
+async function getFieldTTL(userId: string, field: string) {
+  const ttl = await redis.httl(`user:${userId}`, field)
+  // ttl > 0: alive with that many seconds left
+  // ttl === -1: field exists but no expiration
+  // ttl === -2: field doesn't exist
+  return ttl
+}
+```
+
+**New Hash Expiration Commands** (April 2025+):
+- `HEXPIRE key seconds fields...` - Expire fields in seconds
+- `HPEXPIRE key milliseconds fields...` - Expire fields in milliseconds
+- `HTTL key field` - Get remaining TTL in seconds
+- `HPTTL key field` - Get remaining TTL in milliseconds
+
 **Data Structure Selection Guide**:
 - **Strings**: Simple key-value (sessions, cached API responses)
 - **Sorted Sets**: Leaderboards, time-series data, priority queues

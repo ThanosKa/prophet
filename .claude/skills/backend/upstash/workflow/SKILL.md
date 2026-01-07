@@ -550,17 +550,19 @@ export const { POST } = serve<{ userId: string }>(async (context) => {
   })
 
   // Step 2: Wait for user to verify email (external event)
-  const verified = await context.waitForEvent('email-verified', {
+  const result = await context.waitForEvent('wait-verification', 'email-verified', {
     timeout: '7d', // Wait up to 7 days
   })
 
-  if (!verified) {
+  if (result.timeout) {
     // Timeout - email not verified
     await context.run('send-reminder', async () => {
       await emailProvider.send({ template: 'verify-reminder' })
     })
     return { status: 'verification-timeout' }
   }
+
+  const verified = result.eventData
 
   // Step 3: Email verified - continue onboarding
   await context.run('complete-onboarding', async () => {
@@ -611,11 +613,11 @@ export const { POST } = serve<{ documentId: string }>(async (context) => {
   })
 
   // Step 2: Wait for approval (up to 3 days)
-  const approval = await context.waitForEvent('document-approved', {
+  const result = await context.waitForEvent('wait-approval', 'document-approved', {
     timeout: '3d',
   })
 
-  if (!approval || approval.approved === false) {
+  if (result.timeout || result.eventData?.approved === false) {
     // Rejected or timeout
     await context.run('handle-rejection', async () => {
       await db.documents.update({
@@ -655,17 +657,19 @@ export const { POST } = serve<{ paymentId: string }>(async (context) => {
   })
 
   // Step 2: Wait for Stripe webhook (payment confirmed)
-  const payment = await context.waitForEvent('payment-confirmed', {
+  const result = await context.waitForEvent('wait-payment', 'payment-confirmed', {
     timeout: '1h', // Wait up to 1 hour for payment
   })
 
-  if (!payment) {
+  if (result.timeout) {
     // Payment timeout
     await context.run('cancel-payment', async () => {
       await stripe.paymentIntents.cancel(intent.id)
     })
     return { status: 'cancelled' }
   }
+
+  const payment = result.eventData
 
   // Step 3: Payment confirmed - fulfill order
   await context.run('fulfill-order', async () => {
@@ -712,9 +716,16 @@ export const { POST } = serve(async (context) => {
     await startAsyncJob(jobId)
   })
 
-  const result = await context.waitForEvent('job-completed', {
+  const result = await context.waitForEvent('wait-job', 'job-completed', {
     timeout: '1h',
   })
+
+  if (!result.timeout) {
+    // Job completed successfully
+    await context.run('process-result', async () => {
+      await processResult(result.eventData)
+    })
+  }
 })
 ```
 
@@ -722,9 +733,9 @@ export const { POST } = serve(async (context) => {
 
 ## Parallel Execution
 
-### context.call() for Parallel Tasks
+### Promise.all() with context.run() for Parallel Steps
 
-Execute multiple independent tasks concurrently.
+Execute multiple independent steps concurrently using `Promise.all()` with multiple `context.run()` calls.
 
 ✅ **GOOD: Parallel execution with synchronized completion**
 
@@ -732,16 +743,16 @@ Execute multiple independent tasks concurrently.
 export const { POST } = serve<{ imageUrls: string[] }>(async (context) => {
   const { imageUrls } = context.requestPayload
 
-  // Process all images in parallel
-  const results = await context.call('process-images', async () => {
-    return await Promise.all(
-      imageUrls.map(async (url) => {
+  // Process all images in parallel using Promise.all + context.run
+  const results = await Promise.all(
+    imageUrls.map((url, index) =>
+      context.run(`process-image-${index}`, async () => {
         const resized = await resizeImage(url)
         const compressed = await compressImage(resized)
         return compressed
       })
     )
-  })
+  )
 
   // All images processed - upload to storage
   await context.run('upload', async () => {
@@ -752,6 +763,41 @@ export const { POST } = serve<{ imageUrls: string[] }>(async (context) => {
 })
 ```
 
+### context.call() for Long-Running HTTP Requests
+
+`context.call()` is for making HTTP requests where **Upstash executes the request on your behalf** (up to 12 hours). This is different from parallel step execution.
+
+✅ **GOOD: Long-running HTTP request via Upstash**
+
+```typescript
+export const { POST } = serve(async (context) => {
+  // Upstash makes the HTTP request on your behalf (can take up to 12 hours)
+  const result = await context.call('long-running-api', {
+    url: 'https://api.example.com/process-video',
+    method: 'POST',
+    body: { videoUrl: 'https://...' },
+  })
+
+  // Use result in next step
+  await context.run('save-result', async () => {
+    await db.videos.update({
+      where: { id: videoId },
+      data: { processedUrl: result.url },
+    })
+  })
+})
+```
+
+**When to use `context.call()`**:
+- External API calls that may take minutes to hours
+- Third-party services with long processing times (video encoding, ML inference)
+- Upstash handles retries and timeouts for you
+
+**When to use `Promise.all()` with `context.run()`**:
+- Parallel execution of multiple workflow steps
+- Independent tasks that can run concurrently
+- Need synchronized completion of all tasks
+
 ### Map/Reduce Patterns
 
 ✅ **GOOD: Parallel processing with aggregation**
@@ -760,14 +806,14 @@ export const { POST } = serve<{ imageUrls: string[] }>(async (context) => {
 export const { POST } = serve<{ userIds: string[] }>(async (context) => {
   const { userIds } = context.requestPayload
 
-  // Step 1: Process all users in parallel
-  const reports = await context.call('generate-reports', async () => {
-    return await Promise.all(
-      userIds.map(async (userId) => {
+  // Step 1: Process all users in parallel with Promise.all + context.run
+  const reports = await Promise.all(
+    userIds.map((userId, index) =>
+      context.run(`generate-report-${index}`, async () => {
         return await generateUserReport(userId)
       })
     )
-  })
+  )
 
   // Step 2: Aggregate results
   const summary = await context.run('aggregate', async () => {
@@ -806,13 +852,13 @@ export const { POST } = serve(async (context) => {
   }
 })
 
-// ✅ BETTER: Parallel - all complete in ~10s
+// ✅ BETTER: Parallel - all complete in ~10s using Promise.all
 export const { POST } = serve(async (context) => {
-  const results = await context.call('process-all', async () => {
-    return await Promise.all(
-      imageUrls.map(url => processImage(url))
+  const results = await Promise.all(
+    imageUrls.map((url, index) =>
+      context.run(`process-${index}`, async () => processImage(url))
     )
-  })
+  )
 })
 ```
 
@@ -831,7 +877,8 @@ Before deploying Workflow to production:
 - [ ] Using events instead of polling (waitForEvent)
 - [ ] Cost-aware step design (combine where appropriate)
 - [ ] Timeouts set on waitForEvent (don't wait forever)
-- [ ] Parallel execution for independent tasks (context.call)
+- [ ] Parallel execution for independent tasks (Promise.all + context.run)
+- [ ] Long-running HTTP requests use context.call
 - [ ] Early termination when conditions met
 - [ ] Cleanup steps for resource management
 

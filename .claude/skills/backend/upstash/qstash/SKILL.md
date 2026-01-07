@@ -40,14 +40,16 @@ QStash acts as a **middleman** between your application and destination APIs, gu
 
 ### Automatic Retries with Exponential Backoff
 
-QStash automatically retries failed deliveries with increasing delays:
-- Retry 1: Immediate
-- Retry 2: 1 second
-- Retry 3: 2 seconds
-- Retry 4: 4 seconds
-- Retry 5: 8 seconds
+QStash automatically retries failed deliveries with increasing delays using the formula: `delay = min(86400, e^(2.5*n))` seconds.
 
-**Configurable**: Set max retries (0-10+) based on use case.
+**Default backoff timeline**:
+- Retry 1: ~12 seconds
+- Retry 2: ~2 minutes 28 seconds
+- Retry 3: ~30 minutes 8 seconds
+- Retry 4: ~6 hours 7 minutes
+- Retry 5+: 24 hours (capped at 86400 seconds)
+
+**Configurable**: Set max retries (0-10+) and custom `retryDelay` expressions (e.g., `pow(2, retried) * 1000` for doubling delays).
 
 ### Dead Letter Queue (DLQ)
 
@@ -195,6 +197,63 @@ async function notifyPartners(eventType: string, payload: object) {
 - Webhook delivery (external integrations)
 - Data export (CSV, Excel)
 - Third-party API calls (analytics, CRM)
+
+### Batch Publishing (Bulk Operations)
+
+✅ **GOOD: Batch publish multiple messages efficiently**
+
+```typescript
+// Send emails to 1000 users efficiently
+async function sendBulkEmails(userEmails: string[]) {
+  // Option 1: Use batchPublishJSON for better performance
+  const messages = userEmails.map(email => ({
+    url: `${process.env.API_URL}/api/send-email`,
+    body: { email, template: 'weekly-digest' },
+    retries: 3,
+  }))
+
+  await qstash.batch(messages)
+}
+
+// Batch with custom delays
+async function sendProgressiveNotifications(userIds: string[]) {
+  const now = Math.floor(Date.now() / 1000)
+
+  const messages = userIds.map((userId, index) => ({
+    url: `${process.env.API_URL}/api/notify`,
+    body: { userId, message: 'Check your account' },
+    notBefore: now + (index * 3600), // Stagger by 1 hour each
+    retries: 5,
+  }))
+
+  await qstash.batch(messages)
+}
+```
+
+❌ **BAD: Individual publishes in loop (slower)**
+
+```typescript
+// ❌ N+1 API calls to QStash
+async function sendBulkEmails(userEmails: string[]) {
+  for (const email of userEmails) {
+    // Each iteration = separate API call
+    await qstash.publishJSON({
+      url: `${process.env.API_URL}/api/send-email`,
+      body: { email },
+    })
+  }
+}
+
+// ✅ BETTER: Batch all at once
+async function sendBulkEmails(userEmails: string[]) {
+  const messages = userEmails.map(email => ({
+    url: `${process.env.API_URL}/api/send-email`,
+    body: { email },
+  }))
+
+  await qstash.batch(messages) // Single API call
+}
+```
 
 ---
 
@@ -349,11 +408,12 @@ async function enqueueOrder(orderId: string) {
   })
 }
 
-// Configure queue parallelism (max 5 concurrent messages)
+// Configure queue parallelism and rate limiting
 await qstash.queue({
   queueName: 'order-processing',
 }).upsert({
   parallelism: 5, // Process up to 5 orders concurrently
+  rateLimit: 10, // Maximum 10 messages per second
 })
 ```
 
@@ -763,7 +823,8 @@ async function notifyEndpoint(req: Request) {
 - **Critical**: 10+ retries (payments, order processing)
 - **External APIs**: 3 retries (respect provider limits)
 
-**Backoff Strategy**: Exponential (1s, 2s, 4s, 8s, 16s, 32s, ...)
+**Backoff Strategy**: Exponential using `delay = min(86400, e^(2.5*n))` → 12s, 2m28s, 30m8s, 6h7m, 24h
+- Custom delays supported via `retryDelay` expressions (e.g., `pow(2, retried) * 1000`)
 
 ---
 
@@ -893,8 +954,9 @@ Before deploying QStash to production:
 - External APIs: 3 retries (respect limits)
 
 **Backoff Strategy**:
-- Exponential: 1s, 2s, 4s, 8s, 16s, 32s...
-- Max delay: 60s (avoid long waits)
+- Default formula: `delay = min(86400, e^(2.5*n))` → 12s, 2m28s, 30m8s, 6h7m, 24h
+- Custom delays: Use `retryDelay` expressions for custom backoff patterns
+- Max delay: 24 hours (86400 seconds)
 
 **Queue Parallelism**:
 - Rate-limited APIs: 1-5

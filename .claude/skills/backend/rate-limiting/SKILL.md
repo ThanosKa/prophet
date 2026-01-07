@@ -86,7 +86,9 @@ const ratelimit = new Ratelimit({
 ### Alternatives (When to Use)
 - **Token bucket** - If you want to allow short bursts (e.g., 20 requests in 10s, then throttle)
   ```typescript
-  limiter: Ratelimit.tokenBucket(10, '10 s', 20) // 10 refill/10s, max 20 tokens
+  // tokenBucket(refillRate, interval, maxTokens)
+  limiter: Ratelimit.tokenBucket(5, '10 s', 10) // 5 tokens refill per 10s, max 10 tokens
+  // This allows burst of 10 requests initially, then 5 per 10s sustained
   ```
 - **Fixed window** - Very cheap and simple; use when precision doesn't matter (e.g., analytics, logging)
   ```typescript
@@ -247,6 +249,37 @@ if (!rateLimitResult.success) {
 - Display "3 requests remaining"
 - Implement exponential backoff
 
+### Understanding Limit Response Fields
+
+The `rateLimitResult` object includes:
+
+```typescript
+type RateLimitResponse = {
+  success: boolean
+  limit: number              // Requests per window
+  remaining: number          // Requests left
+  reset: number             // Millisecond timestamp when limit resets
+  pending: Promise<void>    // Serverless: await before returning
+  reason?: string           // Why the request was limited
+}
+
+// reason can be:
+// - "timeout": Redis timed out (default is allow)
+// - "cacheBlock": Request blocked by ephemeralCache
+// - "denyList": IP/user on deny list (if using Traffic Protection)
+// - undefined: Normal sliding window limit exceeded
+
+const result = await ratelimit.limit(userId)
+
+if (!result.success) {
+  console.log(`Blocked: ${result.reason}`)
+  // "Blocked: timeout" → Redis unavailable, request allowed
+  // "Blocked: cacheBlock" → Cached as blocked (fast rejection)
+  // "Blocked: denyList" → Manual deny list
+  // "Blocked: undefined" → Rate limit exceeded
+}
+```
+
 ---
 
 ## Generic SaaS vs AI SaaS Patterns
@@ -365,10 +398,18 @@ const ratelimit = new Ratelimit({
 Reduces Redis calls by caching blocked identifiers in-memory:
 
 ```typescript
+// Default: ephemeralCache enabled with new Map()
 const ratelimit = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(10, '1 m'),
-  ephemeralCache: new Map(), // Enable in-memory cache
+  // ephemeralCache is automatically initialized with new Map() by default
+})
+
+// Disable ephemeral cache if needed
+const ratelimitNoCache = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, '1 m'),
+  ephemeralCache: false, // Disable in-memory cache
 })
 ```
 
@@ -380,6 +421,7 @@ const ratelimit = new Ratelimit({
 **Benefits**:
 - Reduces Redis costs for high-traffic apps
 - Faster rejection of blocked users (no network call)
+- Default behavior: enabled automatically (no need to pass ephemeralCache)
 
 **Important**: Only stores **blocked** identifiers, not all requests. Cache is per-instance (doesn't survive cold starts in serverless).
 
