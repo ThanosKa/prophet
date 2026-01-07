@@ -73,11 +73,9 @@ export default function App() {
     }
   }, [activeChatId, chats, setContextUsage, resetContextTokens])
 
-  const handleNewChat = async () => {
-    const chat = await createChatAsync(`New Chat ${new Date().toLocaleTimeString()}`)
-    if (chat) {
-      setActiveChatId(chat.id)
-    }
+  const handleNewChat = () => {
+    const draftId = `draft-${crypto.randomUUID()}`
+    setActiveChatId(draftId)
   }
 
   const handleSelectChat = (chatId: string) => {
@@ -95,7 +93,7 @@ export default function App() {
   }
 
   const handleSendMessage = async (content: string, image?: ImageData) => {
-    if (!activeChatId) {
+    if (!activeChatId || activeChatId.startsWith('draft-')) {
       const chat = await createChatAsync(content.slice(0, 50) || 'Image')
       if (chat) {
         setActiveChatId(chat.id)

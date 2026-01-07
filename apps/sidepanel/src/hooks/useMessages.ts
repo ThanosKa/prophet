@@ -28,7 +28,7 @@ export function useMessages(chatId: string | null) {
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor?.beforeCreatedAt,
-    enabled: !!chatId,
+    enabled: !!chatId && !chatId.startsWith('draft-'),
     staleTime: 1000 * 60 * 5,  // 5 minutes - don't refetch on every focus
   })
 

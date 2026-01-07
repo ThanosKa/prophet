@@ -117,13 +117,17 @@ export function ChatHistory({
         return groups.filter((g) => g.chats.length > 0)
     }
 
-    const groupedChats = useMemo(() => groupChatsByDate(chats), [chats])
+    const realChats = chats.filter(chat => !chat.id.startsWith('draft-'))
+    const groupedChats = useMemo(() => groupChatsByDate(realChats), [realChats])
 
     return (
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
             <SheetContent side="left" className="w-72 max-w-full p-0 flex flex-col bg-background border-r border-border">
                 <SheetHeader className="p-4 pb-2 shrink-0">
-                    <SheetTitle className="text-lg font-semibold">Prophet</SheetTitle>
+                    <SheetTitle className="text-lg font-semibold flex items-center gap-2">
+                        <img src="/logo.svg" alt="Prophet" className="h-6 w-6" />
+                        Prophet
+                    </SheetTitle>
                 </SheetHeader>
 
                 <div className="px-4 pb-4 shrink-0">
