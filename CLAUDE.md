@@ -95,6 +95,10 @@ prophet/
 │   └── skills/             # Claude Code coding standards (topic-based)
 │       ├── frontend/       # Frontend UX/UI patterns
 │       ├── backend/        # Backend API & database patterns
+│       │   └── upstash/    # Upstash DevOps skills
+│       │       ├── redis-caching/SKILL.md
+│       │       ├── qstash/SKILL.md
+│       │       └── workflow/SKILL.md
 │       ├── stack/          # Stack-specific setup
 │       └── typescript-standards/  # Cross-cutting concern
 └── CLAUDE.md               # This file
@@ -106,6 +110,10 @@ Detailed coding standards organized by topic in `.claude/skills/`:
 
 - **frontend/** - UX patterns, components, accessibility
 - **backend/** - API security, database patterns, streaming, testing, rate-limiting
+  - **upstash/** - Serverless DevOps patterns for scaling (1 to 100k+ users)
+    - **redis-caching/** - Caching strategies, sessions, counters, data structures, global replication
+    - **qstash/** - Background jobs, scheduled tasks, message queues, retries
+    - **workflow/** - Multi-step orchestration, state management, long-running processes
 - **stack/** - Next.js, Chrome extension setup
 - **typescript-standards/** - Type safety across all code
 
