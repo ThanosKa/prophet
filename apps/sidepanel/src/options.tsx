@@ -4,6 +4,7 @@ import { ClerkProvider, useUser, useAuth } from '@clerk/chrome-extension'
 import { dark } from '@clerk/themes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Spinner } from '@/components/ui/spinner'
 import { config } from '@/lib/config'
 import '@/globals.css'
 
@@ -32,7 +33,7 @@ function OptionsApp() {
                         <h1 className="text-3xl font-bold tracking-tight">Prophet Settings</h1>
                     </div>
                     <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        <Spinner className="h-8 w-8" />
                     </div>
                 </div>
             </div>

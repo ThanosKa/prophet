@@ -12,6 +12,7 @@ import { WelcomeScreen } from '@/components/chat/WelcomeScreen'
 import { ChatView } from '@/components/chat/ChatView'
 import { SignInButton } from '@/components/auth/SignInButton'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Spinner } from '@/components/ui/spinner'
 import { apiClient } from '@/lib/api'
 
 interface ImageData {
@@ -185,8 +186,8 @@ export default function App() {
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-6 w-6 rounded-full" />
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center gap-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex-1 flex items-center justify-center">
+          <Spinner className="h-8 w-8" />
         </div>
       </div>
     )
