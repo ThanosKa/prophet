@@ -8,6 +8,7 @@ interface AppShellProps {
   chatTitle?: string
   chats: Chat[]
   activeChatId?: string | null
+  deletingChatId?: string
   onSelectChat: (chatId: string) => void
   onDeleteChat: (chatId: string) => void
   onNewChat: () => void
@@ -21,6 +22,7 @@ export function AppShell({
   chatTitle,
   chats,
   activeChatId,
+  deletingChatId,
   onSelectChat,
   onDeleteChat,
   onNewChat,
@@ -35,6 +37,7 @@ export function AppShell({
       <ChatHistory
         chats={chats}
         activeChatId={activeChatId}
+        deletingChatId={deletingChatId}
         onSelectChat={onSelectChat}
         onDeleteChat={onDeleteChat}
         onNewChat={onNewChat}

@@ -22,7 +22,7 @@ interface ImageData {
 export default function App() {
   const queryClient = useQueryClient()
   const { isSignedIn, user } = useAuth()
-  const { chats, isLoading: chatsLoading, createChatAsync, deleteChat, loadMore, hasMore: chatsHasMore, isLoadingMore: isLoadingMoreChats } = useChats()
+  const { chats, isLoading: chatsLoading, createChatAsync, deleteChat, deletingChatId, loadMore, hasMore: chatsHasMore, isLoadingMore: isLoadingMoreChats } = useChats()
   const { activeChatId, setActiveChatId, isStreaming, messages: messagesByChat } = useChatStore()
   const { resetContextTokens, setContextUsage, theme } = useUIStore()
   const { isLoading: messagesLoading, loadOlder, hasMore, isLoadingOlder } = useMessages(activeChatId)
@@ -203,6 +203,7 @@ export default function App() {
       chatTitle={activeChat?.title}
       chats={chats}
       activeChatId={activeChatId}
+      deletingChatId={deletingChatId}
       onSelectChat={handleSelectChat}
       onDeleteChat={handleDeleteChat}
       onNewChat={handleNewChat}

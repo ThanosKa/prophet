@@ -2,7 +2,7 @@ import { defineManifest } from "@crxjs/vite-plugin";
 
 const manifest = defineManifest({
   manifest_version: 3,
-  name: "Prophet AI - Assistant",
+  name: "Prophet",
   version: "1.0.0",
   description: "Your AI-powered assistant right in your browser",
 

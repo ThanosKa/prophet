@@ -79,6 +79,7 @@ export function useChats() {
     isCreating: createMutation.isPending,
     deleteChat: deleteMutation.mutate,
     isDeleting: deleteMutation.isPending,
+    deletingChatId: deleteMutation.variables,
     loadMore,
     hasMore: hasNextPage ?? false,
     isLoadingMore: isFetchingNextPage,

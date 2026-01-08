@@ -20,6 +20,7 @@ interface ChatHistoryProps {
     onDeleteChat: (chatId: string) => void
     onNewChat: () => void
     activeChatId?: string | null
+    deletingChatId?: string
     hasMore?: boolean
     isLoadingMore?: boolean
     onLoadMore?: () => void
@@ -31,6 +32,7 @@ export function ChatHistory({
     onDeleteChat,
     onNewChat,
     activeChatId,
+    deletingChatId,
     hasMore,
     isLoadingMore,
     onLoadMore,
@@ -157,35 +159,43 @@ export function ChatHistory({
                                             {group.label}
                                         </h4>
                                         <div className="flex flex-col gap-[2px] min-w-0">
-                                            {group.chats.map(chat => (
-                                                <div
-                                                    key={chat.id}
-                                                    onClick={() => handleSelect(chat.id)}
-                                                    className={cn(
-                                                        "group flex items-center gap-2 p-2.5 rounded-md text-sm cursor-pointer transition-colors min-w-0 overflow-hidden",
-                                                        "hover:bg-accent hover:text-accent-foreground",
-                                                        activeChatId === chat.id ? "bg-accent font-medium text-accent-foreground" : "text-foreground/80"
-                                                    )}
-                                                >
-                                                    <span className="truncate flex-1 min-w-0 overflow-hidden">
-                                                        {chat.title}
-                                                    </span>
-
+                                            {group.chats.map(chat => {
+                                                const isDeleting = deletingChatId === chat.id
+                                                return (
                                                     <div
-                                                        role="button"
-                                                        tabIndex={0}
-                                                        onClick={(e) => handleDelete(e, chat.id)}
+                                                        key={chat.id}
+                                                        onClick={() => handleSelect(chat.id)}
                                                         className={cn(
-                                                            "shrink-0 flex-none p-1.5 rounded-md transition-all",
-                                                            "text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10",
-                                                            "focus:ring-2 focus:ring-ring focus:outline-none"
+                                                            "flex items-center gap-2 p-2.5 rounded-md text-sm cursor-pointer transition-colors min-w-0 overflow-hidden",
+                                                            "hover:bg-accent hover:text-accent-foreground",
+                                                            activeChatId === chat.id ? "bg-accent font-medium text-accent-foreground" : "text-foreground/80"
                                                         )}
-                                                        title="Delete chat"
                                                     >
-                                                        <Trash2 className="w-4 h-4" />
+                                                        <span className="truncate flex-1 min-w-0 overflow-hidden">
+                                                            {chat.title}
+                                                        </span>
+
+                                                        <div
+                                                            role="button"
+                                                            tabIndex={0}
+                                                            onClick={(e) => handleDelete(e, chat.id)}
+                                                            className={cn(
+                                                                "shrink-0 flex-none p-1.5 rounded-md transition-all outline-none",
+                                                                "text-muted-foreground/60",
+                                                                !isDeleting && "hover:text-destructive hover:bg-destructive/10",
+                                                                isDeleting && "pointer-events-none"
+                                                            )}
+                                                            title="Delete chat"
+                                                        >
+                                                            {isDeleting ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="w-4 h-4" />
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                )
+                                            })}
                                         </div>
                                     </div>
                                 ))}

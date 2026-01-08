@@ -16,8 +16,9 @@ function OptionsApp() {
         await chrome.storage.local.remove('__clerk_client_jwt')
         // Tell sidepanel to reload
         chrome.runtime.sendMessage({ type: 'SIGN_OUT' })
-        // Sign out from Clerk without awaiting (it tries to redirect which causes ERR_FILE_NOT_FOUND)
-        signOut().catch(() => {})
+        // Sign out from Clerk and redirect back to options page
+        const optionsUrl = chrome.runtime.getURL('options.html')
+        signOut({ redirectUrl: optionsUrl }).catch(() => {})
     }
 
     const handleLogin = () => {
