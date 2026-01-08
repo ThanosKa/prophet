@@ -7,8 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { config } from '@/lib/config'
 import '@/globals.css'
 
-const SYNC_HOST = import.meta.env.VITE_SYNC_HOST || 'http://localhost:3000'
-
 function OptionsApp() {
     const { user, isLoaded, isSignedIn } = useUser()
     const { signOut } = useAuth()
@@ -16,12 +14,14 @@ function OptionsApp() {
     const handleSignOut = async () => {
         // Clear storage FIRST to trigger sidepanel reload
         await chrome.storage.local.remove('__clerk_client_jwt')
+        // Tell sidepanel to reload
+        chrome.runtime.sendMessage({ type: 'SIGN_OUT' })
         // Sign out from Clerk without awaiting (it tries to redirect which causes ERR_FILE_NOT_FOUND)
         signOut().catch(() => {})
     }
 
     const handleLogin = () => {
-        chrome.tabs.create({ url: `${SYNC_HOST}/sign-in` })
+        chrome.tabs.create({ url: `${config.apiUrl}/sign-in` })
     }
 
     if (!isLoaded) {
@@ -117,6 +117,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
         <ClerkProvider
             publishableKey={config.clerkPublishableKey}
+            syncHost={config.apiUrl}
             appearance={{
                 baseTheme: dark,
             }}

@@ -1,10 +1,9 @@
 import { Button } from '@/components/ui/button'
-
-const SYNC_HOST = import.meta.env.VITE_SYNC_HOST || 'http://localhost:3000'
+import { config } from '@/lib/config'
 
 export function SignInButton() {
   const handleSignIn = () => {
-    chrome.tabs.create({ url: `${SYNC_HOST}/sign-in` })
+    chrome.tabs.create({ url: `${config.apiUrl}/sign-in` })
     window.close()
   }
 

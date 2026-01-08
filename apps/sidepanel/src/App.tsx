@@ -49,6 +49,16 @@ export default function App() {
   }, [abort])
 
   useEffect(() => {
+    const handleSignOutMessage = (message: { type?: string }) => {
+      if (message?.type === 'SIGN_OUT') {
+        window.location.reload()
+      }
+    }
+    chrome.runtime.onMessage.addListener(handleSignOutMessage)
+    return () => chrome.runtime.onMessage.removeListener(handleSignOutMessage)
+  }, [])
+
+  useEffect(() => {
     const handleStorageChange = (
       changes: { [key: string]: chrome.storage.StorageChange }
     ) => {
