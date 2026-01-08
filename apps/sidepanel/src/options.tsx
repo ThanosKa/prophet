@@ -12,8 +12,6 @@ function OptionsApp() {
     const { signOut } = useAuth()
 
     const handleSignOut = async () => {
-        // Clear storage FIRST to trigger sidepanel reload
-        await chrome.storage.local.remove('__clerk_client_jwt')
         // Tell sidepanel to reload
         chrome.runtime.sendMessage({ type: 'SIGN_OUT' })
         // Sign out from Clerk and redirect back to options page
@@ -25,10 +23,18 @@ function OptionsApp() {
         chrome.tabs.create({ url: `${config.apiUrl}/sign-in` })
     }
 
+    // Show account view immediately while Clerk loads
     if (!isLoaded) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-background">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="min-h-screen bg-background p-8 flex justify-center">
+                <div className="w-full max-w-md space-y-8">
+                    <div className="text-center">
+                        <h1 className="text-3xl font-bold tracking-tight">Prophet Settings</h1>
+                    </div>
+                    <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                </div>
             </div>
         )
     }

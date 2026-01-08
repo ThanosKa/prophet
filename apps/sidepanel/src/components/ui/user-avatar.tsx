@@ -19,6 +19,11 @@ export function UserAvatar() {
 
   const imageUrl = clerkUser?.imageUrl;
 
+  const handleSettingsClick = () => {
+    const optionsUrl = chrome.runtime.getURL('options.html')
+    chrome.tabs.create({ url: optionsUrl })
+  };
+
   const handleAccountClick = () => {
     const accountUrl = `${config.apiUrl}/account`;
     chrome.tabs.create({ url: accountUrl });
@@ -51,7 +56,7 @@ export function UserAvatar() {
         <DropdownMenuItem onClick={handleAccountClick}>
           Account
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => chrome.runtime.openOptionsPage()}>
+        <DropdownMenuItem onClick={handleSettingsClick}>
           Settings
         </DropdownMenuItem>
       </DropdownMenuContent>

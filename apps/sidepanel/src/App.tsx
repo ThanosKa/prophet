@@ -185,11 +185,8 @@ export default function App() {
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-6 w-6 rounded-full" />
         </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-2">
-            <Skeleton className="h-8 w-32 mx-auto" />
-            <Skeleton className="h-4 w-24 mx-auto" />
-          </div>
+        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       </div>
     )
