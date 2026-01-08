@@ -12,23 +12,22 @@ export default function AuthSuccessPage() {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold">Authentication Successful!</h1>
           <p className="text-muted-foreground">
-            You're all set. Return to the Prophet extension to start chatting.
+            You are now signed in to Prophet. Click the button below to open the extension.
           </p>
         </div>
 
         <div className="space-y-4">
           <Button
-            onClick={() => window.close()}
+            data-open-prophet
             className="w-full"
             size="lg"
           >
-            Close Tab
+            Open Prophet
           </Button>
 
-          <div className="text-sm text-muted-foreground space-y-1">
-            <p className="font-medium">Extension didn't update?</p>
-            <p>Close the sidepanel and reopen it to complete sign-in.</p>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            If nothing happens, please open the extension manually from your browser toolbar.
+          </p>
         </div>
       </div>
     </div>

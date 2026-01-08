@@ -6,6 +6,7 @@ export const config = {
   // Set VITE_USE_DEV_API=mock for fully mocked responses (no API calls)
   useDevApi: import.meta.env.VITE_USE_DEV_API === 'true',
   useMockApi: import.meta.env.VITE_USE_DEV_API === 'mock',
+  extensionId: import.meta.env.VITE_EXTENSION_ID || chrome.runtime.id,
 } as const
 
 export default config

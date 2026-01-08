@@ -99,6 +99,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true
   }
 
+  // Open side panel request (from auth success page)
+  if (message.type === 'OPEN_SIDE_PANEL') {
+    if (sender.tab?.id) {
+      // Must be called synchronously to consume user gesture
+      chrome.sidePanel.open({ tabId: sender.tab.id, windowId: sender.tab.windowId })
+        .then(() => {
+          setTimeout(() => {
+            if (sender.tab?.id) {
+              chrome.tabs.remove(sender.tab.id).catch(() => { })
+            }
+          }, 500)
+        })
+        .catch((err) => console.error('[Background] Failed to open side panel:', err))
+    }
+    sendResponse({ success: true })
+    return true
+  }
+
   // Tool execution request
   if (isExecuteToolRequest(message)) {
     handleToolExecution(message, sendResponse)

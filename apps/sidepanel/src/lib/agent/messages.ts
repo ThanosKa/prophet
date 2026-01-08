@@ -34,12 +34,22 @@ export interface SubscribeAgentEventsRequest {
   type: 'SUBSCRIBE_AGENT_EVENTS'
 }
 
+export interface CloseAuthTabRequest {
+  type: 'CLOSE_AUTH_TAB'
+}
+
+export interface OpenSidePanelRequest {
+  type: 'OPEN_SIDE_PANEL'
+}
+
 export type SidepanelToBackgroundMessage =
   | ExecuteToolRequest
   | StartAgentLoopRequest
   | GetAgentStateRequest
   | StopAgentLoopRequest
   | SubscribeAgentEventsRequest
+  | CloseAuthTabRequest
+  | OpenSidePanelRequest
 
 // ============================================================================
 // Background → Sidepanel Messages

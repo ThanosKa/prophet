@@ -10,11 +10,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { config } from "@/lib/config";
 
 export function UserAvatar() {
-  const { clerkUser, user, signOut } = useAuth();
+  const { clerkUser, user } = useAuth();
 
   const initials = clerkUser
-    ? `${clerkUser.firstName?.[0] || ""}${
-        clerkUser.lastName?.[0] || ""
+    ? `${clerkUser.firstName?.[0] || ""}${clerkUser.lastName?.[0] || ""
       }`.toUpperCase() || "U"
     : "U";
 
@@ -23,10 +22,6 @@ export function UserAvatar() {
   const handleAccountClick = () => {
     const accountUrl = `${config.apiUrl}/account`;
     chrome.tabs.create({ url: accountUrl });
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
   };
 
   return (
@@ -56,11 +51,8 @@ export function UserAvatar() {
         <DropdownMenuItem onClick={handleAccountClick}>
           Account
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={handleSignOut}
-          className="text-destructive focus:text-destructive"
-        >
-          Sign out
+        <DropdownMenuItem onClick={() => chrome.runtime.openOptionsPage()}>
+          Settings
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

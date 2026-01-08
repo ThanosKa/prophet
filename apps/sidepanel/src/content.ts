@@ -1,3 +1,5 @@
+import type { OpenSidePanelRequest } from './lib/agent/messages'
+
 // Agent Overlay State
 // ============================================================================
 
@@ -183,42 +185,29 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 if (window.location.pathname === '/auth-success') {
   // console.log('[Prophet] Auth success page detected')
 
-  let countdown = 3
-  const updateCountdown = () => {
-    const countdownElement = document.querySelector('[data-countdown]')
-    if (countdownElement) {
-      countdownElement.textContent = `${countdown}`
-    }
+  const handleOpenProphet = () => {
+    const msg: OpenSidePanelRequest = { type: 'OPEN_SIDE_PANEL' }
+    chrome.runtime.sendMessage(msg)
   }
 
-  const timer = setInterval(() => {
-    countdown--
-    updateCountdown()
-
-    if (countdown <= 0) {
-      clearInterval(timer)
-      // console.log('[Prophet] Closing auth tab...')
-
-      chrome.runtime.sendMessage(
-        { type: 'CLOSE_AUTH_TAB' },
-        (_response) => {
-          if (chrome.runtime.lastError) {
-            console.error('[Prophet] Error closing tab:', chrome.runtime.lastError)
-          } else {
-            // console.log('[Prophet] Tab close response:', response)
-          }
-        }
-      )
+  // Look for the button immediately and also observe for it (React hydration)
+  const setupButtonListener = () => {
+    const btn = document.querySelector('[data-open-prophet]')
+    if (btn) {
+      btn.addEventListener('click', handleOpenProphet)
+      return true
     }
-  }, 1000)
+    return false
+  }
 
-  const observer = new MutationObserver(updateCountdown)
-  observer.observe(document.body, { childList: true, subtree: true })
-
-  setTimeout(() => {
-    updateCountdown()
-    observer.disconnect()
-  }, 100)
+  if (!setupButtonListener()) {
+    const observer = new MutationObserver((_mutations: MutationRecord[], obs: MutationObserver) => {
+      if (setupButtonListener()) {
+        obs.disconnect()
+      }
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+  }
 }
 
 // console.log('[Prophet] Content script loaded')

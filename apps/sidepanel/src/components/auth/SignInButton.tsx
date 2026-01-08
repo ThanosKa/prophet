@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2 } from 'lucide-react'
 
 const SYNC_HOST = import.meta.env.VITE_SYNC_HOST || 'http://localhost:3000'
@@ -24,6 +23,7 @@ export function SignInButton() {
   const handleSignIn = () => {
     setIsAuthInProgress(true)
     chrome.tabs.create({ url: `${SYNC_HOST}/sign-in` })
+    window.close()
   }
 
   return (
