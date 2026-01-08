@@ -3,20 +3,25 @@ import ReactDOM from 'react-dom/client'
 import { ClerkProvider, useUser, useAuth } from '@clerk/chrome-extension'
 import { dark } from '@clerk/themes'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { config } from '@/lib/config'
 import '@/globals.css'
+
+const SYNC_HOST = import.meta.env.VITE_SYNC_HOST || 'http://localhost:3000'
 
 function OptionsApp() {
     const { user, isLoaded, isSignedIn } = useUser()
     const { signOut } = useAuth()
 
     const handleSignOut = async () => {
-        await signOut()
-        // Trigger storage change to ensure sidepanel detects it
-        chrome.storage.local.set({ __clerk_client_jwt: null })
-        // Close the options tab
-        window.close()
+        // Clear storage FIRST to trigger sidepanel reload
+        await chrome.storage.local.remove('__clerk_client_jwt')
+        // Sign out from Clerk without awaiting (it tries to redirect which causes ERR_FILE_NOT_FOUND)
+        signOut().catch(() => {})
+    }
+
+    const handleLogin = () => {
+        chrome.tabs.create({ url: `${SYNC_HOST}/sign-in` })
     }
 
     if (!isLoaded) {
@@ -27,6 +32,33 @@ function OptionsApp() {
         )
     }
 
+    // Signed out state - show login prompt
+    if (!isSignedIn) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center p-8">
+                <div className="w-full max-w-sm space-y-8 text-center">
+                    <div className="space-y-2">
+                        <h1 className="text-3xl font-bold tracking-tight">Prophet</h1>
+                        <p className="text-muted-foreground">Your AI-powered browser assistant</p>
+                    </div>
+
+                    <Button
+                        className="w-full"
+                        size="lg"
+                        onClick={handleLogin}
+                    >
+                        Login
+                    </Button>
+
+                    <p className="text-xs text-muted-foreground">
+                        Secure authentication powered by Clerk
+                    </p>
+                </div>
+            </div>
+        )
+    }
+
+    // Signed in state - show account info and sign out
     return (
         <div className="min-h-screen bg-background p-8 flex justify-center">
             <div className="w-full max-w-md space-y-8">
@@ -38,53 +70,42 @@ function OptionsApp() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Account</CardTitle>
-                        <CardDescription>You are currently signed in as</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {isSignedIn ? (
-                            <>
-                                <div className="flex items-center gap-4">
-                                    {user.imageUrl && (
-                                        <img
-                                            src={user.imageUrl}
-                                            alt="Profile"
-                                            className="h-10 w-10 rounded-full"
-                                        />
-                                    )}
-                                    <div>
-                                        <p className="font-medium">
-                                            {user.firstName} {user.lastName}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {user.emailAddresses[0]?.emailAddress}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="pt-4 border-t">
-                                    <Button
-                                        variant="destructive"
-                                        className="w-full"
-                                        onClick={handleSignOut}
-                                    >
-                                        Sign Out
-                                    </Button>
-                                    <p className="text-xs text-muted-foreground text-center mt-2">
-                                        This will sign you out of the Prophet extension.
-                                    </p>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="text-center py-4">
-                                <p className="text-muted-foreground mb-4">You are not signed in.</p>
-                                <Button
-                                    className="w-full"
-                                    onClick={() => chrome.runtime.openOptionsPage()}
-                                >
-                                    Open Side Panel to Log In
-                                </Button>
+                        <div className="flex items-center gap-4">
+                            {user?.imageUrl && (
+                                <img
+                                    src={user.imageUrl}
+                                    alt="Profile"
+                                    className="h-10 w-10 rounded-full"
+                                />
+                            )}
+                            <div>
+                                <p className="font-medium">
+                                    {user?.firstName} {user?.lastName}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    {user?.emailAddresses[0]?.emailAddress}
+                                </p>
                             </div>
-                        )}
+                        </div>
+
+                        <div className="pt-4 border-t">
+                            <Button
+                                className="w-full text-white shadow"
+                                style={{
+                                    backgroundColor: 'oklch(0.67 0.13 38.76)',
+                                }}
+                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'oklch(0.60 0.13 38.76)'}
+                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'oklch(0.67 0.13 38.76)'}
+                                onClick={handleSignOut}
+                            >
+                                Sign Out
+                            </Button>
+                            <p className="text-xs text-muted-foreground text-center mt-2">
+                                This will sign you out of the Prophet extension.
+                            </p>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
