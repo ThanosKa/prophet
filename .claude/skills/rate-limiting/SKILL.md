@@ -5,7 +5,7 @@ description: Comprehensive rate limiting patterns for SaaS applications (AI and 
 
 # Rate Limiting Best Practices for SaaS
 
-> **Documentation Note**: This skill combines Upstash-verified patterns with industry best practices. Specific rate limit numbers (e.g., "5-60 req/min for AI SaaS") and credit-based billing patterns are **architecture recommendations** based on 2025 industry standards, not Upstash documentation.
+> **📚 Documentation Note**: This skill combines Upstash-verified patterns with industry best practices. Specific rate limit numbers (e.g., "5-60 req/min for AI SaaS") and credit-based billing patterns are **architecture recommendations** based on 2025 industry standards, not Upstash documentation.
 
 ## Core Principle: Why Rate Limit?
 
