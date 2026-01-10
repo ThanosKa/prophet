@@ -1,8 +1,6 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
-import { db } from '@/lib/db'
-import { users } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { getUserTier } from '@/lib/cache'
 
 const isFakeCredentials =
   process.env.UPSTASH_REDIS_REST_URL?.includes('fake') ||
@@ -122,12 +120,7 @@ export async function checkRateLimit(
     return { success: true }
   }
 
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, userId),
-    columns: { tier: true },
-  })
-
-  const tier = user?.tier ?? 'free'
+  const tier = await getUserTier(userId)
   const limiter = limiters[tier]
 
   const { success, limit, remaining, reset } = await limiter.limit(userId)

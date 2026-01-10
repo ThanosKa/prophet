@@ -1,17 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { checkRateLimit, chatRatelimits, apiRatelimits, globalRatelimit } from './ratelimit'
 
-vi.mock('@/lib/db', () => ({
-  db: {
-    query: {
-      users: {
-        findFirst: vi.fn(),
-      },
-    },
-  },
+vi.mock('@/lib/cache', () => ({
+  getUserTier: vi.fn(),
 }))
 
-const { db } = await import('@/lib/db')
+const { getUserTier } = await import('@/lib/cache')
 
 describe('Rate Limiting', () => {
   beforeEach(() => {
@@ -38,10 +32,7 @@ describe('Rate Limiting', () => {
         return
       }
 
-      vi.mocked(db.query.users.findFirst).mockResolvedValue({
-        id: 'user_123',
-        tier: 'free',
-      } as any)
+      vi.mocked(getUserTier).mockResolvedValue('free')
 
       const globalLimitSpy = vi.spyOn(globalRatelimit, 'limit')
 
@@ -50,23 +41,17 @@ describe('Rate Limiting', () => {
       expect(globalLimitSpy).toHaveBeenCalledWith('global')
     })
 
-    it('looks up user tier from database', async () => {
+    it('looks up user tier from cache', async () => {
       if (!chatRatelimits) {
         expect(true).toBe(true)
         return
       }
 
-      vi.mocked(db.query.users.findFirst).mockResolvedValue({
-        id: 'user_123',
-        tier: 'pro',
-      } as any)
+      vi.mocked(getUserTier).mockResolvedValue('pro')
 
       await checkRateLimit('user_123', 'chat')
 
-      expect(db.query.users.findFirst).toHaveBeenCalledWith({
-        where: expect.anything(),
-        columns: { tier: true },
-      })
+      expect(getUserTier).toHaveBeenCalledWith('user_123')
     })
 
     it('defaults to free tier if user not found', async () => {
@@ -75,7 +60,7 @@ describe('Rate Limiting', () => {
         return
       }
 
-      vi.mocked(db.query.users.findFirst).mockResolvedValue(null as any)
+      vi.mocked(getUserTier).mockResolvedValue('free')
 
       const result = await checkRateLimit('user_123', 'chat')
 
@@ -88,14 +73,11 @@ describe('Rate Limiting', () => {
         return
       }
 
-      vi.mocked(db.query.users.findFirst).mockResolvedValue({
-        id: 'user_123',
-        tier: 'free',
-      } as any)
+      vi.mocked(getUserTier).mockResolvedValue('free')
 
       await checkRateLimit('user_123', 'chat')
 
-      expect(db.query.users.findFirst).toHaveBeenCalled()
+      expect(getUserTier).toHaveBeenCalled()
     })
 
     it('uses api limiters when type is api', async () => {
@@ -104,14 +86,11 @@ describe('Rate Limiting', () => {
         return
       }
 
-      vi.mocked(db.query.users.findFirst).mockResolvedValue({
-        id: 'user_123',
-        tier: 'free',
-      } as any)
+      vi.mocked(getUserTier).mockResolvedValue('free')
 
       await checkRateLimit('user_123', 'api')
 
-      expect(db.query.users.findFirst).toHaveBeenCalled()
+      expect(getUserTier).toHaveBeenCalled()
     })
   })
 

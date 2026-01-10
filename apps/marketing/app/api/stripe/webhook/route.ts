@@ -7,6 +7,7 @@ import { users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
 import { TIER_CONFIG } from '@/lib/pricing'
+import { invalidateUserTierCache } from '@/lib/cache'
 
 type StripeSubscriptionWithBilling = Stripe.Subscription & {
   current_period_start: number
@@ -157,6 +158,8 @@ async function handleSubscriptionChange(subscription: StripeSubscriptionWithBill
     })
     .where(eq(users.id, user.id))
 
+  await invalidateUserTierCache(user.id)
+
   logger.info({
     userId: user.id,
     tier,
@@ -193,6 +196,8 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       updatedAt: new Date(),
     })
     .where(eq(users.id, user.id))
+
+  await invalidateUserTierCache(user.id)
 
   logger.info({ userId: user.id }, 'Subscription canceled, downgraded to free')
 }
