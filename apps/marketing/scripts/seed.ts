@@ -193,7 +193,7 @@ async function reset() {
   console.log(`📍 User: ${email} (${seedUserId})`)
   console.log('')
 
-  const result = await db.delete(chats).where(eq(chats.userId, seedUserId))
+  await db.delete(chats).where(eq(chats.userId, seedUserId))
 
   console.log('✅ Seed data removed')
   console.log('   (Messages were cascade deleted)')

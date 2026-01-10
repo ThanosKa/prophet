@@ -9,7 +9,9 @@
       "Bash(pnpm -F @prophet/marketing test:run:*)",
       "Bash(pnpm -F @prophet/marketing lint:*)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(pnpm type-check:*)",
+      "Bash(pnpm lint:*)"
     ]
   }
 }

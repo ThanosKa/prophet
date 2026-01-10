@@ -81,6 +81,7 @@ Prepare a project for open source release with professional README, GitHub workf
 - [Contributing](#contributing)
 - [Security](#security)
 - [Acknowledgments](#acknowledgments)
+- [Star History](#star-history)
 - [Contact](#contact)
 - [Support & Sponsor](#support--sponsor)
 - [License](#license)
@@ -259,6 +260,10 @@ Key security features:
 
 - [Service/Tool](https://example.com) for what it provides
 - [Another Tool](https://example.com) for what it provides
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=username/repo&type=Date)](https://star-history.com/#username/repo&Date)
 
 ## Contact
 

@@ -56,6 +56,7 @@
 - [Contributing](#contributing)
 - [Security](#security)
 - [Acknowledgments](#acknowledgments)
+- [Star History](#star-history)
 - [Contact](#contact)
 - [Support & Sponsor](#support--sponsor)
 - [License](#license)
@@ -93,7 +94,7 @@ Perfect for developers who want to:
 - **Token Tracking**: Accurate usage monitoring with cost attribution
 
 ### Developer Experience
-- **Monorepo Setup**: Turborepo with pnpm workspaces
+- **Monorepo Setup**: pnpm workspaces for efficient package management
 - **Type Safety**: End-to-end TypeScript with Zod validation
 - **Database Migrations**: Drizzle ORM with version-controlled schema
 - **Testing**: Vitest for unit and integration tests
@@ -138,7 +139,7 @@ Quick preview: Sign in → Open Prophet extension → Type message → Claude st
 | Caching          | Upstash Redis (tier caching, 5min TTL)   |
 | Payments         | Stripe (subscriptions + webhooks)        |
 | Validation       | Zod                                      |
-| Build Tool       | pnpm + Turborepo                         |
+| Build Tool       | pnpm workspaces                          |
 | Hosting          | Vercel (recommended)                     |
 
 ## Getting Started
@@ -328,7 +329,6 @@ The easiest way to deploy Prophet is with Vercel:
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) and follow our [Code of Conduct](CODE_OF_CONDUCT.md). Use the issue templates for bugs and features, and the PR template when submitting changes.
 
 Key areas for contribution:
-- Additional AI models (OpenAI, Gemini, etc.)
 - UI/UX improvements
 - Performance optimizations
 - Documentation improvements
@@ -354,6 +354,10 @@ Key security features:
 - [Next.js](https://nextjs.org/) for the framework
 - [Drizzle](https://orm.drizzle.team/) for the ORM
 - [Upstash](https://upstash.com/) for serverless Redis
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ThanosKa/prophet&type=Date)](https://star-history.com/#ThanosKa/prophet&Date)
 
 ## Contact
 
