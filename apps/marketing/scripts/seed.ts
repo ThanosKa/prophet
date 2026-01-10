@@ -22,13 +22,43 @@ if (process.env.NODE_ENV === 'production') {
   process.exit(1)
 }
 
-// IMPORTANT: Set this to your actual Clerk user ID from the database
-const SEED_USER_ID = process.env.SEED_USER_ID || 'user_2xxxxxxxxxxxxxxxxx'
-
 // Use dynamic imports to ensure env is loaded first
 const { db } = await import('../lib/db/index.js')
-const { chats, messages } = await import('../lib/db/schema.js')
-const { eq } = await import('drizzle-orm')
+const { chats, messages, users } = await import('../lib/db/schema.js')
+const { eq, asc } = await import('drizzle-orm')
+
+// Auto-detect user from database
+async function getUserId(): Promise<{ id: string; email: string }> {
+  // Allow override via env var (optional)
+  if (process.env.SEED_USER_ID && !process.env.SEED_USER_ID.includes('xxx')) {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, process.env.SEED_USER_ID),
+    })
+    if (user) {
+      return { id: user.id, email: user.email }
+    }
+    console.warn(`⚠️ SEED_USER_ID ${process.env.SEED_USER_ID} not found, auto-detecting...`)
+  }
+
+  // Auto-detect: get first user from database
+  const firstUser = await db.query.users.findFirst({
+    orderBy: [asc(users.createdAt)],
+  })
+
+  if (!firstUser) {
+    console.error('❌ No users found in database.')
+    console.error('   Sign in to the app first to create your user account.')
+    console.error('')
+    console.error('   Steps:')
+    console.error('   1. Run: pnpm dev:web')
+    console.error('   2. Go to http://localhost:3000')
+    console.error('   3. Sign in with Clerk')
+    console.error('   4. Run this script again')
+    process.exit(1)
+  }
+
+  return { id: firstUser.id, email: firstUser.email }
+}
 
 // Template Q&As to build long conversations
 const qaTemplates = [
@@ -51,34 +81,37 @@ const qaTemplates = [
 
 // Generate a long conversation by repeating Q&As
 function generateLongConversation(title: string, messageCount: number) {
-  const messages: Array<{ role: 'user' | 'assistant'; content: string }> = []
+  const msgs: Array<{ role: 'user' | 'assistant'; content: string }> = []
   let qaIndex = 0
 
   for (let i = 0; i < messageCount / 2; i++) {
     const qa = qaTemplates[qaIndex % qaTemplates.length]
-    messages.push({ role: 'user', content: qa.q })
-    messages.push({ role: 'assistant', content: qa.a })
+    msgs.push({ role: 'user', content: qa.q })
+    msgs.push({ role: 'assistant', content: qa.a })
     qaIndex++
   }
 
-  return { title, messages }
+  return { title, messages: msgs }
 }
 
 const mockConversations = [
-  generateLongConversation('Building a React App', 60),          // 60 messages
-  generateLongConversation('TypeScript Best Practices', 80),      // 80 messages
-  generateLongConversation('API Design Patterns', 100),           // 100 messages
-  generateLongConversation('Database Performance', 50),           // 50 messages
-  generateLongConversation('Testing Strategies', 70),             // 70 messages
+  generateLongConversation('Building a React App', 60),
+  generateLongConversation('TypeScript Best Practices', 80),
+  generateLongConversation('API Design Patterns', 100),
+  generateLongConversation('Database Performance', 50),
+  generateLongConversation('Testing Strategies', 70),
 ]
 
 async function seed() {
+  const { id: seedUserId, email } = await getUserId()
+
   console.log('🌱 Starting seed...')
-  console.log(`📝 Seeding for user: ${SEED_USER_ID}`)
+  console.log(`📍 User: ${email} (${seedUserId})`)
+  console.log('')
 
   // Delete existing seed data for this user
-  console.log('🧹 Cleaning up existing seed data...')
-  await db.delete(chats).where(eq(chats.userId, SEED_USER_ID))
+  console.log('🧹 Cleaning up existing data...')
+  await db.delete(chats).where(eq(chats.userId, seedUserId))
 
   let totalChats = 0
   let totalMessages = 0
@@ -88,9 +121,9 @@ async function seed() {
     const [chat] = await db
       .insert(chats)
       .values({
-        userId: SEED_USER_ID,
+        userId: seedUserId,
         title: conv.title,
-        updatedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000), // Random time in last 30 days
+        updatedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
       })
       .returning()
 
@@ -110,10 +143,10 @@ async function seed() {
       totalMessages++
     }
 
-    console.log(`✅ Created chat: ${chat.title}`)
+    console.log(`✅ Created: ${chat.title} (${conv.messages.length} messages)`)
   }
 
-  // Create additional chats to test pagination (empty chats with just titles)
+  // Create additional chats to test pagination (empty chats)
   const additionalTitles = [
     'Docker Containers',
     'CI/CD Pipeline Setup',
@@ -139,22 +172,31 @@ async function seed() {
 
   for (const title of additionalTitles) {
     await db.insert(chats).values({
-      userId: SEED_USER_ID,
+      userId: seedUserId,
       title,
-      updatedAt: new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000), // Random time in last 60 days
+      updatedAt: new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000),
     })
     totalChats++
   }
 
-  console.log('\n✨ Seed complete!')
+  console.log('')
+  console.log('✨ Seed complete!')
   console.log(`📊 Created ${totalChats} chats and ${totalMessages} messages`)
-  console.log('\n💡 To remove seed data, run: pnpm db:seed:reset')
+  console.log('')
+  console.log('💡 To remove seed data: pnpm db:seed:reset')
 }
 
 async function reset() {
+  const { id: seedUserId, email } = await getUserId()
+
   console.log('🧹 Resetting seed data...')
-  await db.delete(chats).where(eq(chats.userId, SEED_USER_ID))
+  console.log(`📍 User: ${email} (${seedUserId})`)
+  console.log('')
+
+  const result = await db.delete(chats).where(eq(chats.userId, seedUserId))
+
   console.log('✅ Seed data removed')
+  console.log('   (Messages were cascade deleted)')
 }
 
 // Run based on command

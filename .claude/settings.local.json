@@ -7,7 +7,9 @@
       "mcp__context7__resolve-library-id",
       "WebSearch",
       "Bash(pnpm -F @prophet/marketing test:run:*)",
-      "Bash(pnpm -F @prophet/marketing lint:*)"
+      "Bash(pnpm -F @prophet/marketing lint:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }
