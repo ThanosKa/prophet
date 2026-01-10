@@ -28,106 +28,325 @@ Prepare a project for open source release with professional README, GitHub workf
 
 ## README Structure
 
-### Template with Shields.io Badges
+### Comprehensive Professional Template
 
 ```markdown
 <div align="center">
-  <h1>Project Name</h1>
-  <p>One-line description of what the project does</p>
 
-  <!-- Badges -->
-  [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-  [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://typescriptlang.org)
-  [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org)
+<h1>✨ Project Name ✨</h1>
 
-  <!-- Social -->
-  [![Twitter Follow](https://img.shields.io/twitter/follow/username?style=social)](https://twitter.com/username)
-  [![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/username)
+[![Next.js 16](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React 19](https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript 5](https://img.shields.io/badge/TypeScript_5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind v4](https://img.shields.io/badge/Tailwind_v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![shadcn/ui](https://img.shields.io/badge/shadcn/ui-Radix-8A3FFC?style=for-the-badge)](https://ui.shadcn.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Clerk](https://img.shields.io/badge/Clerk-6C47FF?style=for-the-badge&logo=clerk&logoColor=white)](https://clerk.com/)
+[![Stripe](https://img.shields.io/badge/Stripe-635BFF?style=for-the-badge&logo=stripe&logoColor=white)](https://stripe.com/)
+[![Upstash Redis](https://img.shields.io/badge/Upstash_Redis-00E9A3?style=for-the-badge&logo=redis&logoColor=white)](https://upstash.com/)
+[![pnpm](https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white)](https://pnpm.io/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/username/repo?style=for-the-badge&logo=github)](https://github.com/username/repo/stargazers)
+[![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge)](CONTRIBUTING.md)
+
+<p>One-line description of what the project does and why it's useful.</p>
+
+[Report Bug](https://github.com/username/repo/issues/new?template=bug_report.md) · [Request Feature](https://github.com/username/repo/issues/new?template=feature_request.md) · [Discussions](https://github.com/username/repo/discussions)
+
 </div>
 
 ---
 
 ## Table of Contents
+
+- [About](#about)
 - [Features](#features)
-- [Tech Stack](#tech-stack)
+- [Demo](#demo)
+- [How It Works](#how-it-works)
+- [Built With](#built-with)
 - [Getting Started](#getting-started)
-- [Usage](#usage)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Environment Setup](#environment-setup)
+  - [Database Setup](#database-setup)
+  - [Run Locally](#run-locally)
+  - [Testing](#testing)
+- [Project Structure](#project-structure)
+- [Architecture](#architecture)
+- [Deployment](#deployment)
+  - [Deploy to Vercel](#deploy-to-vercel)
+  - [Production Checklist](#production-checklist)
+- [CI/CD](#cicd)
 - [Contributing](#contributing)
+- [Security](#security)
+- [Acknowledgments](#acknowledgments)
+- [Contact](#contact)
+- [Support & Sponsor](#support--sponsor)
 - [License](#license)
+- [Contributions](#contributions)
+
+---
+
+## About
+
+Detailed explanation of what the project is, who it's for, and why it exists. 2-3 paragraphs max.
+
+Perfect for developers/users who want to:
+- Bullet point 1
+- Bullet point 2
+- Bullet point 3
 
 ## Features
-- ✨ Feature 1
-- 🚀 Feature 2
-- 🔒 Feature 3
 
-## Tech Stack
-| Technology | Purpose |
-|------------|---------|
-| [Next.js](https://nextjs.org) | Framework |
-| [TypeScript](https://typescriptlang.org) | Language |
-| [Tailwind](https://tailwindcss.com) | Styling |
+Group features by category:
+
+### Category 1
+- **Feature Name**: Description
+- **Feature Name**: Description
+
+### Category 2
+- **Feature Name**: Description
+- **Feature Name**: Description
+
+## Demo
+
+- Quick start instructions
+- Link to live demo (if available)
+- Quick preview walkthrough
+
+## How It Works
+
+Step-by-step explanation of the key user/developer flow:
+
+1. Step 1 with details
+2. Step 2 with details
+3. Step 3 with details
+...
+
+## Built With
+
+| Category         | Technology                               |
+| ---------------- | ---------------------------------------- |
+| Framework        | Next.js 16 (App Router)                  |
+| Language         | TypeScript (strict mode)                 |
+| Styling          | Tailwind CSS v4 + shadcn/ui              |
+| State Management | Zustand                                  |
+| Auth             | Clerk                                    |
+| Database         | Supabase (PostgreSQL)                    |
+| ORM              | Drizzle ORM                              |
+| Payments         | Stripe                                   |
+| Validation       | Zod                                      |
+| Hosting          | Vercel                                   |
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- pnpm 8+
+
+- Node.js 20+
+- pnpm 9+
+- Accounts: List required services
 
 ### Installation
+
 \`\`\`bash
-git clone https://github.com/username/project.git
-cd project
+git clone https://github.com/username/repo.git
+cd repo
 pnpm install
-cp .env.example .env.local
-pnpm dev
 \`\`\`
 
-## Usage
-Document main use cases here.
+### Environment Setup
+
+\`\`\`bash
+cp .env.example .env.local
+# Fill in required variables
+\`\`\`
+
+Link to detailed setup documentation if available.
+
+### Database Setup
+
+\`\`\`bash
+pnpm db:migrate
+\`\`\`
+
+### Run Locally
+
+\`\`\`bash
+pnpm dev
+# Visit http://localhost:3000
+\`\`\`
+
+### Testing
+
+\`\`\`bash
+pnpm lint              # ESLint
+pnpm type-check        # TypeScript
+pnpm test              # Run tests
+pnpm test:coverage     # With coverage
+\`\`\`
+
+## Project Structure
+
+\`\`\`
+project/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   └── ...                # Pages
+├── components/            # React components
+├── lib/                   # Utilities
+├── .claude/               # Documentation
+└── .github/               # GitHub config
+\`\`\`
+
+## Architecture
+
+Explain key architectural decisions:
+
+**Data Flow:**
+Describe data flow
+
+**Authentication:**
+Describe auth approach
+
+**Key Patterns:**
+- Pattern 1
+- Pattern 2
+
+## Deployment
+
+### Deploy to Vercel
+
+1. Push to GitHub
+2. Import in Vercel
+3. Add environment variables
+4. Deploy
+
+### Production Checklist
+
+- [ ] Configure production env vars
+- [ ] Set up database
+- [ ] Configure webhooks
+- [ ] Test payment flows
+- [ ] Enable monitoring
+
+## CI/CD
+
+Describe what CI/CD checks run:
+- Linting
+- Type checking
+- Tests
+- Build validation
 
 ## Contributing
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+Contributions welcome! Read [CONTRIBUTING.md](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md).
+
+Key areas for contribution:
+- Area 1
+- Area 2
+- Area 3
+
+## Security
+
+Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
+
+Key security features:
+- Feature 1
+- Feature 2
+
+## Acknowledgments
+
+- [Service/Tool](https://example.com) for what it provides
+- [Another Tool](https://example.com) for what it provides
+
+## Contact
+
+- GitHub Issues: [Open an issue](https://github.com/username/repo/issues)
+- GitHub Discussions: [Start a discussion](https://github.com/username/repo/discussions)
+- Creator: [@username](https://github.com/username)
+
+## Support & Sponsor
+
+**Documentation & Help:**
+- Documentation links
+- Setup guides
+
+**Support the Project:**
+- ⭐ Star the repo
+- ☕ [Buy Me a Coffee](https://buymeacoffee.com/username)
+- 💖 [GitHub Sponsors](https://github.com/sponsors/username)
 
 ## License
+
 Licensed under the Apache 2.0 License - see [LICENSE](LICENSE).
 
-## Support
-- [Buy Me A Coffee](https://buymeacoffee.com/username)
-- [GitHub Sponsors](https://github.com/sponsors/username)
+## Contributions
 
----
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-<div align="center">
-  Made with care by developers, for developers.
+### Contributors
 
-  <a href="https://github.com/username/project/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=username/project" />
-  </a>
-</div>
-```
+<a href="https://github.com/username/repo/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=username/repo" alt="Contributors"/>
+</a>
+\`\`\`
 
 ### Badge Examples (shields.io)
 
-**Stack:**
-```markdown
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript)](https://typescriptlang.org)
-[![Tailwind](https://img.shields.io/badge/Tailwind-3-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com)
-```
+**Common Tech Stack Badges:**
 
-**Status:**
 ```markdown
+<!-- Frameworks -->
+[![Next.js 16](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React 19](https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+
+<!-- Languages -->
+[![TypeScript 5](https://img.shields.io/badge/TypeScript_5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+
+<!-- Styling -->
+[![Tailwind v4](https://img.shields.io/badge/Tailwind_v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![shadcn/ui](https://img.shields.io/badge/shadcn/ui-Radix-8A3FFC?style=for-the-badge)](https://ui.shadcn.com/)
+
+<!-- Databases -->
+[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-C5F74F?style=for-the-badge&logo=drizzle&logoColor=black)](https://orm.drizzle.team/)
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
+
+<!-- Auth -->
+[![Clerk](https://img.shields.io/badge/Clerk-6C47FF?style=for-the-badge&logo=clerk&logoColor=white)](https://clerk.com/)
+[![Auth.js](https://img.shields.io/badge/Auth.js-000000?style=for-the-badge&logo=auth0&logoColor=white)](https://authjs.dev/)
+
+<!-- AI -->
+[![Anthropic](https://img.shields.io/badge/Anthropic_Claude-000000?style=for-the-badge&logo=anthropic&logoColor=white)](https://www.anthropic.com/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com/)
+[![Google Gemini](https://img.shields.io/badge/Google_Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://gemini.google.com/)
+
+<!-- Payments -->
+[![Stripe](https://img.shields.io/badge/Stripe-635BFF?style=for-the-badge&logo=stripe&logoColor=white)](https://stripe.com/)
+
+<!-- Serverless -->
+[![Upstash Redis](https://img.shields.io/badge/Upstash_Redis-00E9A3?style=for-the-badge&logo=redis&logoColor=white)](https://upstash.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+
+<!-- Tools -->
+[![pnpm](https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white)](https://pnpm.io/)
+[![Chrome Extension](https://img.shields.io/badge/Chrome_Extension-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white)](https://developer.chrome.com/docs/extensions/)
+
+<!-- Status -->
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/username/repo?style=for-the-badge&logo=github)](https://github.com/username/repo/stargazers)
+[![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge)](CONTRIBUTING.md)
 [![CI](https://img.shields.io/github/actions/workflow/status/username/repo/ci.yml?style=for-the-badge)](https://github.com/username/repo/actions)
-[![Stars](https://img.shields.io/github/stars/username/repo?style=for-the-badge)](https://github.com/username/repo/stargazers)
 ```
 
-**Social:**
-```markdown
-[![Twitter](https://img.shields.io/twitter/follow/username?style=for-the-badge&logo=x)](https://x.com/username)
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/username)
-```
+**Badge customization:**
+- Use `style=for-the-badge` for large, bold badges
+- Find more logos at [Simple Icons](https://simpleicons.org/)
+- Customize colors with hex codes (remove #)
 
 ---
 
