@@ -1,6 +1,15 @@
 {
   "name": "prophet",
   "version": "0.1.0",
+  "description": "AI-powered Chrome extension SaaS with streaming chat, credits-based billing, and secure backend API",
+  "license": "Apache-2.0",
+  "author": "ThanosKa",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ThanosKa/prophet.git"
+  },
+  "bugs": "https://github.com/ThanosKa/prophet/issues",
+  "homepage": "https://github.com/ThanosKa/prophet#readme",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,6 +21,7 @@
     "build:web": "pnpm -F @prophet/marketing build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
+    "type-check": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "test:run": "pnpm -r test:run",
     "test:coverage": "pnpm -r test:coverage",

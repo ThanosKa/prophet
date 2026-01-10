@@ -448,12 +448,16 @@ pnpm -F @prophet/sidepanel build
 
 ## License
 
-Proprietary - All rights reserved
+Licensed under the Apache 2.0 License - see [LICENSE](LICENSE).
 
----
+## Support & Sponsor
 
-## Support
-
+**Documentation & Help:**
 - Project Documentation: [CLAUDE.md](CLAUDE.md)
 - Claude Code Skills: [.claude/skills/](.claude/skills/)
 - Issues: Create GitHub issue
+
+**Support the Project:**
+- ⭐ Star the repo
+- ☕ [Buy Me a Coffee](https://buymeacoffee.com/thaka)
+- 💖 [GitHub Sponsors](https://github.com/sponsors/ThanosKa)
