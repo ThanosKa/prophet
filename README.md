@@ -1,6 +1,8 @@
 <div align="center">
 
-<h1>✨ Prophet ✨</h1>
+<img src="./apps/marketing/public/logo.svg" alt="Prophet" width="80" height="80" />
+
+<h1>Prophet</h1>
 
 [![Next.js 16](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![React 18](https://img.shields.io/badge/React_18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
@@ -36,6 +38,7 @@
   - [Chrome Extension](#chrome-extension)
   - [Backend & API](#backend--api)
   - [Developer Experience](#developer-experience)
+- [Screenshots](#screenshots)
 - [Demo](#demo)
 - [How It Works](#how-it-works)
 - [Built With](#built-with)
@@ -101,6 +104,14 @@ Perfect for developers who want to:
 - **Linting & Formatting**: ESLint + Prettier with pre-commit hooks
 - **Claude Code Skills**: Comprehensive coding standards in `.claude/skills/`
 - **Hot Reload**: Fast dev experience with Vite + Next.js
+
+## Screenshots
+
+<div align="center">
+  <img src="./apps/marketing/public/hero.jpg" alt="Prophet - AI-powered Chrome extension in action" width="90%" />
+</div>
+
+---
 
 ## Demo
 

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { BGPattern } from "./BGPattern";
+import Image from "next/image";
 
 export function Hero() {
   return (
@@ -107,12 +108,18 @@ export function Hero() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.5 }}
-            className="relative mt-16 w-full max-w-4xl"
+            className="relative mt-16 w-full max-w-5xl"
           >
-            <div className="aspect-video rounded-xl border bg-muted/50 backdrop-blur flex items-center justify-center shadow-lg">
-              <p className="text-muted-foreground">
-                Product Screenshot Placeholder
-              </p>
+            {/* Clean Screenshot with Shadow */}
+            <div className="relative rounded-xl border border-border bg-background shadow-2xl overflow-hidden">
+              <Image
+                src="/hero.jpg"
+                alt="Prophet - AI-powered Chrome extension in action"
+                width={1200}
+                height={675}
+                className="w-full h-auto"
+                priority
+              />
             </div>
           </motion.div>
         </div>

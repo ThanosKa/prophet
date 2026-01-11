@@ -412,3 +412,177 @@ const [chat, messages, related] = await Promise.all([...])
 - [ ] Inline validation as users type
 - [ ] Toast notifications for transient feedback
 - [ ] Critical content loads first, nice-to-have content later
+
+## Hero Section Product Showcase
+
+Landing page hero sections need to showcase your product effectively. The pattern is called a **browser mockup** or **device mockup** - wrapping screenshots in a frame that looks like a browser window, phone, or laptop.
+
+### Browser Mockup Pattern
+
+```typescript
+// ✅ GOOD - Browser window mockup with full screenshot
+export function HeroProductShowcase() {
+  return (
+    <div className="relative w-full max-w-5xl mx-auto">
+      {/* Browser Mockup Frame */}
+      <div className="relative rounded-lg border border-border bg-background shadow-2xl overflow-hidden">
+        {/* Browser Chrome (traffic lights + address bar) */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/30">
+          <div className="flex gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-red-500" />
+            <div className="w-3 h-3 rounded-full bg-yellow-500" />
+            <div className="w-3 h-3 rounded-full bg-green-500" />
+          </div>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="px-3 py-1 text-xs text-muted-foreground bg-background/50 rounded-md border border-border/50">
+              https://yourapp.com
+            </div>
+          </div>
+        </div>
+
+        {/* Full Screenshot - DO NOT crop with object-cover */}
+        <div className="relative w-full">
+          <Image
+            src="/hero.jpg"
+            alt="Product screenshot"
+            width={1200}
+            height={675}
+            className="w-full h-auto" // Shows full image, no cropping
+            priority
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ❌ BAD - Cropped screenshot that cuts off content
+export function HeroBad() {
+  return (
+    <div className="aspect-video rounded-xl overflow-hidden">
+      <Image
+        src="/hero.jpg"
+        alt="Product screenshot"
+        fill
+        className="object-cover" // PROBLEM: Crops the image
+        priority
+      />
+    </div>
+  )
+}
+```
+
+**Why:** Browser mockups create context (users see it's a web app), while `object-cover` crops your carefully composed screenshot. Full screenshots show the product as intended.
+
+### Key Principles for Hero Screenshots
+
+1. **Show Full Image, No Cropping**
+   - Use `width`/`height` with `w-full h-auto` instead of `fill` + `object-cover`
+   - Let the image dictate aspect ratio
+   - Browsers/devices have established aspect ratios users recognize
+
+2. **Add Browser Chrome for Context**
+   - macOS traffic lights (red/yellow/green dots)
+   - Address bar with relevant URL
+   - Subtle shadows for depth (`shadow-2xl`)
+
+3. **High Quality Screenshot**
+   - Crisp, clear resolution (1200px+ width)
+   - Real product UI, not placeholder
+   - Show key features in action
+   - Optimize file size (use tools like [Squoosh.app](https://squoosh.app))
+
+4. **Responsive Considerations**
+   ```typescript
+   // ✅ GOOD - Responsive mockup
+   <div className="w-full max-w-5xl mx-auto px-4">
+     <div className="relative rounded-lg border shadow-2xl">
+       {/* Browser chrome */}
+       <div className="hidden sm:flex items-center gap-2 px-4 py-3 border-b">
+         {/* Traffic lights */}
+       </div>
+       
+       {/* Screenshot scales on mobile */}
+       <Image
+         src="/hero.jpg"
+         alt="Product"
+         width={1200}
+         height={675}
+         className="w-full h-auto"
+       />
+     </div>
+   </div>
+   ```
+
+### Device Mockup Variations
+
+**Phone Mockup:**
+```typescript
+<div className="relative w-[300px] mx-auto">
+  <div className="relative bg-black rounded-[3rem] p-3 shadow-2xl">
+    {/* Notch */}
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-6 bg-black rounded-b-2xl" />
+    
+    {/* Screen */}
+    <div className="relative rounded-[2.5rem] overflow-hidden">
+      <Image src="/mobile-screenshot.jpg" alt="App" width={300} height={650} className="w-full" />
+    </div>
+  </div>
+</div>
+```
+
+**Laptop Mockup:**
+```typescript
+<div className="relative">
+  {/* Screen */}
+  <div className="bg-gray-900 rounded-t-xl p-2 shadow-2xl">
+    <Image src="/hero.jpg" alt="Product" width={1200} height={750} className="w-full rounded" />
+  </div>
+  
+  {/* Laptop base */}
+  <div className="h-2 bg-gray-800 rounded-b-lg" />
+  <div className="h-1 bg-gray-700 w-3/4 mx-auto rounded-b-sm" />
+</div>
+```
+
+### Tools & Resources
+
+**CSS Component Libraries:**
+- [Flowbite Device Mockups](https://flowbite.com/docs/components/device-mockups/) - Tailwind CSS device mockups
+- [daisyUI Browser Mockup](https://daisyui.com/components/mockup-browser/) - Pre-built browser mockup component
+
+**Online Mockup Generators:**
+- [Screely](https://screely.com/) - Instant browser mockups
+- [Screenshot.rocks](https://screenshot.rocks/) - Beautiful device mockups
+- [BrowserFrame](https://browserframe.com/) - Wrap screenshots in browser frames
+
+**Image Optimization:**
+- [Squoosh.app](https://squoosh.app) - Compress images for web (aim for <200KB)
+
+### Best Practices (2026)
+
+Based on landing page research ([KlientBoost](https://www.klientboost.com/landing-pages/landing-page-hero-shots/), [LogRocket](https://blog.logrocket.com/ux-design/hero-section-examples-best-practices/)):
+
+1. **Authenticity** - Real screenshots beat stock images
+2. **Context** - Show product in realistic use cases
+3. **Quality** - Crisp, polished visuals make first impressions
+4. **Performance** - Optimize images (WebP format, lazy loading)
+5. **Subtle Animation** - Entrance animations (scale/fade) add polish
+6. **Captions** - One-liner description clarifies what users see
+
+### When to Use Each Pattern
+
+- **Browser Mockup** → Web apps, dashboards, SaaS products
+- **Phone Mockup** → Mobile apps, responsive websites
+- **Laptop Mockup** → Desktop software, productivity tools
+- **Plain Screenshot** → Developer tools, CLI apps (no chrome needed)
+
+### Anti-Patterns
+
+- ❌ Using `object-cover` on hero screenshots (crops the image)
+- ❌ Placeholder text instead of real product screenshots
+- ❌ Low-quality or pixelated images
+- ❌ Generic stock photos that don't show the product
+- ❌ Huge file sizes (>500KB) that slow page load
+- ❌ No context (just a floating image without frame)
+
