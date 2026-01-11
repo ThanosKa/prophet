@@ -140,7 +140,9 @@ export default function App() {
   }
 
   const triggerAutoTitle = async (chatId: string) => {
-    const currentChat = chats.find((c) => c?.id === chatId)
+    // Read fresh data from store instead of stale closure
+    const storeChats = useChatStore.getState().chats
+    const currentChat = storeChats.find((c) => c?.id === chatId)
     if (!currentChat) return
 
     if (currentChat.title.startsWith('New Chat')) {

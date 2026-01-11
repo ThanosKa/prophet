@@ -90,19 +90,6 @@ export async function POST(req: Request) {
       '[DEV] Starting agent stream'
     )
 
-    // Save user message to DB if it exists
-    if (userMessage) {
-      await db.insert(messages).values({
-        chatId,
-        role: "user",
-        content: userMessage,
-        model: null,
-        inputTokens: 0,
-        outputTokens: 0,
-        costCents: 0,
-      });
-    }
-
     // DEV LOGGING: Log request to LLM
     await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking })
 
@@ -303,6 +290,19 @@ export async function POST(req: Request) {
           const newContextTokens = Math.min(inputTokens + outputTokens, MAX_CONTEXT_TOKENS);
 
           await db.transaction(async (tx) => {
+            // Save user message (same as prod)
+            if (userMessage) {
+              await tx.insert(messages).values({
+                chatId,
+                role: "user",
+                content: userMessage,
+                model: null,
+                inputTokens: 0,
+                outputTokens: 0,
+                costCents: 0,
+              });
+            }
+
             // Only save assistant message if it has meaningful content
             if (hasContent) {
               await tx.insert(messages).values({

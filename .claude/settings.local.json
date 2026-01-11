@@ -13,7 +13,8 @@
       "Bash(pnpm type-check:*)",
       "Bash(pnpm lint:*)",
       "Bash(where:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(pnpm list:*)"
     ]
   }
 }
