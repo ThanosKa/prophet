@@ -14,7 +14,9 @@
       "Bash(pnpm lint:*)",
       "Bash(where:*)",
       "Bash(node:*)",
-      "Bash(pnpm list:*)"
+      "Bash(pnpm list:*)",
+      "mcp__stripe__create_price",
+      "Bash(npx tsc:*)"
     ]
   }
 }

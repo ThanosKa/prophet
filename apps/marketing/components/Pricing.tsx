@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { SignInButton } from '@clerk/nextjs'
 import { Badge } from '@/components/ui/badge'
 import { motion } from 'framer-motion'
-import { Check } from 'lucide-react'
+import { Check, Zap } from 'lucide-react'
 
 const plans = [
   {
@@ -93,6 +93,29 @@ export function Pricing({ showHeader = true }: PricingProps) {
             </motion.div>
           ))}
         </div>
+
+        {/* Extra Credits - One-time purchase */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-12 p-6 rounded-lg border bg-card max-w-2xl mx-auto text-center"
+        >
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Zap className="h-5 w-5 text-primary" />
+            <h3 className="text-xl font-bold">Need a one-time top-up?</h3>
+          </div>
+          <p className="text-muted-foreground mb-4">
+            Buy <span className="font-semibold text-foreground">$10 in credits</span> anytime without a subscription.
+            Perfect for occasional use or when you need extra credits before your next billing cycle.
+          </p>
+          <SignInButton mode="modal" forceRedirectUrl="/account/billing">
+            <Button variant="outline" size="lg">
+              Buy Extra Credits - $10
+            </Button>
+          </SignInButton>
+        </motion.div>
       </div>
     </section>
   )

@@ -1,10 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CreditCard, CheckCircle2, ArrowUpRight } from "lucide-react"
+import { CreditCard, CheckCircle2, ArrowUpRight, Zap, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useUser } from "@/contexts/UserContext"
 
@@ -30,6 +31,29 @@ const itemVariants = {
 
 export default function BillingPage() {
   const { user, isLoading } = useUser()
+  const [isBuyingCredits, setIsBuyingCredits] = useState(false)
+
+  const handleBuyCredits = async () => {
+    setIsBuyingCredits(true)
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_EXTRA_CREDITS,
+          mode: 'payment',
+        }),
+      })
+      const data = await response.json()
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (error) {
+      console.error('Failed to start checkout:', error)
+    } finally {
+      setIsBuyingCredits(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -141,6 +165,46 @@ export default function BillingPage() {
                 </Button>
               </form>
             </CardFooter>
+          </Card>
+        </motion.div>
+
+        {/* Buy Extra Credits */}
+        <motion.div variants={itemVariants}>
+          <Card className="border">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-primary" />
+                <CardTitle>Extra Credits</CardTitle>
+              </div>
+              <CardDescription>
+                Need more credits? Buy a one-time top-up without changing your plan.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl font-bold">$10.00</p>
+                  <p className="text-sm text-muted-foreground">$10 in credits added to your balance</p>
+                </div>
+                <Button
+                  onClick={handleBuyCredits}
+                  disabled={isBuyingCredits}
+                  variant="outline"
+                >
+                  {isBuyingCredits ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="mr-2 h-4 w-4" />
+                      Buy Credits
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
           </Card>
         </motion.div>
       </motion.div>

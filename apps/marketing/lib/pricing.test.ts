@@ -5,6 +5,7 @@ import {
   TIER_CONFIG,
   MODEL_PRICING,
   MARKUP,
+  ALL_MODELS,
   type ModelName,
 } from './pricing'
 
@@ -119,17 +120,16 @@ describe('TIER_CONFIG Structure', () => {
     expect(TIER_CONFIG.ultra.credits).toBeGreaterThan(TIER_CONFIG.premium.credits)
   })
 
-  it('higher tiers unlock more models', () => {
-    expect(TIER_CONFIG.pro.models.length).toBeGreaterThanOrEqual(TIER_CONFIG.free.models.length)
-    expect(TIER_CONFIG.premium.models.length).toBeGreaterThanOrEqual(TIER_CONFIG.pro.models.length)
-    expect(TIER_CONFIG.ultra.models.length).toBeGreaterThanOrEqual(TIER_CONFIG.premium.models.length)
+  it('all tiers have access to all models (balance-only system)', () => {
+    // All tiers have access to all models - credits are the only limit
+    // This is verified by the existence of ALL_MODELS constant
+    expect(ALL_MODELS).toBeDefined()
+    expect(ALL_MODELS.length).toBe(3)
   })
 
-  it('all tier models exist in MODEL_PRICING', () => {
-    for (const tier of Object.values(TIER_CONFIG)) {
-      for (const model of tier.models) {
-        expect(MODEL_PRICING).toHaveProperty(model)
-      }
+  it('all available models exist in MODEL_PRICING', () => {
+    for (const model of ALL_MODELS) {
+      expect(MODEL_PRICING).toHaveProperty(model)
     }
   })
 })

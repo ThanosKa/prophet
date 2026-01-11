@@ -7,11 +7,26 @@ import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
+import { EXTRA_CREDITS } from '@/lib/pricing'
 
-const checkoutSchema = z.object({
+// Subscription checkout schema
+const subscriptionCheckoutSchema = z.object({
   priceId: z.string(),
   tier: z.enum(['pro', 'premium', 'ultra']),
+  mode: z.literal('subscription').optional().default('subscription'),
 })
+
+// One-time payment checkout schema (Extra Credits)
+const paymentCheckoutSchema = z.object({
+  priceId: z.string(),
+  mode: z.literal('payment'),
+  credits: z.number().optional(), // For future variable credit amounts
+})
+
+const checkoutSchema = z.discriminatedUnion('mode', [
+  subscriptionCheckoutSchema,
+  paymentCheckoutSchema,
+])
 
 export async function POST(request: Request) {
   try {
@@ -22,7 +37,9 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { priceId, tier } = checkoutSchema.parse(body)
+    // Default mode to 'subscription' if not provided (backwards compatibility)
+    const parseBody = { ...body, mode: body.mode || 'subscription' }
+    const data = checkoutSchema.parse(parseBody)
 
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId),
@@ -34,13 +51,18 @@ export async function POST(request: Request) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
 
+    const isPayment = data.mode === 'payment'
+    const metadata: Record<string, string> = isPayment
+      ? { userId, type: 'extra_credits', credits: String(EXTRA_CREDITS.credits) }
+      : { userId, tier: data.tier }
+
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
+      mode: data.mode,
+      line_items: [{ price: data.priceId, quantity: 1 }],
       success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/pricing`,
-      allow_promotion_codes: true,
-      metadata: { userId, tier },
+      cancel_url: isPayment ? `${appUrl}/account/billing` : `${appUrl}/pricing`,
+      allow_promotion_codes: !isPayment, // No promo codes for one-time credits
+      metadata,
       ...(user.stripeCustomerId
         ? { customer: user.stripeCustomerId }
         : { customer_email: user.email }),
@@ -48,7 +70,10 @@ export async function POST(request: Request) {
 
     const session = await stripe.checkout.sessions.create(sessionParams)
 
-    logger.info({ userId, tier, sessionId: session.id }, 'Checkout session created')
+    logger.info(
+      { userId, mode: data.mode, sessionId: session.id },
+      isPayment ? 'Extra credits checkout session created' : 'Subscription checkout session created'
+    )
 
     return NextResponse.json({ url: session.url })
   } catch (error) {

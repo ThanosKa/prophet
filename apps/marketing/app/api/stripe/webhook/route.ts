@@ -4,7 +4,7 @@ import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
 import { TIER_CONFIG } from '@/lib/pricing'
 import { invalidateUserTierCache } from '@/lib/cache'
@@ -91,14 +91,40 @@ export async function POST(request: Request) {
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId
-  const tier = session.metadata?.tier as 'pro' | 'premium' | 'ultra'
+  const customerId = session.customer as string
 
-  if (!userId || !tier) {
-    logger.error({ sessionId: session.id }, 'Missing userId or tier in checkout session')
+  if (!userId) {
+    logger.error({ sessionId: session.id }, 'Missing userId in checkout session')
     return
   }
 
-  const customerId = session.customer as string
+  // Handle one-time payment (Extra Credits)
+  if (session.mode === 'payment') {
+    const type = session.metadata?.type
+    const creditsToAdd = parseInt(session.metadata?.credits || '0', 10)
+
+    if (type === 'extra_credits' && creditsToAdd > 0) {
+      await db
+        .update(users)
+        .set({
+          stripeCustomerId: customerId,
+          creditsRemaining: sql`${users.creditsRemaining} + ${creditsToAdd}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId))
+
+      logger.info({ userId, creditsAdded: creditsToAdd, customerId }, 'Extra credits purchased')
+      return
+    }
+  }
+
+  // Handle subscription checkout
+  const tier = session.metadata?.tier as 'pro' | 'premium' | 'ultra'
+
+  if (!tier) {
+    logger.error({ sessionId: session.id }, 'Missing tier in subscription checkout session')
+    return
+  }
 
   await db
     .update(users)
@@ -108,7 +134,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     })
     .where(eq(users.id, userId))
 
-  logger.info({ userId, tier, customerId }, 'Checkout completed')
+  logger.info({ userId, tier, customerId }, 'Subscription checkout completed')
 }
 
 async function handleSubscriptionChange(subscription: StripeSubscriptionWithBilling) {
@@ -268,6 +294,12 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 }
 
 export function determineTierFromPrice(priceId: string): 'pro' | 'premium' | 'ultra' | null {
+  // Match against actual price IDs from TIER_CONFIG
+  if (TIER_CONFIG.pro.priceId && priceId === TIER_CONFIG.pro.priceId) return 'pro'
+  if (TIER_CONFIG.premium.priceId && priceId === TIER_CONFIG.premium.priceId) return 'premium'
+  if (TIER_CONFIG.ultra.priceId && priceId === TIER_CONFIG.ultra.priceId) return 'ultra'
+
+  // Fallback to string matching for backwards compatibility
   if (priceId.includes('pro')) return 'pro'
   if (priceId.includes('premium')) return 'premium'
   if (priceId.includes('ultra')) return 'ultra'

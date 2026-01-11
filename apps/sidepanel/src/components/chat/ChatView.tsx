@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react'
-import { ExternalLink, X } from 'lucide-react'
+import { ExternalLink, X, Zap } from 'lucide-react'
 import { EnhancedMessageList, type EnhancedMessageListHandle } from './EnhancedMessageList'
 import { EnhancedChatInput } from './EnhancedChatInput'
 import { RateLimitError } from './RateLimitError'
@@ -75,6 +75,12 @@ export function ChatView({
     onDismissError?.()
   }
 
+  const handleBuyCreditsClick = () => {
+    const billingUrl = `${config.apiUrl}/account/billing`
+    window.open(billingUrl, '_blank')
+    onDismissError?.()
+  }
+
   const handleSuggestionClick = (suggestion: string) => {
     onSend(suggestion)
     // Scroll will happen via useEffect when message is added
@@ -122,13 +128,23 @@ export function ChatView({
           <div className="flex-1 min-w-0">
             <p className="text-sm text-destructive font-medium">{error}</p>
             {errorInfo?.code === 'INSUFFICIENT_BALANCE' && (
-              <button
-                onClick={handleUpgradeClick}
-                className="cursor-pointer mt-2 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-              >
-                Upgrade your plan
-                <ExternalLink className="h-3.5 w-3.5" />
-              </button>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={handleBuyCreditsClick}
+                  className="cursor-pointer inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium"
+                >
+                  <Zap className="h-3.5 w-3.5" />
+                  Buy Extra Credits
+                </button>
+                <span className="text-muted-foreground text-sm">or</span>
+                <button
+                  onClick={handleUpgradeClick}
+                  className="cursor-pointer inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                >
+                  Upgrade your plan
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </button>
+              </div>
             )}
           </div>
           {onDismissError && (
