@@ -36,13 +36,9 @@ export default function BillingPage() {
   const handleBuyCredits = async () => {
     setIsBuyingCredits(true)
     try {
-      const response = await fetch('/api/stripe/checkout', {
+      const response = await fetch('/api/stripe/checkout/credits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_EXTRA_CREDITS,
-          mode: 'payment',
-        }),
       })
       const data = await response.json()
       if (data.url) {
