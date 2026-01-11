@@ -31,6 +31,14 @@
 
 ---
 
+## Screenshots
+
+<div align="center">
+  <img src="./apps/marketing/public/hero.jpg" alt="Prophet - AI-powered Chrome extension in action" width="90%" />
+</div>
+
+---
+
 ## Table of Contents
 
 - [About](#about)
@@ -104,14 +112,6 @@ Perfect for developers who want to:
 - **Linting & Formatting**: ESLint + Prettier with pre-commit hooks
 - **Claude Code Skills**: Comprehensive coding standards in `.claude/skills/`
 - **Hot Reload**: Fast dev experience with Vite + Next.js
-
-## Screenshots
-
-<div align="center">
-  <img src="./apps/marketing/public/hero.jpg" alt="Prophet - AI-powered Chrome extension in action" width="90%" />
-</div>
-
----
 
 ## Demo
 
