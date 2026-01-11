@@ -109,15 +109,108 @@ const jsonLd = {
 }
 ```
 
+## Favicons and Icons
+
+### Next.js App Router - File-Based Convention (Recommended)
+
+Place favicon files directly in `app/` directory. Next.js automatically generates appropriate `<head>` tags.
+
+**Required files:**
+```
+app/
+├── icon.png         # 32x32px or larger (square, 1:1 ratio)
+├── apple-icon.png   # 180x180px (for iOS home screen)
+└── favicon.ico      # 32x32px (legacy browser support)
+```
+
+**Icon requirements:**
+- Must be square (1:1 aspect ratio)
+- Minimum 48x48px (Google recommends)
+- PNG format preferred (best transparency support)
+- ICO format for legacy browsers
+
+### Next.js Metadata API (Alternative)
+
+```tsx
+// app/layout.tsx
+export const metadata: Metadata = {
+  icons: {
+    icon: '/logo.svg',           // Browser tab
+    shortcut: '/favicon.ico',     // Legacy
+    apple: '/apple-icon.png',     // iOS home screen
+  },
+}
+```
+
+**Important:** For best compatibility, use BOTH file-based convention AND metadata API.
+
+### Google Search Requirements
+
+For favicons to appear in Google search results:
+
+1. **Size:** Minimum 48x48px (square, 1:1 ratio)
+2. **Stable URL:** Don't change favicon URL frequently
+3. **Crawlable:** Googlebot-Image must access the file
+4. **One per site:** Google supports one favicon per hostname
+5. **Formats:** PNG, SVG, ICO, JPEG, WebP, GIF (PNG recommended)
+
+**Multi-resolution approach:**
+```
+public/
+├── favicon-16x16.png
+├── favicon-32x32.png
+├── favicon-48x48.png     # Google minimum
+├── favicon-192x192.png   # Android
+└── favicon-512x512.png   # High-res
+```
+
+### Chrome Extension Icons
+
+Required in `manifest.json`:
+
+```json
+{
+  "icons": {
+    "16": "images/icon-16.png",   // Favicon for extension pages
+    "48": "images/icon-48.png",   // Extensions management page
+    "128": "images/icon-128.png"  // Installation & Chrome Web Store (REQUIRED)
+  },
+  "action": {
+    "default_icon": {
+      "16": "images/icon-16.png",
+      "48": "images/icon-48.png",
+      "128": "images/icon-128.png"
+    }
+  }
+}
+```
+
+**Format requirements:**
+- PNG format (best transparency)
+- Square icons (will be distorted if not square)
+- 128x128 is REQUIRED (used during install + Web Store)
+- BMP, GIF, ICO, JPEG also supported
+- WebP and SVG NOT supported
+
+**File size:** Keep under 50KB per icon for fast loading
+
 ## Technical SEO
 
-### robots.txt
-```txt
-# public/robots.txt
-User-agent: *
-Allow: /
+### robots.txt (Next.js)
+```tsx
+// app/robots.ts
+import { MetadataRoute } from 'next'
 
-Sitemap: https://prophet.app/sitemap.xml
+export default function robots(): MetadataRoute.Robots {
+  return {
+    rules: {
+      userAgent: '*',
+      allow: '/',
+      disallow: '/admin/',
+    },
+    sitemap: 'https://prophet.com/sitemap.xml',
+  }
+}
 ```
 
 ### Sitemap (Next.js)
