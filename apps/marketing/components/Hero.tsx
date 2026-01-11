@@ -110,8 +110,19 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="relative mt-16 w-full max-w-5xl"
           >
-            {/* Clean Screenshot with Shadow */}
             <div className="relative rounded-xl border border-border bg-background shadow-2xl overflow-hidden">
+              <div className="bg-muted border-b border-border px-4 py-3 flex items-center gap-2">
+                <div className="flex gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                </div>
+                <div className="flex-1 ml-4 mr-4">
+                  <div className="bg-background/50 rounded px-3 py-1 text-xs text-muted-foreground">
+                    https://en.wikipedia.org/wiki/Artificial_intelligence
+                  </div>
+                </div>
+              </div>
               <Image
                 src="/hero.jpg"
                 alt="Prophet - AI-powered Chrome extension in action"
