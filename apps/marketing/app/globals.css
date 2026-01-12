@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "react-day-picker/style.css";
+
 
 @custom-variant dark (&:is(.dark *));
 @plugin "tailwindcss-animate";
@@ -71,6 +71,7 @@
     --chart-4: oklch(0.88 0.04 298.18);
     --chart-5: oklch(0.56 0.13 42.06);
   }
+
   .dark {
     --background: oklch(0.27 0 106.64);
     --foreground: oklch(0.81 0.01 93.01);
@@ -103,6 +104,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground antialiased;
   }
@@ -144,11 +146,13 @@
   --animate-shiny-text: shiny-text 8s infinite;
 
   @keyframes shiny-text {
+
     0%,
     90%,
     100% {
       background-position: calc(-100% - var(--shiny-width)) 0;
     }
+
     30%,
     60% {
       background-position: calc(100% + var(--shiny-width)) 0;
@@ -159,6 +163,7 @@
     from {
       height: 0;
     }
+
     to {
       height: var(--radix-accordion-content-height);
     }
@@ -168,6 +173,7 @@
     from {
       height: var(--radix-accordion-content-height);
     }
+
     to {
       height: 0;
     }
@@ -178,6 +184,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

@@ -134,8 +134,7 @@ export default function UsagePage() {
                     <Button
                       variant="outline"
                       className={cn(
-                        "justify-start text-left font-normal min-w-[200px]",
-                        !dateRange && "text-muted-foreground"
+                        "justify-start text-left font-medium min-w-[200px]"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
@@ -155,6 +154,7 @@ export default function UsagePage() {
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="range"
+                      defaultMonth={dateRange?.from}
                       selected={dateRange}
                       onSelect={handleDateRangeSelect}
                       numberOfMonths={1}
