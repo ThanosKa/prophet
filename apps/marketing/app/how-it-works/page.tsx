@@ -154,12 +154,11 @@ export default function HowItWorksPage() {
 
       <section className="py-20 border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Badge variant="outline" className="mb-4">Under the Hood</Badge>
           <h1 className="text-4xl sm:text-5xl font-bold mb-4">
             How Prophet's Agent Works
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            A technical look at how our AI agent sees web pages, makes decisions, and automates browser tasks using Anthropic Claude and the accessibility tree. Built with the Anthropic SDK.
+            A technical look at how our AI agent sees web pages, makes decisions, and automates browser tasks. Built with the <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Anthropic API with tool use</a> and a custom agent loop.
           </p>
         </div>
       </section>
@@ -391,6 +390,224 @@ chrome.debugger.sendCommand(
                 </CardContent>
               </Card>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 border-b">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
+            <Layers className="h-6 w-6 text-primary" />
+            Architecture Overview
+          </h2>
+          <div className="space-y-6">
+            <p className="text-muted-foreground">
+              Prophet uses a <strong className="text-foreground">custom browser automation architecture</strong> built on the Anthropic API with tool use. The system has three main components:
+            </p>
+            <div className="grid gap-4 md:grid-cols-3 mb-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">1. Chrome Extension</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground">
+                  <p>Runs in your browser, manages the agent loop, and executes tools locally using Chrome DevTools Protocol.</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">2. Backend API</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground">
+                  <p>Handles authentication, rate limiting, and billing. Streams Claude's responses to the extension.</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">3. Anthropic API</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground">
+                  <p>Receives page context and returns intelligent actions (clicks, typing, navigation) for the browser.</p>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Why Accessibility Tree?</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground space-y-2">
+                  <p>Unlike screenshot-based approaches (Computer Use, Claude in Chrome), Prophet uses the accessibility tree:</p>
+                  <p>• <strong className="text-foreground">Fast</strong> - No image processing or vision models</p>
+                  <p>• <strong className="text-foreground">Deterministic</strong> - UIDs target exact elements</p>
+                  <p>• <strong className="text-foreground">Efficient</strong> - Less tokens than screenshots</p>
+                  <p>• <strong className="text-foreground">Reliable</strong> - Same approach as Playwright MCP</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Why Custom Agent Loop?</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground space-y-2">
+                  <p>Prophet implements its own agent loop instead of using Claude Agent SDK:</p>
+                  <p>• <strong className="text-foreground">Browser Context</strong> - Tools run in your logged-in session</p>
+                  <p>• <strong className="text-foreground">No Dependencies</strong> - No Claude Code CLI required</p>
+                  <p>• <strong className="text-foreground">Full Control</strong> - Custom tool execution via CDP</p>
+                  <p>• <strong className="text-foreground">Security</strong> - Tool execution isolated from backend</p>
+                </CardContent>
+              </Card>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              For the complete technical documentation, see our{' '}
+              <a
+                href="https://github.com/nicholasoxford/prophet/blob/main/ARCHITECTURE.md"
+                className="text-primary hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Architecture Guide on GitHub
+              </a>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 border-b">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
+            <Cpu className="h-6 w-6 text-primary" />
+            Prophet vs Claude in Chrome
+          </h2>
+          <div className="space-y-6">
+            <p className="text-muted-foreground">
+              Anthropic offers{' '}
+              <a href="https://www.anthropic.com/news/claude-for-chrome" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+                Claude in Chrome
+              </a>
+              , their official browser extension. Here's how Prophet's approach differs:
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-semibold">Feature</th>
+                    <th className="text-left py-3 px-4 font-semibold">Claude in Chrome</th>
+                    <th className="text-left py-3 px-4 font-semibold">Prophet</th>
+                  </tr>
+                </thead>
+                <tbody className="text-muted-foreground">
+                  <tr className="border-b">
+                    <td className="py-3 px-4 font-medium text-foreground">How it "sees" pages</td>
+                    <td className="py-3 px-4">Screenshots (vision model)</td>
+                    <td className="py-3 px-4">Accessibility tree (structured data)</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4 font-medium text-foreground">Speed</td>
+                    <td className="py-3 px-4">"Noticeably slower" - screenshot/analyze cycle</td>
+                    <td className="py-3 px-4">Fast - direct element targeting</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4 font-medium text-foreground">Vision model</td>
+                    <td className="py-3 px-4">Required</td>
+                    <td className="py-3 px-4">Not needed</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4 font-medium text-foreground">Element targeting</td>
+                    <td className="py-3 px-4">Coordinate-based (probabilistic)</td>
+                    <td className="py-3 px-4">UID-based (deterministic)</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4 font-medium text-foreground">Token usage</td>
+                    <td className="py-3 px-4">High (images are expensive)</td>
+                    <td className="py-3 px-4">Low (structured text)</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4 font-medium text-foreground">Infrastructure</td>
+                    <td className="py-3 px-4">Anthropic's servers</td>
+                    <td className="py-3 px-4">Your own backend (full control)</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4 font-medium text-foreground">Billing</td>
+                    <td className="py-3 px-4">Claude subscription ($20-200/mo)</td>
+                    <td className="py-3 px-4">Pay-per-use credits</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <Card className="bg-muted/30">
+              <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground">
+                  <strong className="text-foreground">Key insight:</strong> Prophet's accessibility tree approach is the same method used by{' '}
+                  <a href="https://github.com/microsoft/playwright-mcp" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+                    Playwright MCP
+                  </a>
+                  , which states: "Rather than relying on screenshots, it generates structured accessibility snapshots... making interactions more deterministic and efficient."
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl font-bold mb-8">Learn More</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="hover:bg-muted/50 transition-colors">
+              <CardContent className="pt-6">
+                <p className="font-medium mb-2">Anthropic API - Tool Use</p>
+                <p className="text-sm text-muted-foreground mb-3">Official documentation on how Claude processes and executes tools.</p>
+                <a
+                  href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview"
+                  className="text-sm text-primary hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  platform.claude.com →
+                </a>
+              </CardContent>
+            </Card>
+            <Card className="hover:bg-muted/50 transition-colors">
+              <CardContent className="pt-6">
+                <p className="font-medium mb-2">Playwright MCP</p>
+                <p className="text-sm text-muted-foreground mb-3">Microsoft's MCP server using the same accessibility tree approach.</p>
+                <a
+                  href="https://github.com/microsoft/playwright-mcp"
+                  className="text-sm text-primary hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  github.com/microsoft/playwright-mcp →
+                </a>
+              </CardContent>
+            </Card>
+            <Card className="hover:bg-muted/50 transition-colors">
+              <CardContent className="pt-6">
+                <p className="font-medium mb-2">Claude in Chrome</p>
+                <p className="text-sm text-muted-foreground mb-3">Anthropic's official browser extension using screenshot-based approach.</p>
+                <a
+                  href="https://www.anthropic.com/news/claude-for-chrome"
+                  className="text-sm text-primary hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  anthropic.com →
+                </a>
+              </CardContent>
+            </Card>
+            <Card className="hover:bg-muted/50 transition-colors">
+              <CardContent className="pt-6">
+                <p className="font-medium mb-2">Chrome DevTools Protocol</p>
+                <p className="text-sm text-muted-foreground mb-3">The low-level protocol Prophet uses for browser automation.</p>
+                <a
+                  href="https://chromedevtools.github.io/devtools-protocol/"
+                  className="text-sm text-primary hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  chromedevtools.github.io →
+                </a>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
