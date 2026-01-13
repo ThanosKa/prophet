@@ -266,6 +266,12 @@ prophet/
 
 ## Architecture
 
+Prophet uses a custom browser automation architecture built on accessibility tree snapshots and client-side tool execution via Chrome DevTools Protocol (CDP).
+
+📖 **For detailed technical documentation, see [ARCHITECTURE.md](ARCHITECTURE.md)**
+
+**Quick Overview:**
+
 **Monorepo Structure:**
 - `apps/sidepanel` - Chrome extension (Vite + React 18)
 - `apps/marketing` - Next.js landing page + backend API (App Router)
@@ -274,13 +280,19 @@ prophet/
 **Data Flow:**
 Extension → Backend API (`/api/chat`) → Anthropic API (streaming) → Backend → Extension
 
+**Why Client-Side Tool Execution?**
+- Tools execute in the Chrome extension (not backend) to access CDP
+- CDP is only available in Chrome extensions - not on servers
+- Enables automation in the user's logged-in browser session
+- Backend never sees browsing activity (privacy + security)
+
 **Authentication:**
 - Clerk handles authentication across web app and Chrome extension
 - Extension syncs session via `chrome.storage.local`
 - Auto-reload on auth state changes
 
 **SaaS Model:**
-- Credits-based billing (1 credit = 1 cent API cost)
+- Credits-based billing (1 credit = 1 cent API cost + 20% markup)
 - Tiers: Free ($0.50), Pro ($11 +10%), Premium ($35 +17%), Ultra ($70 +17%)
 - Stripe subscriptions with automatic credit allocation
 - Non-expiring credits, roll over monthly
@@ -379,6 +391,7 @@ Key security features:
 ## Support & Sponsor
 
 **Documentation & Help:**
+- Architecture Guide: [ARCHITECTURE.md](ARCHITECTURE.md) - How Prophet's browser automation works
 - Project Documentation: [CLAUDE.md](CLAUDE.md)
 - Claude Code Skills: [.claude/skills/](.claude/skills/)
 - Detailed Setup: [.claude/docs/setup.md](.claude/docs/setup.md)

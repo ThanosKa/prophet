@@ -73,13 +73,13 @@ export type TierName = keyof typeof TIER_CONFIG;
 
 /**
  * Calculate the credit cost for an API call
- * 1 credit = 1 cent of API cost (with markup)
+ * 1 credit = 1 cent of API cost (with 20% markup)
  *
  * Example: 1000 input + 500 output tokens with Sonnet
  * - Input: (1000/1M) * $3 = $0.003
  * - Output: (500/1M) * $15 = $0.0075
  * - Total: $0.0105 = 1.05 cents
- * - With 5% markup: 1.10 cents → 2 credits (rounded up)
+ * - With 20% markup: 1.26 cents → 2 credits (rounded up)
  */
 export function calculateCostInCredits(
   model: ModelName,
