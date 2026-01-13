@@ -179,6 +179,92 @@ Prophet implements its own agent loop instead of using [Claude Agent SDK](https:
 - **No Dependencies**: Users don't need to install Claude Code CLI
 - **Full Control**: Custom tool definitions optimized for browser automation
 
+## Why Client-Side Tool Execution?
+
+Prophet executes tools **client-side** (in the Chrome extension) instead of **server-side** (on the backend). This is a critical architectural decision based on what APIs the tools need.
+
+### The Requirement: Chrome DevTools Protocol (CDP)
+
+Browser automation tools require CDP access to:
+- **Control the browser**: Click, type, scroll, navigate
+- **Read page state**: Capture accessibility tree, get element properties
+- **Manage tabs**: Open, close, switch between tabs
+
+**CDP is only accessible in Chrome extensions** - not on a backend server.
+
+```typescript
+// This API only exists in Chrome extensions:
+chrome.debugger.sendCommand(
+  { tabId },
+  'Input.dispatchMouseEvent',
+  { type: 'mousePressed', x: 100, y: 200, button: 'left' }
+)
+
+// ❌ Cannot run on Node.js backend
+// ✅ Can only run in Chrome extension
+```
+
+### Client-Side vs Server-Side: When to Use Each
+
+| Execution Location | When to Use | Required APIs | Example Projects |
+|-------------------|-------------|---------------|------------------|
+| **Client-Side** | Tools need browser/local environment access | `chrome.*` APIs, CDP, filesystem (Electron), GPU (local AI) | Browser automation, Chrome extensions, Electron apps, local AI tools |
+| **Server-Side** | Tools are database/API/file operations on server | Database clients, external APIs, server filesystem | Coding agents (Claude Agent SDK), web scrapers, data analysis, CMS automation |
+
+### Examples of Client-Side Tool Projects
+
+**1. Browser Automation (Prophet)**
+- **Need**: CDP access to control active browser tab
+- **Why client-side**: `chrome.debugger` API only available in extensions
+- **Tools**: click, type, snapshot, navigate
+
+**2. Screen Recording Extension**
+- **Need**: `chrome.tabCapture` for recording tab video/audio
+- **Why client-side**: Cannot capture user's browser tabs from server
+- **Tools**: start_recording, stop_recording, save_video
+
+**3. Password Manager Extension**
+- **Need**: Access to page DOM + secure local storage
+- **Why client-side**: Sensitive data must stay local, autofill needs DOM access
+- **Tools**: detect_login_form, fill_credentials, save_password
+
+**4. Local AI Assistant (Electron)**
+- **Need**: GPU access for local LLM inference
+- **Why client-side**: User's GPU on their machine
+- **Tools**: run_model_inference, load_model, manage_memory
+
+**5. Clipboard Manager Extension**
+- **Need**: `chrome.clipboard` API + local storage
+- **Why client-side**: Clipboard is local to user's machine
+- **Tools**: save_to_clipboard_history, search_history, paste_item
+
+### Examples of Server-Side Tool Projects
+
+**1. Coding Agent (Claude Agent SDK)**
+- **Need**: Read/write files, run shell commands
+- **Why server-side**: File operations on server filesystem
+- **Tools**: Read, Write, Edit, Bash
+
+**2. Database Admin AI**
+- **Need**: Execute SQL queries, manage schemas
+- **Why server-side**: Database connections on server
+- **Tools**: execute_query, create_table, backup_database
+
+**3. Web Scraper API**
+- **Need**: Fetch pages, parse HTML, store data
+- **Why server-side**: Doesn't need user's browser, runs in background
+- **Tools**: fetch_url, parse_html, extract_data
+
+### Prophet's Architecture Choice
+
+Prophet **must use client-side execution** because:
+
+1. **CDP Requirement**: Tools like `click_element_by_uid` need `chrome.debugger.sendCommand()`
+2. **User's Browser Session**: Automation happens in the user's logged-in browser (not a separate Playwright instance)
+3. **Security**: Backend never has access to what the user is browsing
+
+This is why Prophet implements a **custom agent loop** instead of using Claude Agent SDK (which assumes server-side tool execution).
+
 ## Component Structure
 
 ```

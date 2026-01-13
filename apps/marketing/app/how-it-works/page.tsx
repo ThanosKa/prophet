@@ -302,7 +302,7 @@ chrome.debugger.sendCommand(
                   .map((tool) => {
                     const Icon = tool.icon
                     return (
-                      <Card key={tool.name} className="hover:bg-muted/50 transition-colors">
+                      <Card key={tool.name}>
                         <CardContent className="py-4 flex items-start gap-3">
                           <div className="p-2 rounded-lg bg-primary/10 shrink-0">
                             <Icon className="h-4 w-4 text-primary" />
@@ -454,15 +454,55 @@ chrome.debugger.sendCommand(
                 </CardContent>
               </Card>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 border-b">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
+            <Layers className="h-6 w-6 text-primary" />
+            Why Client-Side Tool Execution?
+          </h2>
+          <div className="space-y-6">
+            <p className="text-muted-foreground">
+              Prophet executes tools <strong className="text-foreground">inside your browser</strong> (client-side) rather than on a server. This is a critical design choice that enables browser automation.
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">The Requirement</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground space-y-2">
+                  <p>Browser automation tools need access to the <strong className="text-foreground">Chrome DevTools Protocol (CDP)</strong> to:</p>
+                  <p>• Control the browser (click, type, scroll)</p>
+                  <p>• Read page state (accessibility tree, element properties)</p>
+                  <p>• Manage tabs and navigation</p>
+                  <p className="pt-2"><strong className="text-foreground">CDP is only available in Chrome extensions</strong> - not on backend servers.</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">The Benefits</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground space-y-2">
+                  <p>Running tools in your browser means:</p>
+                  <p>• <strong className="text-foreground">Your session, your control</strong> - Automation happens in your logged-in browser, not a separate instance</p>
+                  <p>• <strong className="text-foreground">Security</strong> - Backend never sees what you're browsing</p>
+                  <p>• <strong className="text-foreground">Privacy</strong> - Page content stays local to your machine</p>
+                  <p>• <strong className="text-foreground">No dependencies</strong> - No separate browser instances needed</p>
+                </CardContent>
+              </Card>
+            </div>
             <p className="text-sm text-muted-foreground">
-              For the complete technical documentation, see our{' '}
+              This architecture choice is what makes Prophet different from server-side tools like web scrapers or coding agents. For more details on when to use client-side vs server-side tool execution, see our{' '}
               <a
-                href="https://github.com/nicholasoxford/prophet/blob/main/ARCHITECTURE.md"
+                href="https://github.com/ThanosKa/prophet/blob/main/ARCHITECTURE.md#why-client-side-tool-execution"
                 className="text-primary hover:underline"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Architecture Guide on GitHub
+                Architecture Guide
               </a>.
             </p>
           </div>
