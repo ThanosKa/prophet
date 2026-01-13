@@ -1,7 +1,7 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CodeBlock, CodeBlockCopyButton } from '@/components/ai/code-block'
 import {
   Eye,
   Cpu,
@@ -234,16 +234,15 @@ export default function HowItWorksPage() {
                 </CardContent>
               </Card>
             </div>
-            <Card className="bg-muted/30">
-              <CardContent className="pt-6">
-                <p className="text-sm font-mono whitespace-pre text-muted-foreground">
-{`// Example snapshot output the agent sees:
+            <CodeBlock
+              code={`// Example snapshot output the agent sees:
 uid=Ab12Cd3E button "Submit" <button>
 uid=Xy98Zw7V textbox "Email" value="user@example.com" <input>
   uid=Mn45Op6Q link "Forgot password?" <a>`}
-                </p>
-              </CardContent>
-            </Card>
+              language="html"
+            >
+              <CodeBlockCopyButton />
+            </CodeBlock>
           </div>
         </div>
       </section>
@@ -273,18 +272,17 @@ uid=Xy98Zw7V textbox "Email" value="user@example.com" <input>
                 </li>
               ))}
             </ul>
-            <Card className="bg-muted/30">
-              <CardContent className="pt-6">
-                <p className="text-sm font-mono text-muted-foreground">
-                  {`// Example: CDP command to click at coordinates
+            <CodeBlock
+              code={`// Example: CDP command to click at coordinates
 chrome.debugger.sendCommand(
   { tabId },
   'Input.dispatchMouseEvent',
   { type: 'mousePressed', x: 100, y: 200, button: 'left' }
 )`}
-                </p>
-              </CardContent>
-            </Card>
+              language="javascript"
+            >
+              <CodeBlockCopyButton />
+            </CodeBlock>
           </div>
         </div>
       </section>

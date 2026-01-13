@@ -16,7 +16,9 @@
       "Bash(node:*)",
       "Bash(pnpm list:*)",
       "mcp__stripe__create_price",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(taskkill:*)",
+      "Bash(pnpm install:*)"
     ]
   }
 }
