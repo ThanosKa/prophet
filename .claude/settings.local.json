@@ -19,7 +19,9 @@
       "Bash(npx tsc:*)",
       "Bash(taskkill:*)",
       "Bash(pnpm install:*)",
-      "Bash(pnpm -F @prophet/marketing build:*)"
+      "Bash(pnpm -F @prophet/marketing build:*)",
+      "Bash(ls:*)",
+      "Bash(pnpm remove:*)"
     ]
   }
 }
