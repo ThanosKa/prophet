@@ -1,7 +1,6 @@
 // Shared type definitions
 // Add types here as the project grows
 
-// Re-export agent types
 export * from './agent'
 
 export type Tier = 'free' | 'pro' | 'premium' | 'ultra'

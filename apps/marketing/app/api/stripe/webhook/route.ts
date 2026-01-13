@@ -98,7 +98,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return
   }
 
-  // Handle one-time payment (Extra Credits)
   if (session.mode === 'payment') {
     const type = session.metadata?.type
     const creditsToAdd = parseInt(session.metadata?.credits || '0', 10)
@@ -118,7 +117,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     }
   }
 
-  // Handle subscription checkout
   const tier = session.metadata?.tier as 'pro' | 'premium' | 'ultra'
 
   if (!tier) {

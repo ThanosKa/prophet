@@ -42,18 +42,19 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-muted-foreground">
+        <div className="border-t pt-8 flex flex-col md:flex-row items-center gap-4">
+          <div className="flex-1"></div>
+          <p className="text-sm text-muted-foreground text-center md:text-center">
             &copy; {currentYear} Prophet. All rights reserved.
           </p>
-          <div className="flex gap-4 text-sm text-muted-foreground">
-            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition">
-              Twitter
+          <div className="flex gap-4 text-sm text-muted-foreground flex-1 md:justify-end">
+            <a href="https://x.com/KazakisThanos" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition">
+              X
             </a>
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition">
+            <a href="https://github.com/ThanosKa/prophet" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition">
               GitHub
             </a>
-            <a href="https://discord.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition">
+            <a href="https://discord.gg/2YV53RbS" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition">
               Discord
             </a>
           </div>

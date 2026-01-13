@@ -183,8 +183,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 // ============================================================================
 
 if (window.location.pathname === '/auth-success') {
-  // console.log('[Prophet] Auth success page detected')
-
   const handleOpenProphet = () => {
     const msg: OpenSidePanelRequest = { type: 'OPEN_SIDE_PANEL' }
     chrome.runtime.sendMessage(msg)
@@ -209,5 +207,3 @@ if (window.location.pathname === '/auth-success') {
     observer.observe(document.body, { childList: true, subtree: true })
   }
 }
-
-// console.log('[Prophet] Content script loaded')

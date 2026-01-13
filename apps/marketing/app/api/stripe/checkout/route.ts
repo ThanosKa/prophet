@@ -9,14 +9,11 @@ import { eq } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
 import { EXTRA_CREDITS } from '@/lib/pricing'
 
-// Subscription checkout schema
 const subscriptionCheckoutSchema = z.object({
   priceId: z.string(),
   tier: z.enum(['pro', 'premium', 'ultra']),
   mode: z.literal('subscription').optional().default('subscription'),
 })
-
-// One-time payment checkout schema (Extra Credits)
 const paymentCheckoutSchema = z.object({
   priceId: z.string(),
   mode: z.literal('payment'),

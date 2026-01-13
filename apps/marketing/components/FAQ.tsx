@@ -35,7 +35,7 @@ const faqs = [
   },
   {
     question: 'Which AI model does Prophet use?',
-    answer: 'Prophet uses Claude Sonnet 4.5, Anthropic\'s latest and most capable model, providing fast and intelligent responses.',
+    answer: 'Prophet supports all Claude models including Claude 4.5 Haiku, Claude 4.5 Sonnet, and Claude 4.5 Opus. You can select any model you prefer at standard Anthropic pricing.',
   },
   {
     question: 'Does my balance roll over?',

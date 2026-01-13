@@ -16,7 +16,6 @@ import { invalidateUserTierCache } from '@/lib/cache'
  */
 export async function POST(req: Request) {
   try {
-    // Get webhook secret
     const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
 
     if (!WEBHOOK_SECRET) {
@@ -27,13 +26,11 @@ export async function POST(req: Request) {
       )
     }
 
-    // Get the headers
     const headerPayload = await headers()
     const svix_id = headerPayload.get('svix-id')
     const svix_timestamp = headerPayload.get('svix-timestamp')
     const svix_signature = headerPayload.get('svix-signature')
 
-    // If there are no headers, error out
     if (!svix_id || !svix_timestamp || !svix_signature) {
       return NextResponse.json(
         error('Missing svix headers', 'MISSING_HEADERS'),
@@ -41,11 +38,9 @@ export async function POST(req: Request) {
       )
     }
 
-    // Get the body
     const payload = await req.json()
     const body = JSON.stringify(payload)
 
-    // Create a new Svix instance with your webhook secret
     const wh = new Webhook(WEBHOOK_SECRET)
 
     let evt: ClerkWebhookEvent

@@ -15,24 +15,16 @@ export const MODEL_PRICING = {
   },
 } as const;
 
-// 20% markup on API costs - ensures profitability even with bonus credits
 export const MARKUP = 1.20;
 
-// All available models - every tier can use any model
 export const ALL_MODELS = ['claude-haiku-4-5', 'claude-sonnet-4-5', 'claude-opus-4-5'] as const;
 
-// Stripe Price IDs from environment variables
 const STRIPE_PRICE_IDS = {
   pro: process.env.STRIPE_PRICE_PRO || '',
   premium: process.env.STRIPE_PRICE_PREMIUM || '',
   ultra: process.env.STRIPE_PRICE_ULTRA || '',
   extraCredits: process.env.STRIPE_PRICE_EXTRA_CREDITS || '',
 };
-
-// Tier configuration
-// Credits = cents to user (1 credit = 1 cent value)
-// 20% markup ensures profitability even at 100% usage with bonus credits
-// All tiers have access to ALL models - credits are balance-only
 export const TIER_CONFIG = {
   free: {
     price: 0,

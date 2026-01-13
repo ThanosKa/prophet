@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-// Re-export agent schemas
 export * from './agent'
 
 // Chat schemas
