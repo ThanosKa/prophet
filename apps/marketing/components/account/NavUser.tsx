@@ -92,7 +92,7 @@ export function NavUser() {
               <DropdownMenuItem asChild>
                 <Link href="/account">
                   <LayoutDashboard className="mr-2 h-4 w-4" />
-                  Account Settings
+                  Overview
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

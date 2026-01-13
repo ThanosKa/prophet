@@ -56,7 +56,7 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
+        <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity" suppressHydrationWarning>
           <AvatarImage
             src={clerkUser.imageUrl}
             alt={clerkUser.fullName || "User"}
