@@ -15,7 +15,7 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: process.env.NODE_ENV === "development",
-    // chunkSizeWarningLimit: 3000, // Clerk auth SDK is large but necessary for session management
+    chunkSizeWarningLimit: 3000, // Clerk auth SDK is large but necessary for session management
     // rollupOptions: {
     //   output: {
     //     manualChunks: (id) => {

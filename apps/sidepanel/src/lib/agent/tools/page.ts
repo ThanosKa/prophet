@@ -133,26 +133,41 @@ export async function getPageContent(): Promise<ToolExecutionResult> {
       }
     }
 
+    // Reduced from 50k to 15k chars to prevent token explosion (~50k chars = ~12-15k tokens)
+    // Also filter out obvious JavaScript/CSS noise
     const result = await cdpCommander.sendCommand<EvaluateResult>(
       tab.id,
       'Runtime.evaluate',
       {
         expression: `
           (function() {
+            const MAX_CONTENT_LENGTH = 15000;
             const walker = document.createTreeWalker(
               document.body,
               NodeFilter.SHOW_TEXT,
-              null
+              {
+                acceptNode: function(node) {
+                  // Skip script and style elements
+                  const parent = node.parentElement;
+                  if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE' || parent.tagName === 'NOSCRIPT')) {
+                    return NodeFilter.FILTER_REJECT;
+                  }
+                  return NodeFilter.FILTER_ACCEPT;
+                }
+              }
             );
             const textNodes = [];
             let node;
-            while (node = walker.nextNode()) {
+            let totalLength = 0;
+            while ((node = walker.nextNode()) && totalLength < MAX_CONTENT_LENGTH) {
               const text = node.textContent.trim();
-              if (text) {
+              // Filter out obvious JS/CSS noise
+              if (text && text.length > 1 && !text.match(/^[{}\[\]();,]+$/) && !text.startsWith('!function')) {
                 textNodes.push(text);
+                totalLength += text.length;
               }
             }
-            return textNodes.join(' ').substring(0, 50000);
+            return textNodes.join(' ').substring(0, MAX_CONTENT_LENGTH);
           })()
         `,
         returnByValue: true,

@@ -21,7 +21,8 @@
       "Bash(pnpm install:*)",
       "Bash(pnpm -F @prophet/marketing build:*)",
       "Bash(ls:*)",
-      "Bash(pnpm remove:*)"
+      "Bash(pnpm remove:*)",
+      "Bash(pnpm -F @prophet/sidepanel test:run)"
     ]
   }
 }

@@ -45,24 +45,52 @@ export async function POST(req: Request) {
     const { chatId, userMessage, toolResults, previousContent, enableThinking } = validation.data
     const model = (validation.data.model ?? DEFAULT_AGENT_MODEL) as ModelName
 
-    // Load message history for the chat
-    const chatMessages = await db.query.messages.findMany({
-      where: eq(messages.chatId, chatId),
-      orderBy: (messages, { asc }) => [asc(messages.createdAt)],
-    })
+    // Build Anthropic messages based on request type
+    // IMPORTANT: For continuation turns (toolResults), we DON'T load from DB.
+    // The client manages conversation state during the agentic loop.
+    let anthropicMessages: MessageParam[]
+    const isFirstTurn = !!userMessage
+    const isContinuationTurn = !!(toolResults && previousContent)
 
-    const anthropicMessages: MessageParam[] = chatMessages.map((msg) => ({
-      role: msg.role as 'user' | 'assistant',
-      content: msg.content,
-    }))
+    if (isFirstTurn) {
+      // First turn: Load existing conversation from DB + append new user message
+      const chatMessages = await db.query.messages.findMany({
+        where: eq(messages.chatId, chatId),
+        orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+      })
 
-    if (userMessage) {
+      anthropicMessages = chatMessages.map((msg) => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+      }))
+
       logger.debug({ messageLength: userMessage.length }, '[DEV] Building initial message')
       anthropicMessages.push({
         role: 'user',
         content: userMessage,
       })
-    } else if (toolResults && previousContent) {
+    } else if (isContinuationTurn) {
+      // Continuation turn: DON'T load from DB - use client-provided state only
+      const chatMessages = await db.query.messages.findMany({
+        where: eq(messages.chatId, chatId),
+        orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+      })
+
+      // Only include messages up to the last USER message
+      const baseMessages: MessageParam[] = []
+      for (const msg of chatMessages) {
+        baseMessages.push({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        })
+      }
+      // Remove the last assistant message if it exists (it's duplicated in previousContent)
+      if (baseMessages.length > 0 && baseMessages[baseMessages.length - 1].role === 'assistant') {
+        baseMessages.pop()
+      }
+
+      anthropicMessages = baseMessages
+
       logger.debug({ toolResultCount: toolResults.length }, '[DEV] Building continuation message')
       anthropicMessages.push({
         role: 'assistant',
@@ -281,8 +309,10 @@ export async function POST(req: Request) {
             cache_creation_input_tokens: cacheCreationTokens,
           })
 
-          // Save assistant message with tool calls if any
-          // Only save if there's actual content (text or tool calls)
+          // Determine if this is the final turn of the agentic loop
+          const isFinalTurn = stopReason !== 'tool_use'
+
+          // Save messages only on appropriate turns (same logic as production)
           const assistantToolCalls = contentBlocks.filter(b => b.type === "tool_use");
           const hasContent = fullTextResponse.trim().length > 0 || assistantToolCalls.length > 0;
 
@@ -290,8 +320,8 @@ export async function POST(req: Request) {
           const newContextTokens = Math.min(inputTokens + outputTokens, MAX_CONTEXT_TOKENS);
 
           await db.transaction(async (tx) => {
-            // Save user message (same as prod)
-            if (userMessage) {
+            // Save user message on first turn only
+            if (isFirstTurn && userMessage) {
               await tx.insert(messages).values({
                 chatId,
                 role: "user",
@@ -303,8 +333,8 @@ export async function POST(req: Request) {
               });
             }
 
-            // Only save assistant message if it has meaningful content
-            if (hasContent) {
+            // Only save assistant message on FINAL turn
+            if (isFinalTurn && hasContent) {
               await tx.insert(messages).values({
                 chatId,
                 role: "assistant",
@@ -317,15 +347,18 @@ export async function POST(req: Request) {
               });
             }
 
-            await tx
-              .update(chats)
-              .set({
-                contextTokens: newContextTokens,
-                contextInputTokens: inputTokens,
-                contextOutputTokens: outputTokens,
-                updatedAt: new Date(),
-              })
-              .where(eq(chats.id, chatId));
+            // Update context tokens on final turn only
+            if (isFinalTurn) {
+              await tx
+                .update(chats)
+                .set({
+                  contextTokens: newContextTokens,
+                  contextInputTokens: inputTokens,
+                  contextOutputTokens: outputTokens,
+                  updatedAt: new Date(),
+                })
+                .where(eq(chats.id, chatId));
+            }
           });
 
           safeEnqueue(JSON.stringify({
@@ -359,9 +392,35 @@ export async function POST(req: Request) {
             '[DEV] Agent streaming error'
           )
 
+          // Parse error to provide user-friendly messages
+          let userFriendlyError = "Something went wrong. Please try again."
+          let errorCode: string | undefined
+
+          if (err instanceof Error) {
+            const errMessage = err.message
+
+            if (errMessage.includes("rate_limit_error") || errMessage.startsWith("429")) {
+              userFriendlyError = "AI service is temporarily busy. Please wait a moment and try again."
+              errorCode = "ANTHROPIC_RATE_LIMIT"
+            } else if (errMessage.includes("overloaded") || errMessage.startsWith("529")) {
+              userFriendlyError = "AI service is experiencing high demand. Please try again in a few minutes."
+              errorCode = "ANTHROPIC_OVERLOADED"
+            } else if (errMessage.includes("authentication") || errMessage.includes("api_key")) {
+              userFriendlyError = "Service configuration error. Please contact support."
+              errorCode = "ANTHROPIC_AUTH_ERROR"
+            } else if (errMessage.includes("invalid_request")) {
+              userFriendlyError = "Invalid request. Please try a different message."
+              errorCode = "ANTHROPIC_INVALID_REQUEST"
+            } else {
+              userFriendlyError = "Something went wrong. Please try again."
+              errorCode = "STREAMING_ERROR"
+            }
+          }
+
           safeEnqueue(JSON.stringify({
             type: 'error',
-            error: err instanceof Error ? err.message : 'Streaming failed',
+            error: userFriendlyError,
+            code: errorCode,
           }))
 
           safeClose()
