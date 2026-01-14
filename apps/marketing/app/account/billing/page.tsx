@@ -5,9 +5,10 @@ import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CreditCard, CheckCircle2, ArrowUpRight, Zap, Loader2 } from "lucide-react"
-import Link from "next/link"
+import { CreditCard, CheckCircle2, Zap, Loader2, AlertCircle, Clock, XCircle } from "lucide-react"
+import { format } from "date-fns"
 import { useUser } from "@/contexts/UserContext"
+import { SubscriptionAlerts } from "@/components/account/SubscriptionAlerts"
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -31,6 +32,7 @@ const itemVariants = {
 
 export default function BillingPage() {
   const { user, isLoading } = useUser()
+
   const [isBuyingCredits, setIsBuyingCredits] = useState(false)
 
   const handleBuyCredits = async () => {
@@ -83,76 +85,34 @@ export default function BillingPage() {
         </p>
       </motion.div>
 
-      {isIncomplete && (
-        <motion.div variants={itemVariants}>
-          <div className="bg-yellow-500/10 border border-yellow-500/50 p-4 rounded-lg">
-            <p className="font-medium text-yellow-600 dark:text-yellow-400">Payment Pending</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Your subscription is pending payment. Please complete the checkout process or update your payment method.
-            </p>
-          </div>
-        </motion.div>
-      )}
-
-      {isPastDue && (
-        <motion.div variants={itemVariants}>
-          <div className="bg-destructive/10 border border-destructive/50 p-4 rounded-lg">
-            <p className="font-medium text-destructive">Payment Failed</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Your last payment failed. Please update your payment method to avoid service interruption.
-            </p>
-            <form action="/api/stripe/portal" method="POST" className="mt-3">
-              <Button type="submit" size="sm" variant="destructive">
-                <CreditCard className="mr-2 h-4 w-4" />
-                Update Payment Method
-              </Button>
-            </form>
-          </div>
-        </motion.div>
-      )}
-
-      {currentTier === 'free' && !isIncomplete && !isPastDue && (
-        <motion.div variants={itemVariants}>
-          <div className="flex items-center justify-between p-4 rounded-lg border border-primary/50 bg-primary/5">
-            <div>
-              <p className="font-medium">Ready for more?</p>
-              <p className="text-sm text-muted-foreground">Upgrade to get more credits and priority support.</p>
-            </div>
-            <Button asChild size="sm">
-              <Link href="/pricing">
-                View Plans
-                <ArrowUpRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </motion.div>
-      )}
+      {/* Status Alerts */}
+      <motion.div variants={itemVariants}>
+        <SubscriptionAlerts
+          tier={currentTier}
+          status={user.subscriptionStatus}
+          billingPeriodEnd={user.billingPeriodEnd}
+        />
+      </motion.div>
 
       <motion.div className="grid gap-6" variants={containerVariants}>
         <motion.div variants={itemVariants}>
           <Card className="border">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <CardTitle>Current Plan</CardTitle>
-                  <CardDescription>
-                    You are currently on the <span className="font-semibold text-foreground uppercase">{currentTier}</span> plan.
-                  </CardDescription>
-                </div>
-                <Badge
-                  variant={
-                    status === 'active' ? 'default' :
-                    status === 'past_due' || status === 'incomplete' ? 'destructive' :
-                    'secondary'
-                  }
-                  className="uppercase"
-                >
-                  {status === 'active' ? 'Active' :
-                   status === 'incomplete' ? 'Pending' :
-                   status === 'past_due' ? 'Past Due' :
-                   status === 'none' ? 'Free' :
-                   status}
-                </Badge>
+                <CardTitle>Current Plan</CardTitle>
+                {/* Tier Badge */}
+                {currentTier === 'free' && (
+                  <Badge variant="secondary">Free</Badge>
+                )}
+                {currentTier === 'pro' && (
+                  <Badge variant="default">Pro</Badge>
+                )}
+                {currentTier === 'premium' && (
+                  <Badge variant="default">Premium</Badge>
+                )}
+                {currentTier === 'ultra' && (
+                  <Badge variant="default">Ultra</Badge>
+                )}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -168,25 +128,28 @@ export default function BillingPage() {
                 </motion.div>
               </div>
               {status === 'active' && user.billingPeriodEnd && (
-                <motion.div
-                  className="flex items-center gap-2 text-sm text-muted-foreground"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.2 }}
-                >
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  Your plan renews on {new Date(user.billingPeriodEnd).toLocaleDateString()}
-                </motion.div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  Renews {format(new Date(user.billingPeriodEnd), "MMMM d, yyyy")}
+                </div>
+              )}
+              {isPastDue && (
+                <div className="flex items-center gap-2 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  Payment failed — update required
+                </div>
+              )}
+              {isIncomplete && (
+                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+                  <Clock className="h-4 w-4" />
+                  Payment pending
+                </div>
               )}
               {isCanceled && user.billingPeriodEnd && (
-                <motion.div
-                  className="bg-destructive/10 p-3 rounded-md text-sm text-destructive"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.2 }}
-                >
-                  Your subscription has been canceled but remains active until {new Date(user.billingPeriodEnd).toLocaleDateString()}.
-                </motion.div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <XCircle className="h-4 w-4" />
+                  Access until {format(new Date(user.billingPeriodEnd), "MMMM d, yyyy")}
+                </div>
               )}
             </CardContent>
             <CardFooter className="border-t bg-muted/50 px-6 py-4">

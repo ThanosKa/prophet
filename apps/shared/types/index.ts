@@ -4,7 +4,7 @@
 export * from './agent'
 
 export type Tier = 'free' | 'pro' | 'premium' | 'ultra'
-export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete'
+export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'incomplete'
 
 export interface User {
   id: string

@@ -256,7 +256,7 @@ export default function UsagePage() {
                         {formatTokens(record.inputTokens + record.outputTokens)}
                       </TableCell>
                       <TableCell className="text-right font-semibold text-sm">
-                        ${(record.costCents / 100).toFixed(4)}
+                        ${(record.costCents / 100).toFixed(2)}
                       </TableCell>
                     </motion.tr>
                   ))

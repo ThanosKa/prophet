@@ -147,7 +147,7 @@ async function handleSubscriptionChange(subscription: StripeSubscriptionWithBill
   }
 
   const priceId = subscription.items.data[0]?.price.id
-  const status = subscription.status as 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete'
+  const status = subscription.status as 'active' | 'canceled' | 'past_due' | 'incomplete'
 
   const tier = determineTierFromPrice(priceId)
   if (!tier) {

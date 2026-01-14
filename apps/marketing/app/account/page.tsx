@@ -5,8 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { BarChart3, CreditCard, ChevronRight, Chrome } from "lucide-react";
+import { BarChart3, CreditCard, ChevronRight, Chrome, CheckCircle2, AlertCircle, Clock, XCircle } from "lucide-react";
+import { format } from "date-fns";
 import { useUser } from "@/contexts/UserContext";
+import { SubscriptionAlerts } from "@/components/account/SubscriptionAlerts";
 
 export default function AccountOverviewPage() {
   const { user, isLoading } = useUser();
@@ -46,15 +48,24 @@ export default function AccountOverviewPage() {
         </p>
       </div>
 
+      {/* Status Alerts - only show problem states on overview (not free tier prompt) */}
+      {(user.subscriptionStatus === 'past_due' || user.subscriptionStatus === 'incomplete' || user.subscriptionStatus === 'canceled') && (
+        <SubscriptionAlerts
+          tier={user.tier}
+          status={user.subscriptionStatus}
+          billingPeriodEnd={user.billingPeriodEnd}
+        />
+      )}
+
       <Card className="border transition-colors">
         <CardContent className="pt-6">
-          <div className="grid grid-cols-2 gap-8">
+          <div className={`grid grid-cols-1 ${user.subscriptionStatus ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-8`}>
             <div>
               <p className="text-sm text-muted-foreground mb-1">Balance</p>
               <p className="text-4xl font-bold">${creditsRemaining}</p>
               {user.creditsIncluded > 0 && (
                 <div className="mt-3 flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-primary rounded-full transition-all"
                       style={{ width: `${Math.min(creditPercentage, 100)}%` }}
@@ -67,17 +78,45 @@ export default function AccountOverviewPage() {
               )}
             </div>
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Plan</p>
-              <p className="text-4xl font-bold">{tierName}</p>
-              <Badge
-                variant={
-                  user.subscriptionStatus === "active" ? "default" : "secondary"
-                }
-                className="mt-3"
-              >
-                {user.subscriptionStatus === "active" ? "Active" : "Free Plan"}
-              </Badge>
+              <p className="text-sm text-muted-foreground mb-1">Tier</p>
+              <p className="text-2xl font-bold">{tierName}</p>
             </div>
+            {user.subscriptionStatus && (
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Status</p>
+                {user.subscriptionStatus === 'active' && (
+                  <div className="flex flex-col gap-1.5">
+                    <Badge variant="outline" className="w-fit bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                      Active
+                    </Badge>
+                    {user.billingPeriodEnd && (
+                      <p className="text-xs text-muted-foreground">
+                        Renews {format(new Date(user.billingPeriodEnd), "MMMM d, yyyy")}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {user.subscriptionStatus === 'past_due' && (
+                  <Badge variant="destructive" className="w-fit">
+                    <AlertCircle className="h-3.5 w-3.5 mr-1.5" />
+                    Past Due
+                  </Badge>
+                )}
+                {user.subscriptionStatus === 'incomplete' && (
+                  <Badge variant="outline" className="w-fit bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30">
+                    <Clock className="h-3.5 w-3.5 mr-1.5" />
+                    Pending
+                  </Badge>
+                )}
+                {user.subscriptionStatus === 'canceled' && (
+                  <Badge variant="secondary" className="w-fit">
+                    <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                    Canceled
+                  </Badge>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
