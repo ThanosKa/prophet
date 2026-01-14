@@ -3,11 +3,9 @@ import {
   MousePointer,
   Type,
   Navigation,
-  Image,
   ArrowUpDown,
   FileText,
   Search,
-  Keyboard,
   Move,
   Loader2,
   Check,
@@ -33,11 +31,9 @@ const toolIcons: Record<ToolName, React.ComponentType<{ className?: string }>> =
   click_element_by_uid: MousePointer,
   fill_element_by_uid: Type,
   navigate: Navigation,
-  take_screenshot: Image,
   scroll_page: ArrowUpDown,
   get_page_content: FileText,
   search_snapshot: Search,
-  press_key: Keyboard,
   hover_element_by_uid: Move,
   wait_for_selector: Search,
   wait_for_navigation: Clock,
@@ -57,11 +53,9 @@ const toolLabels: Record<ToolName, string> = {
   click_element_by_uid: 'Clicking element',
   fill_element_by_uid: 'Filling input',
   navigate: 'Navigating',
-  take_screenshot: 'Taking screenshot',
   scroll_page: 'Scrolling page',
   get_page_content: 'Getting content',
   search_snapshot: 'Searching',
-  press_key: 'Pressing key',
   hover_element_by_uid: 'Hovering element',
   wait_for_selector: 'Waiting for selector',
   wait_for_navigation: 'Waiting for navigation',
@@ -127,8 +121,6 @@ function formatToolInput(toolCall: ToolCall): string {
       return typeof input.direction === 'string' ? input.direction : ''
     case 'search_snapshot':
       return typeof input.query === 'string' ? `"${input.query}"` : ''
-    case 'press_key':
-      return typeof input.key === 'string' ? input.key : ''
     default:
       return ''
   }

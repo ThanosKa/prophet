@@ -9,7 +9,6 @@ import {
   navigateInputSchema,
   scrollPageInputSchema,
   searchSnapshotInputSchema,
-  pressKeyInputSchema,
   toolNameSchema,
   waitForSelectorInputSchema,
   waitForNavigationInputSchema,
@@ -418,46 +417,6 @@ describe('searchSnapshotInputSchema', () => {
   })
 })
 
-describe('pressKeyInputSchema', () => {
-  it('validates key only', () => {
-    const data = { key: 'Enter' }
-
-    const result = pressKeyInputSchema.safeParse(data)
-    expect(result.success).toBe(true)
-  })
-
-  it('validates key with modifiers', () => {
-    const data = { key: 'a', modifiers: ['ctrl', 'shift'] }
-
-    const result = pressKeyInputSchema.safeParse(data)
-    expect(result.success).toBe(true)
-  })
-
-  it('validates all valid modifiers', () => {
-    const data = { key: 'c', modifiers: ['ctrl', 'alt', 'shift', 'meta'] }
-
-    const result = pressKeyInputSchema.safeParse(data)
-    expect(result.success).toBe(true)
-  })
-
-  it('rejects invalid modifier', () => {
-    const data = { key: 'a', modifiers: ['super'] }
-
-    const result = pressKeyInputSchema.safeParse(data)
-    expect(result.success).toBe(false)
-  })
-
-  it('rejects empty key', () => {
-    const data = { key: '' }
-
-    const result = pressKeyInputSchema.safeParse(data)
-    expect(result.success).toBe(false)
-    if (!result.success) {
-      expect(result.error.issues[0].message).toBe('Key is required')
-    }
-  })
-})
-
 describe('toolResultSchema', () => {
   it('validates tool result without is_error', () => {
     const data = {
@@ -539,7 +498,6 @@ describe('toolUseSchema', () => {
       navigate: { url: 'https://example.com' } satisfies typeof navigateInputSchema._type,
       scroll_page: { direction: 'down', pixels: 500 } satisfies typeof scrollPageInputSchema._type,
       search_snapshot: { query: 'hello' } satisfies typeof searchSnapshotInputSchema._type,
-      press_key: { key: 'Enter' } satisfies typeof pressKeyInputSchema._type,
       wait_for_selector: { selector: 'body', timeout: 1000, visible: false } satisfies typeof waitForSelectorInputSchema._type,
       wait_for_navigation: { timeout: 1000 } satisfies typeof waitForNavigationInputSchema._type,
       wait_for_timeout: { ms: 1 } satisfies typeof waitForTimeoutInputSchema._type,

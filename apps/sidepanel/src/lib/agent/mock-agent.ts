@@ -74,9 +74,6 @@ const ALL_TOOLS = [
   'scroll_page',
   'get_page_content',
   'get_page_info',
-  'press_key',
-  // Screenshot
-  'take_screenshot',
   // Wait
   'wait_for_selector',
   'wait_for_navigation',
@@ -89,12 +86,12 @@ const ALL_TOOLS = [
 ] as const
 
 const TOOL_GROUPS = {
-  snap: ['take_snapshot', 'search_snapshot', 'take_screenshot'],
+  snap: ['take_snapshot', 'search_snapshot'],
   nav: ['navigate', 'go_back', 'go_forward', 'reload_page', 'scroll_page'],
   tabs: ['list_tabs', 'switch_tab', 'close_tab', 'open_new_tab'],
   element: ['click_element_by_uid', 'fill_element_by_uid', 'hover_element_by_uid'],
   wait: ['wait_for_selector', 'wait_for_navigation', 'wait_for_timeout'],
-  page: ['get_page_content', 'get_page_info', 'press_key'],
+  page: ['get_page_content', 'get_page_info'],
 }
 
 const MOCK_RESPONSES = [
@@ -115,8 +112,8 @@ const MOCK_RESPONSES = [
     tools: ['list_tabs', 'switch_tab'],
   },
   {
-    text: "I'll scroll down and take a screenshot of the page.",
-    tools: ['scroll_page', 'take_screenshot'],
+    text: "I'll scroll down and analyze the page content.",
+    tools: ['scroll_page', 'get_page_content'],
   },
   {
     text: "Here's what I found based on your request.",
@@ -407,12 +404,6 @@ function generateMockToolInput(toolName: string, userMessage: string): Record<st
     case 'get_page_content':
       return {}
     case 'get_page_info':
-      return {}
-    case 'press_key':
-      return { key: 'Enter' }
-
-    // Screenshot
-    case 'take_screenshot':
       return {}
 
     // Wait

@@ -4,11 +4,9 @@ import {
   MousePointer,
   Type,
   Navigation,
-  Image,
   ArrowUpDown,
   FileText,
   Search,
-  Keyboard,
   Move,
   Loader2,
   Check,
@@ -40,11 +38,9 @@ const toolIcons: Record<ToolName, React.ComponentType<{ className?: string }>> =
   click_element_by_uid: MousePointer,
   fill_element_by_uid: Type,
   navigate: Navigation,
-  take_screenshot: Image,
   scroll_page: ArrowUpDown,
   get_page_content: FileText,
   search_snapshot: Search,
-  press_key: Keyboard,
   hover_element_by_uid: Move,
   wait_for_selector: Search,
   wait_for_navigation: Clock,
@@ -64,11 +60,9 @@ const toolLabels: Record<ToolName, string> = {
   click_element_by_uid: 'Click',
   fill_element_by_uid: 'Fill',
   navigate: 'Navigate',
-  take_screenshot: 'Screenshot',
   scroll_page: 'Scroll',
   get_page_content: 'Get Content',
   search_snapshot: 'Search',
-  press_key: 'Key Press',
   hover_element_by_uid: 'Hover',
   wait_for_selector: 'Wait for Selector',
   wait_for_navigation: 'Wait for Navigation',
@@ -100,8 +94,6 @@ function formatToolInput(toolCall: ToolCall): string {
       return typeof input.direction === 'string' ? `Scroll ${input.direction}` : 'Scroll'
     case 'search_snapshot':
       return typeof input.query === 'string' ? `Search "${input.query}"` : 'Search'
-    case 'press_key':
-      return typeof input.key === 'string' ? `Press ${input.key}` : 'Press key'
     default:
       return ''
   }
@@ -116,8 +108,6 @@ function formatToolResult(toolCall: ToolCall): string | null {
   switch (toolCall.name) {
     case 'take_snapshot':
       return 'Snapshot captured'
-    case 'take_screenshot':
-      return 'Screenshot captured'
     case 'wait_for_navigation':
       return 'Navigation complete'
     case 'wait_for_timeout':
@@ -139,8 +129,6 @@ function formatToolResult(toolCall: ToolCall): string | null {
       return 'Clicked'
     case 'hover_element_by_uid':
       return 'Hovered'
-    case 'press_key':
-      return 'Key pressed'
     default:
       return null
   }

@@ -6,11 +6,9 @@ export const toolNameSchema = z.enum([
   "fill_element_by_uid",
   "hover_element_by_uid",
   "navigate",
-  "take_screenshot",
   "scroll_page",
   "get_page_content",
   "search_snapshot",
-  "press_key",
   "wait_for_selector",
   "wait_for_navigation",
   "wait_for_timeout",
@@ -104,11 +102,6 @@ export const searchSnapshotInputSchema = z.object({
   query: z.string().min(1, "Query is required").max(500),
 });
 
-export const pressKeyInputSchema = z.object({
-  key: z.string().min(1, "Key is required"),
-  modifiers: z.array(z.enum(["ctrl", "alt", "shift", "meta"])).optional(),
-});
-
 export const waitForSelectorInputSchema = z.object({
   selector: z.string().min(1, "Selector is required"),
   timeout: z.number().int().min(0).max(60000).optional().default(10000),
@@ -152,7 +145,6 @@ export const toolUseSchema = z.object({
     case "navigate": schema = navigateInputSchema; break;
     case "scroll_page": schema = scrollPageInputSchema; break;
     case "search_snapshot": schema = searchSnapshotInputSchema; break;
-    case "press_key": schema = pressKeyInputSchema; break;
     case "wait_for_selector": schema = waitForSelectorInputSchema; break;
     case "wait_for_navigation": schema = waitForNavigationInputSchema; break;
     case "wait_for_timeout": schema = waitForTimeoutInputSchema; break;
@@ -216,5 +208,4 @@ export type HoverElementInput = z.infer<typeof hoverElementInputSchema>;
 export type NavigateInput = z.infer<typeof navigateInputSchema>;
 export type ScrollPageInput = z.infer<typeof scrollPageInputSchema>;
 export type SearchSnapshotInput = z.infer<typeof searchSnapshotInputSchema>;
-export type PressKeyInput = z.infer<typeof pressKeyInputSchema>;
 export type ImageData = z.infer<typeof imageDataSchema>;

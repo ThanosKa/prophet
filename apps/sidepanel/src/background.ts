@@ -186,8 +186,6 @@ async function handleToolExecution(
     scroll_page: (input) => `Scrolling ${input.direction}...`,
     get_page_content: () => 'Reading page content...',
     search_snapshot: (input) => `Searching for "${input.query}"...`,
-    press_key: (input) => `Pressing ${input.key}...`,
-    take_screenshot: () => 'Taking screenshot...',
   }
 
   const statusMessage = statusMessages[toolName]?.(toolInput) || `Executing ${toolName}...`
