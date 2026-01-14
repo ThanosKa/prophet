@@ -66,6 +66,8 @@ export default function BillingPage() {
   const currentTier = user.tier
   const status = user.subscriptionStatus || 'none'
   const isCanceled = status === 'canceled'
+  const isIncomplete = status === 'incomplete'
+  const isPastDue = status === 'past_due'
 
   return (
     <motion.div
@@ -81,7 +83,35 @@ export default function BillingPage() {
         </p>
       </motion.div>
 
-      {currentTier === 'free' && (
+      {isIncomplete && (
+        <motion.div variants={itemVariants}>
+          <div className="bg-yellow-500/10 border border-yellow-500/50 p-4 rounded-lg">
+            <p className="font-medium text-yellow-600 dark:text-yellow-400">Payment Pending</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Your subscription is pending payment. Please complete the checkout process or update your payment method.
+            </p>
+          </div>
+        </motion.div>
+      )}
+
+      {isPastDue && (
+        <motion.div variants={itemVariants}>
+          <div className="bg-destructive/10 border border-destructive/50 p-4 rounded-lg">
+            <p className="font-medium text-destructive">Payment Failed</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Your last payment failed. Please update your payment method to avoid service interruption.
+            </p>
+            <form action="/api/stripe/portal" method="POST" className="mt-3">
+              <Button type="submit" size="sm" variant="destructive">
+                <CreditCard className="mr-2 h-4 w-4" />
+                Update Payment Method
+              </Button>
+            </form>
+          </div>
+        </motion.div>
+      )}
+
+      {currentTier === 'free' && !isIncomplete && !isPastDue && (
         <motion.div variants={itemVariants}>
           <div className="flex items-center justify-between p-4 rounded-lg border border-primary/50 bg-primary/5">
             <div>
@@ -109,8 +139,19 @@ export default function BillingPage() {
                     You are currently on the <span className="font-semibold text-foreground uppercase">{currentTier}</span> plan.
                   </CardDescription>
                 </div>
-                <Badge variant={status === 'active' ? 'default' : 'secondary'} className="uppercase">
-                  {status === 'active' ? 'Active' : status === 'none' ? 'Free' : status}
+                <Badge
+                  variant={
+                    status === 'active' ? 'default' :
+                    status === 'past_due' || status === 'incomplete' ? 'destructive' :
+                    'secondary'
+                  }
+                  className="uppercase"
+                >
+                  {status === 'active' ? 'Active' :
+                   status === 'incomplete' ? 'Pending' :
+                   status === 'past_due' ? 'Past Due' :
+                   status === 'none' ? 'Free' :
+                   status}
                 </Badge>
               </div>
             </CardHeader>

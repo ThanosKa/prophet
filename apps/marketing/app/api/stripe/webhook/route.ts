@@ -176,8 +176,6 @@ async function handleSubscriptionChange(subscription: StripeSubscriptionWithBill
       creditsRemaining: isFirstSubscription ? tierConfig.credits : user.creditsRemaining,
       billingPeriodStart,
       billingPeriodEnd,
-      pendingTier: null,
-      pendingTierEffectiveDate: null,
       updatedAt: new Date(),
     })
     .where(eq(users.id, user.id))
@@ -215,8 +213,6 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       creditsRemaining: TIER_CONFIG.free.credits,
       billingPeriodStart: null,
       billingPeriodEnd: null,
-      pendingTier: null,
-      pendingTierEffectiveDate: null,
       updatedAt: new Date(),
     })
     .where(eq(users.id, user.id))
