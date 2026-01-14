@@ -147,6 +147,9 @@ export async function* runAgentLoop(
   let isFirstRequest = true;
   const maxTurns = 10;
 
+  // Track tool calls to detect repetitive patterns (like Manus does)
+  const toolCallHistory: Array<{ name: string; inputHash: string }> = [];
+
   while (turnCount < maxTurns) {
     if (signal?.aborted) {
       yield {
@@ -272,6 +275,19 @@ export async function* runAgentLoop(
                     : JSON.stringify(toolResult.data);
               } else {
                 resultContent = toolResult.error || "Tool execution failed";
+              }
+
+              // Detect repetitive tool calls (context engineering like Manus)
+              const toolName = toolUse.name;
+              const inputHash = JSON.stringify(toolUse.input);
+              const repeatCount = toolCallHistory.filter(
+                (t) => t.name === toolName && t.inputHash === inputHash
+              ).length;
+              toolCallHistory.push({ name: toolName, inputHash });
+
+              // Inject warning if agent is repeating itself
+              if (repeatCount >= 2) {
+                resultContent = `[STUCK WARNING: You've called ${toolUse.name} with identical parameters ${repeatCount + 1} times. The page state is likely not changing. Either try a different approach or tell the user what's blocking you.]\n\n${resultContent}`;
               }
 
               const result: ToolResult = {
