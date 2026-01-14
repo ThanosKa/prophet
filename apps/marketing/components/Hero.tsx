@@ -74,11 +74,6 @@ export function Hero() {
                     Get Started Free
                   </Button>
                 </SignUpButton>
-                <SignInButton mode="modal" forceRedirectUrl="/account">
-                  <Button size="lg" variant="outline" className="px-8">
-                    Sign In
-                  </Button>
-                </SignInButton>
               </SignedOut>
               <SignedIn>
                 <Link href="https://chrome.google.com/webstore">
