@@ -1,3 +1,5 @@
+import { logger } from '../logger'
+
 const CDP_VERSION = '1.3'
 const AUTO_DETACH_TIMEOUT_MS = 30000
 
@@ -108,7 +110,7 @@ class DebuggerManagerClass {
     // Clean room: Remove extension frames before attaching
     const removedFrames = await this.ensureNoExtensionFrame(tabId)
     if (removedFrames) {
-      console.log('[DebuggerManager] Removed extension frames, waiting for DOM to settle')
+      logger.log('DebuggerManager', 'Removed extension frames, waiting for DOM to settle')
       await new Promise((resolve) => setTimeout(resolve, 200))
     }
 
@@ -121,7 +123,7 @@ class DebuggerManagerClass {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       if (message.includes('Another debugger is already attached')) {
-        console.warn(`[DebuggerManager] Debugger already attached to tab ${tabId}, proceeding`)
+        logger.warn('DebuggerManager', `Debugger already attached to tab ${tabId}, proceeding`)
         this.attachedTabs.add(tabId)
         this.pendingCommands.set(tabId, new Set())
         this.scheduleAutoDetach(tabId)
@@ -140,7 +142,7 @@ class DebuggerManagerClass {
       await chrome.debugger.detach({ tabId })
       // console.log(`[DebuggerManager] Manually detached from tab ${tabId}`)
     } catch (error) {
-      console.warn(`[DebuggerManager] Error detaching from tab ${tabId}:`, error)
+      logger.warn('DebuggerManager', `Error detaching from tab ${tabId}:`, error)
     } finally {
       this.cleanup(tabId)
     }

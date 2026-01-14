@@ -17,7 +17,6 @@ const manifest = defineManifest({
   ],
   host_permissions: [
     "http://localhost:3000/*",
-    "http://localhost:3001/*",
     "<all_urls>",
   ],
 

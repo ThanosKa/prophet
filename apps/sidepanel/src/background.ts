@@ -2,6 +2,7 @@ import { createClerkClient } from '@clerk/chrome-extension/background'
 import { toolExecutors } from './lib/agent/tools'
 import { debuggerManager } from './lib/agent/debugger-manager'
 import { snapshotManager } from './lib/agent/snapshot-manager'
+import { logger } from './lib/logger'
 import {
   type ExecuteToolRequest,
   type AgentState,
@@ -38,7 +39,7 @@ chrome.sidePanel
 
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === 'sidepanel') {
-    console.log('[Background] Sidepanel connected')
+    logger.log('Background', 'Sidepanel connected')
     sidepanelPorts.add(port)
 
     // Send current agent state on connect
@@ -56,7 +57,7 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     port.onDisconnect.addListener(() => {
-      console.log('[Background] Sidepanel disconnected')
+      logger.log('Background', 'Sidepanel disconnected')
       sidepanelPorts.delete(port)
     })
   }
@@ -72,7 +73,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     createClerkClient({ publishableKey })
       .then((clerk) => {
         if (!clerk.session) {
-          console.log('[Background] No active session')
+          logger.log('Background', 'No active session')
           sendResponse({ token: null })
           return
         }
@@ -134,7 +135,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Agent abort request from content script pause button
   if (message.type === 'AGENT_ABORT') {
-    console.log('[Background] Agent abort requested')
+    logger.log('Background', 'Agent abort requested')
     if (abortController) {
       abortController.abort()
       abortController = null
@@ -166,7 +167,7 @@ async function handleToolExecution(
   const { toolName, toolInput, requestId } = request
   const startTime = Date.now()
 
-  console.log(`[Background] Executing tool: ${toolName}`, toolInput)
+  logger.log('Background', `Executing tool: ${toolName}`, toolInput)
 
   // Update agent states
   agentState.currentToolExecution = {
@@ -209,7 +210,7 @@ async function handleToolExecution(
     const result = await executor(toolInput)
     const durationMs = Date.now() - startTime
 
-    console.log(`[Background] Tool ${toolName} completed in ${durationMs}ms`, result.success)
+    logger.log('Background', `Tool ${toolName} completed in ${durationMs}ms`, result.success)
 
     const response: ToolExecutionResponse = {
       type: 'TOOL_RESULT',

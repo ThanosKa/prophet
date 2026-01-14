@@ -6,6 +6,7 @@
  */
 
 import { cdpCommander, type EvaluateResult } from './cdp-commander'
+import { logger } from '../logger'
 
 const UID_ATTRIBUTE = 'data-prophet-nodeid'
 
@@ -15,12 +16,12 @@ export type EditorType = 'monaco' | 'codemirror' | 'ace' | 'none'
  * Detect if an element is part of a rich text editor.
  */
 export async function detectEditor(tabId: number, uid: string): Promise<EditorType> {
-    try {
-        const result = await cdpCommander.sendCommand<EvaluateResult>(
-            tabId,
-            'Runtime.evaluate',
-            {
-                expression: `
+  try {
+    const result = await cdpCommander.sendCommand<EvaluateResult>(
+      tabId,
+      'Runtime.evaluate',
+      {
+        expression: `
           (function() {
             const el = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
             if (!el) return 'none';
@@ -43,37 +44,37 @@ export async function detectEditor(tabId: number, uid: string): Promise<EditorTy
             return 'none';
           })()
         `,
-                returnByValue: true,
-            }
-        )
+        returnByValue: true,
+      }
+    )
 
-        if (result.exceptionDetails) {
-            return 'none'
-        }
-
-        return (result.result.value as EditorType) || 'none'
-    } catch {
-        return 'none'
+    if (result.exceptionDetails) {
+      return 'none'
     }
+
+    return (result.result.value as EditorType) || 'none'
+  } catch {
+    return 'none'
+  }
 }
 
 /**
  * Fill a Monaco editor with the given value.
  */
 export async function fillMonaco(tabId: number, uid: string, value: string): Promise<boolean> {
-    try {
-        // Escape the value for use in JavaScript string
-        const escapedValue = value
-            .replace(/\\/g, '\\\\')
-            .replace(/'/g, "\\'")
-            .replace(/\n/g, '\\n')
-            .replace(/\r/g, '\\r')
+  try {
+    // Escape the value for use in JavaScript string
+    const escapedValue = value
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
 
-        const result = await cdpCommander.sendCommand<EvaluateResult>(
-            tabId,
-            'Runtime.evaluate',
-            {
-                expression: `
+    const result = await cdpCommander.sendCommand<EvaluateResult>(
+      tabId,
+      'Runtime.evaluate',
+      {
+        expression: `
           (function() {
             const el = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
             if (!el) return false;
@@ -109,32 +110,32 @@ export async function fillMonaco(tabId: number, uid: string, value: string): Pro
             return false;
           })()
         `,
-                returnByValue: true,
-            }
-        )
+        returnByValue: true,
+      }
+    )
 
-        return result.result.value === true
-    } catch {
-        return false
-    }
+    return result.result.value === true
+  } catch {
+    return false
+  }
 }
 
 /**
  * Fill a CodeMirror editor with the given value.
  */
 export async function fillCodeMirror(tabId: number, uid: string, value: string): Promise<boolean> {
-    try {
-        const escapedValue = value
-            .replace(/\\/g, '\\\\')
-            .replace(/'/g, "\\'")
-            .replace(/\n/g, '\\n')
-            .replace(/\r/g, '\\r')
+  try {
+    const escapedValue = value
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
 
-        const result = await cdpCommander.sendCommand<EvaluateResult>(
-            tabId,
-            'Runtime.evaluate',
-            {
-                expression: `
+    const result = await cdpCommander.sendCommand<EvaluateResult>(
+      tabId,
+      'Runtime.evaluate',
+      {
+        expression: `
           (function() {
             const el = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
             if (!el) return false;
@@ -168,32 +169,32 @@ export async function fillCodeMirror(tabId: number, uid: string, value: string):
             return false;
           })()
         `,
-                returnByValue: true,
-            }
-        )
+        returnByValue: true,
+      }
+    )
 
-        return result.result.value === true
-    } catch {
-        return false
-    }
+    return result.result.value === true
+  } catch {
+    return false
+  }
 }
 
 /**
  * Fill an Ace editor with the given value.
  */
 export async function fillAce(tabId: number, uid: string, value: string): Promise<boolean> {
-    try {
-        const escapedValue = value
-            .replace(/\\/g, '\\\\')
-            .replace(/'/g, "\\'")
-            .replace(/\n/g, '\\n')
-            .replace(/\r/g, '\\r')
+  try {
+    const escapedValue = value
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
 
-        const result = await cdpCommander.sendCommand<EvaluateResult>(
-            tabId,
-            'Runtime.evaluate',
-            {
-                expression: `
+    const result = await cdpCommander.sendCommand<EvaluateResult>(
+      tabId,
+      'Runtime.evaluate',
+      {
+        expression: `
           (function() {
             const el = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
             if (!el) return false;
@@ -224,14 +225,14 @@ export async function fillAce(tabId: number, uid: string, value: string): Promis
             return false;
           })()
         `,
-                returnByValue: true,
-            }
-        )
+        returnByValue: true,
+      }
+    )
 
-        return result.result.value === true
-    } catch {
-        return false
-    }
+    return result.result.value === true
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -239,23 +240,23 @@ export async function fillAce(tabId: number, uid: string, value: string): Promis
  * Returns true if editor was detected and filled, false otherwise.
  */
 export async function tryFillEditor(
-    tabId: number,
-    uid: string,
-    value: string
+  tabId: number,
+  uid: string,
+  value: string
 ): Promise<boolean> {
-    const editorType = await detectEditor(tabId, uid)
+  const editorType = await detectEditor(tabId, uid)
 
-    switch (editorType) {
-        case 'monaco':
-            console.log('[EditorDetector] Monaco editor detected, using setValue')
-            return fillMonaco(tabId, uid, value)
-        case 'codemirror':
-            console.log('[EditorDetector] CodeMirror editor detected, using setValue')
-            return fillCodeMirror(tabId, uid, value)
-        case 'ace':
-            console.log('[EditorDetector] Ace editor detected, using setValue')
-            return fillAce(tabId, uid, value)
-        default:
-            return false
-    }
+  switch (editorType) {
+    case 'monaco':
+      logger.log('EditorDetector', 'Monaco editor detected, using setValue')
+      return fillMonaco(tabId, uid, value)
+    case 'codemirror':
+      logger.log('EditorDetector', 'CodeMirror editor detected, using setValue')
+      return fillCodeMirror(tabId, uid, value)
+    case 'ace':
+      logger.log('EditorDetector', 'Ace editor detected, using setValue')
+      return fillAce(tabId, uid, value)
+    default:
+      return false
+  }
 }

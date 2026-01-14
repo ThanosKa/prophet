@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { logger } from '@/lib/logger'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { useChats } from '@/hooks/useChats'
@@ -66,9 +67,9 @@ export default function App() {
       if (changes.__clerk_client_jwt) {
         // Reload on sign-in (new token) OR sign-out (token removed)
         if (changes.__clerk_client_jwt.newValue) {
-          console.log('Clerk session synced, reloading sidepanel')
+          logger.log('App', 'Clerk session synced, reloading sidepanel')
         } else if (changes.__clerk_client_jwt.oldValue && !changes.__clerk_client_jwt.newValue) {
-          console.log('Clerk session signed out, reloading sidepanel')
+          logger.log('App', 'Clerk session signed out, reloading sidepanel')
         }
         window.location.reload()
       }

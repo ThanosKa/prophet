@@ -2,6 +2,7 @@ import { cdpCommander, type EvaluateResult } from './cdp-commander'
 import { snapshotManager } from './snapshot-manager'
 import { tryFillEditor } from './editor-detector'
 import { type BoundingBox } from './types'
+import { logger } from '../logger'
 
 const UID_ATTRIBUTE = 'data-prophet-nodeid'
 
@@ -27,7 +28,7 @@ export class SmartLocator {
     const isCovered = await this.isElementCovered(tabId, uid, centerX, centerY)
 
     if (isCovered) {
-      console.warn(`[SmartLocator] Element covered by overlay, using DOM click fallback`)
+      logger.warn('SmartLocator', 'Element covered by overlay, using DOM click fallback')
       await this.syntheticClick(tabId, uid, doubleClick)
       return
     }
@@ -94,7 +95,7 @@ export class SmartLocator {
       const value = result.result.value as { isCovered: boolean; coveredBy?: string }
 
       if (value.isCovered && value.coveredBy) {
-        console.warn(`[SmartLocator] Element covered by <${value.coveredBy}>`)
+        logger.warn('SmartLocator', `Element covered by <${value.coveredBy}>`)
       }
 
       return value.isCovered
@@ -113,7 +114,7 @@ export class SmartLocator {
 
     const filledViaEditor = await tryFillEditor(tabId, uid, value)
     if (filledViaEditor) {
-      console.log('[SmartLocator] Filled via editor API')
+      logger.log('SmartLocator', 'Filled via editor API')
       await this.dispatchInputEvents(tabId, uid, value)
       return
     }
