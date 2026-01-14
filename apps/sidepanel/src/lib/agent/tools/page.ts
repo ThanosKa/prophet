@@ -162,7 +162,7 @@ export async function getPageContent(): Promise<ToolExecutionResult> {
             while ((node = walker.nextNode()) && totalLength < MAX_CONTENT_LENGTH) {
               const text = node.textContent.trim();
               // Filter out obvious JS/CSS noise
-              if (text && text.length > 1 && !text.match(/^[{}\[\]();,]+$/) && !text.startsWith('!function')) {
+              if (text && text.length > 1 && !text.match(/^[]{}()[;,]+$/) && !text.startsWith('!function')) {
                 textNodes.push(text);
                 totalLength += text.length;
               }
