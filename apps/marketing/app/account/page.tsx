@@ -27,9 +27,10 @@ export default function AccountOverviewPage() {
 
   const creditsRemaining = (user.creditsRemaining / 100).toFixed(2);
   const tierName = user.tier.charAt(0).toUpperCase() + user.tier.slice(1);
+  const hasExtraCredits = user.creditsRemaining > user.creditsIncluded;
   const creditPercentage =
     user.creditsIncluded > 0
-      ? Math.round((user.creditsRemaining / user.creditsIncluded) * 100)
+      ? Math.min(100, Math.round((user.creditsRemaining / user.creditsIncluded) * 100))
       : 0;
 
   return (
@@ -64,16 +65,23 @@ export default function AccountOverviewPage() {
               <p className="text-sm text-muted-foreground mb-1">Balance</p>
               <p className="text-4xl font-bold">${creditsRemaining}</p>
               {user.creditsIncluded > 0 && (
-                <div className="mt-3 flex items-center gap-2">
-                  <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full transition-all"
-                      style={{ width: `${Math.min(creditPercentage, 100)}%` }}
-                    />
+                <div className="mt-3 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all"
+                        style={{ width: `${creditPercentage}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {creditPercentage}%
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {creditPercentage}%
-                  </span>
+                  {hasExtraCredits && (
+                    <p className="text-xs text-muted-foreground">
+                      +${((user.creditsRemaining - user.creditsIncluded) / 100).toFixed(2)} extra credits
+                    </p>
+                  )}
                 </div>
               )}
             </div>

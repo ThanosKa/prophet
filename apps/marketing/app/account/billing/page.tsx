@@ -135,15 +135,23 @@ export default function BillingPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
-                <div className="text-sm font-medium">Monthly Balance</div>
+                <div className="text-sm font-medium">Current Balance</div>
                 <motion.div
                   className="text-2xl font-bold"
                   initial={{ scale: 0.5, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.3, duration: 0.3 }}
                 >
-                  ${(user.creditsIncluded / 100).toFixed(2)}
+                  ${(user.creditsRemaining / 100).toFixed(2)}
                 </motion.div>
+                {user.creditsIncluded > 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    {user.creditsRemaining > user.creditsIncluded
+                      ? `Includes $${((user.creditsRemaining - user.creditsIncluded) / 100).toFixed(2)} in extra credits`
+                      : `$${(user.creditsIncluded / 100).toFixed(2)}/mo included`
+                    }
+                  </div>
+                )}
               </div>
               {status === 'active' && user.billingPeriodEnd && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
