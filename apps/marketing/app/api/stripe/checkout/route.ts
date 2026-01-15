@@ -10,12 +10,12 @@ import { logger } from '@/lib/logger'
 import { EXTRA_CREDITS } from '@/lib/pricing'
 
 const subscriptionCheckoutSchema = z.object({
-  priceId: z.string(),
+  priceId: z.string().min(1, 'Price ID is required'),
   tier: z.enum(['pro', 'premium', 'ultra']),
   mode: z.literal('subscription').optional().default('subscription'),
 })
 const paymentCheckoutSchema = z.object({
-  priceId: z.string(),
+  priceId: z.string().min(1, 'Price ID is required'),
   mode: z.literal('payment'),
   credits: z.number().optional(), // For future variable credit amounts
 })
@@ -47,6 +47,16 @@ export async function POST(request: Request) {
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prophetchrome.com'
+
+    // Validate priceId is configured (env vars loaded at build time)
+    if (!data.priceId) {
+      const tierOrType = data.mode === 'subscription' ? data.tier : 'payment'
+      logger.error({ tier: tierOrType }, 'Stripe price ID not configured')
+      return NextResponse.json(
+        { error: `Checkout not configured. Please contact support.` },
+        { status: 500 }
+      )
+    }
 
     const isPayment = data.mode === 'payment'
     const metadata: Record<string, string> = isPayment
