@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { BGPattern } from "./BGPattern";
 import Image from "next/image";
+import { CHROME_STORE_URL } from "@/lib/constants";
 
 export function Hero() {
   return (
@@ -76,7 +77,7 @@ export function Hero() {
                 </SignUpButton>
               </SignedOut>
               <SignedIn>
-                <Link href="https://chrome.google.com/webstore">
+                <Link href={CHROME_STORE_URL}>
                   <Button size="lg" className="px-8">
                     Add to Chrome
                   </Button>
