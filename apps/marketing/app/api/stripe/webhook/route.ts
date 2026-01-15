@@ -156,12 +156,8 @@ async function handleSubscriptionChange(subscription: StripeSubscriptionWithBill
   }
 
   const tierConfig = TIER_CONFIG[tier]
-  const stripeBillingStart = subscription.current_period_start
-    ? new Date(subscription.current_period_start * 1000)
-    : null
-  const stripeBillingEnd = subscription.current_period_end
-    ? new Date(subscription.current_period_end * 1000)
-    : null
+  const stripeBillingStart = new Date(subscription.current_period_start * 1000)
+  const stripeBillingEnd = new Date(subscription.current_period_end * 1000)
 
   const isFirstSubscription = !user.stripeSubscriptionId
   const now = new Date()
