@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useUser as useClerkUser, useAuth } from "@clerk/nextjs";
 import { useUserOptional } from "@/contexts/UserContext";
 import Link from "next/link";
@@ -49,9 +50,6 @@ export function UserMenu() {
     `${clerkUser.firstName?.[0] || ""}${
       clerkUser.lastName?.[0] || ""
     }`.toUpperCase() || "U";
-  const creditsRemaining = dbUser
-    ? (dbUser.creditsRemaining / 100).toFixed(2)
-    : "...";
 
   return (
     <DropdownMenu>
@@ -76,7 +74,11 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem className="flex justify-between items-center pointer-events-none opacity-100">
           <span className="text-xs font-semibold">Balance</span>
-          <span className="font-bold">${creditsRemaining}</span>
+          {dbUser ? (
+            <span className="font-bold">${(dbUser.creditsRemaining / 100).toFixed(2)}</span>
+          ) : (
+            <Skeleton className="h-4 w-12" />
+          )}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
