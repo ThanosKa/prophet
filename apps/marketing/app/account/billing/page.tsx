@@ -59,10 +59,10 @@ export default function BillingPage() {
     try {
       const response = await fetch('/api/stripe/portal', {
         method: 'POST',
-        redirect: 'follow',
       })
-      if (response.redirected) {
-        window.location.href = response.url
+      const data = await response.json()
+      if (data.url) {
+        window.location.href = data.url
       }
     } catch (error) {
       console.error('Failed to open portal:', error)
@@ -189,7 +189,7 @@ export default function BillingPage() {
                 {isManagingSubscription ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Opening Portal...
+                    Processing...
                   </>
                 ) : (
                   <>

@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
     logger.info({ userId, customerId: user.stripeCustomerId }, 'Portal session created')
 
-    return NextResponse.redirect(session.url, { status: 303 })
+    return NextResponse.json({ url: session.url })
   } catch (error) {
     logger.error({ error }, 'Failed to create portal session')
     return NextResponse.json(
