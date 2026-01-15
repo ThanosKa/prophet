@@ -1,5 +1,5 @@
 export const config = {
-  apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+  apiUrl: import.meta.env.VITE_API_URL || 'https://prophetchrome.com',
   clerkPublishableKey: import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '',
   isDevelopment: import.meta.env.DEV,
   // Set VITE_USE_DEV_API=true for dev API (no credit deduction)

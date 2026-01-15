@@ -79,7 +79,6 @@ Copy from [apps/marketing/.env.example](apps/marketing/.env.example) - marketing
 
 **Database:**
 - `DATABASE_URL` - Supabase PostgreSQL connection
-- `DIRECT_URL` - Direct database connection (for migrations)
 
 **Anthropic:**
 - `ANTHROPIC_API_KEY` - AI API (server-side only)

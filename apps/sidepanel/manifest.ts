@@ -17,6 +17,7 @@ const manifest = defineManifest({
   ],
   host_permissions: [
     "http://localhost:3000/*",
+    "https://prophetchrome.com/*",
     "<all_urls>",
   ],
 

@@ -29,7 +29,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Extra credits not configured' }, { status: 500 })
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prophetchrome.com'
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'payment',
