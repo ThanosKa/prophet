@@ -21,10 +21,10 @@ export const ALL_MODELS = ['claude-haiku-4-5', 'claude-sonnet-4-5', 'claude-opus
 
 // Stripe Price IDs (not secret - safe to hardcode as fallback)
 const STRIPE_PRICE_IDS = {
-  pro: process.env.STRIPE_PRICE_PRO || 'price_1SoTsuK3NgGLoo5cZSh04y1U',
+  pro: process.env.STRIPE_PRICE_PRO || 'price_1SoTslK3NgGLoo5cqr6CQDJ9',
   premium: process.env.STRIPE_PRICE_PREMIUM || 'price_1SoTsnK3NgGLoo5cgIrONmV2',
   ultra: process.env.STRIPE_PRICE_ULTRA || 'price_1SoTsqK3NgGLoo5cZQM8Z1lH',
-  extraCredits: process.env.STRIPE_PRICE_EXTRA_CREDITS || '',
+  extraCredits: process.env.STRIPE_PRICE_EXTRA_CREDITS || 'price_1SoTsuK3NgGLoo5cZSh04y1U',
 };
 export const TIER_CONFIG = {
   free: {
