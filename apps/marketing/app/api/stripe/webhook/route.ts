@@ -156,14 +156,27 @@ async function handleSubscriptionChange(subscription: StripeSubscriptionWithBill
   }
 
   const tierConfig = TIER_CONFIG[tier]
-  const billingPeriodStart = subscription.current_period_start
+  const stripeBillingStart = subscription.current_period_start
     ? new Date(subscription.current_period_start * 1000)
-    : new Date()
-  const billingPeriodEnd = subscription.current_period_end
+    : null
+  const stripeBillingEnd = subscription.current_period_end
     ? new Date(subscription.current_period_end * 1000)
-    : new Date()
+    : null
 
   const isFirstSubscription = !user.stripeSubscriptionId
+  const now = new Date()
+
+  // For mid-cycle upgrades, preserve existing billing period if it's still in the future
+  const shouldPreserveBillingPeriod = !isFirstSubscription &&
+    user.billingPeriodEnd &&
+    user.billingPeriodEnd > now
+
+  const billingPeriodStart = shouldPreserveBillingPeriod
+    ? user.billingPeriodStart
+    : stripeBillingStart
+  const billingPeriodEnd = shouldPreserveBillingPeriod
+    ? user.billingPeriodEnd
+    : stripeBillingEnd
 
   await db
     .update(users)

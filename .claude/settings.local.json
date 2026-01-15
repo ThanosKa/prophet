@@ -22,7 +22,8 @@
       "Bash(pnpm -F @prophet/marketing build:*)",
       "Bash(ls:*)",
       "Bash(pnpm remove:*)",
-      "Bash(pnpm -F @prophet/sidepanel test:run)"
+      "Bash(pnpm -F @prophet/sidepanel test:run)",
+      "Skill(data-fetching)"
     ]
   }
 }

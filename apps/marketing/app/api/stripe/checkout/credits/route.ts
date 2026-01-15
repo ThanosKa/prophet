@@ -34,7 +34,7 @@ export async function POST() {
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'payment',
       line_items: [{ price: EXTRA_CREDITS.priceId, quantity: 1 }],
-      success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${appUrl}/account/billing`,
       cancel_url: `${appUrl}/account/billing`,
       allow_promotion_codes: true,
       metadata: {

@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: data.mode,
       line_items: [{ price: data.priceId, quantity: 1 }],
-      success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${appUrl}/account`,
       cancel_url: isPayment ? `${appUrl}/account/billing` : `${appUrl}/pricing`,
       allow_promotion_codes: !isPayment, // No promo codes for one-time credits
       metadata,

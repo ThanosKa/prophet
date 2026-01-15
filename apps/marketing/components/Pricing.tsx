@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { Button } from '@/components/ui/button'
 import { SignInButton, SignedIn, SignedOut } from '@clerk/nextjs'
 import { Badge } from '@/components/ui/badge'
@@ -8,6 +9,8 @@ import { Check, Zap } from 'lucide-react'
 import { UpgradeButton } from './UpgradeButton'
 import { BuyCreditsButton } from './BuyCreditsButton'
 import { TIER_CONFIG, type TierName } from '@/lib/pricing'
+import { useUserOptional } from '@/contexts/UserContext'
+import type { User } from '@prophet/shared'
 
 const plans: Array<{
   name: string
@@ -53,6 +56,22 @@ interface PricingProps {
 }
 
 export function Pricing({ showHeader = true }: PricingProps) {
+  const userContext = useUserOptional()
+  const [fetchedUser, setFetchedUser] = React.useState<User | null>(null)
+
+  React.useEffect(() => {
+    if (userContext?.user) return
+    fetch('/api/auth/user')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.data) setFetchedUser(data.data)
+      })
+      .catch(() => {})
+  }, [userContext?.user])
+
+  const dbUser = userContext?.user || fetchedUser
+  const userTier = dbUser?.tier
+
   return (
     <section id="pricing" className="py-20 px-4">
       <div className="max-w-6xl mx-auto">
@@ -99,7 +118,11 @@ export function Pricing({ showHeader = true }: PricingProps) {
                 </SignInButton>
               </SignedOut>
               <SignedIn>
-                {plan.tier === 'free' ? (
+                {userTier === plan.tier ? (
+                  <Button className="w-full mb-6" variant="outline" disabled>
+                    Current Plan
+                  </Button>
+                ) : plan.tier === 'free' ? (
                   <Button className="w-full mb-6" variant="outline" disabled>
                     Free Tier
                   </Button>
