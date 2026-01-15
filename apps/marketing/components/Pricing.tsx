@@ -111,7 +111,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
               <p className="text-3xl font-bold mb-2">{plan.price}</p>
               <p className="text-sm text-muted-foreground mb-6">{plan.credits}</p>
               <SignedOut>
-                <SignInButton mode="modal" forceRedirectUrl="/account">
+                <SignInButton mode="modal" forceRedirectUrl="/account" signUpForceRedirectUrl="/account">
                   <Button className="w-full mb-6" variant={plan.popular ? 'default' : 'outline'}>
                     Get Started
                   </Button>
@@ -166,7 +166,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
             Perfect for occasional use or when you need extra credits before your next billing cycle.
           </p>
           <SignedOut>
-            <SignInButton mode="modal" forceRedirectUrl="/account/billing">
+            <SignInButton mode="modal" forceRedirectUrl="/account/billing" signUpForceRedirectUrl="/account/billing">
               <Button variant="outline" size="lg">
                 Buy Extra Credits - $10
               </Button>

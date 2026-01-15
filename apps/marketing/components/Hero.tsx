@@ -69,7 +69,7 @@ export function Hero() {
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
               <SignedOut>
-                <SignUpButton mode="modal" forceRedirectUrl="/account">
+                <SignUpButton mode="modal" forceRedirectUrl="/account" signInForceRedirectUrl="/account">
                   <Button size="lg" className="px-8">
                     Get Started Free
                   </Button>
