@@ -86,14 +86,30 @@ export default function AccountOverviewPage() {
                 <p className="text-sm text-muted-foreground mb-1">Status</p>
                 {user.subscriptionStatus === 'active' && (
                   <div className="flex flex-col gap-1.5">
-                    <Badge variant="outline" className="w-fit bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">
-                      <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
-                      Active
-                    </Badge>
-                    {user.billingPeriodEnd && (
-                      <p className="text-xs text-muted-foreground">
-                        Renews {format(new Date(user.billingPeriodEnd), "MMMM d, yyyy")}
-                      </p>
+                    {user.cancelAtPeriodEnd ? (
+                      <>
+                        <Badge variant="outline" className="w-fit bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30">
+                          <Clock className="h-3.5 w-3.5 mr-1.5" />
+                          Canceling
+                        </Badge>
+                        {user.billingPeriodEnd && (
+                          <p className="text-xs text-muted-foreground">
+                            Ends {format(new Date(user.billingPeriodEnd), "MMMM d, yyyy")}
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Badge variant="outline" className="w-fit bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                          Active
+                        </Badge>
+                        {user.billingPeriodEnd && (
+                          <p className="text-xs text-muted-foreground">
+                            Renews {format(new Date(user.billingPeriodEnd), "MMMM d, yyyy")}
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 )}

@@ -21,6 +21,7 @@ export interface User {
   stripeSubscriptionId?: string | null
   stripePriceId?: string | null
   subscriptionStatus?: SubscriptionStatus | null
+  cancelAtPeriodEnd?: boolean | null
   createdAt: Date
   updatedAt: Date
 }

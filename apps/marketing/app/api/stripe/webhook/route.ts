@@ -185,8 +185,9 @@ async function handleSubscriptionChange(subscription: StripeSubscriptionWithBill
       stripeSubscriptionId: subscription.id,
       stripePriceId: priceId,
       subscriptionStatus: status,
+      cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
       creditsIncluded: tierConfig.credits,
-      creditsRemaining: isFirstSubscription ? tierConfig.credits : user.creditsRemaining,
+      creditsRemaining: tierConfig.credits,
       billingPeriodStart,
       billingPeriodEnd,
       updatedAt: new Date(),
@@ -199,8 +200,8 @@ async function handleSubscriptionChange(subscription: StripeSubscriptionWithBill
     userId: user.id,
     tier,
     status,
-    isFirstSubscription,
-    creditsRemaining: isFirstSubscription ? tierConfig.credits : user.creditsRemaining,
+    creditsRemaining: tierConfig.credits,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
   }, 'Subscription updated')
 }
 

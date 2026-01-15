@@ -34,6 +34,7 @@ export default function BillingPage() {
   const { user, isLoading } = useUser()
 
   const [isBuyingCredits, setIsBuyingCredits] = useState(false)
+  const [isManagingSubscription, setIsManagingSubscription] = useState(false)
 
   const handleBuyCredits = async () => {
     setIsBuyingCredits(true)
@@ -50,6 +51,23 @@ export default function BillingPage() {
       console.error('Failed to start checkout:', error)
     } finally {
       setIsBuyingCredits(false)
+    }
+  }
+
+  const handleManageSubscription = async () => {
+    setIsManagingSubscription(true)
+    try {
+      const response = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        redirect: 'follow',
+      })
+      if (response.redirected) {
+        window.location.href = response.url
+      }
+    } catch (error) {
+      console.error('Failed to open portal:', error)
+    } finally {
+      setIsManagingSubscription(false)
     }
   }
 
@@ -129,8 +147,17 @@ export default function BillingPage() {
               </div>
               {status === 'active' && user.billingPeriodEnd && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  Renews {format(new Date(user.billingPeriodEnd), "MMMM d, yyyy")}
+                  {user.cancelAtPeriodEnd ? (
+                    <>
+                      <Clock className="h-4 w-4 text-amber-500" />
+                      Cancels {format(new Date(user.billingPeriodEnd), "MMMM d, yyyy")}
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      Renews {format(new Date(user.billingPeriodEnd), "MMMM d, yyyy")}
+                    </>
+                  )}
                 </div>
               )}
               {isPastDue && (
@@ -153,17 +180,24 @@ export default function BillingPage() {
               )}
             </CardContent>
             <CardFooter className="border-t bg-muted/50 px-6 py-4">
-              <form action="/api/stripe/portal" method="POST" className="w-full">
-                <Button
-                  type="submit"
-                  variant="outline"
-                  className="w-full"
-                  disabled={!user.stripeCustomerId}
-                >
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Manage Subscription & Payment
-                </Button>
-              </form>
+              <Button
+                onClick={handleManageSubscription}
+                variant="outline"
+                className="w-full"
+                disabled={!user.stripeCustomerId || isManagingSubscription}
+              >
+                {isManagingSubscription ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Opening Portal...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Manage Subscription & Payment
+                  </>
+                )}
+              </Button>
             </CardFooter>
           </Card>
         </motion.div>

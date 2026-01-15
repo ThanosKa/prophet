@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm'
-import { pgTable, uuid, text, integer, timestamp, pgEnum, index } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, text, integer, timestamp, pgEnum, index, boolean } from 'drizzle-orm/pg-core'
 
 // Enums
 export const userTierEnum = pgEnum('user_tier', ['free', 'pro', 'premium', 'ultra'])
@@ -31,6 +31,7 @@ export const users = pgTable(
     stripeSubscriptionId: text('stripe_subscription_id').unique(),
     stripePriceId: text('stripe_price_id'),
     subscriptionStatus: subscriptionStatusEnum('subscription_status'),
+    cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
