@@ -1,6 +1,6 @@
 "use client";
 
-import {  SignUpButton, SignedOut, SignedIn } from "@clerk/nextjs";
+import { SignUpButton, SignedOut, SignedIn } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import Link from "next/link";
@@ -119,10 +119,10 @@ export function Hero() {
                 </div>
               </div>
               <Image
-                src="/hero.jpg"
+                src="/screenshots/hero.png"
                 alt="Prophet - AI-powered Chrome extension in action"
-                width={1200}
-                height={675}
+                width={1280}
+                height={800}
                 className="w-full h-auto"
                 priority
               />

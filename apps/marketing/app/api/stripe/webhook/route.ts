@@ -9,11 +9,6 @@ import { logger } from '@/lib/logger'
 import { TIER_CONFIG } from '@/lib/pricing'
 import { invalidateUserTierCache } from '@/lib/cache'
 
-type StripeSubscriptionWithBilling = Stripe.Subscription & {
-  current_period_start: number
-  current_period_end: number
-}
-
 type StripeInvoiceWithSubscription = Stripe.Invoice & {
   subscription?: string
   billing_reason?: string
@@ -55,7 +50,7 @@ export async function POST(request: Request) {
 
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
-        const subscription = event.data.object as StripeSubscriptionWithBilling
+        const subscription = event.data.object as Stripe.Subscription
         await handleSubscriptionChange(subscription)
         break
       }
@@ -135,7 +130,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   logger.info({ userId, tier, customerId }, 'Subscription checkout completed')
 }
 
-async function handleSubscriptionChange(subscription: StripeSubscriptionWithBilling) {
+async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string
   const user = await db.query.users.findFirst({
     where: eq(users.stripeCustomerId, customerId),
@@ -146,7 +141,13 @@ async function handleSubscriptionChange(subscription: StripeSubscriptionWithBill
     return
   }
 
-  const priceId = subscription.items.data[0]?.price.id
+  const subscriptionItem = subscription.items.data[0]
+  if (!subscriptionItem) {
+    logger.error({ subscriptionId: subscription.id }, 'No subscription item found')
+    return
+  }
+
+  const priceId = subscriptionItem.price.id
   const status = subscription.status as 'active' | 'canceled' | 'past_due' | 'incomplete'
 
   const tier = determineTierFromPrice(priceId)
@@ -156,8 +157,8 @@ async function handleSubscriptionChange(subscription: StripeSubscriptionWithBill
   }
 
   const tierConfig = TIER_CONFIG[tier]
-  const stripeBillingStart = new Date(subscription.current_period_start * 1000)
-  const stripeBillingEnd = new Date(subscription.current_period_end * 1000)
+  const stripeBillingStart = new Date(subscriptionItem.current_period_start * 1000)
+  const stripeBillingEnd = new Date(subscriptionItem.current_period_end * 1000)
 
   const isFirstSubscription = !user.stripeSubscriptionId
   const now = new Date()
