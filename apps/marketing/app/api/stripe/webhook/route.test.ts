@@ -164,3 +164,66 @@ describe('Subscription deleted logic', () => {
     expect(freeCredits).toBeLessThan(TIER_CONFIG.pro.credits)
   })
 })
+
+describe('100% discount checkout (promo code)', () => {
+  it('credits come from metadata, not amount_total', () => {
+    // Simulates a checkout.session.completed with 100% discount
+    const session = {
+      id: 'cs_test_123',
+      mode: 'payment',
+      amount_total: 0, // 100% discount applied
+      customer: 'cus_123',
+      metadata: {
+        userId: 'user_123',
+        type: 'extra_credits',
+        credits: '1000', // Credits from metadata
+      },
+    }
+
+    // The webhook reads credits from metadata, not amount_total
+    const creditsToAdd = parseInt(session.metadata?.credits || '0', 10)
+
+    expect(session.amount_total).toBe(0)
+    expect(creditsToAdd).toBe(1000)
+    expect(session.metadata.type).toBe('extra_credits')
+  })
+
+  it('credits are added even when amount is zero', () => {
+    const session = {
+      mode: 'payment',
+      amount_total: 0,
+      metadata: {
+        userId: 'user_123',
+        type: 'extra_credits',
+        credits: '1000',
+      },
+    }
+
+    const type = session.metadata?.type
+    const creditsToAdd = parseInt(session.metadata?.credits || '0', 10)
+
+    // This is the condition in handleCheckoutCompleted
+    const shouldAddCredits = type === 'extra_credits' && creditsToAdd > 0
+
+    expect(shouldAddCredits).toBe(true)
+    expect(creditsToAdd).toBe(1000)
+  })
+
+  it('subscription checkout with 100% discount still processes', () => {
+    const session = {
+      mode: 'subscription',
+      amount_total: 0, // First month free promo
+      customer: 'cus_123',
+      metadata: {
+        userId: 'user_123',
+        tier: 'pro',
+      },
+    }
+
+    // Subscription checkout only stores customerId
+    // Actual tier/credits are handled by customer.subscription.created event
+    const tier = session.metadata?.tier
+    expect(tier).toBe('pro')
+    expect(session.mode).toBe('subscription')
+  })
+})

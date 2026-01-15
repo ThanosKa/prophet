@@ -1,6 +1,8 @@
 import { ClerkThemeProvider } from '@/components/providers/ClerkThemeProvider'
 import type { Metadata } from 'next'
 import { ThemeProvider } from 'next-themes'
+import { Toaster } from '@/components/ui/sonner'
+import { CheckoutProvider } from '@/hooks/use-checkout'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -59,7 +61,10 @@ export default function RootLayout({
       <html lang="en" suppressHydrationWarning className="scroll-smooth">
         <body className="antialiased">
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            {children}
+            <CheckoutProvider>
+              {children}
+            </CheckoutProvider>
+            <Toaster />
           </ThemeProvider>
         </body>
       </html>
