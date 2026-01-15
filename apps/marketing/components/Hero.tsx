@@ -1,6 +1,6 @@
 "use client";
 
-import { SignInButton, SignUpButton, SignedOut, SignedIn } from "@clerk/nextjs";
+import {  SignUpButton, SignedOut, SignedIn } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import Link from "next/link";
