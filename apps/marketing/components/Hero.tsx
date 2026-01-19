@@ -120,7 +120,7 @@ export function Hero() {
                 </div>
               </div>
               <Image
-                src="/screenshots/hero.png"
+                src="/hero.jpg"
                 alt="Prophet - AI-powered Chrome extension in action"
                 width={1280}
                 height={800}
