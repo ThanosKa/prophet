@@ -15,11 +15,7 @@ const manifest = defineManifest({
     "scripting",
     "debugger",
   ],
-  host_permissions: [
-    "http://localhost:3000/*",
-    "https://prophetchrome.com/*",
-    "<all_urls>",
-  ],
+  host_permissions: ["https://prophetchrome.com/*", "<all_urls>"],
 
   side_panel: {
     default_path: "sidepanel.html",
