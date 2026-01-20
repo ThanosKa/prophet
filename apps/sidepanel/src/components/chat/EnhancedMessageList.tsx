@@ -68,7 +68,6 @@ function MessageWithActions({
   const displayContent = message.content;
   const hasParts = message.parts && message.parts.length > 0;
   const hasThinking = Boolean(message.thinkingContent);
-  // Only show thinking while streaming AND before we have actual content
   const showThinking = hasThinking && isStreaming && !displayContent && !hasParts;
 
   const handleCopy = async () => {
@@ -133,7 +132,6 @@ function MessageWithActions({
             {displayContent}
           </p>
         ) : showThinking ? (
-          // Show thinking content while waiting for actual response
           <p className="whitespace-pre-wrap break-words text-xs text-muted-foreground/70">
             {message.thinkingContent}
           </p>
@@ -209,18 +207,15 @@ export const EnhancedMessageList = forwardRef<EnhancedMessageListHandle, Enhance
       return () => observer.disconnect();
     }, [hasMore, isLoadingOlder, onLoadOlder]);
 
-    // Skeleton loading for initial fetch
     if (isLoading && messages.length === 0) {
       return (
         <div className="flex-1 flex flex-col justify-end gap-4 p-4 overflow-hidden">
-          {/* User message skeleton */}
           <div className="flex justify-end">
             <div className="max-w-[85%] space-y-2">
               <Skeleton className="h-4 w-48 ml-auto" />
               <Skeleton className="h-4 w-32 ml-auto" />
             </div>
           </div>
-          {/* Assistant message skeleton */}
           <div className="flex justify-start">
             <div className="max-w-[85%] space-y-2">
               <Skeleton className="h-4 w-64" />
@@ -228,7 +223,6 @@ export const EnhancedMessageList = forwardRef<EnhancedMessageListHandle, Enhance
               <Skeleton className="h-4 w-40" />
             </div>
           </div>
-          {/* Another pair */}
           <div className="flex justify-end">
             <div className="max-w-[85%] space-y-2">
               <Skeleton className="h-4 w-36 ml-auto" />
@@ -241,7 +235,6 @@ export const EnhancedMessageList = forwardRef<EnhancedMessageListHandle, Enhance
               <Skeleton className="h-4 w-44" />
             </div>
           </div>
-          {/* One more pair */}
           <div className="flex justify-end">
             <div className="max-w-[85%] space-y-2">
               <Skeleton className="h-4 w-40 ml-auto" />
@@ -255,7 +248,6 @@ export const EnhancedMessageList = forwardRef<EnhancedMessageListHandle, Enhance
               <Skeleton className="h-4 w-56" />
             </div>
           </div>
-          {/* Extra pair for good measure */}
           <div className="flex justify-end">
             <div className="max-w-[85%] space-y-2">
               <Skeleton className="h-4 w-32 ml-auto" />
@@ -267,7 +259,6 @@ export const EnhancedMessageList = forwardRef<EnhancedMessageListHandle, Enhance
               <Skeleton className="h-4 w-48" />
             </div>
           </div>
-          {/* One more pair */}
           <div className="flex justify-end">
             <div className="max-w-[85%] space-y-2">
               <Skeleton className="h-4 w-40 ml-auto" />

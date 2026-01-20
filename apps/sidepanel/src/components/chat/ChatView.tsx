@@ -59,10 +59,8 @@ export function ChatView({
   const showSuggestions = suggestions && suggestions.length > 0 && messages.length === 0
   const prevMessagesLength = useRef(messages.length)
 
-  // Auto-scroll when NEW messages are added (not on initial load)
   useEffect(() => {
     if (messages.length > prevMessagesLength.current) {
-      // New message added - scroll to bottom
       messageListRef.current?.scrollToBottom()
     }
     prevMessagesLength.current = messages.length
@@ -83,12 +81,10 @@ export function ChatView({
 
   const handleSuggestionClick = (suggestion: string) => {
     onSend(suggestion)
-    // Scroll will happen via useEffect when message is added
   }
 
   const handleSend = (message: string, image?: ImageData) => {
     onSend(message, image)
-    // Scroll will happen via useEffect when message is added
   }
 
   return (
