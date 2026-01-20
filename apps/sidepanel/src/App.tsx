@@ -65,7 +65,6 @@ export default function App() {
       changes: { [key: string]: chrome.storage.StorageChange }
     ) => {
       if (changes.__clerk_client_jwt) {
-        // Reload on sign-in (new token) OR sign-out (token removed)
         if (changes.__clerk_client_jwt.newValue) {
           logger.log('App', 'Clerk session synced, reloading sidepanel')
         } else if (changes.__clerk_client_jwt.oldValue && !changes.__clerk_client_jwt.newValue) {
@@ -86,9 +85,6 @@ export default function App() {
     document.documentElement.classList.remove('light', 'dark')
     document.documentElement.classList.add(theme)
   }, [theme])
-
-  // Removed: Aggressive visibility-based invalidation
-  // Let staleTime manage data freshness instead of forcing refetch on every tab switch
 
   useEffect(() => {
     if (activeChatId) {
@@ -141,7 +137,6 @@ export default function App() {
   }
 
   const triggerAutoTitle = async (chatId: string) => {
-    // Read fresh data from store instead of stale closure
     const storeChats = useChatStore.getState().chats
     const currentChat = storeChats.find((c) => c?.id === chatId)
     if (!currentChat) return

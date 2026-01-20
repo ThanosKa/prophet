@@ -45,7 +45,6 @@ export async function POST(req: Request) {
 
     let evt: ClerkWebhookEvent
 
-    // Verify the webhook
     try {
       evt = wh.verify(body, {
         'svix-id': svix_id,
@@ -60,7 +59,6 @@ export async function POST(req: Request) {
       )
     }
 
-    // Handle the webhook
     const eventType = evt.type
 
     if (eventType === 'user.created') {
@@ -74,7 +72,6 @@ export async function POST(req: Request) {
         )
       }
 
-      // Create user in database
       await db.insert(users).values({
         id,
         email: primaryEmail,
@@ -88,7 +85,6 @@ export async function POST(req: Request) {
 
       const primaryEmail = email_addresses[0]?.email_address
 
-      // Update user in database
       await db
         .update(users)
         .set({

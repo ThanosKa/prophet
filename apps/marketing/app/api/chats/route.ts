@@ -36,14 +36,12 @@ export async function GET(req: Request) {
     const limitParam = url.searchParams.get('limit')
     const beforeUpdatedAtParam = url.searchParams.get('beforeUpdatedAt')
 
-    // Validate limit parameter
     const parsedLimit = parseInt(limitParam || '50')
     if (isNaN(parsedLimit)) {
       return NextResponse.json(error('Invalid limit parameter', 'INVALID_PARAM'), { status: 400 })
     }
     const limit = Math.min(Math.max(parsedLimit, 1), 200)
 
-    // Validate date parameter
     let beforeUpdatedAt: Date | null = null
     if (beforeUpdatedAtParam) {
       beforeUpdatedAt = new Date(beforeUpdatedAtParam)

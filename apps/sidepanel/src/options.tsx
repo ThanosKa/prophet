@@ -13,9 +13,7 @@ function OptionsApp() {
     const { signOut } = useAuth()
 
     const handleSignOut = async () => {
-        // Tell sidepanel to reload
         chrome.runtime.sendMessage({ type: 'SIGN_OUT' })
-        // Sign out from Clerk and redirect back to options page
         const optionsUrl = chrome.runtime.getURL('options.html')
         signOut({ redirectUrl: optionsUrl }).catch(() => {})
     }
@@ -24,7 +22,6 @@ function OptionsApp() {
         chrome.tabs.create({ url: `${config.apiUrl}/sign-in` })
     }
 
-    // Show account view immediately while Clerk loads
     if (!isLoaded) {
         return (
             <div className="min-h-screen bg-background p-8 flex justify-center">
@@ -40,7 +37,6 @@ function OptionsApp() {
         )
     }
 
-    // Signed out state - show login prompt
     if (!isSignedIn) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center p-8">
@@ -66,7 +62,6 @@ function OptionsApp() {
         )
     }
 
-    // Signed in state - show account info and sign out
     return (
         <div className="min-h-screen bg-background p-8 flex justify-center">
             <div className="w-full max-w-md space-y-8">

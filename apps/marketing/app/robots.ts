@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
             allow: '/',
             disallow: '/private/',
         },
-        sitemap: 'https://prophet.com/sitemap.xml', // TODO: Update domain
+        sitemap: 'https://prophetchrome.com/sitemap.xml',
     }
 }

@@ -11,14 +11,14 @@ export const metadata: Metadata = {
     template: '%s | Prophet'
   },
   description: 'Your AI-powered assistant right in your browser. Boost productivity with intelligent web interactions.',
-  metadataBase: new URL('https://prophet.com'), // TODO: Update with actual domain
+  metadataBase: new URL('https://prophetchrome.com'),
   keywords: ['AI assistant', 'Chrome extension', 'productivity', 'web automation', 'artificial intelligence'],
   authors: [{ name: 'Prophet Team' }],
   creator: 'Prophet Team',
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://prophet.com',
+    url: 'https://prophetchrome.com',
     title: 'Prophet - AI Assistant Chrome Extension',
     description: 'Your AI-powered assistant right in your browser. Boost productivity with intelligent web interactions.',
     siteName: 'Prophet',

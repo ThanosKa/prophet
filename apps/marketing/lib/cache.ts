@@ -4,22 +4,17 @@ import { users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
 
-// Types
 export type UserTier = 'free' | 'pro' | 'premium' | 'ultra'
 
-// Constants
-export const CACHE_TTL_SECONDS = 300 // 5 minutes
+export const CACHE_TTL_SECONDS = 300
 const CACHE_KEY_PREFIX = 'user:tier:'
 
-// Valid tiers for validation
 const VALID_TIERS: UserTier[] = ['free', 'pro', 'premium', 'ultra']
 
-// Redis client initialization (same pattern as ratelimit.ts)
 const isFakeCredentials =
   process.env.UPSTASH_REDIS_REST_URL?.includes('fake') ||
   process.env.UPSTASH_REDIS_REST_TOKEN === 'faketoken123'
 
-// Export redis client for testing
 export const redis =
   process.env.UPSTASH_REDIS_REST_URL &&
   process.env.UPSTASH_REDIS_REST_TOKEN &&
