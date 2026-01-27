@@ -1,9 +1,15 @@
-'use client'
-
+import { redirect } from 'next/navigation'
+import { auth } from '@clerk/nextjs/server'
 import { Button } from '@/components/ui/button'
 import { CheckCircle2 } from 'lucide-react'
 
-export default function AuthSuccessPage() {
+export default async function AuthSuccessPage() {
+  const { userId } = await auth()
+
+  if (!userId) {
+    redirect('/sign-in')
+  }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background">
       <div className="max-w-md p-8 text-center space-y-6">
