@@ -29,7 +29,7 @@ const STRIPE_PRICE_IDS = {
 export const TIER_CONFIG = {
   free: {
     price: 0,
-    credits: 50,      // $0.50 value
+    credits: 20,      // $0.20 value
     bonus: 0,
     priceId: null,
   },

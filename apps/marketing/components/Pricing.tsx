@@ -24,7 +24,7 @@ const plans: Array<{
     name: 'Free',
     tier: 'free',
     price: '$0',
-    credits: '$0.50 in API credits',
+    credits: '$0.20 in API credits',
     features: ['Perfect for occasional use', 'All Claude models included', 'Full browser automation', 'Community support'],
   },
   {

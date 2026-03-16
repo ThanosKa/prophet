@@ -98,7 +98,7 @@ Perfect for developers who want to:
 
 ### Backend & API
 - **Credits-Based Billing**: Transparent pricing (1 credit = 1 cent API cost)
-- **Subscription Tiers**: Free ($0.50), Pro ($11 + 10%), Premium ($35 + 17%), Ultra ($70 + 17%)
+- **Subscription Tiers**: Free ($0.20), Pro ($11 + 10%), Premium ($35 + 17%), Ultra ($70 + 17%)
 - **Rate Limiting**: Tier-based limits (Free: 5/min, Pro: 20/min, Premium/Ultra: 60/min) + global burst protection
 - **Streaming API**: Server-Sent Events for real-time AI responses
 - **Webhooks**: Clerk user sync + Stripe payment processing
@@ -293,7 +293,7 @@ Extension → Backend API (`/api/chat`) → Anthropic API (streaming) → Backen
 
 **SaaS Model:**
 - Credits-based billing (1 credit = 1 cent API cost + 20% markup)
-- Tiers: Free ($0.50), Pro ($11 +10%), Premium ($35 +17%), Ultra ($70 +17%)
+- Tiers: Free ($0.20), Pro ($11 +10%), Premium ($35 +17%), Ultra ($70 +17%)
 - Stripe subscriptions with automatic credit allocation
 - Non-expiring credits, roll over monthly
 

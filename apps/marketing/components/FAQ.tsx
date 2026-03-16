@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     question: 'Can I use Prophet without a subscription?',
-    answer: 'Yes! The Free plan includes $0.50 in balance to get started. You can upgrade anytime for more balance and features.',
+    answer: 'Yes! The Free plan includes $0.20 in balance to get started. You can upgrade anytime for more balance and features.',
   },
   {
     question: 'How do I install the Chrome extension?',
@@ -35,7 +35,7 @@ const faqs = [
   },
   {
     question: 'Which AI model does Prophet use?',
-    answer: 'Prophet supports all Claude models including Claude 4.5 Haiku, Claude 4.5 Sonnet, and Claude 4.5 Opus. You can select any model you prefer at standard Anthropic pricing.',
+    answer: 'Prophet supports all Claude models including Claude 4.5 Haiku, Claude 4.6 Sonnet, and Claude 4.6 Opus. You can select any model you prefer at standard Anthropic pricing.',
   },
   {
     question: 'Does my balance roll over?',

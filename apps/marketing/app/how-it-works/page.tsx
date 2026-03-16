@@ -329,7 +329,7 @@ chrome.debugger.sendCommand(
           </h2>
           <div className="space-y-6">
             <p className="text-muted-foreground mb-4">
-              Prophet uses <strong className="text-foreground">Anthropic Claude</strong> as the reasoning engine. Users can select from three Claude 4.5 models:
+              Prophet uses <strong className="text-foreground">Anthropic Claude</strong> as the reasoning engine. Users can select from three Claude models:
             </p>
             <div className="grid gap-3 md:grid-cols-3 mb-6">
               <Card className="bg-muted/30">
@@ -340,13 +340,13 @@ chrome.debugger.sendCommand(
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 pb-4">
-                  <p className="font-semibold text-sm">Sonnet 4.5</p>
+                  <p className="font-semibold text-sm">Sonnet 4.6</p>
                   <p className="text-xs text-muted-foreground mt-1">Balanced performance & capability</p>
                 </CardContent>
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 pb-4">
-                  <p className="font-semibold text-sm">Opus 4.5</p>
+                  <p className="font-semibold text-sm">Opus 4.6</p>
                   <p className="text-xs text-muted-foreground mt-1">Most capable for complex tasks</p>
                 </CardContent>
               </Card>
