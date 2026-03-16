@@ -64,10 +64,11 @@ export default function App() {
     const handleStorageChange = (
       changes: { [key: string]: chrome.storage.StorageChange }
     ) => {
-      if (changes.__clerk_client_jwt) {
-        if (changes.__clerk_client_jwt.newValue) {
+      const jwtKey = Object.keys(changes).find((key) => key.includes('__clerk_client_jwt'))
+      if (jwtKey) {
+        if (changes[jwtKey].newValue) {
           logger.log('App', 'Clerk session synced, reloading sidepanel')
-        } else if (changes.__clerk_client_jwt.oldValue && !changes.__clerk_client_jwt.newValue) {
+        } else if (changes[jwtKey].oldValue && !changes[jwtKey].newValue) {
           logger.log('App', 'Clerk session signed out, reloading sidepanel')
         }
         window.location.reload()

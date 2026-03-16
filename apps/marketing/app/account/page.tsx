@@ -199,7 +199,7 @@ export default function AccountOverviewPage() {
         </div>
         <Button variant="outline" size="sm" asChild>
           <a
-            href="https://chrome.google.com/webstore"
+            href="https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif"
             target="_blank"
             rel="noopener noreferrer"
           >

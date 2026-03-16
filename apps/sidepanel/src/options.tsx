@@ -120,7 +120,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
         <ClerkProvider
             publishableKey={config.clerkPublishableKey}
-            syncHost={config.apiUrl}
+            syncHost={config.clerkSyncHost}
             appearance={{
                 baseTheme: dark,
             }}
