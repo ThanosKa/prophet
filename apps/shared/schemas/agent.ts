@@ -34,11 +34,11 @@ export const textContentSchema = z.object({
   text: z.string(),
 });
 
-// Claude 4.5 model constants
+// Claude 4.6 model constants
 export const CLAUDE_MODELS = {
   HAIKU: "claude-haiku-4-5",
-  SONNET: "claude-sonnet-4-5",
-  OPUS: "claude-opus-4-5",
+  SONNET: "claude-sonnet-4-6",
+  OPUS: "claude-opus-4-6",
 } as const;
 
 export const DEFAULT_AGENT_MODEL = CLAUDE_MODELS.HAIKU;
@@ -52,12 +52,12 @@ export const MODEL_CONFIG = [
   },
   {
     id: CLAUDE_MODELS.SONNET,
-    label: 'Sonnet 4.5',
+    label: 'Sonnet 4.6',
     description: 'Balanced',
   },
   {
     id: CLAUDE_MODELS.OPUS,
-    label: 'Opus 4.5',
+    label: 'Opus 4.6',
     description: 'Most capable',
   },
 ] as const;

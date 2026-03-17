@@ -12,7 +12,7 @@ Chrome side panel extension with streaming AI chat, secure backend API, and mark
 
 **Data Flow**: Extension → Marketing API → Anthropic API (streaming) → Extension
 **Auth**: Clerk v2.0 handles authentication across web app and Chrome extension
-**SaaS Model**: Credits-based billing (1 credit = 1 cent API cost). Free: $0.50, Pro: $11 (+10% bonus), Premium: $35 (+17% bonus), Ultra: $70 (+17% bonus)
+**SaaS Model**: Credits-based billing (1 credit = 1 cent API cost). Free: $0.20, Pro: $11 (+10% bonus), Premium: $35 (+17% bonus), Ultra: $70 (+17% bonus)
 
 ## Tech Stack
 

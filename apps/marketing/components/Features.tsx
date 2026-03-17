@@ -1,38 +1,38 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Zap, MessageSquare, History, Shield, CreditCard, Crown } from 'lucide-react'
+import { Globe, MousePointerClick, Cpu, CreditCard, Shield, MessageSquare } from 'lucide-react'
 
 const features = [
   {
-    title: 'Always Available',
-    description: 'Access Claude from any website without leaving your browser',
-    icon: Zap,
+    title: 'AI on Every Webpage',
+    description: 'Open Prophet on any site. Get answers, summaries, and help without switching tabs or copy-pasting.',
+    icon: Globe,
   },
   {
-    title: 'Streaming Responses',
-    description: 'See AI responses stream in real-time as they are generated',
-    icon: MessageSquare,
+    title: 'Browser Automation with AI',
+    description: 'Prophet can fill forms, click buttons, extract data, and navigate pages using 18 built-in browser tools.',
+    icon: MousePointerClick,
   },
   {
-    title: 'Chat History',
-    description: 'Keep track of all your conversations with persistent storage',
-    icon: History,
+    title: 'All Claude Models',
+    description: 'Choose Haiku 4.5 for speed, Sonnet 4.6 for balance, or Opus 4.6 for the most complex tasks.',
+    icon: Cpu,
   },
   {
-    title: 'Secure Authentication',
-    description: 'Your data is protected with Clerk authentication and secure APIs',
-    icon: Shield,
-  },
-  {
-    title: 'Token-Based Credits',
-    description: 'Pay only for what you use with our transparent credit system',
+    title: 'Pay Only for What You Use',
+    description: 'No flat monthly fee wasted on unused capacity. Credits map directly to API costs with full transparency.',
     icon: CreditCard,
   },
   {
-    title: 'Multiple Tiers',
-    description: 'Choose the plan that fits your needs - from Free to Ultra',
-    icon: Crown,
+    title: 'Your Data Stays Private',
+    description: 'Page content is processed locally. Only your messages reach Claude. Enterprise-grade encryption throughout.',
+    icon: Shield,
+  },
+  {
+    title: 'Persistent Chat History',
+    description: 'Every conversation is saved. Pick up where you left off across sessions.',
+    icon: MessageSquare,
   },
 ]
 
@@ -47,9 +47,9 @@ export function Features() {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Features</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Why Professionals Choose Prophet</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Everything you need for a seamless AI-powered browsing experience
+            The only Chrome extension that gives you a personal AI agent capable of reading, clicking, and navigating any webpage.
           </p>
         </motion.div>
 

@@ -54,13 +54,3 @@ export function sanitizeForLog(obj: unknown): unknown {
   }
   return sanitized
 }
-
-/**
- * Credit tier limits (in tokens)
- */
-export const TIER_LIMITS = {
-  free: 50_000,      // ~$1 worth
-  pro: 500_000,      // ~$10 worth
-  premium: 1_500_000, // ~$30 worth
-  ultra: 3_000_000,   // ~$60 worth
-} as const

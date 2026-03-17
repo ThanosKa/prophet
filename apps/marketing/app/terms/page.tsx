@@ -3,8 +3,9 @@ import { Footer } from '@/components/Footer'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service | Prophet',
-  description: 'Terms of service for Prophet Chrome extension.',
+  title: 'Terms of Service',
+  description: 'Terms of service for Prophet AI Chrome extension. Covers account usage, billing, credits, acceptable use, and subscription policies.',
+  alternates: { canonical: '/terms' },
 }
 
 export default function TermsPage() {
@@ -148,7 +149,8 @@ export default function TermsPage() {
                 <section>
                   <h2 className="text-xl font-semibold mb-3">Contact Information</h2>
                   <p className="text-muted-foreground leading-relaxed">
-                    For questions about these Terms of Service, please contact us through our contact form.
+                    For questions about these Terms of Service, please contact us at{' '}
+                    <a href="mailto:kazakis.th@gmail.com" className="text-foreground underline hover:no-underline">kazakis.th@gmail.com</a>.
                   </p>
                 </section>
           </div>

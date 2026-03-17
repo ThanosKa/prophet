@@ -1,7 +1,10 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { breadcrumbJsonLd } from '@/lib/structured-data'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { CodeBlock, CodeBlockCopyButton } from '@/components/ai/code-block'
+import Link from 'next/link'
 import {
   Eye,
   Cpu,
@@ -24,8 +27,9 @@ import {
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'How It Works | Prophet',
-  description: 'Deep dive into how Prophet\'s AI agent sees, thinks, and interacts with web pages using the accessibility tree and browser automation.',
+  title: 'How It Works',
+  description: 'Learn how Prophet uses the accessibility tree and Chrome DevTools Protocol to automate browser tasks faster and cheaper than screenshot-based AI. Compare Prophet vs Claude in Chrome.',
+  alternates: { canonical: '/how-it-works' },
 }
 
 const agentTools = [
@@ -150,6 +154,13 @@ const categories = ['Observation', 'Interaction', 'Navigation', 'Wait', 'Tabs']
 export default function HowItWorksPage() {
   return (
     <main className="flex flex-col min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd([
+          { name: 'Home', url: 'https://prophetchrome.com' },
+          { name: 'How It Works', url: 'https://prophetchrome.com/how-it-works' },
+        ])) }}
+      />
       <Header />
 
       <section className="py-20 border-b">
@@ -160,6 +171,7 @@ export default function HowItWorksPage() {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             A technical look at how our AI agent sees web pages, makes decisions, and automates browser tasks. Built with the <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Anthropic API with tool use</a> and a custom agent loop.
           </p>
+          <p className="text-xs text-muted-foreground mt-2">Last updated: March 2026</p>
         </div>
       </section>
 
@@ -329,7 +341,7 @@ chrome.debugger.sendCommand(
           </h2>
           <div className="space-y-6">
             <p className="text-muted-foreground mb-4">
-              Prophet uses <strong className="text-foreground">Anthropic Claude</strong> as the reasoning engine. Users can select from three Claude 4.5 models:
+              Prophet uses <strong className="text-foreground">Anthropic Claude</strong> as the reasoning engine. Users can select from three Claude models:
             </p>
             <div className="grid gap-3 md:grid-cols-3 mb-6">
               <Card className="bg-muted/30">
@@ -340,13 +352,13 @@ chrome.debugger.sendCommand(
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 pb-4">
-                  <p className="font-semibold text-sm">Sonnet 4.5</p>
+                  <p className="font-semibold text-sm">Sonnet 4.6</p>
                   <p className="text-xs text-muted-foreground mt-1">Balanced performance & capability</p>
                 </CardContent>
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 pb-4">
-                  <p className="font-semibold text-sm">Opus 4.5</p>
+                  <p className="font-semibold text-sm">Opus 4.6</p>
                   <p className="text-xs text-muted-foreground mt-1">Most capable for complex tasks</p>
                 </CardContent>
               </Card>
@@ -647,6 +659,20 @@ chrome.debugger.sendCommand(
               </CardContent>
             </Card>
           </div>
+        </div>
+      </section>
+
+      <section className="py-16 text-center border-t">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl font-bold mb-4">Ready to See It in Action?</h2>
+          <p className="text-muted-foreground mb-6">
+            Install Prophet and experience AI browser automation. Free plan available — no credit card required.
+          </p>
+          <Button asChild>
+            <Link href="https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif">
+              Add to Chrome
+            </Link>
+          </Button>
         </div>
       </section>
 

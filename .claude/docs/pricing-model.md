@@ -71,7 +71,7 @@ Using the example above:
 
 | Tier | Monthly Price | Credits Given | Bonus | Actual Cost to You |
 |------|--------------|---------------|-------|-------------------|
-| Free | $0 | $0.50 | 0% | ~$0.42 |
+| Free | $0 | $0.20 | 0% | ~$0.17 |
 | Pro | $9.99 | $11 | 10% | ~$9.17 |
 | Premium | $29.99 | $35 | 17% | ~$29.17 |
 | Ultra | $59.99 | $70 | 17% | ~$58.33 |

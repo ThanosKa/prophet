@@ -1,15 +1,15 @@
 // Anthropic API pricing (per 1M tokens in USD)
-// Source: https://claude.com/pricing (Claude 4.5 series)
+// Source: https://claude.com/pricing (Claude 4.6 series)
 export const MODEL_PRICING = {
   "claude-haiku-4-5": {
     input: 1.0,   // $1 per MTok
     output: 5.0,  // $5 per MTok
   },
-  "claude-sonnet-4-5": {
+  "claude-sonnet-4-6": {
     input: 3.0,   // $3 per MTok
     output: 15.0, // $15 per MTok
   },
-  "claude-opus-4-5": {
+  "claude-opus-4-6": {
     input: 5.0,   // $5 per MTok
     output: 25.0, // $25 per MTok
   },
@@ -17,7 +17,7 @@ export const MODEL_PRICING = {
 
 export const MARKUP = 1.20;
 
-export const ALL_MODELS = ['claude-haiku-4-5', 'claude-sonnet-4-5', 'claude-opus-4-5'] as const;
+export const ALL_MODELS = ['claude-haiku-4-5', 'claude-sonnet-4-6', 'claude-opus-4-6'] as const;
 
 // Stripe Price IDs (not secret - safe to hardcode as fallback)
 const STRIPE_PRICE_IDS = {
@@ -29,7 +29,7 @@ const STRIPE_PRICE_IDS = {
 export const TIER_CONFIG = {
   free: {
     price: 0,
-    credits: 50,      // $0.50 value
+    credits: 20,      // $0.20 value
     bonus: 0,
     priceId: null,
   },

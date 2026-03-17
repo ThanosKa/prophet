@@ -3,8 +3,9 @@ import { Footer } from '@/components/Footer'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | Prophet',
-  description: 'Privacy policy for Prophet Chrome extension.',
+  title: 'Privacy Policy',
+  description: 'How Prophet handles your data. Learn about browser permissions, data collection, encryption, and your privacy rights when using Prophet AI Chrome extension.',
+  alternates: { canonical: '/privacy' },
 }
 
 export default function PrivacyPage() {
@@ -192,7 +193,8 @@ export default function PrivacyPage() {
                 <section>
                   <h2 className="text-xl font-semibold mb-3">Contact Us</h2>
                   <p className="text-muted-foreground leading-relaxed">
-                    If you have questions about this Privacy Policy, please contact us through our contact form.
+                    If you have questions about this Privacy Policy, please contact us at{' '}
+                    <a href="mailto:kazakis.th@gmail.com" className="text-foreground underline hover:no-underline">kazakis.th@gmail.com</a>.
                   </p>
                 </section>
           </div>

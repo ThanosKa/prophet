@@ -19,13 +19,17 @@ const plans: Array<{
   credits: string
   features: string[]
   popular?: boolean
+  ctaSignedOut: string
+  ctaUpgrade: string
 }> = [
   {
     name: 'Free',
     tier: 'free',
     price: '$0',
-    credits: '$0.50 in API credits',
+    credits: '$0.20 in credits (~50 Haiku messages)',
     features: ['Perfect for occasional use', 'All Claude models included', 'Full browser automation', 'Community support'],
+    ctaSignedOut: 'Start Free',
+    ctaUpgrade: 'Free Tier',
   },
   {
     name: 'Pro',
@@ -33,6 +37,8 @@ const plans: Array<{
     price: '$9.99',
     credits: '$11 in API credits (+10% bonus)',
     features: ['Best for daily tasks', 'All Claude models included', 'Save 10% on credits', 'Priority email support'],
+    ctaSignedOut: 'Get Started',
+    ctaUpgrade: 'Choose Pro',
   },
   {
     name: 'Premium',
@@ -41,6 +47,8 @@ const plans: Array<{
     credits: '$35 in API credits (+17% bonus)',
     features: ['Best for power users', 'All Claude models included', 'Save 17% on credits', 'Priority support', 'Early feature access'],
     popular: true,
+    ctaSignedOut: 'Get Started',
+    ctaUpgrade: 'Choose Premium',
   },
   {
     name: 'Ultra',
@@ -48,6 +56,8 @@ const plans: Array<{
     price: '$59.99',
     credits: '$70 in API credits (+17% bonus)',
     features: ['Best for heavy usage', 'All Claude models included', 'Save 17% on credits', 'Priority support', 'Early feature access'],
+    ctaSignedOut: 'Get Started',
+    ctaUpgrade: 'Choose Ultra',
   },
 ]
 
@@ -90,6 +100,9 @@ export function Pricing({ showHeader = true }: PricingProps) {
           </motion.div>
         )}
 
+        {!showHeader && (
+          <h2 className="sr-only">Plans</h2>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {plans.map((plan, index) => (
             <motion.div
@@ -113,7 +126,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
               <SignedOut>
                 <SignInButton mode="modal" forceRedirectUrl="/account" signUpForceRedirectUrl="/account">
                   <Button className="w-full mb-6" variant={plan.popular ? 'default' : 'outline'}>
-                    Get Started
+                    {plan.ctaSignedOut}
                   </Button>
                 </SignInButton>
               </SignedOut>
@@ -124,7 +137,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
                   </Button>
                 ) : plan.tier === 'free' ? (
                   <Button className="w-full mb-6" variant="outline" disabled>
-                    Free Tier
+                    {plan.ctaUpgrade}
                   </Button>
                 ) : (
                   <UpgradeButton
@@ -133,7 +146,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
                     variant={plan.popular ? 'default' : 'outline'}
                     className="w-full mb-6"
                   >
-                    Upgrade
+                    {plan.ctaUpgrade}
                   </UpgradeButton>
                 )}
               </SignedIn>

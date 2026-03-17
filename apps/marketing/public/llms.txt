@@ -1,0 +1,19 @@
+# Prophet
+
+> Prophet is an AI-powered Chrome extension that integrates Anthropic Claude AI into the browser side panel for real-time chat, web page analysis, and browser automation.
+
+## Key Facts
+- Chrome extension with side panel UI
+- Supports Claude Haiku 4.5, Sonnet 4.6, and Opus 4.6
+- 18 browser automation tools via Chrome DevTools Protocol
+- Uses accessibility tree (not screenshots) for page understanding
+- Pay-per-use credits: Free ($0.20), Pro ($9.99/mo), Premium ($29.99/mo), Ultra ($59.99/mo)
+- Real-time streaming responses
+- Open source: https://github.com/ThanosKa/prophet
+
+## Links
+- Homepage: https://prophetchrome.com
+- Chrome Web Store: https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif
+- How It Works: https://prophetchrome.com/how-it-works
+- Pricing: https://prophetchrome.com/pricing
+- FAQ: https://prophetchrome.com/faq
