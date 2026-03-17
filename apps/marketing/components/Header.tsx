@@ -2,6 +2,7 @@
 
 import { SignInButton, SignedIn, SignedOut } from '@clerk/nextjs'
 import { Menu } from 'lucide-react'
+import { CHROME_STORE_URL } from '@/lib/constants'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -15,7 +16,8 @@ export function Header() {
   const navigation = [
     { name: 'Features', href: '/#features' },
     { name: 'How It Works', href: '/how-it-works' },
-    { name: 'Pricing', href: '/#pricing' },
+    { name: 'Pricing', href: '/pricing' },
+    { name: 'Compare', href: '/compare' },
     { name: 'FAQ', href: '/#faq' },
   ]
 
@@ -28,22 +30,35 @@ export function Header() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
-          {navigation.map((item) => (
-            <a
-              key={item.name}
-              href={item.href}
-              className="text-sm font-medium hover:text-muted-foreground transition-colors"
-            >
-              {item.name}
-            </a>
-          ))}
+          {navigation.map((item) =>
+            item.href.includes('#') ? (
+              <a
+                key={item.name}
+                href={item.href}
+                className="text-sm font-medium hover:text-muted-foreground transition-colors"
+              >
+                {item.name}
+              </a>
+            ) : (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="text-sm font-medium hover:text-muted-foreground transition-colors"
+              >
+                {item.name}
+              </Link>
+            )
+          )}
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
           <ThemeToggle />
           <SignedOut>
+            <Link href={CHROME_STORE_URL}>
+              <Button size="sm">Add to Chrome</Button>
+            </Link>
             <SignInButton mode="modal" forceRedirectUrl="/account" signUpForceRedirectUrl="/account">
-              <Button size="sm">Sign In</Button>
+              <Button size="sm" variant="ghost">Sign In</Button>
             </SignInButton>
           </SignedOut>
           <SignedIn>
@@ -65,16 +80,27 @@ export function Header() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <nav className="flex flex-col gap-4 mt-8">
-                {navigation.map((item) => (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    onClick={() => setOpen(false)}
-                    className="text-lg font-medium hover:text-muted-foreground transition-colors"
-                  >
-                    {item.name}
-                  </a>
-                ))}
+                {navigation.map((item) =>
+                  item.href.includes('#') ? (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      className="text-lg font-medium hover:text-muted-foreground transition-colors"
+                    >
+                      {item.name}
+                    </a>
+                  ) : (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      className="text-lg font-medium hover:text-muted-foreground transition-colors"
+                    >
+                      {item.name}
+                    </Link>
+                  )
+                )}
                 <SignedOut>
                   <SignInButton mode="modal" forceRedirectUrl="/account" signUpForceRedirectUrl="/account">
                     <Button className="w-full mt-4">Sign In</Button>

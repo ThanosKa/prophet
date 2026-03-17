@@ -38,6 +38,12 @@ export const metadata: Metadata = {
     images: ['/og-image.png'],
     creator: '@prophet_ai',
   },
+  alternates: {
+    canonical: '/',
+  },
+  verification: {
+    google: '-6--jvDqz2VOp0cUY_i_biGKl9sy8ENoQFcZ95kt1fs',
+  },
   robots: {
     index: true,
     follow: true,
@@ -60,6 +66,43 @@ export default function RootLayout({
     <ClerkThemeProvider>
       <html lang="en" suppressHydrationWarning className="scroll-smooth">
         <body className="antialiased">
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'Organization',
+                name: 'Prophet',
+                url: 'https://prophetchrome.com',
+                logo: 'https://prophetchrome.com/logo.svg',
+                description:
+                  'AI-powered Chrome extension that brings Claude AI directly to your browser\'s side panel for chat, browser automation, and web page analysis.',
+                foundingDate: '2025',
+                sameAs: [
+                  'https://x.com/KazakisThanos',
+                  'https://github.com/ThanosKa/prophet',
+                  'https://discord.gg/2YV53RbS',
+                ],
+              }),
+            }}
+          />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'WebSite',
+                name: 'Prophet',
+                url: 'https://prophetchrome.com',
+                description:
+                  'AI-powered Chrome extension with streaming Claude AI chat, browser automation, and pay-per-use pricing.',
+                publisher: {
+                  '@type': 'Organization',
+                  name: 'Prophet',
+                },
+              }),
+            }}
+          />
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <CheckoutProvider>
               {children}

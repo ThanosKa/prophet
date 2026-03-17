@@ -37,7 +37,7 @@ export function Hero() {
                 className="group rounded-full border border-black/10 bg-neutral-100 text-base transition-all ease-in hover:bg-neutral-100 dark:border-white/10 dark:bg-neutral-800 dark:hover:bg-neutral-800"
               >
                 <AnimatedShinyText className="inline-flex items-center justify-center px-4 py-1 text-sm transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400">
-                  <span>✨ Introducing Prophet</span>
+                  <span>✨ Open Source on GitHub</span>
                   <ArrowRight className="ml-1 size-3 transition-transform duration-300 ease-in-out group-hover:translate-x-0.5" />
                 </AnimatedShinyText>
               </Link>
@@ -49,7 +49,7 @@ export function Hero() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6"
             >
-              AI Assistant Right in Your Browser
+              The AI Chrome Extension That Automates Your Browser
             </motion.h1>
 
             <motion.p
@@ -58,9 +58,10 @@ export function Hero() {
               transition={{ duration: 0.5, delay: 0.3 }}
               className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto"
             >
-              Prophet brings Claude&apos;s intelligence directly to your browser
-              with a sleek side panel. Chat, analyze, and create without leaving
-              your workflow.
+              Prophet brings Claude AI directly into your browser side panel.
+              Chat with AI, automate repetitive tasks, and get instant answers
+              on any webpage — all without leaving your current tab. Start free,
+              pay only for what you use.
             </motion.p>
 
             <motion.div
@@ -70,9 +71,14 @@ export function Hero() {
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
               <SignedOut>
-                <SignUpButton mode="modal" forceRedirectUrl="/account" signInForceRedirectUrl="/account">
+                <Link href={CHROME_STORE_URL}>
                   <Button size="lg" className="px-8">
-                    Get Started Free
+                    Add to Chrome
+                  </Button>
+                </Link>
+                <SignUpButton mode="modal" forceRedirectUrl="/account" signInForceRedirectUrl="/account">
+                  <Button size="lg" variant="outline" className="px-8">
+                    Create Account
                   </Button>
                 </SignUpButton>
               </SignedOut>
@@ -96,7 +102,7 @@ export function Hero() {
               transition={{ duration: 0.5, delay: 0.5 }}
               className="mt-8 text-sm text-muted-foreground"
             >
-              Join 1,000+ users already using Prophet
+              Free to start. No credit card required.
             </motion.p>
           </motion.div>
 

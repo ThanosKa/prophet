@@ -3,9 +3,8 @@ const nextConfig = {
   // Disable strict mode in development
   reactStrictMode: process.env.NODE_ENV === "production",
 
-  // Enable image optimization
   images: {
-    unoptimized: true,
+    formats: ['image/avif', 'image/webp'],
   },
 
   // Move dev indicator to bottom right

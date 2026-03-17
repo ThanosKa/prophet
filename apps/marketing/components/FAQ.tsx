@@ -10,12 +10,20 @@ import {
 
 const faqs = [
   {
-    question: 'How does my balance work?',
-    answer: 'Your balance is consumed based on AI API usage. Token usage is tracked and charged at competitive rates with a small service fee. You only pay for what you use.',
+    question: 'Is there a free version?',
+    answer: 'Yes. Prophet includes a free plan with $0.20 in credits — enough for roughly 50 messages with Haiku or 10 with Sonnet. No credit card required.',
+  },
+  {
+    question: 'How is Prophet different from ChatGPT or Claude.ai?',
+    answer: 'Prophet lives inside your browser as a side panel. It can see and interact with the webpage you are on — filling forms, clicking buttons, extracting data, and navigating pages using 18 built-in tools. It is not just a chatbot; it is a browser automation agent powered by Claude AI.',
+  },
+  {
+    question: 'How do credits work?',
+    answer: 'Your credits are consumed based on the AI tokens used in each conversation. Different Claude models have different per-token costs — Haiku is the most affordable, Opus is the most capable. You can see exact costs in your account dashboard.',
   },
   {
     question: 'Can I use Prophet without a subscription?',
-    answer: 'Yes! The Free plan includes $0.20 in balance to get started. You can upgrade anytime for more balance and features.',
+    answer: 'Yes. The Free plan includes $0.20 in credits to get started. You can also purchase a one-time $10 credit top-up without any subscription. Upgrade anytime for more credits and bonus value.',
   },
   {
     question: 'How do I install the Chrome extension?',
@@ -27,7 +35,7 @@ const faqs = [
   },
   {
     question: 'Is my data secure?',
-    answer: 'Yes. All communication is encrypted, and we never store your chat contents. Your data is processed securely through Anthropic\'s API.',
+    answer: 'Yes. All communication is encrypted in transit and at rest. Your browsing data stays on your machine — our servers only process the messages you send to Claude. We use enterprise-grade Clerk authentication and Stripe payment processing.',
   },
   {
     question: 'Can I cancel my subscription anytime?',

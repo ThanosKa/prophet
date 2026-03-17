@@ -4,6 +4,7 @@ import { SignUpButton, SignedOut, SignedIn } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { CHROME_STORE_URL } from '@/lib/constants'
 
 export function CTASection() {
   return (
@@ -18,17 +19,22 @@ export function CTASection() {
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Ready to Get Started?
+            Start Using Claude in Your Browser
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join thousands of users who are already experiencing the power of AI right in their browser. Start with our free plan today.
+            Prophet puts Claude AI directly in your Chrome side panel. Chat with AI, automate repetitive tasks, and get work done faster on any webpage. No credit card required.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <SignedOut>
-              <SignUpButton mode="modal">
+              <Link href={CHROME_STORE_URL}>
                 <Button size="lg" className="px-8">
-                  Start Free Trial
+                  Add to Chrome
+                </Button>
+              </Link>
+              <SignUpButton mode="modal">
+                <Button size="lg" variant="outline" className="px-8">
+                  Create Account
                 </Button>
               </SignUpButton>
             </SignedOut>
