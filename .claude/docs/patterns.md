@@ -74,10 +74,10 @@ import { Redis } from "@upstash/redis";
 
 // Define limits per tier
 const chatLimits = {
-  free: { requests: 5, window: '1 m' },
-  pro: { requests: 20, window: '1 m' },
-  premium: { requests: 60, window: '1 m' },
-  ultra: { requests: 60, window: '1 m' },
+  free: { requests: 60, window: '1 m' },
+  pro: { requests: 120, window: '1 m' },
+  premium: { requests: 240, window: '1 m' },
+  ultra: { requests: 240, window: '1 m' },
 } as const
 
 // Create separate limiters with unique prefixes
@@ -164,7 +164,7 @@ export async function POST(request: Request) {
 ### Key Points
 
 - Use **sliding window** algorithm (smooth traffic, prevents burst attacks)
-- **Tier-based limits** for differentiated service (Free: 5 req/min, Pro: 20, Premium/Ultra: 60)
+- **Tier-based limits** sized for agent loops, not chat (Free: 60 req/min, Pro: 120, Premium/Ultra: 240). A single agent run fires one POST per tool round-trip, so chat-scale limits (5/min) starve normal usage. Credits are the real product quota.
 - **Global burst protection** prevents DoS (500 req/min across all users)
 - Rate limit by **userId** (not IP) with dynamic tier lookup from database
 - Return **429 status** with proper headers (Retry-After, X-RateLimit-*)

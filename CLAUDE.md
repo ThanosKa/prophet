@@ -124,7 +124,7 @@ Detailed coding standards organized by topic in `.claude/skills/`:
 - ✅ ALWAYS validate input with Zod
 - ✅ ALWAYS authenticate users
 - ✅ ALWAYS verify resource ownership
-- ✅ Tier-based rate limiting (Free: 5 req/min, Pro: 20, Premium/Ultra: 60) + global burst protection
+- ✅ Tier-based rate limiting (Free: 60 req/min, Pro: 120, Premium/Ultra: 240) + global burst protection
 - ✅ Use transactions for credit deductions
 
 ## Code Comment Standards

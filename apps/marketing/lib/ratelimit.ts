@@ -23,10 +23,10 @@ const redis =
     : null
 
 const chatLimits = {
-  free: { requests: 5, window: '1 m' },
-  pro: { requests: 20, window: '1 m' },
-  premium: { requests: 60, window: '1 m' },
-  ultra: { requests: 60, window: '1 m' },
+  free: { requests: 60, window: '1 m' },
+  pro: { requests: 120, window: '1 m' },
+  premium: { requests: 240, window: '1 m' },
+  ultra: { requests: 240, window: '1 m' },
 } as const
 
 const apiLimits = {
