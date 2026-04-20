@@ -64,8 +64,9 @@ export default function TermsPage() {
 
                   <h3 className="text-lg font-medium mb-2 mt-4">Refunds</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    Subscription payments are non-refundable. Cancellations take effect at the end of the
-                    current billing period.
+                    All sales are final. We do not issue refunds under any circumstances, including but not limited
+                    to unused balance, partial billing periods, tier downgrades, or dissatisfaction with the service.
+                    Cancellations take effect at the end of the current billing period, after which recurring charges stop.
                   </p>
                 </section>
 
