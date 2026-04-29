@@ -9,6 +9,7 @@ import { error, success } from '@/types'
 import { logger } from '@/lib/logger'
 import { TIER_CONFIG } from '@/lib/pricing'
 import { invalidateUserTierCache } from '@/lib/cache'
+import { sendWelcomeEmail } from '@/lib/email'
 
 /**
  * POST /api/webhooks/clerk
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
     const eventType = evt.type
 
     if (eventType === 'user.created') {
-      const { id, email_addresses, public_metadata } = evt.data
+      const { id, email_addresses, first_name, last_name, public_metadata } = evt.data
 
       const primaryEmail = email_addresses[0]?.email_address
       if (!primaryEmail) {
@@ -75,13 +76,21 @@ export async function POST(req: Request) {
       await db.insert(users).values({
         id,
         email: primaryEmail,
+        firstName: first_name ?? null,
+        lastName: last_name ?? null,
         tier: (public_metadata?.tier as 'free' | 'pro' | 'premium' | 'ultra') || 'free',
         creditsRemaining: TIER_CONFIG.free.credits,
       })
 
+      sendWelcomeEmail({
+        to: primaryEmail,
+        firstName: first_name,
+        lastName: last_name,
+      }).catch(() => {})
+
       logger.info({ userId: id, email: primaryEmail }, 'User created from webhook')
     } else if (eventType === 'user.updated') {
-      const { id, email_addresses, public_metadata } = evt.data
+      const { id, email_addresses, first_name, last_name, public_metadata } = evt.data
 
       const primaryEmail = email_addresses[0]?.email_address
 
@@ -89,6 +98,8 @@ export async function POST(req: Request) {
         .update(users)
         .set({
           email: primaryEmail,
+          firstName: first_name ?? undefined,
+          lastName: last_name ?? undefined,
           tier: (public_metadata?.tier as 'free' | 'pro' | 'premium' | 'ultra') || 'free',
           updatedAt: new Date(),
         })

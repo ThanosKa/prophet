@@ -37,6 +37,8 @@ export interface ClerkWebhookEvent {
   data: {
     id: string
     email_addresses: Array<{ email_address: string }>
+    first_name?: string | null
+    last_name?: string | null
     public_metadata?: {
       tier?: 'free' | 'pro' | 'premium' | 'ultra'
     }

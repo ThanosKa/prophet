@@ -6,8 +6,9 @@ import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { eq, sql } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
-import { TIER_CONFIG } from '@/lib/pricing'
+import { TIER_CONFIG, EXTRA_CREDITS } from '@/lib/pricing'
 import { invalidateUserTierCache } from '@/lib/cache'
+import { sendPurchaseEmail } from '@/lib/email'
 
 type StripeInvoiceWithSubscription = Stripe.Invoice & {
   subscription?: string
@@ -107,6 +108,21 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         })
         .where(eq(users.id, userId))
 
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+      })
+      if (user) {
+        sendPurchaseEmail({
+          to: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          planName: 'Extra Credits',
+          credits: creditsToAdd,
+          amountCents: EXTRA_CREDITS.price,
+          isSubscription: false,
+        }).catch(() => {})
+      }
+
       logger.info({ userId, creditsAdded: creditsToAdd, customerId }, 'Extra credits purchased')
       return
     }
@@ -175,6 +191,8 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     ? user.billingPeriodEnd
     : stripeBillingEnd
 
+  const isNewSubscription = isFirstSubscription && status === 'active'
+
   await db
     .update(users)
     .set({
@@ -192,6 +210,19 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     .where(eq(users.id, user.id))
 
   await invalidateUserTierCache(user.id)
+
+  if (isNewSubscription) {
+    const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
+    sendPurchaseEmail({
+      to: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      planName: `${tierLabel} Plan`,
+      credits: tierConfig.credits,
+      amountCents: tierConfig.price,
+      isSubscription: true,
+    }).catch(() => {})
+  }
 
   logger.info({
     userId: user.id,
