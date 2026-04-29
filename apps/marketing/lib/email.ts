@@ -23,7 +23,6 @@ export interface SendPurchaseEmailParams {
   lastName?: string | null
   planName: string
   credits: number
-  amountCents: number
   isSubscription: boolean
 }
 
@@ -226,10 +225,9 @@ Install Prophet Extension
 }
 
 export function buildPurchaseHtml(params: SendPurchaseEmailParams): string {
-  const { firstName, lastName, planName, credits, amountCents, isSubscription } = params
+  const { firstName, lastName, planName, credits, isSubscription } = params
   const fullName = formatName(firstName, lastName)
   const greeting = fullName ? `Thank you, ${fullName}!` : 'Thank you for your purchase!'
-  const amountFormatted = `$${(amountCents / 100).toFixed(2)}`
   const creditsFormatted = `$${(credits / 100).toFixed(2)}`
   const typeLabel = isSubscription ? 'Subscription' : 'One-time purchase'
 
@@ -284,18 +282,6 @@ Receipt
 <tr>
 <td style="font-size:14px;color:${TEXT_SECONDARY};">Credits included</td>
 <td align="right" style="font-size:14px;color:${TEXT_PRIMARY};">${credits.toLocaleString()} credits (${creditsFormatted} value)</td>
-</tr>
-</table>
-</td>
-</tr>
-
-<!-- Total -->
-<tr>
-<td style="padding:16px 20px;background-color:#FFFBEB;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-<tr>
-<td style="font-size:15px;font-weight:700;color:${TEXT_PRIMARY};">Amount paid</td>
-<td align="right" style="font-size:15px;font-weight:700;color:${GOLD_PRIMARY};">${amountFormatted}</td>
 </tr>
 </table>
 </td>
