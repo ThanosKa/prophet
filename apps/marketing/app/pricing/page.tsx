@@ -2,6 +2,7 @@ import { Header } from '@/components/Header'
 import { Pricing } from '@/components/Pricing'
 import { Footer } from '@/components/Footer'
 import { breadcrumbJsonLd } from '@/lib/structured-data'
+import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -107,7 +108,14 @@ export default function PricingPage() {
             Prophet uses a simple credit system where 1 credit equals approximately 1 cent of AI API cost. When you send a message, tokens are consumed based on the length of your input and the AI response. Different Claude models have different per-token rates — Haiku is the most affordable for quick tasks, while Opus delivers the deepest reasoning for complex work.
           </p>
           <p className="text-muted-foreground leading-relaxed mb-8">
-            We apply a 20% platform fee on top of Anthropic&apos;s standard API pricing. This covers hosting, authentication, streaming infrastructure, and support. For most users, this is significantly cheaper than a flat $20/month Claude Pro subscription — especially if you use AI occasionally rather than all day.
+            We apply a 20% platform fee on top of Anthropic&apos;s standard API pricing. This covers hosting, authentication, streaming infrastructure, and support. For most users, this is significantly cheaper than a flat $20/month Claude Pro subscription — especially if you use AI occasionally rather than all day. Curious about the free options?{' '}
+            <Link href="/blog/is-claude-ai-free" className="text-primary hover:underline">
+              See every way to use Claude AI for free
+            </Link>{' '}
+            or{' '}
+            <Link href="/blog/use-claude-without-subscription" className="text-primary hover:underline">
+              use Claude without a subscription
+            </Link>.
           </p>
 
           <h2 className="text-2xl font-bold mb-4">All Plans Include</h2>

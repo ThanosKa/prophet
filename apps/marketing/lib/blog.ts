@@ -9,193 +9,6 @@ export interface BlogPost {
   keywords: string[]
 }
 
-const bestAiChromeExtensions: BlogPost = {
-  slug: 'best-ai-chrome-extensions-2026',
-  title: 'Best AI Chrome Extensions in 2026',
-  description: 'A detailed ranking of the 8 best AI Chrome extensions in 2026, comparing features, pricing, model access, and real-world performance for productivity and browser automation.',
-  date: '2026-03-10',
-  readingTime: '14 min read',
-  category: 'Comparisons',
-  keywords: ['best ai chrome extensions', 'ai chrome extension', 'ai browser extension', 'chrome ai tools', 'ai sidebar extension'],
-  content: `
-<p>AI Chrome extensions have matured significantly since the early GPT wrappers of 2023. In 2026, the best tools offer native browser integration, streaming responses, multi-model access, and genuine productivity features that go beyond simple chatbots. After testing dozens of options over the past three months, here are the eight extensions worth your attention, ranked by overall value, capability, and user experience.</p>
-
-<h2>How We Evaluated</h2>
-<p>Each extension was tested across the same set of tasks: summarizing long articles, drafting emails, extracting data from complex web pages, answering technical questions, and performing browser automation. We weighted the following criteria equally:</p>
-<ul>
-<li><strong>Model quality and selection</strong> &mdash; access to state-of-the-art models and the ability to choose between speed and depth</li>
-<li><strong>Browser integration</strong> &mdash; how well the extension reads and interacts with the current page</li>
-<li><strong>Pricing transparency</strong> &mdash; whether you can predict what you will pay each month</li>
-<li><strong>Privacy</strong> &mdash; data retention policies and whether page content is stored server-side</li>
-<li><strong>Performance</strong> &mdash; latency, streaming speed, and reliability under load</li>
-</ul>
-
-<h2>1. Prophet</h2>
-<p><strong>Best for:</strong> Power users who want Claude AI with full browser automation and transparent, pay-per-use pricing.</p>
-<p>Prophet is an open-source Chrome extension that opens in the browser side panel and connects directly to Anthropic's Claude models. It offers Claude Haiku 4.5, Sonnet 4.6, and Opus 4.6, all with real-time streaming responses. What sets Prophet apart is its approach to browser interaction: instead of taking screenshots and using vision models to parse the page, Prophet reads the accessibility tree, which is faster, more deterministic, and works reliably with dynamic single-page applications.</p>
-<p>The extension ships with 18 built-in tools for browser automation, including clicking elements, filling forms, extracting structured data, and navigating between pages. Chat history persists across sessions and the entire codebase is publicly available on GitHub.</p>
-<p><strong>Pricing:</strong> Free tier includes $0.20 in credits. Pro is $9.99/month with $11 in credits (10% bonus). Premium is $29.99/month with $35 in credits (17% bonus). Ultra is $59.99/month with $70 in credits (17% bonus). One credit equals one cent of API cost, so you always know exactly what each conversation costs.</p>
-<p><strong>Pros:</strong></p>
-<ul>
-<li>Full access to all three Claude model tiers with real-time streaming</li>
-<li>Accessibility-tree browser automation is faster and more reliable than screenshot-based approaches</li>
-<li>Completely transparent pricing &mdash; you see the cost of every message</li>
-<li>Open-source codebase, so you can audit the code yourself</li>
-<li>Side panel stays open while you browse, maintaining context</li>
-</ul>
-<p><strong>Cons:</strong></p>
-<ul>
-<li>Claude-only &mdash; no access to GPT-4 or Gemini models</li>
-<li>No built-in image generation</li>
-<li>Newer entrant, so the community and ecosystem are still growing</li>
-</ul>
-
-<h2>2. Sider</h2>
-<p><strong>Best for:</strong> Users who want multi-model access with a polished interface and preset templates.</p>
-<p>Sider has been one of the most popular AI sidebar extensions since 2023, and the 2026 version is its most capable yet. It supports GPT-4o, Claude Sonnet, Gemini Pro, and several other models through a unified interface. The sidebar opens on any page and offers one-click actions like summarize, explain, translate, and rewrite.</p>
-<p>Sider's template library is extensive, covering use cases from academic research to social media content creation. Group chat mode lets you query multiple models simultaneously and compare their responses side by side.</p>
-<p><strong>Pricing:</strong> Free tier with limited daily queries. Pro starts at $10/month for 3,000 queries. Unlimited plans are available at $20/month.</p>
-<p><strong>Pros:</strong></p>
-<ul>
-<li>Multi-model support with side-by-side comparison</li>
-<li>Large template library for common tasks</li>
-<li>Clean, well-designed interface with good onboarding</li>
-<li>PDF and image analysis built in</li>
-</ul>
-<p><strong>Cons:</strong></p>
-<ul>
-<li>Query-based pricing can feel restrictive for heavy users</li>
-<li>Browser automation capabilities are limited compared to agent-style tools</li>
-<li>Premium models consume more queries, making cost prediction harder</li>
-</ul>
-
-<h2>3. Monica AI</h2>
-<p><strong>Best for:</strong> Casual users who want a versatile AI assistant that works across writing, search, and translation.</p>
-<p>Monica positions itself as an all-in-one AI assistant and delivers on that promise for most everyday tasks. It integrates with Gmail, Google Docs, and most web-based editors. The writing assistant can adjust tone, length, and style, and the search enhancement feature adds AI-generated summaries alongside Google results.</p>
-<p>Monica also includes an image generation feature powered by DALL-E and Stable Diffusion, which is a genuine differentiator among browser extensions. The translation feature supports real-time page translation with better accuracy than most dedicated translation extensions.</p>
-<p><strong>Pricing:</strong> Free tier with daily limits. Pro at $9.90/month. Unlimited at $19.90/month.</p>
-<p><strong>Pros:</strong></p>
-<ul>
-<li>Built-in image generation alongside text capabilities</li>
-<li>Excellent Gmail and Google Docs integration</li>
-<li>Real-time translation is genuinely useful</li>
-<li>Good balance of features for the price</li>
-</ul>
-<p><strong>Cons:</strong></p>
-<ul>
-<li>Search enhancement can slow down page loads</li>
-<li>Advanced model access requires higher tiers</li>
-<li>Browser automation is minimal</li>
-</ul>
-
-<h2>4. Claude in Chrome (Anthropic Official)</h2>
-<p><strong>Best for:</strong> Users already paying for Claude Pro who want basic browser access without a separate subscription.</p>
-<p>Anthropic's official Chrome extension brings claude.ai into a popup window accessible from any tab. If you already have a Claude Pro or Team subscription, this extension gives you a convenient way to access the model without switching tabs. It supports artifacts, file uploads, and project-based conversations.</p>
-<p>The key limitation is that it does not read the current page. It is essentially a shortcut to claude.ai rather than a true browser integration. There is no page summarization, no element interaction, and no automation.</p>
-<p><strong>Pricing:</strong> Free with a Claude account. Claude Pro ($20/month) or Team ($30/user/month) required for consistent access without rate limits.</p>
-<p><strong>Pros:</strong></p>
-<ul>
-<li>Direct access to Claude with artifacts and file handling</li>
-<li>No additional subscription if you already pay for Claude Pro</li>
-<li>First-party extension with reliable uptime</li>
-</ul>
-<p><strong>Cons:</strong></p>
-<ul>
-<li>Cannot read or interact with the current web page</li>
-<li>No browser automation whatsoever</li>
-<li>Opens as a popup, not a persistent side panel</li>
-<li>Essentially just a shortcut to claude.ai</li>
-</ul>
-
-<h2>5. MaxAI</h2>
-<p><strong>Best for:</strong> Users who want AI reading assistance with strong annotation and highlighting features.</p>
-<p>MaxAI focuses on reading and research workflows. Its standout feature is the ability to highlight text on any page and get instant explanations, summaries, or translations in a floating popup. The reading mode reformats cluttered pages into clean, annotatable views with AI-generated section summaries.</p>
-<p>MaxAI supports multiple models, including GPT-4o, Claude, and Gemini, and lets you switch between them for different tasks. The citation feature links AI responses back to specific passages on the page, which is valuable for research work.</p>
-<p><strong>Pricing:</strong> Free tier with 30 queries/day. Pro at $9.99/month with 2,000 queries. Elite at $19.99/month with unlimited queries.</p>
-<p><strong>Pros:</strong></p>
-<ul>
-<li>Highlight-to-explain interaction model is intuitive and fast</li>
-<li>Reading mode with AI summaries works well on long articles</li>
-<li>Citation linking is valuable for academic and research use</li>
-<li>Clean, minimal UI that does not clutter the page</li>
-</ul>
-<p><strong>Cons:</strong></p>
-<ul>
-<li>Writing and generation features are less developed</li>
-<li>No browser automation or form-filling capabilities</li>
-<li>Query limits on lower tiers are restrictive for heavy readers</li>
-</ul>
-
-<h2>6. Merlin</h2>
-<p><strong>Best for:</strong> Users who want quick AI responses integrated directly into search engines and social media.</p>
-<p>Merlin injects AI-generated responses directly into Google search results, YouTube pages, Twitter/X threads, and Gmail. The search integration is well-executed: you see an AI summary alongside organic results without having to open a separate panel. YouTube summarization can condense hour-long videos into key points in seconds.</p>
-<p>Merlin also offers a chat interface for longer conversations, but its primary strength is the contextual, inline AI that appears where you are already working. The Gmail smart reply feature drafts responses based on the email thread context.</p>
-<p><strong>Pricing:</strong> Free tier with 102 queries/day. Pro at $14.25/month for 6,000 queries. Team plans available.</p>
-<p><strong>Pros:</strong></p>
-<ul>
-<li>Inline AI in search results and social media is seamless</li>
-<li>YouTube summarization is fast and accurate</li>
-<li>Gmail integration handles reply drafting well</li>
-<li>Generous free tier for light usage</li>
-</ul>
-<p><strong>Cons:</strong></p>
-<ul>
-<li>Injecting content into third-party pages can occasionally break layouts</li>
-<li>Less capable for extended conversations and complex reasoning</li>
-<li>Higher price point compared to similar tools</li>
-</ul>
-
-<h2>7. Harpa AI</h2>
-<p><strong>Best for:</strong> Users who want extensive browser automation with macro-style workflows.</p>
-<p>Harpa AI differentiates itself with a strong focus on automation. Beyond standard AI chat, it offers a page-monitoring feature that tracks changes on web pages and sends alerts, which is useful for tracking price drops, stock updates, or competitor changes. The automation builder lets you create multi-step workflows that combine page navigation, data extraction, and AI processing.</p>
-<p>Harpa supports GPT-4, Claude, and its own fine-tuned models. The prompt library includes over 1,000 templates organized by use case, from SEO audits to competitive analysis.</p>
-<p><strong>Pricing:</strong> Free tier with limited queries (uses your own API keys). Pro at $15/month. Business at $25/month.</p>
-<p><strong>Pros:</strong></p>
-<ul>
-<li>Page monitoring and change detection is a unique and valuable feature</li>
-<li>Automation builder supports complex multi-step workflows</li>
-<li>Massive prompt template library</li>
-<li>Can use your own API keys to reduce costs</li>
-</ul>
-<p><strong>Cons:</strong></p>
-<ul>
-<li>Interface is cluttered and has a steep learning curve</li>
-<li>Automation reliability varies across different websites</li>
-<li>BYOK (bring your own key) model means you manage your own API billing</li>
-</ul>
-
-<h2>8. Copilot Sidebar (Microsoft)</h2>
-<p><strong>Best for:</strong> Microsoft 365 users who want AI integrated with their existing productivity stack.</p>
-<p>Microsoft's Copilot extension brings the Copilot experience into Chrome as a sidebar. For users deeply embedded in the Microsoft ecosystem, it offers direct integration with OneDrive, Outlook, and Teams. The sidebar can summarize documents stored in OneDrive without downloading them and draft emails that match your Outlook writing style.</p>
-<p>The general-purpose chat is powered by GPT-4o and handles most tasks competently. The Notebook feature for longer-form content and the Designer integration for image generation round out the offering.</p>
-<p><strong>Pricing:</strong> Free tier with Copilot. Copilot Pro at $20/month for priority access and Microsoft 365 integration.</p>
-<p><strong>Pros:</strong></p>
-<ul>
-<li>Deep Microsoft 365 integration is unmatched</li>
-<li>Free tier is generous for basic chat and search</li>
-<li>Image generation via Designer is included</li>
-<li>Enterprise-grade security and compliance</li>
-</ul>
-<p><strong>Cons:</strong></p>
-<ul>
-<li>Less useful outside the Microsoft ecosystem</li>
-<li>Browser automation is limited to basic page summarization</li>
-<li>Pro pricing is steep for users who do not need Microsoft 365 features</li>
-</ul>
-
-<h2>Which Extension Should You Choose?</h2>
-<p>The right choice depends on your primary use case:</p>
-<ul>
-<li><strong>For browser automation and Claude access:</strong> Prophet offers the deepest browser integration with transparent, usage-based pricing and full access to Claude's model lineup.</li>
-<li><strong>For multi-model comparison:</strong> Sider lets you query GPT-4, Claude, and Gemini side by side with a polished interface.</li>
-<li><strong>For everyday writing and translation:</strong> Monica AI provides the most well-rounded set of daily productivity features.</li>
-<li><strong>For research and reading:</strong> MaxAI's highlight-to-explain and citation features are purpose-built for academic and research workflows.</li>
-<li><strong>For Microsoft users:</strong> Copilot Sidebar is the obvious choice if you already pay for Microsoft 365.</li>
-</ul>
-<p>The AI Chrome extension space is competitive and evolving quickly. Extensions that were best-in-class six months ago may have been surpassed by newer entrants. We recommend trying the free tiers of two or three options that match your workflow before committing to a paid plan.</p>
-`
-}
-
 const chatgptVsClaudeExtension: BlogPost = {
   slug: 'chatgpt-vs-claude-chrome-extension',
   title: 'ChatGPT Chrome Extension vs Claude Chrome Extension: Full Comparison',
@@ -446,8 +259,8 @@ const claudeModelComparison: BlogPost = {
 
 const isClaudeAiFree: BlogPost = {
   slug: 'is-claude-ai-free',
-  title: 'Is Claude AI Free? Understanding Free Tiers and Trial Options',
-  description: 'A comprehensive breakdown of how to access Claude AI for free, including Claude.ai free tier limits, Claude Pro pricing, Prophet free credits, and API access options.',
+  title: 'Is Claude AI Free? Every Free Way to Use Claude in 2026',
+  description: 'Yes — Claude has a free tier with Sonnet 4.6 (~20-30 msgs/day). Plus 4 other ways to use Claude free, including all 3 models via Prophet\'s $0.20 free credits. Full breakdown.',
   date: '2026-02-20',
   readingTime: '8 min read',
   category: 'Guides',
@@ -537,8 +350,8 @@ const isClaudeAiFree: BlogPost = {
 
 const useClaudeWithoutSubscription: BlogPost = {
   slug: 'use-claude-without-subscription',
-  title: 'How to Use Claude AI Without a Monthly Subscription',
-  description: 'A practical guide to using Claude AI without committing to a monthly subscription, covering pay-per-use options, free tiers, API access, and when a subscription actually makes financial sense.',
+  title: 'How to Use Claude AI Without a Subscription (4 Free + Pay-Per-Use Options)',
+  description: 'Skip the $20/mo Claude Pro subscription. 4 ways to use Claude AI without committing — free tiers, Prophet pay-per-use credits, API access, and when subscriptions actually make sense.',
   date: '2026-02-15',
   readingTime: '10 min read',
   category: 'Guides',
@@ -1644,8 +1457,8 @@ const mcpServersVsProphetBrowserAutomation: BlogPost = {
 
 const aiAgentBrowserToolsExplained: BlogPost = {
   slug: 'ai-agent-browser-tools-explained',
-  title: 'AI Agent Tools Explained: Click, Type, Navigate, and More',
-  description: 'A comprehensive guide to Prophet\'s 18 browser automation tools, explaining how AI agents interact with web pages through clicking, typing, scrolling, navigation, and data extraction.',
+  title: 'How AI Browser Agents Work: 18 Tools Explained (Click, Type, Extract)',
+  description: 'What does an AI browser agent actually do? Walkthrough of the 18 tools Prophet uses to click, fill forms, navigate, and extract data from any web page.',
   date: '2026-05-14',
   readingTime: '12 min read',
   category: 'Guides',
@@ -2139,8 +1952,8 @@ const chatgptPlusVsClaudeProVsProphet: BlogPost = {
 
 const claudeApiPricingExplained: BlogPost = {
   slug: 'claude-api-pricing-explained',
-  title: 'Claude API Pricing Explained: Tokens, Costs, and How to Save',
-  description: 'A clear explanation of how Claude API pricing works, including tokens, input vs output costs, MTok pricing, and how tools like Prophet simplify API access without managing keys or billing.',
+  title: 'Claude API Pricing Explained: Tokens, Costs & 4 Ways to Cut Spend',
+  description: 'How Claude API pricing actually works — tokens, MTok rates for Haiku/Sonnet/Opus, real per-message cost examples, and 4 strategies to reduce your API bill. Free cost calculator included.',
   date: '2026-04-04',
   readingTime: '10 min read',
   category: 'Guides',
@@ -2695,8 +2508,8 @@ const aiWritingAssistantChrome: BlogPost = {
 
 const freeAiTools2026: BlogPost = {
   slug: 'free-ai-tools-2026',
-  title: 'Free AI Tools in 2026: What You Actually Get for Free',
-  description: 'An honest breakdown of 12 popular AI tools with free tiers in 2026, detailing exactly what is included for free, what limitations exist, and when upgrading makes sense.',
+  title: '12 Free AI Tools in 2026: Honest Limits of Each Free Tier',
+  description: 'What you actually get from ChatGPT, Claude, Gemini, Copilot, Perplexity, Prophet, and 6 more free AI tools — no marketing spin, just real limits and when upgrading is worth it.',
   date: '2026-04-18',
   readingTime: '14 min read',
   category: 'Comparisons',
@@ -2851,8 +2664,8 @@ const aiExtensionForSales: BlogPost = {
 
 const accessibilityTreeVsScreenshots: BlogPost = {
   slug: 'accessibility-tree-vs-screenshots-browser-ai',
-  title: 'Accessibility Tree vs Screenshots: Two Approaches to Browser AI',
-  description: 'A technical comparison of the two main approaches to browser AI perception: accessibility tree parsing and screenshot-based vision models, covering speed, cost, accuracy, and real-world reliability.',
+  title: 'Accessibility Tree vs Screenshots: Why Browser AI Speed Differs 2-4×',
+  description: 'Why Prophet uses the accessibility tree (not screenshots) for browser AI. Speed, cost, and accuracy compared with real benchmarks for both perception approaches.',
   date: '2026-04-22',
   readingTime: '12 min read',
   category: 'Guides',
@@ -3059,7 +2872,6 @@ const areAiExtensionsSafe: BlogPost = {
 }
 
 export const blogPosts: BlogPost[] = [
-  bestAiChromeExtensions,
   chatgptVsClaudeExtension,
   claudeModelComparison,
   isClaudeAiFree,

@@ -9,6 +9,7 @@ import { Pricing } from '@/components/Pricing'
 import { FAQ } from '@/components/FAQ'
 import { CTASection } from '@/components/CTASection'
 import { Footer } from '@/components/Footer'
+import { homeFaqs, faqPageJsonLd } from '@/lib/faqs'
 
 const softwareApplicationJsonLd = {
   "@context": "https://schema.org",
@@ -30,18 +31,7 @@ const softwareApplicationJsonLd = {
   "featureList": ["Side panel integration", "Real-time streaming AI responses", "Browser automation with 18 tools", "Multiple Claude models (Haiku 4.5, Sonnet 4.6, Opus 4.6)", "Pay-per-use credit system", "Persistent chat history"]
 }
 
-const howToJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "HowTo",
-  "name": "How to Get Started with Prophet",
-  "description": "Get started with Prophet AI Chrome extension in three simple steps.",
-  "totalTime": "PT2M",
-  "step": [
-    { "@type": "HowToStep", "position": 1, "name": "Install Extension", "text": "Add Prophet to Chrome from the Web Store in one click." },
-    { "@type": "HowToStep", "position": 2, "name": "Sign In", "text": "Create a free account and choose your plan." },
-    { "@type": "HowToStep", "position": 3, "name": "Start Chatting", "text": "Open the side panel on any webpage and chat with Claude AI." }
-  ]
-}
+const homepageFaqJsonLd = faqPageJsonLd(homeFaqs)
 
 export default function Home() {
   return (
@@ -52,7 +42,7 @@ export default function Home() {
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageFaqJsonLd) }}
       />
       <Header />
       <Hero />
@@ -63,7 +53,7 @@ export default function Home() {
             Prophet is an open-source, AI-powered Chrome extension that integrates Anthropic&apos;s Claude
             AI models directly into your browser&apos;s side panel. It supports Claude Haiku 4.5,
             Sonnet 4.6, and Opus 4.6 with real-time streaming responses, browser automation via
-            18 built-in tools, and pay-per-use pricing starting from a free tier. Unlike
+            18 built-in tools, and pay-per-use pricing starting from a <a href="/blog/is-claude-ai-free" className="text-primary hover:underline">free tier with all 3 Claude models</a>. Unlike
             screenshot-based browser AI tools, Prophet uses the accessibility tree for faster,
             more deterministic interactions with web pages. The full source code is available
             on{' '}<a href="https://github.com/ThanosKa/prophet" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">GitHub</a>.
