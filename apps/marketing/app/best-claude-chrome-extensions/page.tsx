@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Best Chrome Extensions for Claude AI in 2026',
-  description: 'Compare the best Chrome extensions that use Claude AI in 2026. From browser automation to chat assistants, find the right Claude-powered extension for your workflow.',
+  description: '5 best Claude AI Chrome extensions, ranked. Compare Prophet, Anthropic\'s official Claude in Chrome, Monica, Sider, and Harpa across models, browser automation, and pricing.',
   alternates: { canonical: '/best-claude-chrome-extensions' },
 }
 
@@ -173,7 +173,8 @@ export default function BestClaudeChromeExtensionsPage() {
               Claude is one of the most capable AI models available, and Chrome extensions are the most natural way to integrate it into your browsing workflow. Rather than switching to claude.ai every time you need help, these extensions bring Claude directly to the page you are working on. Some offer Claude as one option among many models. Others are built entirely around Claude, taking full advantage of its strengths in reasoning, writing, and analysis.
             </p>
             <p className="text-muted-foreground leading-relaxed mt-4">
-              We focused this comparison on how well each extension leverages Claude specifically. Having access to Claude is table stakes; what matters is the depth of integration, which Claude models are available, and whether the extension adds capabilities beyond what you get at claude.ai. Browser automation, pay-per-use pricing, and transparency about Claude API usage all factored into our rankings.
+              We focused this comparison on how well each extension leverages Claude specifically. Having access to Claude is table stakes; what matters is the depth of integration, which Claude models are available, and whether the extension adds capabilities beyond what you get at claude.ai. Browser automation, pay-per-use pricing, and transparency about Claude API usage all factored into our rankings. Want to use Claude without paying for a subscription? See our guide on{' '}
+              <Link href="/blog/is-claude-ai-free" className="text-primary hover:underline">every free way to use Claude AI in 2026</Link>.
             </p>
           </div>
 

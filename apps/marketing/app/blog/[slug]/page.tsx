@@ -35,11 +35,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: `https://prophetchrome.com/blog/${post.slug}`,
       type: 'article',
       publishedTime: post.date,
+      modifiedTime: post.date,
+      images: ['/og-image.png'],
     },
     twitter: {
       card: 'summary_large_image',
       title: post.title,
       description: post.description,
+      images: ['/og-image.png'],
     },
   }
 }
@@ -49,16 +52,29 @@ export default async function BlogPostPage({ params }: PageProps) {
   const post = getBlogPost(slug)
   if (!post) notFound()
 
-  const relatedPosts = getAllBlogPosts().filter((p) => p.slug !== post.slug)
+  const allOthers = getAllBlogPosts().filter((p) => p.slug !== post.slug)
+  const sameCategory = allOthers.filter((p) => p.category === post.category)
+  const sharedKeyword = (a: string[], b: string[]) => a.some((k) => b.includes(k))
+  const byKeyword = allOthers.filter(
+    (p) => p.category !== post.category && sharedKeyword(p.keywords, post.keywords)
+  )
+  const relatedPosts = [...sameCategory, ...byKeyword].slice(0, 4)
 
   const articleJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: post.title,
     description: post.description,
+    image: 'https://prophetchrome.com/og-image.png',
     datePublished: post.date,
+    dateModified: post.date,
     author: { '@type': 'Organization', name: 'Prophet', url: 'https://prophetchrome.com' },
-    publisher: { '@type': 'Organization', name: 'Prophet', url: 'https://prophetchrome.com' },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Prophet',
+      url: 'https://prophetchrome.com',
+      logo: { '@type': 'ImageObject', url: 'https://prophetchrome.com/logo.png' },
+    },
     mainEntityOfPage: `https://prophetchrome.com/blog/${post.slug}`,
     keywords: post.keywords.join(', '),
   }

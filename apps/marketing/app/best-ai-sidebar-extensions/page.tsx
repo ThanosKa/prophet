@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Best AI Sidebar Extensions for Chrome in 2026',
-  description: 'Compare the best AI sidebar extensions for Chrome in 2026. Side panel AI tools that work alongside any web page for chat, writing, research, and browser automation.',
+  description: '6 best AI sidebar extensions for Chrome, tested and compared. Side panel tools for chat, research, writing — and the only one with full browser automation. Free tiers included.',
   alternates: { canonical: '/best-ai-sidebar-extensions' },
 }
 

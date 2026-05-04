@@ -25,6 +25,16 @@ const nextConfig = {
       },
     ];
   },
+
+  async redirects() {
+    return [
+      {
+        source: "/blog/best-ai-chrome-extensions-2026",
+        destination: "/best-ai-chrome-extensions",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
