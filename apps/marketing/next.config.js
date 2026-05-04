@@ -33,6 +33,13 @@ const nextConfig = {
         destination: "/best-ai-chrome-extensions",
         permanent: true,
       },
+      // Old /compare/X-alternative URLs got 404s in GSC — slugs live at /alternatives/X-alternative
+      { source: "/compare/sider-alternative", destination: "/alternatives/sider-alternative", permanent: true },
+      { source: "/compare/monica-ai-alternative", destination: "/alternatives/monica-ai-alternative", permanent: true },
+      { source: "/compare/claude-in-chrome-alternative", destination: "/alternatives/claude-in-chrome-alternative", permanent: true },
+      { source: "/compare/maxai-alternative", destination: "/alternatives/maxai-alternative", permanent: true },
+      { source: "/compare/merlin-alternative", destination: "/alternatives/merlin-alternative", permanent: true },
+      { source: "/compare/harpa-ai-alternative", destination: "/alternatives/harpa-ai-alternative", permanent: true },
     ];
   },
 };
