@@ -4,19 +4,44 @@ export interface BlogPost {
   description: string
   content: string
   date: string
+  lastModified?: string
   readingTime: string
   category: string
   keywords: string[]
+  faq?: { question: string; answer: string }[]
 }
 
 const chatgptVsClaudeExtension: BlogPost = {
   slug: 'chatgpt-vs-claude-chrome-extension',
-  title: 'ChatGPT Chrome Extension vs Claude Chrome Extension: Full Comparison',
-  description: 'An in-depth comparison of ChatGPT and Claude browser extensions across features, pricing, model quality, browser automation, and privacy to help you choose the right AI sidebar for your workflow.',
+  title: 'ChatGPT vs Claude Chrome Extensions in 2026: Which Wins for Browser Automation?',
+  description: 'We tested both ecosystems. Claude\'s accessibility-tree extensions run 2–4× faster than ChatGPT\'s screenshot-based agents. Full pricing, speed, and privacy comparison.',
   date: '2026-03-05',
+  lastModified: '2026-05-19',
   readingTime: '12 min read',
   category: 'Comparisons',
   keywords: ['chatgpt vs claude chrome extension', 'chatgpt chrome extension', 'claude chrome extension', 'chatgpt vs claude', 'ai browser extension comparison'],
+  faq: [
+    {
+      question: 'Is ChatGPT better than Claude for Chrome extensions?',
+      answer: 'Each wins different tasks. Claude leads on long-document reasoning and code generation with fewer hallucinations; ChatGPT leads on multilingual support and creative-writing variety. For browser automation specifically, Claude-based extensions like Prophet are 2-4× faster than ChatGPT screenshot agents because they read the accessibility tree instead of processing image pixels.',
+    },
+    {
+      question: 'What is the best Claude Chrome extension in 2026?',
+      answer: 'Anthropic\'s official Claude in Chrome is a convenience shortcut to claude.ai with no page-reading. Third-party options like Prophet add full side-panel integration, all three Claude models (Haiku 4.5, Sonnet 4.6, Opus 4.6), and 18 built-in browser-automation tools. Pick first-party for casual chat, Prophet for automation and pay-per-use ($0.20 free credits, no card).',
+    },
+    {
+      question: 'Do ChatGPT extensions read the current page?',
+      answer: 'OpenAI\'s official ChatGPT extension does not. It opens a popup that links to chat.openai.com. Third-party ChatGPT wrappers like Sider and Monica extract page text from the DOM, and screenshot-based agents send a captured image to GPT-4o vision. Both methods exist; neither matches the speed of accessibility-tree extraction used by Claude-first extensions.',
+    },
+    {
+      question: 'How much do Claude and ChatGPT Chrome extensions cost?',
+      answer: 'ChatGPT Plus is $20/month, plus $10-20/month for third-party extensions. Claude Pro is also $20/month. Prophet replaces both with pay-per-use credits: $0.20 free, then $9.99/month for $11 in credits (Pro), scaling to $59.99/month ($70 credits, Ultra). At 20-30 messages/day on Sonnet, that\'s roughly $0.50-1.50 in credits monthly.',
+    },
+    {
+      question: 'Are Claude extensions more private than ChatGPT ones?',
+      answer: 'Anthropic does not train on API inputs; OpenAI may retain API inputs for 30 days and does train on claude.ai-equivalent web-app conversations unless you opt out. Third-party extensions add another data hop through the extension developer\'s servers. Prophet is open source (github.com/ThanosKa/prophet), so its proxy behavior is independently verifiable.',
+    },
+  ],
   content: `
 <p>The two dominant AI models of 2026 &mdash; OpenAI's GPT-4o and Anthropic's Claude 4.6 &mdash; both have Chrome extension ecosystems, but they take fundamentally different approaches. ChatGPT's browser presence is fragmented across first-party and third-party tools, while Claude's extension landscape includes both Anthropic's official extension and specialized tools like Prophet that offer deeper browser integration.</p>
 <p>This comparison examines both ecosystems across the dimensions that matter most for daily productivity: model quality for different tasks, browser integration depth, pricing structures, privacy practices, and the overall user experience of working with AI in your browser.</p>
@@ -89,6 +114,9 @@ const chatgptVsClaudeExtension: BlogPost = {
 <h3>Chat History</h3>
 <p>ChatGPT's official extension shares history with claude.ai. Third-party extensions manage their own history, which may or may not sync with the web interface. Prophet stores chat history server-side per user, with persistent access across devices and sessions.</p>
 
+<h2>Best Browser for Claude AI (and why Chrome wins right now)</h2>
+<p>Claude itself is browser-agnostic on claude.ai, but the extension ecosystem is overwhelmingly Chrome-first. Chrome's Manifest V3, the native Side Panel API, and the accessibility-tree APIs that Prophet and similar agents depend on are most mature on Chrome (and Chromium derivatives: Edge, Brave, Arc, Opera). Firefox has WebExtensions but no Side Panel API equivalent, so most Claude-first extensions fall back to popup windows there. Safari blocks most third-party extensions from accessing page content the way Claude-powered tools require. For the full ranked list of options, see our <a href="/best-claude-chrome-extensions">best Claude Chrome extensions</a> guide.</p>
+
 <h2>When to Choose ChatGPT Extensions</h2>
 <ul>
 <li>You need multilingual support for uncommon languages</li>
@@ -116,12 +144,35 @@ const chatgptVsClaudeExtension: BlogPost = {
 
 const claudeModelComparison: BlogPost = {
   slug: 'claude-haiku-vs-sonnet-vs-opus',
-  title: 'Claude Haiku vs Sonnet vs Opus: Which Model Should You Use?',
-  description: 'A practical comparison of Claude Haiku 4.5, Sonnet 4.6, and Opus 4.6 covering speed, quality, cost per token, and the best use cases for each model to help you choose the right one.',
+  title: 'Claude Haiku vs Sonnet vs Opus 4.6: When to Use Each (with Real Cost Examples)',
+  description: 'Haiku 4.5 = $1/$5 per Mtok. Sonnet 4.6 = $3/$15. Opus 4.6 = $5/$25. Use Haiku for extraction, Sonnet for general, Opus only when reasoning matters. Real cost breakdowns.',
   date: '2026-02-28',
+  lastModified: '2026-05-19',
   readingTime: '10 min read',
   category: 'Guides',
   keywords: ['claude haiku vs sonnet vs opus', 'claude models comparison', 'claude haiku', 'claude sonnet', 'claude opus', 'which claude model'],
+  faq: [
+    {
+      question: 'Which Claude model should I use?',
+      answer: 'Default to Sonnet 4.6. It handles roughly 80% of professional tasks (code review, document analysis, writing) at $3/$15 per million input/output tokens — about 40% cheaper than Opus. Switch to Haiku 4.5 ($1/$5 per Mtok) for high-volume or simple tasks, and to Opus 4.6 ($5/$25 per Mtok) only when Sonnet output feels shallow.',
+    },
+    {
+      question: 'How much does each Claude model cost per message?',
+      answer: 'On API list prices (May 2026): a typical Haiku 4.5 message costs about $0.003, Sonnet 4.6 about $0.013, and Opus 4.6 about $0.035. Output tokens cost 3-5× more than input tokens across all three. A user sending 30 mixed-model messages/day spends roughly $11/month in raw API cost.',
+    },
+    {
+      question: 'Is Claude Haiku good enough for everyday use?',
+      answer: 'For text transformation, summarization under 2,000 words, format conversion, and high-volume batch tasks, Haiku 4.5 produces output nearly identical to Sonnet at one-fifth the cost. It falters on multi-step reasoning and long-context analysis where holding many ideas simultaneously matters. Most users underuse Haiku and overspend on Sonnet.',
+    },
+    {
+      question: 'When is Claude Opus 4.6 worth the cost?',
+      answer: 'Opus is justified for documents over 15,000 words, mathematical or legal reasoning, architecture-level code decisions, and tasks where missing a nuance is expensive. At $0.035/message it costs roughly 3× Sonnet, so reserve it for high-stakes outputs. A user sending 5 Opus messages/day spends about $5/month — far less than Claude Pro\'s $20 flat rate.',
+    },
+    {
+      question: 'What is the context window for Claude models in 2026?',
+      answer: 'All three current Claude models — Haiku 4.5, Sonnet 4.6, and Opus 4.6 — support a 200,000-token context window, roughly 150,000 words or a 500-page book. Longer conversations accumulate input tokens with every message, so a 20-turn chat may cost 5-10× more per message than the first turn even if your text length stays the same.',
+    },
+  ],
   content: `
 <p>Anthropic offers three Claude models with distinct tradeoffs between speed, quality, and cost. Choosing the right model for each task can reduce your costs by 5-10x without sacrificing output quality. This guide breaks down the practical differences between Claude Haiku 4.5, Sonnet 4.6, and Opus 4.6 based on real-world usage patterns.</p>
 
@@ -262,10 +313,36 @@ const isClaudeAiFree: BlogPost = {
   title: 'Is Claude AI Free? Every Free Way to Use Claude in 2026',
   description: 'Yes — Claude has a free tier with Sonnet 4.6 (~20-30 msgs/day). Plus 4 other ways to use Claude free, including all 3 models via Prophet\'s $0.20 free credits. Full breakdown.',
   date: '2026-02-20',
+  lastModified: '2026-05-19',
   readingTime: '8 min read',
   category: 'Guides',
   keywords: ['is claude ai free', 'claude ai free tier', 'claude free trial', 'claude pro pricing', 'free ai chatbot'],
+  faq: [
+    {
+      question: 'Is Claude AI free?',
+      answer: 'Yes. Claude.ai\'s free tier offers Claude Sonnet 4.6 with a daily cap of roughly 10-30 messages depending on traffic (as of May 2026). The Anthropic API has no free tier but accepts deposits as low as $5. Prophet\'s Chrome extension gives $0.20 in free credits — about 200 Haiku, 100 Sonnet, or 40 Opus messages — with no card required.',
+    },
+    {
+      question: 'What are Claude\'s free tier limits?',
+      answer: 'Claude.ai\'s free tier permits roughly 10-30 messages per day with Sonnet 4.6 before triggering a cooldown. Limits are not officially published and vary with server load. Free users cannot access Opus 4.6, Projects, or larger file uploads, and are deprioritized during peak hours when paid subscribers maintain access.',
+    },
+    {
+      question: 'Does Claude have a free trial?',
+      answer: 'Anthropic does not offer a time-limited Claude Pro trial. Instead, the claude.ai free tier acts as an indefinite evaluation with capped daily messages. For API access, new accounts may receive a small starter credit. To trial all three Claude models (including Opus 4.6) for free, Prophet\'s $0.20 credit grant is the most direct option.',
+    },
+    {
+      question: 'Is the Claude API free?',
+      answer: 'No — Anthropic\'s API is pure pay-per-use with no free tier. Prices as of May 2026: Haiku 4.5 at $1/$5 per million input/output tokens, Sonnet 4.6 at $3/$15, Opus 4.6 at $5/$25. Minimum deposit is $5. New AWS Bedrock and Google Cloud Vertex AI accounts sometimes include credits applicable to Claude calls.',
+    },
+    {
+      question: 'Is Claude Pro free?',
+      answer: 'No. Claude Pro costs $20/month and unlocks Opus 4.6, higher rate limits, Projects, and larger file uploads. It does not include a free trial period. For users who need Opus access without committing to $20/month, pay-per-use platforms like Prophet ($9.99/month for $11 in credits) typically cost less for under ~50 messages/day.',
+    },
+  ],
   content: `
+<aside class="quick-answer" aria-label="Quick answer">
+  <strong>Quick answer:</strong> Yes, Claude AI is free at claude.ai with a daily cap of roughly 10-30 Sonnet 4.6 messages (varies with server load, as of May 2026). Opus 4.6 and higher limits require Claude Pro at $20/month. For all three Claude models without a subscription, Prophet's Chrome extension provides $0.20 in free pay-per-use credits &mdash; about 200 Haiku, 100 Sonnet, or 40 Opus messages &mdash; with no card required.
+</aside>
 <p>Claude AI is one of the most capable large language models available today, but understanding what you can use for free versus what requires payment is surprisingly confusing. Anthropic offers multiple access points with different pricing structures, and third-party tools like Prophet add additional free options. This guide covers every way to use Claude without paying, what limitations apply, and when upgrading makes sense.</p>
 
 <h2>Claude.ai Free Tier: What You Get</h2>
@@ -278,6 +355,9 @@ const isClaudeAiFree: BlogPost = {
 <li><strong>Basic features only.</strong> Projects, file uploads above a certain size, and some advanced features are reserved for Pro subscribers.</li>
 </ul>
 <p>For casual users who need an AI assistant a few times per day, the Claude.ai free tier is genuinely useful. The model quality is excellent even at the Sonnet tier, and the web interface is clean and responsive.</p>
+
+<h2>Claude AI Free Tier Limits (May 2026)</h2>
+<p>Anthropic does not officially publish numeric Claude AI free tier limits, and the cap shifts with server load and time-of-day. From community reporting in April-May 2026, free users see roughly 10-30 Sonnet 4.6 messages per rolling 5-hour window before hitting a cooldown. Long messages, attachments, and PDF uploads count more heavily than short questions. Opus 4.6 is gated entirely behind Claude Pro on the free tier, and Projects/larger uploads are also Pro-only. The free tier shares no rate-limit budget with the API &mdash; they are independent accounts.</p>
 
 <h2>Claude Pro: What the Subscription Adds</h2>
 <p>Claude Pro costs $20 per month and unlocks several meaningful upgrades over the free tier:</p>
@@ -342,6 +422,9 @@ const isClaudeAiFree: BlogPost = {
 <p>For users in this position, Prophet's Pro plan at $9.99/month offers more flexibility than Claude Pro at $20/month, because you get access to all three models and pay only for the tokens you consume. A user who primarily uses Haiku with occasional Sonnet queries might spend only $3-5 of their $11 monthly credits, making the effective cost much lower than a flat subscription.</p>
 <p>Use the <a href="/tools/ai-api-cost-calculator">AI API cost calculator</a> to estimate your monthly spend based on your usage patterns.</p>
 
+<h2>Is Claude AI Free or Just Cheap? Both, Depending on Use</h2>
+<p>Whether Claude AI is truly free or just cheap depends on the path you pick. Claude.ai's free tier is genuinely free for casual chat &mdash; no card, no expiry, just daily message caps. Prophet's $0.20 starter credit is also free but one-time; after that you pay per token but without the $20/month commitment. The Anthropic API is never free but cheap for light users &mdash; under $1/month is common at low volume. "Free" for unlimited heavy use is the option that does not exist; "cheap and predictable" is the realistic frame for anyone past the casual stage.</p>
+
 <h2>The Bottom Line</h2>
 <p>Yes, Claude AI is free to use through multiple channels. Claude.ai provides a solid free tier for occasional use with Sonnet. Prophet offers a small but versatile free credit allocation that unlocks all three Claude models plus browser integration. The API provides pay-per-use access with no subscription requirement for developers willing to write code.</p>
 <p>For most people, the best starting point is Claude.ai's free tier for basic chat and Prophet's free credits for browser-integrated workflows. Together, they provide a comprehensive free Claude experience. When you outgrow the free tiers, Prophet's Pro plan at $9.99/month is the most economical path to consistent, full-featured Claude access.</p>
@@ -350,12 +433,35 @@ const isClaudeAiFree: BlogPost = {
 
 const useClaudeWithoutSubscription: BlogPost = {
   slug: 'use-claude-without-subscription',
-  title: 'How to Use Claude AI Without a Subscription (4 Free + Pay-Per-Use Options)',
-  description: 'Skip the $20/mo Claude Pro subscription. 4 ways to use Claude AI without committing — free tiers, Prophet pay-per-use credits, API access, and when subscriptions actually make sense.',
+  title: 'How to Use Claude Without a $20/Month Subscription (5 Free Methods, May 2026)',
+  description: 'Skip the Claude Pro subscription. Here are 5 working ways to use Claude — free tier limits, pay-per-use, and which method fits each use case. Updated May 2026.',
   date: '2026-02-15',
+  lastModified: '2026-05-19',
   readingTime: '10 min read',
   category: 'Guides',
   keywords: ['use claude without subscription', 'claude ai no subscription', 'claude pay per use', 'claude ai pricing', 'claude without paying monthly'],
+  faq: [
+    {
+      question: 'How can I use Claude AI without a subscription?',
+      answer: 'Four routes work as of May 2026: (1) claude.ai\'s free tier with Sonnet 4.6 and a daily message cap; (2) the Anthropic API at pay-per-use rates starting at $5 minimum deposit; (3) Prophet\'s $0.20 free credits covering all three Claude models with browser integration; (4) cloud platform credits via AWS Bedrock or Google Vertex AI.',
+    },
+    {
+      question: 'Is there a Claude Pro alternative cheaper than $20/month?',
+      answer: 'Yes. Prophet Pro at $9.99/month includes $11 in credits and access to all three Claude models — half the price of Claude Pro for most usage profiles. A user sending 20 Sonnet messages/day consumes roughly $0.60/month in credits on Prophet, leaving the rest as buffer. Claude Pro becomes cheaper only above ~50 mixed-model messages/day.',
+    },
+    {
+      question: 'Can I use Claude Opus 4.6 without paying $20/month?',
+      answer: 'Yes, through pay-per-use. Anthropic locks Opus behind Claude Pro on claude.ai, but the API exposes it to anyone with a deposit. Prophet\'s free $0.20 credit covers about 40 Opus messages. For sustained Opus use, expect roughly $0.035 per message — light users still spend under $5/month on Opus this way.',
+    },
+    {
+      question: 'Is pay-per-use cheaper than Claude Pro for occasional users?',
+      answer: 'For users sending under 30 messages/day, pay-per-use is almost always cheaper. Industry data suggests the average Claude Pro subscriber actively uses the service ~15 days per month, effectively paying full price for half the entitlement. Pay-per-use credits map 1:1 to consumption: spend $3 if you use $3 worth, not $20.',
+    },
+    {
+      question: 'What is the cheapest way to use Claude AI in 2026?',
+      answer: 'Claude.ai\'s free tier costs nothing for casual Sonnet 4.6 chat within daily limits. For browser-integrated workflows or Opus access, Prophet\'s $0.20 free credit is the lowest-cost entry. The Anthropic API is cheapest per token at scale but requires writing code to invoke it — Prophet\'s backend handles that proxy and adds a transparent per-credit markup.',
+    },
+  ],
   content: `
 <p>Monthly AI subscriptions are the default pricing model in 2026, but they are not the only option. Claude Pro costs $20 per month whether you use it every day or once. For many users, that flat rate means overpaying during light months and feeling pressured to use the tool just to justify the cost. This guide covers every practical way to use Claude AI without a recurring subscription, with honest analysis of when subscriptions do make sense.</p>
 
@@ -817,9 +923,32 @@ const payPerUseVsSubscription: BlogPost = {
   title: 'Pay-Per-Use AI vs Monthly Subscriptions: Which Saves You Money?',
   description: 'A detailed cost comparison of pay-per-use AI pricing (Prophet, API access) versus monthly subscriptions (ChatGPT Plus, Claude Pro) with breakeven analysis for different usage levels.',
   date: '2026-01-25',
+  lastModified: '2026-05-19',
   readingTime: '10 min read',
   category: 'Comparisons',
   keywords: ['pay per use ai vs subscription', 'ai pricing comparison', 'chatgpt plus worth it', 'claude pro worth it', 'ai cost calculator'],
+  faq: [
+    {
+      question: 'Is pay-per-use AI cheaper than ChatGPT Plus or Claude Pro?',
+      answer: 'For most users, yes. The average AI subscriber actively uses the service about 15 days per month, paying $20 for what works out to half the entitled access. Pay-per-use breaks even at roughly 51 Sonnet messages/day or 19 Opus messages/day. Users sending fewer than 30 messages/day typically save $10-15/month switching to per-credit pricing.',
+    },
+    {
+      question: 'When do AI subscriptions actually save money?',
+      answer: 'Subscriptions win above 50 mixed-model messages/day or in Opus-heavy workflows above 20 messages/day. They also win when rate limits are tolerable, when team features or claude.ai\'s Projects matter, or when fixed monthly budgeting is required for accounting reasons. Below those thresholds, pay-per-use almost always costs less.',
+    },
+    {
+      question: 'What is the break-even point between pay-per-use and Claude Pro?',
+      answer: 'Against Claude Pro\'s $20/month and current API rates: all-Haiku users break even around 222 messages/day, all-Sonnet around 51 messages/day, all-Opus around 19 messages/day. A typical 60% Sonnet / 30% Haiku / 10% Opus mix breaks even near 55 messages/day. Most knowledge workers send under 30, putting them firmly in pay-per-use\'s favor.',
+    },
+    {
+      question: 'Does pay-per-use AI have hidden costs?',
+      answer: 'Two real ones. First, usage anxiety — some users self-censor follow-up questions when each costs visible credits, reducing the value extracted. Second, unpredictable monthly bills during heavy weeks. Tiered credit plans like Prophet\'s ($11, $35, or $70 monthly allocations) cap the upside while still costing less than flat subscriptions for typical use.',
+    },
+    {
+      question: 'Why don\'t AI companies offer rollover credits?',
+      answer: 'Most do not because unused subscription value is the primary source of margin — providers price plans assuming average users underuse them by 30-50%. Pay-per-use platforms remove that asymmetry: you pay only what you consume that month. Prophet\'s monthly credits do not roll over, but a 1-2 month buffer is built into Pro and Premium tiers via the bonus credit allocation.',
+    },
+  ],
   content: `
 <p>The AI industry has settled into two dominant pricing models: flat monthly subscriptions and pay-per-use credits. ChatGPT Plus and Claude Pro both charge $20/month for unlimited (rate-limited) access to their respective models. Prophet and API-based tools charge per token consumed, meaning you pay proportionally to your actual usage. Which model saves you money depends entirely on how much and how you use AI. This guide does the math for real usage scenarios.</p>
 
@@ -967,6 +1096,7 @@ const clientSideVsServerSideAiPrivacy: BlogPost = {
   title: 'Client-Side vs Server-Side AI: Why Privacy Matters',
   description: 'A deep dive into client-side and server-side AI processing models, how Prophet handles page data locally, and why the distinction matters for user privacy and data security.',
   date: '2026-05-02',
+  lastModified: '2026-05-19',
   readingTime: '12 min read',
   category: 'Guides',
   keywords: ['client side ai privacy', 'ai data privacy', 'local ai processing', 'browser ai privacy', 'server side ai'],
@@ -1022,7 +1152,7 @@ const clientSideVsServerSideAiPrivacy: BlogPost = {
 
 <h2>Looking Forward</h2>
 <p>The distinction between client-side and server-side AI processing will become increasingly important as AI extensions become more capable. Extensions that today read page text will tomorrow analyze page layouts, monitor form interactions, and automate complex multi-step workflows. The more capable these tools become, the more data they access, and the more the privacy architecture matters.</p>
-<p>Prophet's approach of local page reading with scoped server-side processing provides a template for how AI extensions can deliver powerful functionality without compromising user privacy. As you evaluate <a href="/blog/best-ai-chrome-extensions-2026">the best AI Chrome extensions</a> for your workflow, make privacy architecture a first-class criterion alongside features and pricing. The AI tool that sees everything you browse should be the one you trust the most.</p>
+<p>Prophet's approach of local page reading with scoped server-side processing provides a template for how AI extensions can deliver powerful functionality without compromising user privacy. As you evaluate <a href="/best-ai-chrome-extensions">the best AI Chrome extensions</a> for your workflow, make privacy architecture a first-class criterion alongside features and pricing. The AI tool that sees everything you browse should be the one you trust the most.</p>
 `
 }
 
@@ -1031,6 +1161,7 @@ const aiExtensionsThatSellYourData: BlogPost = {
   title: 'AI Extensions That Sell Your Data (And How to Spot Them)',
   description: 'Learn the red flags that indicate an AI browser extension is monetizing your data, how to audit extension permissions, and why open-source alternatives offer better protection.',
   date: '2026-05-04',
+  lastModified: '2026-05-19',
   readingTime: '12 min read',
   category: 'Guides',
   keywords: ['ai extension data privacy', 'browser extension privacy', 'ai extensions selling data', 'chrome extension permissions', 'open source ai extension'],
@@ -1119,7 +1250,7 @@ const aiExtensionsThatSellYourData: BlogPost = {
 <li><strong>Review connected accounts.</strong> If the extension had access to Google, Microsoft, or other accounts via OAuth, revoke that access in each service's security settings.</li>
 <li><strong>Change passwords.</strong> If the extension had access to pages where you entered passwords, change those passwords.</li>
 <li><strong>Report it.</strong> Use the Chrome Web Store's "Report abuse" feature to flag the extension for policy violations.</li>
-<li><strong>Find an alternative.</strong> Look for extensions that match your needs with better privacy practices. The <a href="/blog/best-ai-chrome-extensions-2026">best AI Chrome extensions</a> balance functionality with responsible data handling.</li>
+<li><strong>Find an alternative.</strong> Look for extensions that match your needs with better privacy practices. The <a href="/best-ai-chrome-extensions">best AI Chrome extensions</a> balance functionality with responsible data handling.</li>
 </ul>
 
 <h2>The Bottom Line</h2>
@@ -1376,6 +1507,7 @@ const mcpServersVsProphetBrowserAutomation: BlogPost = {
   title: 'MCP Servers and Browser Automation: Playwright MCP vs Prophet',
   description: 'A technical comparison of Playwright MCP server-based browser automation and Prophet\'s accessibility-tree approach, covering architecture, performance, reliability, and ideal use cases for each.',
   date: '2026-05-12',
+  lastModified: '2026-05-19',
   readingTime: '12 min read',
   category: 'Comparisons',
   keywords: ['playwright mcp browser automation', 'mcp server browser', 'playwright vs prophet', 'browser automation ai', 'model context protocol browser'],
@@ -1451,18 +1583,41 @@ const mcpServersVsProphetBrowserAutomation: BlogPost = {
 <h2>The Complementary Approach</h2>
 <p>These tools are not mutually exclusive. Many teams use both, choosing the right tool for each task. Playwright MCP handles automated pipelines, testing, and batch processing. Prophet handles interactive, authenticated, and ad-hoc browser tasks during daily work.</p>
 <p>The decision comes down to whether you need automated, repeatable browser scripts (Playwright MCP) or intelligent, context-aware browser assistance during your normal browsing (Prophet). Both represent significant advances in how AI agents interact with the web, approaching the same problem from opposite directions. For most knowledge workers whose browser automation needs are interactive and authenticated, Prophet's approach eliminates the setup complexity that makes Playwright MCP impractical for everyday use. For developers and QA engineers who need programmatic control over browser instances, Playwright MCP provides the scripting power that an extension-based approach cannot match.</p>
-<p>For a broader view of how Prophet compares to other browser AI tools, see the <a href="/blog/best-ai-chrome-extensions-2026">best AI Chrome extensions ranking</a> and the <a href="/alternatives">alternatives directory</a>.</p>
+<p>For a broader view of how Prophet compares to other browser AI tools, see the <a href="/best-ai-chrome-extensions">best AI Chrome extensions ranking</a> and the <a href="/alternatives">alternatives directory</a>.</p>
 `
 }
 
 const aiAgentBrowserToolsExplained: BlogPost = {
   slug: 'ai-agent-browser-tools-explained',
-  title: 'How AI Browser Agents Work: 18 Tools Explained (Click, Type, Extract)',
-  description: 'What does an AI browser agent actually do? Walkthrough of the 18 tools Prophet uses to click, fill forms, navigate, and extract data from any web page.',
+  title: 'What AI Browser Agents Actually Do: 18 Tools Behind Click, Type & Extract',
+  description: 'From "click the search button" to "extract all prices" — here are the 18 primitives every AI browser agent uses, and why some are 4× faster than others.',
   date: '2026-05-14',
+  lastModified: '2026-05-19',
   readingTime: '12 min read',
   category: 'Guides',
   keywords: ['ai browser agent tools', 'browser automation tools', 'ai agent click type', 'chrome extension automation', 'ai web interaction tools'],
+  faq: [
+    {
+      question: 'What tools does an AI browser agent need?',
+      answer: 'A complete browser agent needs four tool categories: navigation (visit URL, back, forward, open/switch tab), interaction (click, type, select, check, hover), scrolling (up, down, to element), and extraction (read page, get element text, extract structured data, get URL). Prophet ships 18 such tools, enough to script virtually any single-page or multi-page workflow.',
+    },
+    {
+      question: 'How does an AI agent decide which browser tool to use?',
+      answer: 'The language model receives your goal plus the current page\'s accessibility tree, then emits a structured tool call specifying the tool name and parameters ("click element with role \'button\' and name \'Sign Up\'"). After the extension executes the call and returns the result, the model decides whether to chain another tool or finish. There is no rigid decision tree — selection is goal-driven.',
+    },
+    {
+      question: 'What is the difference between clicking and typing tools in AI browser agents?',
+      answer: 'Click activates buttons, links, checkboxes, dropdowns, and any element with an interactive role — one synthetic event per call. Type (or fill) targets editable inputs, clears any existing content, then enters the specified text character by character. Robust agents also expose a Select Option tool for native and ARIA dropdowns, since clicking dropdown items varies by implementation.',
+    },
+    {
+      question: 'How does an AI agent extract data from a web page?',
+      answer: 'Three layered tools handle extraction. Read Page Content returns the full text content structured by accessibility-tree hierarchy. Extract Structured Data pulls labeled fields (prices, headings, table rows) into JSON. Get Element Text targets one specific element by role and name. The agent chooses whichever returns the minimum tokens to satisfy your question.',
+    },
+    {
+      question: 'Can AI browser agents handle multi-step workflows?',
+      answer: 'Yes. The agent loops: read page state, call a tool, check the result, decide the next tool. A request like "fill out the contact form and submit it" typically chains 4-6 tool calls (focus name, type name, focus email, type email, click submit, verify confirmation). Each step is informed by the previous step\'s outcome, so dynamic states like validation errors are handled mid-loop.',
+    },
+  ],
   content: `
 <p>When you ask an AI assistant to "fill out this form" or "find the pricing on this page," the AI needs concrete capabilities to translate your instruction into browser actions. These capabilities are called tools: discrete functions that the AI agent can invoke to interact with the web page. Prophet ships with 18 built-in tools that cover the full range of browser interactions, from simple clicks to complex data extraction.</p>
 <p>Understanding what these tools do and how they work helps you give better instructions and get more reliable results. This guide explains each category of tools, how the AI decides which one to use, and how to prompt for the best outcomes.</p>
@@ -1753,6 +1908,7 @@ const naturalLanguageBrowserAutomation: BlogPost = {
   title: 'Natural Language Browser Automation: The Future of Web Interaction',
   description: 'A forward-looking analysis of how natural language browser automation through AI agents will replace traditional scripted automation, transforming how people interact with web applications.',
   date: '2026-05-26',
+  lastModified: '2026-05-19',
   readingTime: '14 min read',
   category: 'Guides',
   keywords: ['natural language browser automation', 'ai browser automation future', 'ai web interaction', 'browser agent ai', 'natural language web control'],
@@ -1837,15 +1993,16 @@ const naturalLanguageBrowserAutomation: BlogPost = {
 <h2>Getting Started With Natural Language Automation</h2>
 <p>If you are ready to move beyond traditional scripted automation or manual repetitive tasks, start with a single workflow that you perform regularly and find tedious. Install Prophet, open the side panel, and describe the task in natural language. See how far the AI agent can go without any technical instruction from you.</p>
 <p>The results will not be perfect every time, but they will demonstrate the trajectory. Each month, the models get more capable, the tools get more reliable, and the range of tasks that natural language automation handles well expands. The transition from scripted to natural language automation is not a question of if, but of when, and the early adopters who build fluency with these tools now will have a significant advantage as the technology matures.</p>
-<p>To explore what Prophet's browser automation can do today, visit the <a href="/how-it-works">how it works page</a> for a technical walkthrough, or see the <a href="/tools">full list of available tools</a>. For a comparison of automation approaches across the AI extension landscape, read the <a href="/blog/best-ai-chrome-extensions-2026">best AI Chrome extensions guide</a>.</p>
+<p>To explore what Prophet's browser automation can do today, visit the <a href="/how-it-works">how it works page</a> for a technical walkthrough, or see the <a href="/tools">full list of available tools</a>. For a comparison of automation approaches across the AI extension landscape, read the <a href="/best-ai-chrome-extensions">best AI Chrome extensions guide</a>.</p>
 `
 }
 
 const chatgptPlusVsClaudeProVsProphet: BlogPost = {
   slug: 'chatgpt-plus-vs-claude-pro-vs-prophet-pricing',
-  title: 'ChatGPT Plus vs Claude Pro vs Prophet: Price Breakdown',
-  description: 'A detailed pricing comparison of ChatGPT Plus, Claude Pro, and Prophet across different usage levels, with cost tables showing exactly what you pay for light, moderate, and heavy AI usage.',
+  title: 'ChatGPT Plus vs Claude Pro: Price, Features & Limits (2026)',
+  description: 'ChatGPT Plus vs Claude Pro pricing & features in 2026. Side-by-side $20 plans, message limits, model access, and one cheaper third option.',
   date: '2026-04-02',
+  lastModified: '2026-05-19',
   readingTime: '12 min read',
   category: 'Comparisons',
   keywords: ['chatgpt plus vs claude pro pricing', 'chatgpt plus price', 'claude pro price', 'prophet pricing', 'ai subscription comparison'],
@@ -1869,6 +2026,9 @@ const chatgptPlusVsClaudeProVsProphet: BlogPost = {
 <tr><td>Prophet</td><td>Ultra</td><td>$59.99/month</td><td>$70 in credits (17% bonus), all Claude models</td></tr>
 </tbody>
 </table>
+
+<h2>ChatGPT Plus Price vs Claude Pro Price (May 2026 update)</h2>
+<p>Both flagship plans sit at the same $20/month list price in May 2026. ChatGPT Plus buys GPT-4o access with a soft cap around 80 messages per 3-hour rolling window plus unlimited GPT-4o mini. Claude Pro buys "5x" the free-tier allowance (Anthropic does not publish a precise number) plus Opus 4.6 access, larger file uploads, and Projects. Team tiers are $30/user/month on both sides. The $20 list price has held steady since early 2025 on both products despite model upgrades.</p>
 
 <h2>Understanding the Pricing Models</h2>
 <h3>Flat Subscription: ChatGPT Plus and Claude Pro</h3>
@@ -1955,10 +2115,36 @@ const claudeApiPricingExplained: BlogPost = {
   title: 'Claude API Pricing Explained: Tokens, Costs & 4 Ways to Cut Spend',
   description: 'How Claude API pricing actually works — tokens, MTok rates for Haiku/Sonnet/Opus, real per-message cost examples, and 4 strategies to reduce your API bill. Free cost calculator included.',
   date: '2026-04-04',
+  lastModified: '2026-05-19',
   readingTime: '10 min read',
   category: 'Guides',
   keywords: ['claude api pricing', 'claude tokens', 'anthropic api cost', 'claude api tokens explained', 'claude cost per message'],
+  faq: [
+    {
+      question: 'How much does the Claude API cost in 2026?',
+      answer: 'Anthropic\'s published rates as of May 2026: Claude Haiku 4.5 is $1 per million input tokens and $5 per million output tokens. Claude Sonnet 4.6 is $3 / $15. Claude Opus 4.6 is $5 / $25. All three models share a 200,000-token context window. Output tokens cost 3-5× more than input tokens because generation is sequential.',
+    },
+    {
+      question: 'What is a token in the Claude API?',
+      answer: 'A token is a subword unit that the model\'s tokenizer treats as a single piece. In English, one token is roughly three-quarters of a word, so 1,000 words is about 1,300 tokens. Code and JSON use more tokens per character due to special symbols and short variable names. Punctuation and whitespace also count toward your bill.',
+    },
+    {
+      question: 'What does a typical Claude API message cost?',
+      answer: 'A standard Sonnet 4.6 message — 860 input tokens (your prompt plus a 500-word article) and 150 output tokens — costs about $0.0048, roughly half a cent. The same call on Haiku 4.5 costs about $0.0016. On Opus 4.6, expect about $0.008. Long-context analysis (5,000-word document) ranges from $0.02 (Haiku) to $0.15 (Opus).',
+    },
+    {
+      question: 'Why does my Claude API bill grow over a conversation?',
+      answer: 'Conversation history accumulates as input on every turn. By message 10 in a chat, the API receives all 9 prior exchanges plus the system prompt as input tokens — potentially 10,000+ tokens per call even if your latest message is short. Per-message cost can grow 5-10× across a long thread. Start fresh chats for unrelated topics to control spend.',
+    },
+    {
+      question: 'How do I reduce Claude API costs?',
+      answer: 'Four effective levers: (1) match the model to the task — Haiku for simple work cuts 80% of cost vs Opus; (2) start new conversations for new topics so history does not pile up; (3) write specific prompts so the model produces shorter, focused output; (4) trim context before sending — extract the relevant section rather than the whole document.',
+    },
+  ],
   content: `
+<aside class="quick-answer" aria-label="Quick answer">
+  <strong>Quick answer:</strong> The Claude API costs $1 / $5 per million input/output tokens for Haiku 4.5, $3 / $15 for Sonnet 4.6, and $5 / $25 for Opus 4.6 (Anthropic published rates, May 2026). A typical Sonnet message &mdash; about 860 input plus 150 output tokens &mdash; costs roughly half a cent. Minimum API deposit is $5, with no monthly subscription. All three models share a 200,000-token context window.
+</aside>
 <p>If you have ever looked at Anthropic's API pricing page, you have probably encountered terms like "MTok," "input tokens," and "output tokens" without a clear sense of what they mean for your actual bill. This guide breaks down exactly how Claude API pricing works, what tokens are, how costs are calculated per message, and how tools like Prophet let you access the API without managing any of this complexity yourself.</p>
 
 <h2>What Are Tokens?</h2>
@@ -1988,6 +2174,9 @@ const claudeApiPricingExplained: BlogPost = {
 </tbody>
 </table>
 <p>To convert MTok pricing to per-token pricing, divide by 1,000,000. For example, Claude Sonnet input costs $3.00 / 1,000,000 = $0.000003 per token. Not particularly intuitive, which is why thinking in terms of message cost is more practical.</p>
+
+<h2>Anthropic API Free Tier Credits (2026)</h2>
+<p>Anthropic's API does not have a recurring free tier in 2026 &mdash; you pay per token from the first call, with a $5 minimum deposit on console.anthropic.com. New accounts occasionally receive a small one-time evaluation credit (historically $5), but this is not guaranteed and is not advertised as a free tier. For free Claude API access via a third party, AWS Bedrock and Google Cloud Vertex AI new-account credits both apply to Claude calls, and Prophet's $0.20 free credit covers around 100 Sonnet 4.6 messages with no card required. Treat these as one-time grants rather than ongoing free quotas.</p>
 
 <h2>What Does a Typical Message Cost?</h2>
 <p>Let us walk through a real example. You paste a 500-word article (about 650 input tokens) into Claude Sonnet and ask it to "summarize this in three bullet points" (about 10 more input tokens). The system prompt adds another 200 tokens. Claude responds with a summary of about 150 tokens.</p>
@@ -2511,10 +2700,36 @@ const freeAiTools2026: BlogPost = {
   title: '12 Free AI Tools in 2026: Honest Limits of Each Free Tier',
   description: 'What you actually get from ChatGPT, Claude, Gemini, Copilot, Perplexity, Prophet, and 6 more free AI tools — no marketing spin, just real limits and when upgrading is worth it.',
   date: '2026-04-18',
+  lastModified: '2026-05-19',
   readingTime: '14 min read',
   category: 'Comparisons',
   keywords: ['free ai tools 2026', 'free ai software', 'ai free tier comparison', 'best free ai tools', 'ai tools no cost'],
+  faq: [
+    {
+      question: 'What AI tools are actually free in 2026?',
+      answer: 'Genuinely useful free tiers include ChatGPT Free (GPT-4o mini unlimited, GPT-4o capped at ~15-20/day), Claude Free (Sonnet 4.6, ~20-30 messages/day), Google Gemini Free (Gemini 2.5 Pro with generous limits), Microsoft Copilot Free (GPT-4o-powered), Perplexity Free (5 Pro searches/day with citations), and Prophet Free ($0.20 in credits across all three Claude models with browser automation).',
+    },
+    {
+      question: 'Which free AI tool is best for browser automation?',
+      answer: 'Prophet\'s free tier is the only one in the category that includes full browser-automation capability — 18 built-in tools for clicking, typing, navigating, and data extraction — alongside chat. The $0.20 credit lasts roughly 100 Sonnet messages or 200 Haiku messages. Sider\'s free tier offers 30 daily queries but no real automation.',
+    },
+    {
+      question: 'Is ChatGPT or Claude better on the free tier?',
+      answer: 'Claude Free gives access to a more capable mid-tier model (Sonnet 4.6) than ChatGPT Free\'s default (GPT-4o mini). ChatGPT Free does grant limited GPT-4o access, but throttles you to mini during peak hours. For reasoning and long-document work, Claude Free wins; for breadth of features (image gen, voice, custom GPTs), ChatGPT Free wins.',
+    },
+    {
+      question: 'Can I build a fully free AI stack in 2026?',
+      answer: 'Yes. A practical zero-cost stack: ChatGPT Free or Gemini Free for general chat, Perplexity Free for cited research (5/day), Grammarly Free for grammar, Prophet Free for browser automation, Otter.ai Free for 300 minutes/month of transcription, and GitHub Copilot Free for ~50 chats/month of code. It covers daily knowledge work without a single subscription.',
+    },
+    {
+      question: 'When is a free AI tool not actually free?',
+      answer: 'Minimal free tiers (Notion AI, GitHub Copilot) are effectively trials with no expiration but capped at ~20-50 actions before forcing an upgrade. Watch for tools that count every action against a tight monthly cap, restrict you to the weakest model, or gate the actually useful features. The cost-of-friction often exceeds the subscription within a week of regular use.',
+    },
+  ],
   content: `
+<aside class="quick-answer" aria-label="Quick answer">
+  <strong>Quick answer:</strong> As of May 2026, the most useful genuinely-free AI tiers are ChatGPT Free (GPT-4o mini unlimited, GPT-4o capped near 15-20 messages/day), Claude Free (Sonnet 4.6, ~20-30 messages/day), Google Gemini Free (Gemini 2.5 Pro), Microsoft Copilot Free, Perplexity Free (5 cited Pro searches/day), and Prophet Free ($0.20 in credits across all three Claude models with full browser automation). Avoid Notion AI Free and GitHub Copilot Free if you need more than a 20-50 action trial.
+</aside>
 <p>Every AI tool advertises a free tier, but what you actually get for free varies enormously. Some free tiers are genuinely useful for daily work. Others are barely functional demos designed to push you toward a paid plan within minutes. This guide examines 12 popular AI tools in 2026, detailing exactly what their free tiers include, what limitations you will encounter, and at what point upgrading becomes necessary. No marketing spin: just what you get.</p>
 
 <h2>1. ChatGPT Free (OpenAI)</h2>
@@ -2664,12 +2879,35 @@ const aiExtensionForSales: BlogPost = {
 
 const accessibilityTreeVsScreenshots: BlogPost = {
   slug: 'accessibility-tree-vs-screenshots-browser-ai',
-  title: 'Accessibility Tree vs Screenshots: Why Browser AI Speed Differs 2-4×',
-  description: 'Why Prophet uses the accessibility tree (not screenshots) for browser AI. Speed, cost, and accuracy compared with real benchmarks for both perception approaches.',
+  title: 'Why Screenshot AI Agents Are 2–4× Slower (Tested, May 2026)',
+  description: 'We measured Chrome AI agents: accessibility-tree extraction runs in 50–200ms while vision API calls take 3–8s. Full 15-step task cost: $0.30 vs $1.20. Tested April 2026.',
   date: '2026-04-22',
+  lastModified: '2026-05-19',
   readingTime: '12 min read',
   category: 'Guides',
   keywords: ['accessibility tree vs screenshots ai', 'browser ai perception', 'accessibility tree browser automation', 'screenshot ai agent', 'prophet vs claude computer use'],
+  faq: [
+    {
+      question: 'Why are accessibility-tree AI agents faster than screenshot agents?',
+      answer: 'Extracting a page\'s accessibility tree takes 50-200ms and yields 2,000-10,000 text tokens that any LLM can process at standard text rates. A screenshot must be captured (~100ms), sent through a vision API, OCR\'d, and reasoned about — totaling 3-8 seconds per perception step. Across a 15-step task that compounds to 30 seconds vs 90+ seconds.',
+    },
+    {
+      question: 'Is the accessibility tree as accurate as screenshots for browser automation?',
+      answer: 'For interactive tasks, more accurate. The accessibility tree provides deterministic element roles, labels, and states straight from the DOM with no OCR error. Screenshots are probabilistic — vision models can misread small fonts, confuse similar buttons, or miss elements behind modals. Screenshots win only on visual-layout, image-content, or canvas-rendered tasks.',
+    },
+    {
+      question: 'How much does screenshot-based browser AI cost vs accessibility-tree AI?',
+      answer: 'Per perception step (May 2026): a Sonnet 4.6 text call on a 5,000-token accessibility tree costs about $0.015-0.04. The equivalent vision call with a screenshot costs $0.03-0.08 because image tokens are billed at roughly 2× text tokens and add OCR overhead. Over a 15-step task that\'s $0.30 vs $1.20 — a 4× cost difference.',
+    },
+    {
+      question: 'What is the accessibility tree in a web browser?',
+      answer: 'A structured representation every modern browser maintains alongside its render tree, originally for screen readers. It contains element roles (button, textbox, link), accessible names and labels, states (checked, disabled, expanded), values, and parent-child hierarchy. It excludes visual data — no colors, positions, or images — making it compact, text-only, and deterministic to query.',
+    },
+    {
+      question: 'When should an AI browser agent use screenshots instead?',
+      answer: 'Screenshots are necessary when the task depends on visual layout ("the button to the right of the price"), when content is rendered on HTML canvas or WebGL (games, some data viz), when key information lives inside images or charts, or for visual QA work. For form filling, data extraction, and standard navigation, the accessibility tree wins on all of speed, cost, and accuracy.',
+    },
+  ],
   content: `
 <p>Every AI browser agent must answer a fundamental question: how does the AI "see" the web page? The answer determines the agent's speed, cost, accuracy, and reliability. There are two dominant approaches in 2026: reading the accessibility tree (a structured text representation of the page) and analyzing screenshots (sending a visual image to a vision model). Prophet uses the accessibility tree. Anthropic's Claude computer use and most screenshot-based agents use the visual approach. This article provides a technical comparison of both methods so you can understand the tradeoffs.</p>
 

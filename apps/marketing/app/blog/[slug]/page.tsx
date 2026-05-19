@@ -67,7 +67,7 @@ export default async function BlogPostPage({ params }: PageProps) {
     description: post.description,
     image: 'https://prophetchrome.com/og-image.png',
     datePublished: post.date,
-    dateModified: post.date,
+    dateModified: post.lastModified ?? post.date,
     author: { '@type': 'Organization', name: 'Prophet', url: 'https://prophetchrome.com' },
     publisher: {
       '@type': 'Organization',
@@ -93,6 +93,20 @@ export default async function BlogPostPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
       />
+      {post.faq && post.faq.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: post.faq.map((item) => ({
+              '@type': 'Question',
+              name: item.question,
+              acceptedAnswer: { '@type': 'Answer', text: item.answer },
+            })),
+          }) }}
+        />
+      )}
       <Header />
       <article className="py-20 flex-1">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
