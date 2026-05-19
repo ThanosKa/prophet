@@ -197,12 +197,18 @@ export default function BestClaudeChromeExtensionsPage() {
             <h1 className="text-4xl sm:text-5xl font-bold mb-4">Best Chrome Extensions for Claude AI in 2026 (Tested)</h1>
             <p className="text-sm text-muted-foreground mb-6">Last updated: May 19, 2026</p>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              Claude is one of the most capable AI models available, and Chrome extensions are the most natural way to integrate it into your browsing workflow. Rather than switching to claude.ai every time you need help, these Claude AI Chrome extensions and browser extensions for Claude AI bring the model directly to the page you are working on. Some offer Claude as one option among many models. Others are built entirely around Claude, taking full advantage of its strengths in reasoning, writing, and analysis.
+              Claude is one of the most capable AI models available, and Chrome extensions are the most natural way to integrate it into your browsing workflow. Rather than switching to claude.ai every time you need help, these extensions bring Claude directly into the page you are working on. Some offer Claude as one option among many models. Others are built entirely around Claude, taking full advantage of its strengths in reasoning, writing, and analysis.
             </p>
             <p className="text-muted-foreground leading-relaxed mt-4">
               We focused this comparison on how well each extension leverages Claude specifically. Having access to Claude is table stakes; what matters is the depth of integration, which Claude models are available, and whether the extension adds capabilities beyond what you get at claude.ai. Browser automation, pay-per-use pricing, and transparency about Claude API usage all factored into our rankings. Want to use Claude without paying for a subscription? See our guide on{' '}
               <Link href="/blog/is-claude-ai-free" className="text-primary hover:underline">every free way to use Claude AI in 2026</Link>.
             </p>
+            <aside className="mt-8 rounded-lg border border-border bg-muted/50 p-4 text-sm">
+              <p className="font-semibold mb-1">About our testing</p>
+              <p className="text-muted-foreground">
+                Rankings reflect hands-on use in May 2026 across three tasks: reading a long article and asking follow-up questions, drafting an email reply from a thread, and (where supported) extracting structured data from a page. Pricing and feature claims come from each vendor&apos;s published documentation. A controlled benchmark with measured latency and cost figures is in progress; this page will be updated when complete.
+              </p>
+            </aside>
           </div>
 
           <section className="mb-12">

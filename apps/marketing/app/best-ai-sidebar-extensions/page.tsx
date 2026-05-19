@@ -211,6 +211,12 @@ export default function BestAISidebarExtensionsPage() {
             <p className="text-muted-foreground leading-relaxed mt-4">
               We tested the top AI sidebar extensions to compare their capabilities, usability, and value. The biggest differentiator we found is whether the sidebar can only read web pages or actually interact with them. Extensions that offer browser automation from the sidebar enable a fundamentally different class of workflows compared to chat-only tools.
             </p>
+            <aside className="mt-8 rounded-lg border border-border bg-muted/50 p-4 text-sm">
+              <p className="font-semibold mb-1">About our testing</p>
+              <p className="text-muted-foreground">
+                Picks reflect hands-on use in May 2026, focused on whether each sidebar can only read web pages or actually interact with them. Pricing and feature claims come from each vendor&apos;s published documentation. A controlled benchmark with measured time-to-task and cost figures is in progress; this page will be updated when complete.
+              </p>
+            </aside>
           </div>
 
           <section className="mb-12">

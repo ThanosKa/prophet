@@ -2911,6 +2911,10 @@ const accessibilityTreeVsScreenshots: BlogPost = {
   content: `
 <p>Every AI browser agent must answer a fundamental question: how does the AI "see" the web page? The answer determines the agent's speed, cost, accuracy, and reliability. There are two dominant approaches in 2026: reading the accessibility tree (a structured text representation of the page) and analyzing screenshots (sending a visual image to a vision model). Prophet uses the accessibility tree. Anthropic's Claude computer use and most screenshot-based agents use the visual approach. This article provides a technical comparison of both methods so you can understand the tradeoffs.</p>
 
+<aside class="methodology-note">
+<p><strong>About these numbers:</strong> Speed and cost figures here are estimates based on Anthropic's published Sonnet 4.6 token pricing, our own Chrome DevTools instrumentation of accessibility-tree extraction latency, and reported response times for vision API calls in Anthropic's and OpenAI's documentation as of May 2026. A full controlled benchmark (five standardized tasks across Prophet, Anthropic's Claude in Chrome, Browser Use, and a manual human baseline — measuring time and cost per step over 3 runs each) is in progress and this page will be updated with measured data when the benchmark is published.</p>
+</aside>
+
 <h2>What Is the Accessibility Tree?</h2>
 <p>Every modern web browser maintains an accessibility tree alongside the visual render tree. The accessibility tree is a hierarchical representation of the page's interactive and semantic elements, originally created for screen readers and other assistive technologies. It contains:</p>
 <ul>
