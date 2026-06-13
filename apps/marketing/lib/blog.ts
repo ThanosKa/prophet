@@ -2316,7 +2316,7 @@ const whatIsAiWebAgent: BlogPost = {
 
 <h2>Where AI Web Agents Are Headed</h2>
 <p>The trajectory is clear: faster models will reduce per-step latency, cheaper inference will reduce per-step cost, and better training on web interactions will improve reliability. Within the next 12-18 months, we expect agents to handle 30-step tasks reliably, complete actions in under 500ms per step, and cost less than 1 cent for routine automations.</p>
-<p>Prophet's architecture is designed to take advantage of these improvements as they arrive. Because the agent loop is model-agnostic within the Claude family, upgrading to a faster or cheaper model improves every automation without changing any code. The accessibility-tree approach scales well with model improvements because the input format is already structured and efficient. Learn more about how Prophet implements browser automation on our <a href="/use-cases/browser-automation">use cases page</a>.</p>
+<p>Prophet's architecture is designed to take advantage of these improvements as they arrive. Because the agent loop is model-agnostic within the Claude family, upgrading to a faster or cheaper model improves every automation without changing any code. The accessibility-tree approach scales well with model improvements because the input format is already structured and efficient. Learn more about how Prophet implements browser automation on our <a href="/how-it-works">how it works page</a>.</p>
 `
 }
 
@@ -2358,7 +2358,7 @@ const browserAutomationWithoutCode: BlogPost = {
 
 <h3>Example 3: Data Extraction</h3>
 <p><strong>Your command:</strong> "Extract all the product names and prices from this page and list them."</p>
-<p>Prophet reads the page content, identifies the product listing pattern, and returns a structured list. This works on search results pages, comparison tables, directory listings, and most other structured content. For more data extraction use cases, see our <a href="/use-cases/data-extraction">data extraction guide</a>.</p>
+<p>Prophet reads the page content, identifies the product listing pattern, and returns a structured list. This works on search results pages, comparison tables, directory listings, and most other structured content. For more data extraction use cases, see our <a href="/use-cases/data-analysis">data analysis guide</a>.</p>
 
 <h3>Example 4: Research Workflow</h3>
 <p><strong>Your command:</strong> "Find the top 5 competitors of Slack listed on G2 and tell me their pricing."</p>

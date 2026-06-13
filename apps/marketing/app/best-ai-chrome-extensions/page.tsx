@@ -6,8 +6,8 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Best AI Chrome Extensions in 2026 (Tested & Ranked)',
-  description: 'The most popular AI Chrome extensions of 2026 — install counts, prices, and what each one actually does. 9 picks tested across Prophet, Monica, Merlin, Sider, MaxAI, Harpa, Claude in Chrome, Glasp, and Compose AI.',
+  title: 'Best AI Chrome Extensions in 2026 (9 Tested & Ranked)',
+  description: '9 AI Chrome extensions tested and ranked for 2026 — with install counts, prices, free tiers, and what each one actually does. Compare Prophet, Monica, Merlin, Sider, MaxAI, Harpa, Claude in Chrome, Glasp, and Compose AI.',
   alternates: { canonical: '/best-ai-chrome-extensions' },
 }
 

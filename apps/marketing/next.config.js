@@ -40,6 +40,9 @@ const nextConfig = {
       { source: "/compare/maxai-alternative", destination: "/alternatives/maxai-alternative", permanent: true },
       { source: "/compare/merlin-alternative", destination: "/alternatives/merlin-alternative", permanent: true },
       { source: "/compare/harpa-ai-alternative", destination: "/alternatives/harpa-ai-alternative", permanent: true },
+      // Use-case slugs referenced in older blog content that never had pages — redirect to the closest live page
+      { source: "/use-cases/browser-automation", destination: "/how-it-works", permanent: true },
+      { source: "/use-cases/data-extraction", destination: "/use-cases/data-analysis", permanent: true },
     ];
   },
 };

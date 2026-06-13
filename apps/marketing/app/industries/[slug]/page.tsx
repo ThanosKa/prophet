@@ -31,6 +31,47 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
     .map((s) => industries.find((ind) => ind.slug === s))
     .filter(Boolean)
 
+  const faqItems = [
+    {
+      question: `How does Prophet AI help with ${industry.title.toLowerCase()}?`,
+      answer: `${industry.description} It runs in the Chrome side panel, reads the page you are on, and can act on it with browser automation — so common tasks like "${industry.workflows[0].title}" happen without leaving your workflow.`,
+    },
+    {
+      question: `Is Prophet free to try for ${industry.title.toLowerCase()}?`,
+      answer: `Yes. Prophet includes a free tier with $0.20 in credits and no credit card required. After that it is pay-per-use, billed against your actual Claude API usage starting at $9.99/month for $11 in credits — so you only pay for what you use.`,
+    },
+    {
+      question: `Which Claude model is best for this work?`,
+      answer: `Prophet lets you choose Claude Haiku 4.5 for fast, low-cost tasks, Sonnet 4.6 for balanced everyday work, or Opus 4.6 for the most complex reasoning. You can switch models at any time from the side panel.`,
+    },
+  ]
+
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqItems.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer },
+    })),
+  }
+
+  const softwareAppJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Prophet',
+    applicationCategory: 'BrowserApplication',
+    operatingSystem: 'Chrome',
+    description: industry.description,
+    url: `https://prophetchrome.com/industries/${industry.slug}`,
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+      description: 'Free tier with $0.20 in credits, then pay-per-use from $9.99/month',
+    },
+  }
+
   return (
     <main className="flex flex-col min-h-screen">
       <script
@@ -40,6 +81,14 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
           { name: 'Industries', url: 'https://prophetchrome.com/industries' },
           { name: industry.title, url: `https://prophetchrome.com/industries/${industry.slug}` },
         ])) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
       <Header />
       <div className="py-20 flex-1">
@@ -94,6 +143,18 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
               </div>
             </section>
           )}
+
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
+            <div className="space-y-6">
+              {faqItems.map((item, i) => (
+                <div key={i}>
+                  <h3 className="font-semibold mb-2">{item.question}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{item.answer}</p>
+                </div>
+              ))}
+            </div>
+          </section>
 
           {relatedIndustries.length > 0 && (
             <section className="mb-12">

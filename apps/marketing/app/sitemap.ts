@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 import { getAllBlogPosts } from '@/lib/blog'
+import { alternatives } from '@/lib/seo/comparisons'
 
 const baseUrl = 'https://prophetchrome.com'
 
@@ -93,6 +94,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             lastModified: new Date(),
             changeFrequency: 'monthly' as const,
             priority: 0.6,
+        })),
+        ...alternatives.map((alt) => ({
+            url: `${baseUrl}/alternatives/${alt.slug}`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly' as const,
+            priority: 0.7,
         })),
         ...getAllBlogPosts().map((post) => ({
             url: `${baseUrl}/blog/${post.slug}`,

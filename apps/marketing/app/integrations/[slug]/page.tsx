@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getIntegrationBySlug, getAllIntegrationSlugs } from '@/lib/seo/integrations'
+import { integrations, getIntegrationBySlug, getAllIntegrationSlugs } from '@/lib/seo/integrations'
+import { CHROME_STORE_URL } from '@/lib/seo/shared'
 
 export async function generateStaticParams() {
   return getAllIntegrationSlugs().map((slug) => ({ slug }))
@@ -27,6 +28,55 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
   const integration = getIntegrationBySlug(slug)
   if (!integration) notFound()
 
+  const relatedIntegrations = integrations
+    .filter((i) => i.slug !== integration.slug)
+    .slice(0, 4)
+
+  const faqItems = [
+    {
+      question: `Is there an AI Chrome extension for ${integration.platform}?`,
+      answer: `Yes. Prophet is a Chrome side panel that works on ${integration.platform} and any other website. It reads the page you are viewing and can act on it using browser automation, so you can ${integration.tasks[0].charAt(0).toLowerCase() + integration.tasks[0].slice(1)} without leaving ${integration.platform}.`,
+    },
+    {
+      question: `How do I use Prophet AI with ${integration.platform}?`,
+      answer: `Open ${integration.platform} in Chrome, click the Prophet icon to launch the side panel, and ask Prophet about the page. Prophet reads the ${integration.platform} content directly and can interact with the page on your behalf — no copy-pasting into a separate AI tab.`,
+    },
+    {
+      question: `Does Prophet cost anything to use on ${integration.platform}?`,
+      answer: `Prophet has a free tier with $0.20 in credits, enough to try it on ${integration.platform} right away. After that it is pay-per-use: you are billed against your actual Claude API usage rather than a flat subscription, starting at $9.99/month for $11 in credits.`,
+    },
+    {
+      question: `Which AI model does Prophet use on ${integration.platform}?`,
+      answer: `Prophet runs on Claude. You can pick Haiku 4.5 for fast, low-cost ${integration.platform} tasks, Sonnet 4.6 for balanced everyday work, or Opus 4.6 for the most complex reasoning. Switch models any time from the side panel.`,
+    },
+  ]
+
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqItems.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer },
+    })),
+  }
+
+  const softwareAppJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Prophet',
+    applicationCategory: 'BrowserApplication',
+    operatingSystem: 'Chrome',
+    description: integration.description,
+    url: `https://prophetchrome.com/integrations/${integration.slug}`,
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+      description: 'Free tier with $0.20 in credits, then pay-per-use from $9.99/month',
+    },
+  }
+
   return (
     <main className="flex flex-col min-h-screen">
       <script
@@ -36,6 +86,14 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
           { name: 'Integrations', url: 'https://prophetchrome.com/integrations' },
           { name: integration.platform, url: `https://prophetchrome.com/integrations/${integration.slug}` },
         ])) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
       <Header />
       <div className="py-20 flex-1">
@@ -91,6 +149,40 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
               </li>
             </ol>
           </section>
+
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
+            <div className="space-y-6">
+              {faqItems.map((item, i) => (
+                <div key={i}>
+                  <h3 className="font-semibold mb-2">{item.question}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{item.answer}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="mb-4">
+            <h2 className="text-xl font-bold mb-4">Prophet for Other Tools</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {relatedIntegrations.map((related) => (
+                <Link
+                  key={related.slug}
+                  href={`/integrations/${related.slug}`}
+                  className="border rounded-lg px-4 py-3 hover:border-primary transition-colors"
+                >
+                  <p className="font-medium">Prophet AI for {related.platform}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-1">{related.keyword}</p>
+                </Link>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground mt-4">
+              See all supported tools on the{' '}
+              <Link href="/integrations" className="text-primary hover:underline">integrations page</Link>, or explore Prophet by{' '}
+              <Link href="/use-cases" className="text-primary hover:underline">use case</Link> and{' '}
+              <Link href="/for" className="text-primary hover:underline">profession</Link>.
+            </p>
+          </section>
         </div>
       </div>
 
@@ -101,7 +193,7 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
             Install Prophet, open {integration.platform}, and see AI assistance in action. Free plan available.
           </p>
           <Button asChild>
-            <Link href="https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif">
+            <Link href={CHROME_STORE_URL}>
               Add to Chrome
             </Link>
           </Button>
