@@ -79,3 +79,6 @@ packages/sidepanel/dist/
 tmp/
 temp/
 apps/marketing/logs/
+
+# Chrome Web Store upload bundles
+*.zip
