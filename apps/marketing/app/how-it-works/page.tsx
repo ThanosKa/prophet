@@ -27,8 +27,9 @@ import {
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'How It Works',
-  description: 'Learn how Prophet uses the accessibility tree and Chrome DevTools Protocol to automate browser tasks faster and cheaper than screenshot-based AI. Compare Prophet vs Claude in Chrome.',
+  title: { absolute: 'How Prophet Works: Accessibility Tree, Not Screenshots' },
+  description:
+    'Prophet reads the page through the accessibility tree and drives it with Chrome DevTools Protocol, so it runs faster and costs less.',
   alternates: { canonical: '/how-it-works' },
 }
 
@@ -352,13 +353,13 @@ chrome.debugger.sendCommand(
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 pb-4">
-                  <p className="font-semibold text-sm">Sonnet 4.6</p>
+                  <p className="font-semibold text-sm">Sonnet 5</p>
                   <p className="text-xs text-muted-foreground mt-1">Balanced performance & capability</p>
                 </CardContent>
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 pb-4">
-                  <p className="font-semibold text-sm">Opus 4.6</p>
+                  <p className="font-semibold text-sm">Opus 5</p>
                   <p className="text-xs text-muted-foreground mt-1">Most capable for complex tasks</p>
                 </CardContent>
               </Card>

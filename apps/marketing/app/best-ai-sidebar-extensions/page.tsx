@@ -1,13 +1,16 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
-import { breadcrumbJsonLd } from '@/lib/structured-data'
+import { RelatedLinks } from '@/components/RelatedLinks'
+import { breadcrumbNode, graphJsonLd, listicleItemListNode } from '@/lib/structured-data'
+import { faqNode } from '@/lib/faqs'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Best AI Sidebar for Chrome: 6 Side Panel Extensions (2026)',
-  description: 'The best AI sidebar Chrome extensions, tested in 2026. Compare 6 side panel tools for chat, research, and writing — plus the only one with full browser automation. Free tiers included.',
+  title: { absolute: 'Best AI Sidebar Chrome Extensions 2026: 6 Tested, 4 Free' },
+  description:
+    'Six AI side panel extensions tested head to head. Four have real free tiers, and one is the only one that clicks, types and fills forms for you.',
   alternates: { canonical: '/best-ai-sidebar-extensions' },
 }
 
@@ -18,7 +21,7 @@ const extensions = [
     tagline: 'Claude AI side panel with browser automation',
     url: 'https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif',
     pricing: 'Free tier, Pro $9.99/mo, Premium $29.99/mo, Ultra $59.99/mo',
-    description: 'Prophet is purpose-built for the Chrome side panel. It opens alongside any web page and provides Claude AI chat with full browser automation capabilities. The key differentiator is that Prophet does not just read pages; it can interact with them. Using 18 built-in browser tools powered by the accessibility tree and Chrome DevTools Protocol, Prophet can click buttons, fill forms, navigate between pages, extract structured data, and manage tabs. This makes it the only sidebar extension that functions as a true AI agent capable of completing multi-step web tasks on your behalf. The pay-per-use credit system charges only for actual API usage, and the open-source codebase provides full transparency into how your data is handled. Prophet supports Claude Haiku 4.5 for fast simple tasks, Sonnet 4.6 for balanced workloads, and Opus 4.6 for complex reasoning.',
+    description: 'Prophet is purpose-built for the Chrome side panel. It opens alongside any web page and provides Claude AI chat with full browser automation capabilities. The key differentiator is that Prophet does not just read pages; it can interact with them. Using 18 built-in browser tools powered by the accessibility tree and Chrome DevTools Protocol, Prophet can click buttons, fill forms, navigate between pages, extract structured data, and manage tabs. This makes it the only sidebar extension that functions as a true AI agent capable of completing multi-step web tasks on your behalf. The pay-per-use credit system charges only for actual API usage, and the open-source codebase provides full transparency into how your data is handled. Prophet supports Claude Haiku 4.5 for fast simple tasks, Sonnet 5 for balanced workloads, and Opus 5 for complex reasoning.',
     pros: [
       'True browser automation from the sidebar (click, fill, navigate, extract)',
       'Accessibility tree approach is faster and more reliable than screenshot-based methods',
@@ -160,44 +163,34 @@ const faqItems = [
   },
 ]
 
-export default function BestAISidebarExtensionsPage() {
-  const faqJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqItems.map((item) => ({
-      '@type': 'Question',
-      name: item.question,
-      acceptedAnswer: { '@type': 'Answer', text: item.answer },
-    })),
-  }
+const PAGE_URL = 'https://prophetchrome.com/best-ai-sidebar-extensions'
 
-  const itemListJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'ItemList',
-    itemListElement: extensions.map((ext) => ({
-      '@type': 'ListItem',
-      position: ext.rank,
-      name: ext.name,
-      url: ext.url,
-    })),
-  }
+export default function BestAISidebarExtensionsPage() {
+  const jsonLd = graphJsonLd([
+    listicleItemListNode({
+      name: 'Best AI Sidebar Chrome Extensions 2026',
+      description: 'Six AI side panel Chrome extensions ranked on features, automation and free-tier limits.',
+      url: PAGE_URL,
+      items: extensions.map((ext) => ({
+        position: ext.rank,
+        name: ext.name,
+        description: ext.tagline,
+        url: ext.url,
+        price: '0',
+      })),
+    }),
+    faqNode(faqItems),
+    breadcrumbNode([
+      { name: 'Home', url: 'https://prophetchrome.com' },
+      { name: 'Best AI Sidebar Extensions', url: PAGE_URL },
+    ]),
+  ])
 
   return (
     <main className="flex flex-col min-h-screen">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd([
-          { name: 'Home', url: 'https://prophetchrome.com' },
-          { name: 'Best AI Sidebar Extensions', url: 'https://prophetchrome.com/best-ai-sidebar-extensions' },
-        ])) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Header />
       <article className="py-20 flex-1">
@@ -303,6 +296,102 @@ export default function BestAISidebarExtensionsPage() {
               </table>
             </div>
           </section>
+
+          <RelatedLinks
+            title="Compare individual sidebar extensions"
+            intro="Each of these goes feature by feature on page understanding, automation depth, pricing model, and where your page data ends up."
+            links={[
+              {
+                href: '/compare/prophet-vs-sider',
+                anchor: 'Prophet vs Sider',
+                context:
+                  'the two strongest sidebars in this list, compared on automation, model choice and subscription cost.',
+              },
+              {
+                href: '/compare/prophet-vs-monica-ai',
+                anchor: 'Prophet vs Monica AI',
+                context: 'Claude-only depth against Monica’s multi-model breadth and image generation.',
+              },
+              {
+                href: '/compare/prophet-vs-maxai',
+                anchor: 'Prophet vs MaxAI',
+                context: 'full side panel automation against MaxAI’s selection-based quick actions.',
+              },
+              {
+                href: '/compare/prophet-vs-merlin',
+                anchor: 'Prophet vs Merlin',
+                context: 'pay-per-use credits against Merlin’s daily query caps and web search sidebar.',
+              },
+              {
+                href: '/compare/prophet-vs-chatgpt-sidebar',
+                anchor: 'Prophet vs ChatGPT Sidebar',
+                context: 'Claude against GPT for side panel work, on speed, reasoning and price.',
+              },
+              {
+                href: '/compare',
+                anchor: 'All AI sidebar comparisons',
+                context: 'the full set of head-to-head breakdowns.',
+              },
+            ]}
+          />
+
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-4">What an AI side panel costs to run</h2>
+            <p className="text-muted-foreground leading-relaxed mb-4">
+              Every sidebar in this list except the bring-your-own-key options is a subscription. That
+              is fine if you use it daily and expensive if you do not, because a flat fee charges you
+              the same in the month you send 400 messages and the month you send four.
+            </p>
+            <p className="text-muted-foreground leading-relaxed">
+              If you want the numbers rather than the argument,{' '}
+              <Link href="/blog/pay-per-use-ai-vs-subscription" className="text-primary hover:underline">
+                pay-per-use AI vs subscription pricing
+              </Link>{' '}
+              works through the break-even point, and the{' '}
+              <Link href="/tools/ai-api-cost-calculator" className="text-primary hover:underline">
+                AI API cost calculator
+              </Link>{' '}
+              lets you price your own message volume. If you are trying to avoid paying at all, the
+              realistic options are laid out in{' '}
+              <Link href="/free-claude-ai" className="text-primary hover:underline">
+                free Claude AI: every free tier and limit
+              </Link>
+              .
+            </p>
+          </section>
+
+          <RelatedLinks
+            title="Related reading"
+            intro="Where to go next depending on what you are trying to decide."
+            links={[
+              {
+                href: '/best-claude-chrome-extensions',
+                anchor: 'Best Chrome extensions for Claude AI',
+                context:
+                  'if you have already settled on Claude and want the Claude-specific ranking rather than the general sidebar one.',
+              },
+              {
+                href: '/best-ai-chrome-extensions',
+                anchor: 'Best AI Chrome extensions in 2026',
+                context: 'the wider category including popup, autocomplete and highlighter extensions, not just side panels.',
+              },
+              {
+                href: '/blog/accessibility-tree-vs-screenshots-browser-ai',
+                anchor: 'Accessibility tree vs screenshots for browser AI',
+                context: 'the technical reason some sidebars automate reliably and others do not.',
+              },
+              {
+                href: '/blog/are-ai-chrome-extensions-safe',
+                anchor: 'Are AI Chrome extensions safe?',
+                context: 'what permissions a side panel actually needs, and which requests should worry you.',
+              },
+              {
+                href: '/how-it-works',
+                anchor: 'How Prophet’s side panel works',
+                context: 'the architecture behind the accessibility-tree approach, step by step.',
+              },
+            ]}
+          />
 
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-6">Frequently Asked Questions</h2>

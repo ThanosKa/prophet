@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = getAlternativeBySlug(slug)
   if (!data) return {}
   return {
-    title: data.h1,
+    title: { absolute: data.title },
     description: data.description,
     alternates: { canonical: `/alternatives/${data.slug}` },
   }

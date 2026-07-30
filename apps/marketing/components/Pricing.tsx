@@ -26,7 +26,7 @@ const plans: Array<{
     name: 'Free',
     tier: 'free',
     price: '$0',
-    credits: '$0.20 in credits (~50 Haiku messages)',
+    credits: '$0.20 in credits (~20 Haiku messages)',
     features: ['Perfect for occasional use', 'All Claude models included', 'Full browser automation', 'Community support'],
     ctaSignedOut: 'Start Free',
     ctaUpgrade: 'Free Tier',

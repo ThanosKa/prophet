@@ -3,7 +3,8 @@ import { Footer } from '@/components/Footer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { breadcrumbJsonLd } from '@/lib/structured-data'
+import { blogPostingJsonLd, breadcrumbNode, graphJsonLd } from '@/lib/structured-data'
+import { faqNode } from '@/lib/faqs'
 import { getBlogPost, getAllBlogPosts } from '@/lib/blog'
 import { CHROME_STORE_URL } from '@/lib/constants'
 import Link from 'next/link'
@@ -24,8 +25,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const post = getBlogPost(slug)
   if (!post) return {}
 
+  // `absolute` drops the "| Prophet" template suffix. Prophet has almost no brand
+  // search volume, so those 10 characters are better spent on the query phrase
+  // before Google truncates the SERP title at roughly 60 characters.
   return {
-    title: post.title,
+    title: { absolute: post.title },
     description: post.description,
     keywords: post.keywords,
     alternates: { canonical: `/blog/${post.slug}` },
@@ -60,53 +64,22 @@ export default async function BlogPostPage({ params }: PageProps) {
   )
   const relatedPosts = [...sameCategory, ...byKeyword].slice(0, 4)
 
-  const articleJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: post.title,
-    description: post.description,
-    image: 'https://prophetchrome.com/og-image.png',
-    datePublished: post.date,
-    dateModified: post.lastModified ?? post.date,
-    author: { '@type': 'Organization', name: 'Prophet', url: 'https://prophetchrome.com' },
-    publisher: {
-      '@type': 'Organization',
-      name: 'Prophet',
-      url: 'https://prophetchrome.com',
-      logo: { '@type': 'ImageObject', url: 'https://prophetchrome.com/logo.png' },
-    },
-    mainEntityOfPage: `https://prophetchrome.com/blog/${post.slug}`,
-    keywords: post.keywords.join(', '),
-  }
+  const jsonLd = graphJsonLd([
+    blogPostingJsonLd(post),
+    breadcrumbNode([
+      { name: 'Home', url: 'https://prophetchrome.com' },
+      { name: 'Blog', url: 'https://prophetchrome.com/blog' },
+      { name: post.title, url: `https://prophetchrome.com/blog/${post.slug}` },
+    ]),
+    ...(post.faq && post.faq.length > 0 ? [faqNode(post.faq)] : []),
+  ])
 
   return (
     <main className="flex flex-col min-h-screen">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd([
-          { name: 'Home', url: 'https://prophetchrome.com' },
-          { name: 'Blog', url: 'https://prophetchrome.com/blog' },
-          { name: post.title, url: `https://prophetchrome.com/blog/${post.slug}` },
-        ])) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
-      />
-      {post.faq && post.faq.length > 0 && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'FAQPage',
-            mainEntity: post.faq.map((item) => ({
-              '@type': 'Question',
-              name: item.question,
-              acceptedAnswer: { '@type': 'Answer', text: item.answer },
-            })),
-          }) }}
-        />
-      )}
       <Header />
       <article className="py-20 flex-1">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -135,6 +108,20 @@ export default async function BlogPostPage({ params }: PageProps) {
             className="prose prose-neutral dark:prose-invert max-w-none"
             dangerouslySetInnerHTML={{ __html: post.content }}
           />
+
+          {post.faq && post.faq.length > 0 && (
+            <section className="mt-16 pt-12 border-t">
+              <h2 className="text-2xl font-bold mb-8">Frequently Asked Questions</h2>
+              <div className="space-y-8">
+                {post.faq.map((item) => (
+                  <div key={item.question}>
+                    <h3 className="text-lg font-semibold mb-2">{item.question}</h3>
+                    <p className="text-muted-foreground">{item.answer}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="mt-16 py-12 text-center border-t">
             <h2 className="text-2xl font-bold mb-3">Try Prophet Free</h2>

@@ -1,7 +1,19 @@
 // Agent-specific type definitions for browser automation
 // Note: ToolName, ToolUse, ToolResult, ContentBlock, AgentChatRequest are exported from schemas/agent.ts
 
-import type { ToolName, ToolUse } from "../schemas/agent";
+import type { ToolName, ToolUse, ContentBlock } from "../schemas/agent";
+
+export interface WebSearchSource {
+  url: string;
+  title: string;
+  pageAge?: string | null;
+}
+
+export interface WebSearchCitationRef {
+  url: string;
+  title: string;
+  citedText: string;
+}
 
 export interface ToolDefinition {
   name: ToolName;
@@ -18,6 +30,8 @@ export interface AgentMetrics {
   outputTokens: number;
   costCents?: number;
   durationMs?: number;
+  webSearchRequests?: number;
+  webSearchCostCents?: number;
 }
 
 export type AgentStatus =
@@ -35,10 +49,23 @@ export type AgentLoopEvent =
   | { type: "tool_call_start"; toolName: ToolName; params: unknown; toolCallId: string }
   | { type: "tool_call_complete"; toolName: ToolName; result: unknown; toolCallId: string }
   | { type: "tool_call_error"; toolName: ToolName; error: string; toolCallId: string }
+  | { type: "web_search_start"; toolUseId: string; query: string }
+  | { type: "web_search_results"; toolUseId: string; sources: WebSearchSource[] }
+  | { type: "web_search_error"; toolUseId: string; errorCode: string }
+  | { type: "citations"; citations: WebSearchCitationRef[] }
   | { type: "metrics_update"; metrics: AgentMetrics }
   | { type: "execution_complete"; finalOutput: string; metrics: AgentMetrics }
   | { type: "error"; error: string; code?: string; details?: { pricingUrl?: string; retryAfter?: number; remaining?: number } }
-  | { type: "done"; usage?: { inputTokens: number; outputTokens: number; costCents?: number } };
+  | {
+      type: "done";
+      usage?: {
+        inputTokens: number;
+        outputTokens: number;
+        costCents?: number;
+        webSearchRequests?: number;
+        webSearchCostCents?: number;
+      };
+    };
 
 export type AgentEvent = AgentLoopEvent;
 
@@ -56,7 +83,11 @@ export interface AgentStreamEvent {
     | "execution_complete"
     | "tool_call_start"
     | "tool_call_complete"
-    | "tool_call_error";
+    | "tool_call_error"
+    | "web_search_start"
+    | "web_search_results"
+    | "web_search_error"
+    | "citations";
   content?: string;
   delta?: string;
   id?: string;
@@ -65,10 +96,19 @@ export interface AgentStreamEvent {
   error?: string;
   code?: string;
   details?: { pricingUrl?: string; retryAfter?: number; remaining?: number };
+  toolUseId?: string;
+  query?: string;
+  sources?: WebSearchSource[];
+  errorCode?: string;
+  citations?: WebSearchCitationRef[];
+  contentBlocks?: ContentBlock[];
+  stopReason?: string | null;
   usage?: {
     inputTokens: number;
     outputTokens: number;
     costCents?: number;
+    webSearchRequests?: number;
+    webSearchCostCents?: number;
   };
   metrics?: AgentMetrics;
   finalOutput?: string;

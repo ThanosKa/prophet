@@ -16,7 +16,7 @@ const features = [
   },
   {
     title: 'All Claude Models',
-    description: 'Choose Haiku 4.5 for speed, Sonnet 4.6 for balance, or Opus 4.6 for the most complex tasks.',
+    description: 'Choose Haiku 4.5 for speed, Sonnet 5 for balance, or Opus 5 for the most complex tasks.',
     icon: Cpu,
   },
   {

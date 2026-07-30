@@ -1,80 +1,24 @@
 import { Header } from '@/components/Header'
 import { Pricing } from '@/components/Pricing'
 import { Footer } from '@/components/Footer'
-import { breadcrumbJsonLd } from '@/lib/structured-data'
+import { breadcrumbNode, graphJsonLd, softwareApplicationNode } from '@/lib/structured-data'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Pricing & Plans',
-  description: 'Prophet pricing starts free with $0.20 in AI credits. Paid plans from $9.99/mo include bonus credits. All plans include Claude Haiku, Sonnet, and Opus with full browser automation. Cancel anytime.',
+  title: { absolute: 'Prophet Pricing: Free $0.20 Credits, Plans from $9.99' },
+  description:
+    'Pay only for the Claude tokens you use. Free tier with all 3 models and no card. Pro is $9.99/mo for $11 in credits. Cancel anytime.',
   alternates: { canonical: '/pricing' },
 }
 
-const pricingJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Product',
-  name: 'Prophet AI Chrome Extension',
-  description:
-    'AI-powered Chrome extension with streaming Claude AI chat and browser automation. Pay-per-use pricing.',
-  brand: { '@type': 'Brand', name: 'Prophet' },
-  url: 'https://prophetchrome.com/pricing',
-  offers: {
-    '@type': 'AggregateOffer',
-    lowPrice: '0',
-    highPrice: '59.99',
-    priceCurrency: 'USD',
-    offerCount: '4',
-    offers: [
-      {
-        '@type': 'Offer',
-        name: 'Free Plan',
-        price: '0',
-        priceCurrency: 'USD',
-        availability: 'https://schema.org/InStock',
-      },
-      {
-        '@type': 'Offer',
-        name: 'Pro Plan',
-        price: '9.99',
-        priceCurrency: 'USD',
-        availability: 'https://schema.org/InStock',
-        priceSpecification: {
-          '@type': 'UnitPriceSpecification',
-          price: '9.99',
-          priceCurrency: 'USD',
-          billingDuration: 'P1M',
-        },
-      },
-      {
-        '@type': 'Offer',
-        name: 'Premium Plan',
-        price: '29.99',
-        priceCurrency: 'USD',
-        availability: 'https://schema.org/InStock',
-        priceSpecification: {
-          '@type': 'UnitPriceSpecification',
-          price: '29.99',
-          priceCurrency: 'USD',
-          billingDuration: 'P1M',
-        },
-      },
-      {
-        '@type': 'Offer',
-        name: 'Ultra Plan',
-        price: '59.99',
-        priceCurrency: 'USD',
-        availability: 'https://schema.org/InStock',
-        priceSpecification: {
-          '@type': 'UnitPriceSpecification',
-          price: '59.99',
-          priceCurrency: 'USD',
-          billingDuration: 'P1M',
-        },
-      },
-    ],
-  },
-}
+const pricingJsonLd = graphJsonLd([
+  softwareApplicationNode,
+  breadcrumbNode([
+    { name: 'Home', url: 'https://prophetchrome.com' },
+    { name: 'Pricing', url: 'https://prophetchrome.com/pricing' },
+  ]),
+])
 
 export default function PricingPage() {
   return (
@@ -82,13 +26,6 @@ export default function PricingPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd([
-          { name: 'Home', url: 'https://prophetchrome.com' },
-          { name: 'Pricing', url: 'https://prophetchrome.com/pricing' },
-        ])) }}
       />
       <Header />
       <div className="py-20">
@@ -120,7 +57,7 @@ export default function PricingPage() {
 
           <h2 className="text-2xl font-bold mb-4">All Plans Include</h2>
           <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-            <li>Access to Claude Haiku 4.5, Sonnet 4.6, and Opus 4.6</li>
+            <li>Access to Claude Haiku 4.5, Sonnet 5, and Opus 5</li>
             <li>18 browser automation tools via Chrome DevTools Protocol</li>
             <li>Real-time streaming responses</li>
             <li>Persistent chat history</li>

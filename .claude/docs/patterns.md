@@ -34,21 +34,32 @@ export async function POST(request: Request) {
 Backend API streaming pattern with Anthropic:
 
 ```typescript
+// Never pass the raw client value: installed extensions send legacy model IDs.
+const model = resolveAgentModel(requestedModel)
+
 const stream = await anthropic.messages.stream({
-  model: "claude-sonnet-4-20250514",
+  model,
   max_tokens: 4096,
   messages: [...],
+  tools: buildAgentTools(AGENT_TOOLS, enableWebSearch),
 })
 
-// Track tokens after completion
-stream.on('finalMessage', async (message) => {
-  const totalTokens = message.usage.input_tokens + message.usage.output_tokens
+const finalMessage = await stream.finalMessage()
+const webSearchRequests = finalMessage.usage.server_tool_use?.web_search_requests ?? 0
 
-  await db.transaction(async tx => {
-    await tx.update(users)
-      .set({ creditsRemaining: sql`${users.creditsRemaining} - ${totalTokens}` })
-      .where(eq(users.id, userId))
-  })
+const costCents = calculateCostInCents(
+  model,
+  finalMessage.usage.input_tokens,
+  finalMessage.usage.output_tokens,
+  webSearchRequests,
+)
+
+await db.transaction(async tx => {
+  await tx.update(users)
+    .set({ creditsRemaining: sql`${users.creditsRemaining} - ${costCents}` })
+    .where(eq(users.id, userId))
+
+  await tx.insert(usageRecords).values({ userId, costCents, model })
 })
 
 return new Response(stream.toReadableStream(), {
@@ -59,10 +70,35 @@ return new Response(stream.toReadableStream(), {
 ### Key Points
 
 - Use `anthropic.messages.stream()` for streaming responses
-- Listen to `finalMessage` event for usage tracking
+- Await `finalMessage()` for authoritative usage, including `server_tool_use.web_search_requests`
+- Resolve legacy model IDs before the call and bill from the model actually invoked
 - Deduct credits in a database transaction
 - Return stream with proper Content-Type header
 - Never expose `ANTHROPIC_API_KEY` to client
+
+### Model IDs and Legacy Aliases
+
+Vite inlines `MODEL_CONFIG` into the extension bundle at build time, so installed
+builds keep sending the model IDs they shipped with. `agentModelSchema` therefore
+still accepts those legacy IDs, and `resolveAgentModel()` maps them to the current
+model before the Anthropic call. Every cost calculation and DB row must use the
+resolved value, never the raw request field.
+
+| Sent by installed extension builds | Actually called |
+| --- | --- |
+| `claude-opus-4-6` | `claude-opus-5` |
+| `claude-sonnet-4-6` | `claude-sonnet-5` |
+| `claude-haiku-4-5` | `claude-haiku-4-5` (unchanged) |
+
+### Server-Side Web Search
+
+Anthropic's `web_search_20250305` tool runs on Anthropic's infrastructure and is
+billed per search ($10 per 1,000) on top of tokens. It is gated twice: the
+`ENABLE_WEB_SEARCH` env flag and the per-request `enableWebSearch` field, and stays
+off until the extension can render its blocks. Search results carry
+`encrypted_content` that must be echoed back byte-for-byte on continuation turns,
+so continuation content comes from `finalMessage.content` rather than being
+rebuilt from streamed deltas.
 
 ## Rate Limiting
 

@@ -6,8 +6,12 @@ import {
   MODEL_PRICING,
   MARKUP,
   ALL_MODELS,
+  WEB_SEARCH_PRICE_PER_1K_USD,
+  WEB_SEARCH_PRICE_PER_SEARCH_USD,
+  calculateWebSearchCostInCredits,
   type ModelName,
 } from './pricing'
+import { CLAUDE_MODELS, LEGACY_MODEL_ALIASES, resolveAgentModel } from '@prophet/shared'
 
 describe('Profitability Guarantee', () => {
   it('all paid tiers are profitable even at 100% usage', () => {
@@ -197,5 +201,111 @@ describe('calculateCostInCents (legacy alias)', () => {
       const cents = calculateCostInCents(model, 10000, 10000)
       expect(credits).toBe(cents)
     }
+  })
+})
+
+describe('Model Pricing Table', () => {
+  it('prices the current Claude models at published rates', () => {
+    expect(MODEL_PRICING['claude-haiku-4-5']).toEqual({ input: 1.0, output: 5.0 })
+    expect(MODEL_PRICING['claude-sonnet-5']).toEqual({ input: 3.0, output: 15.0 })
+    expect(MODEL_PRICING['claude-opus-5']).toEqual({ input: 5.0, output: 25.0 })
+  })
+
+  it('ALL_MODELS matches the shared model constants', () => {
+    expect([...ALL_MODELS].sort()).toEqual(Object.values(CLAUDE_MODELS).sort())
+  })
+
+  it('every selectable model has a price', () => {
+    for (const model of Object.values(CLAUDE_MODELS)) {
+      expect(MODEL_PRICING).toHaveProperty(model)
+    }
+  })
+
+  it('every legacy alias resolves to a priced model', () => {
+    for (const legacy of Object.keys(LEGACY_MODEL_ALIASES)) {
+      const resolved = resolveAgentModel(legacy)
+      expect(MODEL_PRICING).toHaveProperty(resolved)
+    }
+  })
+
+  it('carries no retired model ids', () => {
+    for (const model of Object.keys(MODEL_PRICING)) {
+      expect(model).not.toMatch(/-4-6$/)
+      expect(model).not.toMatch(/\d{8}$/)
+    }
+  })
+})
+
+describe('Web Search Cost Accounting', () => {
+  it('prices web search at the published $10 per 1,000 searches', () => {
+    expect(WEB_SEARCH_PRICE_PER_1K_USD).toBe(10)
+    expect(WEB_SEARCH_PRICE_PER_SEARCH_USD).toBeCloseTo(0.01, 10)
+  })
+
+  it('adds nothing when no searches ran', () => {
+    const withoutSearch = calculateCostInCredits('claude-sonnet-5', 1000, 500)
+    const explicitZero = calculateCostInCredits('claude-sonnet-5', 1000, 500, 0)
+    expect(explicitZero).toBe(withoutSearch)
+    expect(calculateWebSearchCostInCredits(0)).toBe(0)
+  })
+
+  it('charges more when searches ran', () => {
+    const withoutSearch = calculateCostInCredits('claude-sonnet-5', 1000, 500, 0)
+    const withSearch = calculateCostInCredits('claude-sonnet-5', 1000, 500, 3)
+    expect(withSearch).toBeGreaterThan(withoutSearch)
+  })
+
+  it('charges the marked-up search fee, never less than raw cost', () => {
+    for (const searches of [1, 2, 5, 25]) {
+      const rawCents = searches * WEB_SEARCH_PRICE_PER_SEARCH_USD * 100
+      expect(calculateWebSearchCostInCredits(searches)).toBeGreaterThanOrEqual(
+        Math.ceil(rawCents)
+      )
+    }
+  })
+
+  it('total credits cover raw tokens plus raw searches', () => {
+    for (const model of Object.keys(MODEL_PRICING) as ModelName[]) {
+      const searches = 4
+      const inputTokens = 20000
+      const outputTokens = 8000
+      const rawUSD =
+        (inputTokens / 1_000_000) * MODEL_PRICING[model].input +
+        (outputTokens / 1_000_000) * MODEL_PRICING[model].output +
+        searches * WEB_SEARCH_PRICE_PER_SEARCH_USD
+
+      const charged = calculateCostInCredits(model, inputTokens, outputTokens, searches)
+      expect(charged).toBeGreaterThan(rawUSD * 100)
+    }
+  })
+
+  it('scales linearly with search count', () => {
+    const one = calculateWebSearchCostInCredits(100)
+    const two = calculateWebSearchCostInCredits(200)
+    expect(two).toBe(one * 2)
+  })
+
+  it('ignores a negative search count instead of crediting the user', () => {
+    const baseline = calculateCostInCredits('claude-opus-5', 1000, 500, 0)
+    expect(calculateCostInCredits('claude-opus-5', 1000, 500, -5)).toBe(baseline)
+  })
+
+  it('legacy alias resolves to the same cost as the model actually called', () => {
+    for (const [legacy, current] of Object.entries(LEGACY_MODEL_ALIASES)) {
+      const viaAlias = calculateCostInCredits(
+        resolveAgentModel(legacy) as ModelName,
+        10000,
+        5000,
+        2
+      )
+      const direct = calculateCostInCredits(current as ModelName, 10000, 5000, 2)
+      expect(viaAlias).toBe(direct)
+    }
+  })
+
+  it('calculateCostInCents forwards the search count', () => {
+    expect(calculateCostInCents('claude-opus-5', 1000, 500, 3)).toBe(
+      calculateCostInCredits('claude-opus-5', 1000, 500, 3)
+    )
   })
 })

@@ -7,8 +7,9 @@ import type { Metadata } from 'next'
 import { guides } from '@/lib/seo/guides'
 
 export const metadata: Metadata = {
-  title: 'Guides - How to Use AI in Your Browser',
-  description: 'Step-by-step guides for using Prophet AI Chrome extension. Learn how to summarize articles, fill forms, write emails, debug code, and automate browser tasks.',
+  title: { absolute: 'Prophet Guides: How to Use AI in Your Browser' },
+  description:
+    'Step-by-step walkthroughs for summarising articles, filling forms, writing email, debugging code and automating browser work.',
   alternates: { canonical: '/guides' },
 }
 

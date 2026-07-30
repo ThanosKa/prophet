@@ -29,17 +29,33 @@ export const toolResultSchema = z.object({
   is_error: z.boolean().optional(),
 });
 
+export const webSearchCitationSchema = z.object({
+  type: z.literal("web_search_result_location"),
+  url: z.string(),
+  title: z.string().nullable().optional(),
+  encrypted_index: z.string(),
+  cited_text: z.string(),
+});
+
 export const textContentSchema = z.object({
   type: z.literal("text"),
   text: z.string(),
+  citations: z.array(webSearchCitationSchema).nullable().optional(),
 });
 
-// Claude 4.6 model constants
+// Currently released Claude model IDs. These strings carry no date suffix.
 export const CLAUDE_MODELS = {
   HAIKU: "claude-haiku-4-5",
-  SONNET: "claude-sonnet-4-6",
-  OPUS: "claude-opus-4-6",
+  SONNET: "claude-sonnet-5",
+  OPUS: "claude-opus-5",
 } as const;
+
+// Models on the Claude 5 generation reject `thinking.budget_tokens` and default
+// thinking to ON, so both on and off must be configured explicitly.
+export const ADAPTIVE_THINKING_MODELS: readonly string[] = [
+  CLAUDE_MODELS.SONNET,
+  CLAUDE_MODELS.OPUS,
+];
 
 export const DEFAULT_AGENT_MODEL = CLAUDE_MODELS.HAIKU;
 
@@ -52,23 +68,61 @@ export const MODEL_CONFIG = [
   },
   {
     id: CLAUDE_MODELS.SONNET,
-    label: 'Sonnet 4.6',
+    label: 'Sonnet 5',
     description: 'Balanced',
   },
   {
     id: CLAUDE_MODELS.OPUS,
-    label: 'Opus 4.6',
+    label: 'Opus 5',
     description: 'Most capable',
   },
 ] as const;
 
 export type ModelConfig = typeof MODEL_CONFIG[number];
 
-export const agentModelSchema = z.enum([
+/**
+ * Model IDs baked into Chrome extension builds shipped before the Claude 5
+ * upgrade. Vite inlines MODEL_CONFIG at build time, so every already-installed
+ * extension keeps sending these strings. They must stay valid in the request
+ * schema — dropping them would 400 every request from the live user base on a
+ * server-only deploy — and the API remaps them to the current model.
+ *
+ * Retire an entry only once telemetry shows no installs still sending it.
+ */
+export const LEGACY_MODEL_ALIASES = {
+  "claude-sonnet-4-6": CLAUDE_MODELS.SONNET,
+  "claude-opus-4-6": CLAUDE_MODELS.OPUS,
+} as const;
+
+export const LEGACY_MODEL_IDS = Object.keys(
+  LEGACY_MODEL_ALIASES
+) as Array<keyof typeof LEGACY_MODEL_ALIASES>;
+
+export const currentAgentModelSchema = z.enum([
   CLAUDE_MODELS.HAIKU,
   CLAUDE_MODELS.SONNET,
   CLAUDE_MODELS.OPUS,
 ]);
+
+export const agentModelSchema = z.enum([
+  CLAUDE_MODELS.HAIKU,
+  CLAUDE_MODELS.SONNET,
+  CLAUDE_MODELS.OPUS,
+  "claude-sonnet-4-6",
+  "claude-opus-4-6",
+]);
+
+export type CurrentAgentModel = z.infer<typeof currentAgentModelSchema>;
+
+/**
+ * Maps a client-supplied model ID to the model the API will actually call.
+ * Everything downstream — pricing, credit deduction, usage rows — must use the
+ * return value, never the raw request field, or billing drifts from real cost.
+ */
+export function resolveAgentModel(model: string): CurrentAgentModel {
+  const alias = (LEGACY_MODEL_ALIASES as Record<string, CurrentAgentModel>)[model];
+  return alias ?? (model as CurrentAgentModel);
+}
 
 export const imageDataSchema = z.object({
   base64: z.string().min(1),
@@ -166,7 +220,47 @@ export const toolUseSchema = z.object({
   }
 });
 
-export const contentBlockSchema = z.union([textContentSchema, toolUseSchema]);
+// Anthropic-executed web search. These blocks arrive inside the assistant turn and
+// must be echoed back byte-for-byte on continuation turns — the API decrypts
+// `encrypted_content` / `encrypted_index` to restore results into Claude's context,
+// and rejects the request if either is missing or altered.
+export const WEB_SEARCH_TOOL_NAME = "web_search" as const;
+
+export const webSearchResultSchema = z.object({
+  type: z.literal("web_search_result"),
+  url: z.string(),
+  title: z.string(),
+  encrypted_content: z.string(),
+  page_age: z.string().nullable().optional(),
+});
+
+export const webSearchToolResultErrorSchema = z.object({
+  type: z.literal("web_search_tool_result_error"),
+  error_code: z.string(),
+});
+
+export const serverToolUseSchema = z.object({
+  type: z.literal("server_tool_use"),
+  id: z.string(),
+  name: z.literal(WEB_SEARCH_TOOL_NAME),
+  input: z.record(z.unknown()),
+});
+
+export const webSearchToolResultSchema = z.object({
+  type: z.literal("web_search_tool_result"),
+  tool_use_id: z.string(),
+  content: z.union([
+    z.array(webSearchResultSchema),
+    webSearchToolResultErrorSchema,
+  ]),
+});
+
+export const contentBlockSchema = z.union([
+  textContentSchema,
+  toolUseSchema,
+  serverToolUseSchema,
+  webSearchToolResultSchema,
+]);
 
 export const agentChatRequestSchema = z.object({
   chatId: z.string().uuid("Invalid chat ID"),
@@ -176,6 +270,7 @@ export const agentChatRequestSchema = z.object({
   previousContent: z.array(contentBlockSchema).optional(),
   image: imageDataSchema.optional(),
   enableThinking: z.boolean().optional().default(false),
+  enableWebSearch: z.boolean().optional().default(false),
 });
 
 export const agentInitialMessageSchema = z.object({
@@ -200,6 +295,10 @@ export type ToolName = z.infer<typeof toolNameSchema>;
 export type ToolResult = z.infer<typeof toolResultSchema>;
 export type ToolUse = z.infer<typeof toolUseSchema>;
 export type ContentBlock = z.infer<typeof contentBlockSchema>;
+export type WebSearchCitation = z.infer<typeof webSearchCitationSchema>;
+export type WebSearchResult = z.infer<typeof webSearchResultSchema>;
+export type ServerToolUse = z.infer<typeof serverToolUseSchema>;
+export type WebSearchToolResult = z.infer<typeof webSearchToolResultSchema>;
 export type AgentModel = z.infer<typeof agentModelSchema>;
 export type AgentChatRequest = z.infer<typeof agentChatRequestSchema>;
 export type ClickElementInput = z.infer<typeof clickElementInputSchema>;

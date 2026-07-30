@@ -7,16 +7,16 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Prophet for Your Profession',
+  title: { absolute: 'Prophet by Profession: Devs, Students, Marketers' },
   description:
-    'Discover how Prophet AI Chrome extension helps developers, students, marketers, writers, researchers, designers, and more work faster with Claude AI in the browser.',
+    'How developers, students, marketers, writers, researchers and analysts use Claude in the browser. Pick your role, get the workflows.',
   alternates: { canonical: '/for' },
 }
 
 const modelLabels: Record<string, string> = {
   haiku: 'Haiku 4.5',
-  sonnet: 'Sonnet 4.6',
-  opus: 'Opus 4.6',
+  sonnet: 'Sonnet 5',
+  opus: 'Opus 5',
 }
 
 export default function ProfessionsHubPage() {

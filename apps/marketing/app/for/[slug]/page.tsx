@@ -1,5 +1,6 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { RelatedLinks } from '@/components/RelatedLinks'
 import { breadcrumbJsonLd } from '@/lib/structured-data'
 import { professions, getProfession } from '@/lib/seo/professions'
 import { CHROME_STORE_URL } from '@/lib/seo/shared'
@@ -30,23 +31,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 const modelLabels: Record<string, string> = {
   haiku: 'Haiku 4.5',
-  sonnet: 'Sonnet 4.6',
-  opus: 'Opus 4.6',
+  sonnet: 'Sonnet 5',
+  opus: 'Opus 5',
 }
 
 const modelDescriptions: Record<string, string> = {
   haiku:
     'Claude Haiku 4.5 is the fastest and most affordable model. It handles straightforward tasks like drafting emails, answering questions, and summarizing content with low latency and minimal cost. Ideal when speed and budget matter more than deep reasoning.',
   sonnet:
-    'Claude Sonnet 4.6 balances capability and cost. It handles complex tasks like code review, detailed analysis, and nuanced writing while keeping token costs reasonable. The best default choice for most professional workflows.',
+    'Claude Sonnet 5 balances capability and cost. It handles complex tasks like code review, detailed analysis, and nuanced writing while keeping token costs reasonable. The best default choice for most professional workflows.',
   opus:
-    'Claude Opus 4.6 is the most capable model, designed for tasks that require deep reasoning, multi-step analysis, and expert-level output. Best for research synthesis, complex problem-solving, and situations where quality justifies the higher token cost.',
+    'Claude Opus 5 is the most capable model, designed for tasks that require deep reasoning, multi-step analysis, and expert-level output. Best for research synthesis, complex problem-solving, and situations where quality justifies the higher token cost.',
 }
 
 export default async function ProfessionPage({ params }: PageProps) {
   const { slug } = await params
   const profession = getProfession(slug)
   if (!profession) notFound()
+
+  const role = profession.h1.replace('Prophet for ', '').toLowerCase()
 
   return (
     <main className="flex flex-col min-h-screen">
@@ -75,7 +78,7 @@ export default async function ProfessionPage({ params }: PageProps) {
 
       <section className="py-16 border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold mb-3">A Day in the Life</h2>
+          <h2 className="text-2xl font-bold mb-3">A day in the life of {role}</h2>
           <p className="text-muted-foreground mb-8">
             Real scenarios where Prophet saves you time and keeps you in flow.
             Each of these tasks can be started from any browser tab — just open the
@@ -98,7 +101,7 @@ export default async function ProfessionPage({ params }: PageProps) {
 
       <section className="py-16 border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold mb-3">Top Use Cases</h2>
+          <h2 className="text-2xl font-bold mb-3">What {role} use Prophet for most</h2>
           <p className="text-muted-foreground mb-8">
             These are the most common ways{' '}
             {profession.h1.replace('Prophet for ', '').toLowerCase()} use Prophet
@@ -143,7 +146,7 @@ export default async function ProfessionPage({ params }: PageProps) {
           </Card>
           <p className="text-sm text-muted-foreground mt-4">
             You can switch models at any time from the chat interface. All three
-            models — Haiku 4.5, Sonnet 4.6, and Opus 4.6 — are available on every plan.
+            models — Haiku 4.5, Sonnet 5, and Opus 5 — are available on every plan.
           </p>
         </div>
       </section>
@@ -175,12 +178,59 @@ export default async function ProfessionPage({ params }: PageProps) {
             </CardContent>
           </Card>
           <p className="text-sm text-muted-foreground mt-4">
-            The Free plan includes $0.50 in credits to get started — no credit card
+            The Free plan includes $0.20 in credits to get started — no credit card
             required.{' '}
             <Link href="/pricing" className="text-primary hover:underline">
               View all plans
             </Link>
+            , or price your own workload with the{' '}
+            <Link href="/tools/ai-api-cost-calculator" className="text-primary hover:underline">
+              AI API cost calculator
+            </Link>
+            .
           </p>
+        </div>
+      </section>
+
+      <section className="py-16 border-b">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <RelatedLinks
+            title="Before you install"
+            intro="The questions people in this role usually want answered before adding another extension to Chrome."
+            links={[
+              {
+                href: '/best-claude-chrome-extensions',
+                anchor: 'Best Chrome extensions for Claude AI',
+                context:
+                  'the five production-quality Claude extensions compared on models, automation and price.',
+              },
+              {
+                href: '/best-ai-sidebar-extensions',
+                anchor: 'Best AI sidebar extensions for Chrome',
+                context: 'the wider side panel category if you are not committed to Claude.',
+              },
+              {
+                href: '/free-claude-ai',
+                anchor: 'Free Claude AI: every free tier and limit',
+                context: 'what you can get done at $0, and where the caps actually bite.',
+              },
+              {
+                href: '/how-it-works',
+                anchor: 'How Prophet works',
+                context: 'the accessibility-tree approach behind the browser automation, step by step.',
+              },
+              {
+                href: '/blog/are-ai-chrome-extensions-safe',
+                anchor: 'Are AI Chrome extensions safe?',
+                context: 'which permissions are normal and which should give you pause.',
+              },
+              {
+                href: '/for',
+                anchor: 'Prophet for other professions',
+                context: 'the same breakdown for eleven other roles.',
+              },
+            ]}
+          />
         </div>
       </section>
 

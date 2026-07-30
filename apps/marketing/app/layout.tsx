@@ -3,24 +3,29 @@ import type { Metadata } from 'next'
 import { ThemeProvider } from 'next-themes'
 import { Toaster } from '@/components/ui/sonner'
 import { CheckoutProvider } from '@/hooks/use-checkout'
+import { graphJsonLd, organizationNode, websiteNode } from '@/lib/structured-data'
 import './globals.css'
+
+const HOME_TITLE = 'Claude AI Sidebar for Chrome: Pay Per Use | Prophet'
+const HOME_DESCRIPTION =
+  "Run Claude Haiku, Sonnet 5 and Opus 5 in your Chrome side panel — it reads and acts on the page you're on. $0.20 free credits, no card."
 
 export const metadata: Metadata = {
   title: {
-    default: 'Prophet - AI Assistant Chrome Extension',
+    default: HOME_TITLE,
     template: '%s | Prophet'
   },
-  description: 'Your AI-powered assistant right in your browser. Boost productivity with intelligent web interactions.',
+  description: HOME_DESCRIPTION,
   metadataBase: new URL('https://prophetchrome.com'),
-  keywords: ['AI assistant', 'Chrome extension', 'productivity', 'web automation', 'artificial intelligence'],
-  authors: [{ name: 'Prophet Team' }],
-  creator: 'Prophet Team',
+  keywords: ['claude chrome extension', 'ai sidebar chrome extension', 'ai side panel', 'browser automation', 'claude ai free'],
+  authors: [{ name: 'Thanos Kazakis' }],
+  creator: 'Thanos Kazakis',
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://prophetchrome.com',
-    title: 'Prophet - AI Assistant Chrome Extension',
-    description: 'Your AI-powered assistant right in your browser. Boost productivity with intelligent web interactions.',
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     siteName: 'Prophet',
     images: [
       {
@@ -33,8 +38,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Prophet - AI Assistant Chrome Extension',
-    description: 'Your AI-powered assistant right in your browser. Boost productivity with intelligent web interactions.',
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     images: ['/og-image.png'],
     creator: '@prophet_ai',
   },
@@ -69,38 +74,7 @@ export default function RootLayout({
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                '@context': 'https://schema.org',
-                '@type': 'Organization',
-                name: 'Prophet',
-                url: 'https://prophetchrome.com',
-                logo: 'https://prophetchrome.com/logo.svg',
-                description:
-                  'AI-powered Chrome extension that brings Claude AI directly to your browser\'s side panel for chat, browser automation, and web page analysis.',
-                foundingDate: '2025',
-                sameAs: [
-                  'https://x.com/KazakisThanos',
-                  'https://github.com/ThanosKa/prophet',
-                  'https://discord.gg/2YV53RbS',
-                ],
-              }),
-            }}
-          />
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                '@context': 'https://schema.org',
-                '@type': 'WebSite',
-                name: 'Prophet',
-                url: 'https://prophetchrome.com',
-                description:
-                  'AI-powered Chrome extension with streaming Claude AI chat, browser automation, and pay-per-use pricing.',
-                publisher: {
-                  '@type': 'Organization',
-                  name: 'Prophet',
-                },
-              }),
+              __html: JSON.stringify(graphJsonLd([organizationNode, websiteNode])),
             }}
           />
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

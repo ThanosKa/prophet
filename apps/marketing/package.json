@@ -21,7 +21,7 @@
     "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
+    "@anthropic-ai/sdk": "^0.115.0",
     "@clerk/nextjs": "^6.14.1",
     "@clerk/themes": "^2.4.46",
     "@hookform/resolvers": "^3.10.0",

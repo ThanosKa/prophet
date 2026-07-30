@@ -8,9 +8,9 @@ import type { Metadata } from 'next'
 import { alternatives } from '@/lib/seo/comparisons'
 
 export const metadata: Metadata = {
-  title: 'Best Alternatives to Popular AI Chrome Extensions',
+  title: { absolute: 'Alternatives to Sider, Monica, MaxAI & Claude in Chrome' },
   description:
-    'Looking for an alternative to Sider, Monica AI, Claude in Chrome, MaxAI, Merlin, or HARPA AI? Prophet offers pay-per-use pricing, 18 browser automation tools, and open-source transparency.',
+    'Leaving a flat-fee AI sidebar? Compare each one against pay-per-use credits, 18 browser tools and open-source code. Six swaps covered.',
   alternates: { canonical: '/alternatives' },
 }
 

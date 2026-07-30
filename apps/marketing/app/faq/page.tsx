@@ -1,17 +1,24 @@
 import { Header } from '@/components/Header'
 import { FAQ } from '@/components/FAQ'
 import { Footer } from '@/components/Footer'
-import { breadcrumbJsonLd } from '@/lib/structured-data'
-import { homeFaqs, faqPageJsonLd } from '@/lib/faqs'
+import { breadcrumbNode, graphJsonLd } from '@/lib/structured-data'
+import { homeFaqs, faqNode } from '@/lib/faqs'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'FAQ - Pricing, Security & Features',
-  description: 'Get answers about Prophet, the AI Chrome extension. Learn about pricing, credits, security, supported AI models, installation, and browser automation.',
+  title: { absolute: 'Prophet FAQ: Credits, Privacy, Claude Models & Setup' },
+  description:
+    'How credits track Anthropic API cost, what happens to your page data, which Claude models you get on free, and how to install in under a minute.',
   alternates: { canonical: '/faq' },
 }
 
-const faqJsonLd = faqPageJsonLd(homeFaqs)
+const faqJsonLd = graphJsonLd([
+  faqNode(homeFaqs),
+  breadcrumbNode([
+    { name: 'Home', url: 'https://prophetchrome.com' },
+    { name: 'FAQ', url: 'https://prophetchrome.com/faq' },
+  ]),
+])
 
 export default function FAQPage() {
   return (
@@ -19,13 +26,6 @@ export default function FAQPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd([
-          { name: 'Home', url: 'https://prophetchrome.com' },
-          { name: 'FAQ', url: 'https://prophetchrome.com/faq' },
-        ])) }}
       />
       <Header />
       <div className="py-20">

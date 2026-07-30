@@ -1,13 +1,16 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
-import { breadcrumbJsonLd } from '@/lib/structured-data'
+import { RelatedLinks } from '@/components/RelatedLinks'
+import { breadcrumbNode, graphJsonLd, listicleItemListNode } from '@/lib/structured-data'
+import { faqNode } from '@/lib/faqs'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Best AI Chrome Extensions in 2026 (9 Tested & Ranked)',
-  description: '9 AI Chrome extensions tested and ranked for 2026 — with install counts, prices, free tiers, and what each one actually does. Compare Prophet, Monica, Merlin, Sider, MaxAI, Harpa, Claude in Chrome, Glasp, and Compose AI.',
+  title: { absolute: 'Best AI Chrome Extensions 2026: 9 Ranked, Free Tiers Tested' },
+  description:
+    'Nine AI extensions ranked on install count, real price and free-tier limits. What each one actually does, and which three are worth installing.',
   alternates: { canonical: '/best-ai-chrome-extensions' },
 }
 
@@ -18,14 +21,14 @@ const extensions = [
     tagline: 'AI side panel with Claude and browser automation',
     bestFor: 'Power users who want Claude with full browser automation and pay-per-use pricing.',
     url: 'https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif',
-    pricing: 'Free tier ($0.20 credits), Pro $9.99/mo with $11 credits (10% bonus), Premium $29.99/mo with $35 credits (17% bonus), Ultra $59.99/mo with $70 credits (17% bonus). 1 credit = 1 cent of actual Anthropic API cost, so you see the real per-message cost and stop paying the moment you stop using it. No "unused capacity" charge — light months cost almost nothing.',
+    pricing: 'Free tier ($0.20 credits), Pro $9.99/mo with $11 credits (10% bonus), Premium $29.99/mo with $35 credits (17% bonus), Ultra $59.99/mo with $70 credits (17% bonus). 1 credit = 1 cent of Anthropic API cost plus a 20% platform margin, so you see the real per-message cost and stop paying the moment you stop using it. No "unused capacity" charge — light months cost almost nothing.',
     description: 'Prophet brings Anthropic\'s Claude AI directly into the Chrome side panel with a focus on browser automation. Unlike most AI extensions that only offer chat, Prophet includes 18 built-in tools for interacting with web pages: clicking buttons, filling forms, navigating between pages, and extracting data. It uses the accessibility tree instead of screenshots, which makes automation faster and more reliable. The pay-per-use credit system means you only pay for what you actually use, and the full source code is available on GitHub.',
     pros: [
       'Browser automation with 18 tools (click, fill, navigate, extract)',
       'Accessibility tree approach is faster and cheaper than screenshot-based AI',
       'Pay-per-use credits instead of flat monthly fees for unused capacity',
       'Open source with full transparency into how it works',
-      'Multiple Claude models (Haiku 4.5, Sonnet 4.6, Opus 4.6)',
+      'Multiple Claude models (Haiku 4.5, Sonnet 5, Opus 5)',
     ],
     cons: [
       'Claude-only; no GPT or Gemini model options',
@@ -225,63 +228,141 @@ const faqItems = [
     answer: 'Yes. As of 2026, Chrome ships with built-in AI features including a "Help me write" assistant in text fields, tab organization powered by Gemini Nano, and on-device summarization for some content. However, these built-in features are intentionally narrow. They do not match the depth of dedicated AI Chrome extensions for multi-step automation, multi-model comparison, or deep page interaction. Extensions like Prophet, Monica, and Sider still fill the gap between Chrome\'s built-in helpers and a full AI assistant.',
   },
   {
+    question: 'What is the best AI Chrome extension in 2026?',
+    answer:
+      'It depends on whether you want the AI to talk about the page or act on it. For browser automation, Prophet is the only extension in this list that can click, fill forms, navigate and extract data, and it does so with all three Claude models on pay-per-use pricing. For a polished multi-model daily assistant, Monica is the strongest all-rounder. For comparing several models on the same prompt, Sider\'s group chat is unmatched. For search-grounded answers, Merlin. Most people are best served by one automation-capable extension plus one lightweight reading tool.',
+  },
+  {
+    question: 'What are the best free AI Chrome extensions?',
+    answer:
+      'Glasp is the only genuinely and permanently free option here, though it only does highlighting and summaries. Compose AI\'s basic autocomplete is free indefinitely. Monica, Merlin, MaxAI and Sider all offer free tiers with daily caps that function as trials rather than usable long-term plans. Harpa AI is free if you bring your own API key and pay the model provider directly. Prophet gives $0.20 in credits with no card and unlocks all three Claude models on the free tier. No extension offers unlimited free frontier-model access, because every message costs the provider real compute.',
+  },
+  {
+    question: 'Which AI Chrome extension can actually automate browser tasks?',
+    answer:
+      'Only two of the nine come close. Prophet includes 18 tools driven through the Chrome DevTools Protocol that let Claude click buttons, fill form fields, navigate between pages, scroll and manage tabs, using the accessibility tree to target elements deterministically. Harpa AI offers macro recording, page-change monitoring and scraping, which is automation of a different kind — scheduled and rule-based rather than AI-driven. Monica, Merlin, Sider, MaxAI, Glasp, Compose AI and Anthropic\'s Claude in Chrome are all read-and-respond tools with no ability to interact with page elements.',
+  },
+  {
+    question: 'How much do AI Chrome extensions cost per month?',
+    answer:
+      'Most sit between $9 and $15 per month for an entry paid tier: Sider from $8.99, Monica from $9.90, MaxAI and Compose AI from $9.99, Merlin from $14.25, Harpa from $15. Anthropic\'s Claude in Chrome is the outlier at $20/month because it requires a Claude Pro subscription. Prophet is the only pay-per-use option, billing credits at Anthropic API cost plus a 20% margin, which means a light month costs cents rather than a flat fee. The break-even against a $10/month subscription lands at roughly 500 Sonnet messages a month.',
+  },
+  {
     question: 'Does Anthropic have an official Chrome extension for Claude?',
     answer: 'Yes. Anthropic ships "Claude in Chrome," an official first-party extension that opens claude.ai in a popup from any tab. It supports Artifacts, file uploads, and Projects, but it cannot read or interact with the page you are on — there is no on-page summarization, no element clicking, and no automation. For users who want Claude to act on the current page, third-party extensions like Prophet are still required.',
   },
 ]
 
-export default function BestAIChromeExtensionsPage() {
-  const faqJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqItems.map((item) => ({
-      '@type': 'Question',
-      name: item.question,
-      acceptedAnswer: { '@type': 'Answer', text: item.answer },
-    })),
-  }
+const PAGE_URL = 'https://prophetchrome.com/best-ai-chrome-extensions'
 
-  const itemListJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'ItemList',
-    itemListElement: extensions.map((ext) => ({
-      '@type': 'ListItem',
-      position: ext.rank,
-      name: ext.name,
-      url: ext.url,
-    })),
-  }
+export default function BestAIChromeExtensionsPage() {
+  const jsonLd = graphJsonLd([
+    listicleItemListNode({
+      name: 'Best AI Chrome Extensions 2026',
+      description: 'Nine AI Chrome extensions ranked on install count, price and free-tier limits.',
+      url: PAGE_URL,
+      items: extensions.map((ext) => ({
+        position: ext.rank,
+        name: ext.name,
+        description: ext.tagline,
+        url: ext.url,
+        price: '0',
+      })),
+    }),
+    faqNode(faqItems),
+    breadcrumbNode([
+      { name: 'Home', url: 'https://prophetchrome.com' },
+      { name: 'Best AI Chrome Extensions', url: PAGE_URL },
+    ]),
+  ])
 
   return (
     <main className="flex flex-col min-h-screen">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd([
-          { name: 'Home', url: 'https://prophetchrome.com' },
-          { name: 'Best AI Chrome Extensions', url: 'https://prophetchrome.com/best-ai-chrome-extensions' },
-        ])) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Header />
       <article className="py-20 flex-1">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-12">
             <h1 className="text-4xl sm:text-5xl font-bold mb-4">Best AI Chrome Extensions in 2026</h1>
-            <p className="text-sm text-muted-foreground mb-6">Last updated: May 2026</p>
+            <p className="text-sm text-muted-foreground mb-6">Last updated: July 29, 2026</p>
             <p className="text-lg text-muted-foreground leading-relaxed">
               AI Chrome extensions have become essential productivity tools for anyone who works in a browser. Whether you need help writing emails, summarizing research, automating repetitive tasks, or analyzing web pages, there is an AI extension that fits your workflow. We tested and compared the most popular options to help you choose the right one.
             </p>
             <p className="text-muted-foreground leading-relaxed mt-4">
-              This list evaluates extensions on five criteria: AI model quality, feature depth, browser automation capabilities, pricing value, and privacy practices. We prioritize extensions that go beyond simple chat by offering meaningful integration with the web pages you visit.
+              This list evaluates extensions on five criteria: AI model quality, feature depth, browser automation capabilities, pricing value, and privacy practices. We prioritize extensions that go beyond simple chat by offering meaningful integration with the web pages you visit. If you specifically want Claude rather than a general AI assistant, the narrower{' '}
+              <Link href="/best-claude-chrome-extensions" className="text-primary hover:underline">
+                ranking of Chrome extensions for Claude AI
+              </Link>{' '}
+              is the better starting point, and if you only care about side panel tools, see the{' '}
+              <Link href="/best-ai-sidebar-extensions" className="text-primary hover:underline">
+                best AI sidebar extensions for Chrome
+              </Link>
+              .
             </p>
+            <aside className="mt-8 rounded-lg border border-border bg-muted/50 p-4 text-sm">
+              <p className="font-semibold mb-1">About our testing</p>
+              <p className="text-muted-foreground">
+                Rankings reflect hands-on use across March, April and May 2026 on Chrome 134 (macOS and Windows), using the same five tasks for every extension: summarising a long-form article, drafting an email reply, extracting structured data from a complex page, answering a technical reference question, and running a multi-step browser automation where supported. Pricing and feature claims come from each vendor&apos;s published documentation and were re-checked in July 2026. A controlled benchmark with measured latency and per-task cost is in progress; this page will be updated when it lands.
+              </p>
+            </aside>
           </div>
+
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-4">Best AI Chrome Extensions: Short Picks</h2>
+            <p className="text-muted-foreground leading-relaxed mb-4">
+              If you want the answer without the detail, here is how the nine tested AI Chrome extensions rank by what you are actually trying to do:
+            </p>
+            <ul className="space-y-2 text-muted-foreground">
+              <li><strong className="text-foreground">Best overall and only real browser automation:</strong> Prophet (Claude Haiku 4.5, Sonnet 5 and Opus 5, 18 automation tools, pay-per-use credits)</li>
+              <li><strong className="text-foreground">Best multi-model assistant:</strong> Monica (GPT-4o, Claude and Gemini plus image generation in one sidebar)</li>
+              <li><strong className="text-foreground">Best for comparing model answers:</strong> Sider (group chat queries several models on the same prompt)</li>
+              <li><strong className="text-foreground">Best with live web search:</strong> Merlin (search-grounded answers and document analysis)</li>
+              <li><strong className="text-foreground">Best quick actions on selected text:</strong> MaxAI (highlight to summarise, explain, translate or rewrite)</li>
+              <li><strong className="text-foreground">Best for monitoring and scraping:</strong> Harpa AI (page-change alerts and macros, bring your own key)</li>
+              <li><strong className="text-foreground">Best if you already pay for Claude Pro:</strong> Claude in Chrome (official, but cannot read the current page)</li>
+              <li><strong className="text-foreground">Best for research and highlighting:</strong> Glasp (free, social highlights and YouTube summaries)</li>
+              <li><strong className="text-foreground">Best writing autocomplete:</strong> Compose AI (works in every text field on the web)</li>
+            </ul>
+          </section>
+
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-4">AI Chrome Extensions vs AI Browser Extensions</h2>
+            <p className="text-muted-foreground leading-relaxed">
+              &ldquo;AI Chrome extension&rdquo; and &ldquo;AI browser extension&rdquo; describe the same category. Every extension ranked here installs from the Chrome Web Store and runs on any Chromium browser, which in 2026 means Chrome, Edge, Brave, Arc, Opera and Vivaldi — the install page is Chrome-branded but the extension is not Chrome-exclusive. Firefox and Safari are the real exceptions: none of the nine below ship native builds for either, and the closest equivalents there are general-purpose AI sidebars with noticeably shallower page integration. If you are shopping for Chromium, the list applies as written.
+            </p>
+          </section>
+
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-4">Best Free AI Chrome Extensions</h2>
+            <p className="text-muted-foreground leading-relaxed mb-4">
+              &ldquo;Free&rdquo; means three different things in this category, and the distinction matters more than the price tag:
+            </p>
+            <ul className="space-y-3 text-muted-foreground mb-4">
+              <li>
+                <strong className="text-foreground">Genuinely free, permanently.</strong> Glasp is the only extension here with no paid tier at all. Compose AI&apos;s basic autocomplete is also free indefinitely. Both are narrow tools rather than general assistants.
+              </li>
+              <li>
+                <strong className="text-foreground">Free with a daily quota.</strong> Monica, Merlin, MaxAI and Sider all run limited free tiers that reset daily. These are designed as trials — the caps are tight enough that regular use pushes you to a subscription within a week or two.
+              </li>
+              <li>
+                <strong className="text-foreground">Free tooling, you pay the model.</strong> Harpa AI is free if you supply your own API key; you pay Anthropic or OpenAI directly for tokens. Prophet includes $0.20 in credits with no card, then bills credits at API cost plus a 20% margin.
+              </li>
+            </ul>
+            <p className="text-muted-foreground leading-relaxed">
+              No extension in this category gives away unlimited frontier-model access, because every message costs the provider real compute. The full breakdown of what is actually free is in{' '}
+              <Link href="/free-claude-ai" className="text-primary hover:underline">
+                free Claude AI: every free tier, limit and workaround
+              </Link>
+              , and{' '}
+              <Link href="/blog/free-ai-tools-2026" className="text-primary hover:underline">
+                free AI tools in 2026
+              </Link>{' '}
+              covers the wider set beyond browser extensions.
+            </p>
+          </section>
 
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-6">How We Evaluated</h2>
@@ -292,7 +373,7 @@ export default function BestAIChromeExtensionsPage() {
               The five criteria, weighted equally:
             </p>
             <ul className="space-y-2 text-muted-foreground">
-              <li><strong className="text-foreground">Model quality and selection.</strong> Access to current frontier models (GPT-4o, Claude Sonnet 4.6, Gemini 2.5) and the ability to choose between speed and depth for a given task.</li>
+              <li><strong className="text-foreground">Model quality and selection.</strong> Access to current frontier models (GPT-4o, Claude Sonnet 5, Gemini 2.5) and the ability to choose between speed and depth for a given task.</li>
               <li><strong className="text-foreground">Browser integration.</strong> How well the extension reads the current page and interacts with it. Chat-only sidebars score lower; tools that can click, fill, and extract score higher.</li>
               <li><strong className="text-foreground">Pricing transparency.</strong> Whether you can predict the monthly bill before committing. Pay-per-use beats opaque query quotas.</li>
               <li><strong className="text-foreground">Privacy.</strong> Data retention policies, whether page content is stored server-side, and whether the source is auditable.</li>
@@ -413,6 +494,117 @@ export default function BestAIChromeExtensionsPage() {
               Pricing transparency also factored into our rankings. Pay-per-use models like Prophet offer better value for light to moderate users compared to flat subscriptions. We noted which extensions offer genuine free tiers versus token-limited trials.
             </p>
           </section>
+
+          <RelatedLinks
+            title="Compare these extensions head to head"
+            intro="Rankings compress a lot of nuance. These pages take two products at a time and go feature by feature."
+            links={[
+              {
+                href: '/compare/prophet-vs-sider',
+                anchor: 'Prophet vs Sider',
+                context: 'browser automation and Claude model choice against Sider’s multi-model group chat.',
+              },
+              {
+                href: '/compare/prophet-vs-monica-ai',
+                anchor: 'Prophet vs Monica AI',
+                context: 'the closest matchup in this list on price, and the furthest apart on capability.',
+              },
+              {
+                href: '/compare/prophet-vs-claude-in-chrome',
+                anchor: 'Prophet vs Claude in Chrome',
+                context: 'why Anthropic’s official extension cannot read the page you are on, and what that costs you.',
+              },
+              {
+                href: '/compare/prophet-vs-harpa-ai',
+                anchor: 'Prophet vs HARPA AI',
+                context: 'AI-driven automation against macro recording and bring-your-own-key economics.',
+              },
+              {
+                href: '/compare/prophet-vs-merlin',
+                anchor: 'Prophet vs Merlin',
+                context: 'pay-per-use credits against Merlin’s daily query caps.',
+              },
+              {
+                href: '/alternatives',
+                anchor: 'Alternatives to the major AI extensions',
+                context: 'switching guides for people already paying for one of the tools above.',
+              },
+            ]}
+          />
+
+          <RelatedLinks
+            title="Pricing, privacy and safety"
+            intro="The three questions that decide the shortlist once the feature comparison is done."
+            links={[
+              {
+                href: '/blog/pay-per-use-ai-vs-subscription',
+                anchor: 'Pay-per-use AI vs subscription pricing',
+                context: 'where the break-even sits and why light users lose money on flat monthly plans.',
+              },
+              {
+                href: '/blog/hidden-costs-of-ai-subscriptions',
+                anchor: 'The hidden costs of AI subscriptions',
+                context: 'quota resets, seat minimums and the cost of the months you barely log in.',
+              },
+              {
+                href: '/blog/are-ai-chrome-extensions-safe',
+                anchor: 'Are AI Chrome extensions safe?',
+                context: 'which permissions are normal, which are red flags, and how to audit an extension.',
+              },
+              {
+                href: '/blog/ai-extensions-that-sell-your-data',
+                anchor: 'AI extensions that sell your data',
+                context: 'how to read a privacy policy for the clauses that actually matter.',
+              },
+              {
+                href: '/blog/client-side-vs-server-side-ai-privacy',
+                anchor: 'Client-side vs server-side AI privacy',
+                context: 'what leaves your browser under each architecture.',
+              },
+              {
+                href: '/tools/ai-pricing-comparison',
+                anchor: 'AI model pricing comparison',
+                context: 'current per-token rates across Claude, GPT and Gemini.',
+              },
+            ]}
+          />
+
+          <RelatedLinks
+            title="Pick an extension by what you do"
+            intro="Role and task pages with concrete workflows rather than feature lists."
+            links={[
+              {
+                href: '/for/developers',
+                anchor: 'AI Chrome extension for developers',
+                context: 'pull request review, debugging and reading unfamiliar codebases in the browser.',
+              },
+              {
+                href: '/for/students',
+                anchor: 'AI Chrome extension for students',
+                context: 'research, study and note-taking on a near-zero budget.',
+              },
+              {
+                href: '/for/marketers',
+                anchor: 'AI Chrome extension for marketers',
+                context: 'competitor research, ad copy and landing page teardowns.',
+              },
+              {
+                href: '/use-cases/summarization',
+                anchor: 'Summarising web pages with AI',
+                context: 'the most common task in this category, and which tools do it well.',
+              },
+              {
+                href: '/use-cases/form-filling',
+                anchor: 'Automated form filling',
+                context: 'the task that separates automation extensions from chat extensions.',
+              },
+              {
+                href: '/guides',
+                anchor: 'Prophet how-to guides',
+                context: 'step-by-step walkthroughs for each of the workflows above.',
+              },
+            ]}
+          />
 
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-6">Frequently Asked Questions</h2>

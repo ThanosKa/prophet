@@ -1,6 +1,7 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { breadcrumbJsonLd } from '@/lib/structured-data'
+import { faqPageJsonLd } from '@/lib/faqs'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -38,23 +39,15 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
     },
     {
       question: `Is Prophet free to try for ${industry.title.toLowerCase()}?`,
-      answer: `Yes. Prophet includes a free tier with $0.20 in credits and no credit card required. After that it is pay-per-use, billed against your actual Claude API usage starting at $9.99/month for $11 in credits — so you only pay for what you use.`,
+      answer: `Yes. Prophet includes a free tier with $0.20 in credits and no credit card required. After that it is pay-per-use, billed against your Claude API usage plus a 20% platform margin, starting at $9.99/month for $11 in credits — so you only pay for what you use.`,
     },
     {
       question: `Which Claude model is best for this work?`,
-      answer: `Prophet lets you choose Claude Haiku 4.5 for fast, low-cost tasks, Sonnet 4.6 for balanced everyday work, or Opus 4.6 for the most complex reasoning. You can switch models at any time from the side panel.`,
+      answer: `Prophet lets you choose Claude Haiku 4.5 for fast, low-cost tasks, Sonnet 5 for balanced everyday work, or Opus 5 for the most complex reasoning. You can switch models at any time from the side panel.`,
     },
   ]
 
-  const faqJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqItems.map((item) => ({
-      '@type': 'Question',
-      name: item.question,
-      acceptedAnswer: { '@type': 'Answer', text: item.answer },
-    })),
-  }
+  const faqJsonLd = faqPageJsonLd(faqItems)
 
   const softwareAppJsonLd = {
     '@context': 'https://schema.org',

@@ -7,7 +7,7 @@ export const integrations: IntegrationData[] = [
     title: 'Prophet AI for GitHub',
     keyword: 'AI Chrome extension for GitHub',
     h1: 'Use Prophet AI on GitHub',
-    description: 'Supercharge your GitHub workflow with Prophet AI. Review pull requests, understand code, debug issues, and navigate repositories faster with AI assistance in your Chrome side panel.',
+    description: 'Review a pull request, explain unfamiliar code and debug a stack trace without leaving GitHub. Claude reads the page you are looking at.',
     tasks: [
       'Summarize pull request changes and generate review comments',
       'Explain complex code in any repository file',
@@ -29,7 +29,7 @@ export const integrations: IntegrationData[] = [
     title: 'Prophet AI for Google Docs',
     keyword: 'AI Chrome extension for Google Docs',
     h1: 'Use Prophet AI with Google Docs',
-    description: 'Enhance your writing in Google Docs with Prophet AI. Draft content, edit for clarity, restructure documents, and get feedback without leaving your document.',
+    description: 'Draft, tighten and restructure inside Google Docs. Claude reads the document on screen, so you never paste text into another tab.',
     tasks: [
       'Draft new sections or entire documents from an outline',
       'Edit existing text for grammar, clarity, and tone',
@@ -51,7 +51,7 @@ export const integrations: IntegrationData[] = [
     title: 'Prophet AI for Gmail',
     keyword: 'AI Chrome extension for Gmail',
     h1: 'Use Prophet AI with Gmail',
-    description: 'Write, reply to, and manage emails faster with Prophet AI in Gmail. Draft professional responses, summarize email threads, and handle your inbox efficiently.',
+    description: 'Draft replies, summarise long threads and clear the backlog inside Gmail. Claude reads the thread on screen and writes in your voice.',
     tasks: [
       'Draft replies that address every point in the original email',
       'Write new emails with the right tone and structure',
@@ -72,7 +72,7 @@ export const integrations: IntegrationData[] = [
     title: 'Prophet AI for Notion',
     keyword: 'AI Chrome extension for Notion',
     h1: 'Use Prophet AI with Notion',
-    description: 'Boost your Notion productivity with Prophet AI. Create pages, organize databases, draft content, and manage your workspace with AI assistance from the Chrome side panel.',
+    description: 'Draft pages, structure databases and clean up your workspace inside Notion, with Claude reading whatever page you have open.',
     tasks: [
       'Draft new Notion pages from brief descriptions',
       'Summarize and reorganize existing page content',
@@ -94,7 +94,7 @@ export const integrations: IntegrationData[] = [
     title: 'Prophet AI for LinkedIn',
     keyword: 'AI Chrome extension for LinkedIn',
     h1: 'Use Prophet AI on LinkedIn',
-    description: 'Create engaging LinkedIn posts, craft connection messages, and optimize your profile with Prophet AI. Stand out on LinkedIn with AI-powered content creation.',
+    description: 'Write posts that land, draft connection notes and sharpen your profile. Claude reads the LinkedIn page you are on before it writes.',
     tasks: [
       'Write engaging LinkedIn posts from brief ideas',
       'Craft personalized connection request messages',
@@ -181,7 +181,7 @@ export const integrations: IntegrationData[] = [
     title: 'Prophet AI for Jira',
     keyword: 'AI Chrome extension for Jira',
     h1: 'Use Prophet AI with Jira',
-    description: 'Manage Jira tickets more efficiently with Prophet AI. Draft issue descriptions, write acceptance criteria, summarize sprints, and navigate project boards with AI assistance.',
+    description: 'Write issue descriptions, draft acceptance criteria and summarise a sprint inside Jira, without retyping the ticket into another tool.',
     tasks: [
       'Draft detailed issue descriptions with acceptance criteria',
       'Summarize sprint boards and backlog status',
@@ -203,7 +203,7 @@ export const integrations: IntegrationData[] = [
     title: 'Prophet AI for Shopify',
     keyword: 'AI Chrome extension for Shopify',
     h1: 'Use Prophet AI with Shopify',
-    description: 'Manage your Shopify store more efficiently with Prophet AI. Write product descriptions, analyze orders, optimize listings, and handle customer communications.',
+    description: 'Write product descriptions, review orders and optimise listings inside Shopify admin, with Claude reading the page you are working on.',
     tasks: [
       'Write compelling product descriptions that convert',
       'Optimize product titles and tags for SEO',

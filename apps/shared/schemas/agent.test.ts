@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import {
   agentChatRequestSchema,
+  agentModelSchema,
+  contentBlockSchema,
+  CLAUDE_MODELS,
+  LEGACY_MODEL_ALIASES,
+  LEGACY_MODEL_IDS,
+  MODEL_CONFIG,
+  resolveAgentModel,
   agentInitialMessageSchema,
   agentContinueMessageSchema,
   clickElementInputSchema,
@@ -527,5 +534,190 @@ describe('toolUseSchema', () => {
 
     const result = toolUseSchema.safeParse(data)
     expect(result.success).toBe(false)
+  })
+})
+
+describe('Model constants and legacy aliases', () => {
+  it('exposes the current Claude model ids', () => {
+    expect(CLAUDE_MODELS.HAIKU).toBe('claude-haiku-4-5')
+    expect(CLAUDE_MODELS.SONNET).toBe('claude-sonnet-5')
+    expect(CLAUDE_MODELS.OPUS).toBe('claude-opus-5')
+  })
+
+  it('MODEL_CONFIG covers exactly the current models', () => {
+    expect(MODEL_CONFIG.map((m) => m.id)).toEqual([
+      CLAUDE_MODELS.HAIKU,
+      CLAUDE_MODELS.SONNET,
+      CLAUDE_MODELS.OPUS,
+    ])
+    for (const entry of MODEL_CONFIG) {
+      expect(entry.label.length).toBeGreaterThan(0)
+      expect(entry.description.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('accepts every current model id', () => {
+    for (const model of Object.values(CLAUDE_MODELS)) {
+      expect(agentModelSchema.safeParse(model).success).toBe(true)
+    }
+  })
+
+  it('still accepts model ids baked into already-installed extensions', () => {
+    for (const legacy of LEGACY_MODEL_IDS) {
+      expect(agentModelSchema.safeParse(legacy).success).toBe(true)
+    }
+  })
+
+  it('rejects unknown model ids', () => {
+    expect(agentModelSchema.safeParse('claude-sonnet-4-20250514').success).toBe(false)
+    expect(agentModelSchema.safeParse('gpt-4').success).toBe(false)
+  })
+
+  it('resolves legacy ids to their current replacement', () => {
+    expect(resolveAgentModel('claude-opus-4-6')).toBe(CLAUDE_MODELS.OPUS)
+    expect(resolveAgentModel('claude-sonnet-4-6')).toBe(CLAUDE_MODELS.SONNET)
+  })
+
+  it('leaves current ids untouched', () => {
+    for (const model of Object.values(CLAUDE_MODELS)) {
+      expect(resolveAgentModel(model)).toBe(model)
+    }
+  })
+
+  it('every legacy alias points at a current model', () => {
+    const current = Object.values(CLAUDE_MODELS) as string[]
+    for (const target of Object.values(LEGACY_MODEL_ALIASES)) {
+      expect(current).toContain(target)
+    }
+  })
+
+  it('a legacy model id passes full request validation and resolves', () => {
+    const result = agentChatRequestSchema.safeParse({
+      chatId: '550e8400-e29b-41d4-a716-446655440000',
+      model: 'claude-opus-4-6',
+      userMessage: 'Hello',
+    })
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(resolveAgentModel(result.data.model)).toBe(CLAUDE_MODELS.OPUS)
+    }
+  })
+})
+
+describe('Web search request flag', () => {
+  it('defaults to disabled when omitted', () => {
+    const result = agentChatRequestSchema.safeParse({
+      chatId: '550e8400-e29b-41d4-a716-446655440000',
+      userMessage: 'Hello',
+    })
+
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.enableWebSearch).toBe(false)
+  })
+
+  it('accepts an explicit opt-in', () => {
+    const result = agentChatRequestSchema.safeParse({
+      chatId: '550e8400-e29b-41d4-a716-446655440000',
+      userMessage: 'Hello',
+      enableWebSearch: true,
+    })
+
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.enableWebSearch).toBe(true)
+  })
+
+  it('rejects a non-boolean flag', () => {
+    const result = agentChatRequestSchema.safeParse({
+      chatId: '550e8400-e29b-41d4-a716-446655440000',
+      userMessage: 'Hello',
+      enableWebSearch: 'yes',
+    })
+
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('Web search content blocks', () => {
+  const searchBlocks = [
+    {
+      type: 'server_tool_use',
+      id: 'srvtoolu_1',
+      name: 'web_search',
+      input: { query: 'claude pricing' },
+    },
+    {
+      type: 'web_search_tool_result',
+      tool_use_id: 'srvtoolu_1',
+      content: [
+        {
+          type: 'web_search_result',
+          url: 'https://example.com/a',
+          title: 'A',
+          encrypted_content: 'EqgfCioIARgBIiQ3',
+          page_age: 'April 30, 2026',
+        },
+      ],
+    },
+  ]
+
+  it('accepts server tool use and search results in previousContent', () => {
+    const result = agentChatRequestSchema.safeParse({
+      chatId: '550e8400-e29b-41d4-a716-446655440000',
+      previousContent: searchBlocks,
+      toolResults: [],
+    })
+
+    expect(result.success).toBe(true)
+  })
+
+  it('preserves encrypted_content verbatim', () => {
+    const result = contentBlockSchema.safeParse(searchBlocks[1])
+    expect(result.success).toBe(true)
+    if (result.success && result.data.type === 'web_search_tool_result') {
+      const content = result.data.content
+      expect(Array.isArray(content)).toBe(true)
+      if (Array.isArray(content)) {
+        expect(content[0].encrypted_content).toBe('EqgfCioIARgBIiQ3')
+      }
+    }
+  })
+
+  it('rejects a search result missing encrypted_content', () => {
+    const result = contentBlockSchema.safeParse({
+      type: 'web_search_tool_result',
+      tool_use_id: 'srvtoolu_1',
+      content: [{ type: 'web_search_result', url: 'https://example.com', title: 'A' }],
+    })
+
+    expect(result.success).toBe(false)
+  })
+
+  it('accepts a web search error result', () => {
+    const result = contentBlockSchema.safeParse({
+      type: 'web_search_tool_result',
+      tool_use_id: 'srvtoolu_1',
+      content: { type: 'web_search_tool_result_error', error_code: 'max_uses_exceeded' },
+    })
+
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts text blocks carrying web search citations', () => {
+    const result = contentBlockSchema.safeParse({
+      type: 'text',
+      text: 'Claude Opus 5 costs $5 per million input tokens.',
+      citations: [
+        {
+          type: 'web_search_result_location',
+          url: 'https://example.com/a',
+          title: 'A',
+          encrypted_index: 'Eo8BCioIAhgBIiQ',
+          cited_text: '$5 per million input tokens',
+        },
+      ],
+    })
+
+    expect(result.success).toBe(true)
   })
 })

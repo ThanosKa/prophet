@@ -8,9 +8,9 @@ import type { Metadata } from 'next'
 import { comparisons } from '@/lib/seo/comparisons'
 
 export const metadata: Metadata = {
-  title: 'Prophet vs Competitors - AI Chrome Extension Comparisons',
+  title: { absolute: 'Prophet vs Sider, Monica, Claude in Chrome & 5 More' },
   description:
-    'Compare Prophet with Sider, Monica AI, Claude in Chrome, MaxAI, Merlin, HARPA AI, and Microsoft Copilot. Side-by-side feature tables, pricing, and honest pros and cons.',
+    'Feature tables, real prices and honest cons for eight AI Chrome extensions against Prophet. Pick by what you need it to actually do.',
   alternates: { canonical: '/compare' },
 }
 

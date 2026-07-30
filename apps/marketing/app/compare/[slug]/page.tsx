@@ -1,6 +1,8 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
-import { breadcrumbJsonLd } from '@/lib/structured-data'
+import { RelatedLinks } from '@/components/RelatedLinks'
+import { breadcrumbNode, graphJsonLd, softwareApplicationNode } from '@/lib/structured-data'
+import { faqNode } from '@/lib/faqs'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -30,7 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = getComparisonBySlug(slug)
   if (!data) return {}
   return {
-    title: data.h1,
+    title: { absolute: data.title },
     description: data.description,
     alternates: { canonical: `/compare/${data.slug}` },
   }
@@ -41,19 +43,25 @@ export default async function ComparisonPage({ params }: Props) {
   const data = getComparisonBySlug(slug)
   if (!data) notFound()
 
+  const otherComparisons = comparisons.filter((c) => c.slug !== data.slug).slice(0, 3)
+
   return (
     <main className="flex flex-col min-h-screen">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(
-            breadcrumbJsonLd([
-              { name: 'Home', url: 'https://prophetchrome.com' },
-              { name: 'Compare', url: 'https://prophetchrome.com/compare' },
-              {
-                name: `Prophet vs ${data.competitor}`,
-                url: `https://prophetchrome.com/compare/${data.slug}`,
-              },
+            graphJsonLd([
+              softwareApplicationNode,
+              ...(data.faq.length > 0 ? [faqNode(data.faq)] : []),
+              breadcrumbNode([
+                { name: 'Home', url: 'https://prophetchrome.com' },
+                { name: 'Compare', url: 'https://prophetchrome.com/compare' },
+                {
+                  name: `Prophet vs ${data.competitor}`,
+                  url: `https://prophetchrome.com/compare/${data.slug}`,
+                },
+              ]),
             ])
           ),
         }}
@@ -78,17 +86,7 @@ export default async function ComparisonPage({ params }: Props) {
               <div className="flex items-center gap-2 mb-3">
                 <Badge>Quick Verdict</Badge>
               </div>
-              <p className="text-muted-foreground leading-relaxed">
-                Prophet and {data.competitor} take different approaches to browser AI.
-                Prophet focuses on deep browser automation through 18 Chrome DevTools Protocol
-                tools and an accessibility-tree approach that delivers fast, deterministic
-                interactions without vision models. It uses pay-per-use pricing, so you never
-                pay for a month you don&apos;t use. {data.competitor} has its own strengths
-                {data.competitorAdvantages.length > 0 &&
-                  ` -- notably ${data.competitorAdvantages[0].toLowerCase()}`}
-                . The right choice depends on whether you need real page automation (Prophet)
-                or {data.competitor}&apos;s specific ecosystem advantages.
-              </p>
+              <p className="text-muted-foreground leading-relaxed">{data.verdict}</p>
             </CardContent>
           </Card>
 
@@ -196,6 +194,86 @@ export default async function ComparisonPage({ params }: Props) {
               </p>
             </div>
           </section>
+
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-4">
+              Pricing: Prophet vs {data.competitor} in practice
+            </h2>
+            <h3 className="font-semibold mb-2">{data.pricingReality.heading}</h3>
+            <p className="text-muted-foreground leading-relaxed mb-4">
+              {data.pricingReality.body}
+            </p>
+            <p className="text-muted-foreground leading-relaxed">
+              To price your own usage rather than ours, the{' '}
+              <Link href="/tools/ai-api-cost-calculator" className="text-primary hover:underline">
+                AI API cost calculator
+              </Link>{' '}
+              works from your real message volume, and{' '}
+              <Link href="/blog/pay-per-use-ai-vs-subscription" className="text-primary hover:underline">
+                pay-per-use AI vs subscription pricing
+              </Link>{' '}
+              explains where the break-even sits. Full tier details are on the{' '}
+              <Link href="/pricing" className="text-primary hover:underline">
+                Prophet pricing page
+              </Link>
+              .
+            </p>
+          </section>
+
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-4">
+              Switching between Prophet and {data.competitor}
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">{data.switchingNotes}</p>
+          </section>
+
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-4">
+              When {data.competitor} is the better choice
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">{data.chooseCompetitorIf}</p>
+          </section>
+
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-6">
+              Prophet vs {data.competitor}: common questions
+            </h2>
+            <div className="space-y-6">
+              {data.faq.map((item) => (
+                <div key={item.question}>
+                  <h3 className="font-semibold mb-2">{item.question}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{item.answer}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <RelatedLinks
+            title="Other comparisons and next steps"
+            intro="If you are still narrowing the field, these cover the neighbouring options and the wider category."
+            links={[
+              ...otherComparisons.map((c) => ({
+                href: `/compare/${c.slug}`,
+                anchor: `Prophet vs ${c.competitor}`,
+                context: c.description,
+              })),
+              {
+                href: '/best-ai-chrome-extensions',
+                anchor: 'Best AI Chrome extensions in 2026',
+                context: 'nine extensions ranked, including this one, with free tiers and real prices.',
+              },
+              {
+                href: '/best-claude-chrome-extensions',
+                anchor: 'Best Chrome extensions for Claude AI',
+                context: 'the Claude-specific ranking if you have already settled on the model.',
+              },
+              {
+                href: '/free-claude-ai',
+                anchor: 'Free Claude AI: every free tier and limit',
+                context: 'what you can do without paying either product a cent.',
+              },
+            ]}
+          />
         </div>
       </div>
 

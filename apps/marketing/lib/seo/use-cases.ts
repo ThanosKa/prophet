@@ -1,5 +1,28 @@
+/**
+ * Every slug that has a page under /use-cases/. Typing slugs against this union
+ * rather than `string` is what makes a link to a non-existent use case a compile
+ * error: the relatedUseCases lists in professions.ts previously pointed at ten
+ * slugs with no page, and only the redirect table stopped them 404ing.
+ */
+export type UseCaseSlug =
+  | 'research'
+  | 'writing'
+  | 'coding'
+  | 'studying'
+  | 'email-drafting'
+  | 'content-creation'
+  | 'data-analysis'
+  | 'form-filling'
+  | 'summarization'
+  | 'code-review'
+  | 'translation'
+  | 'proofreading'
+  | 'competitive-analysis'
+  | 'documentation'
+  | 'brainstorming'
+
 export interface UseCaseData {
-  slug: string
+  slug: UseCaseSlug
   title: string
   keyword: string
   h1: string
@@ -7,7 +30,7 @@ export interface UseCaseData {
   painPoints: string[]
   features: string[]
   examplePrompts: string[]
-  relatedSlugs: string[]
+  relatedSlugs: UseCaseSlug[]
 }
 
 export const useCases: UseCaseData[] = [
@@ -72,8 +95,7 @@ export const useCases: UseCaseData[] = [
     title: 'AI Coding Assistant in Chrome',
     keyword: 'AI coding assistant Chrome extension',
     h1: 'AI Coding Assistant for Chrome',
-    description:
-      'Get coding help while browsing documentation, Stack Overflow, or GitHub. Prophet explains code, suggests fixes, and generates snippets from your browser side panel.',
+    description: 'Get coding help on the docs, Stack Overflow or GitHub page you already have open. Claude explains code, suggests fixes and writes snippets.',
     painPoints: [
       'Browsing documentation and Stack Overflow while coding requires constant tab switching between your editor and the browser.',
       'Understanding unfamiliar codebases or libraries means reading through lengthy documentation without targeted guidance.',
@@ -184,8 +206,7 @@ export const useCases: UseCaseData[] = [
     title: 'AI Data Analysis Assistant in Chrome',
     keyword: 'AI data analysis Chrome extension',
     h1: 'AI Data Analysis Assistant for Chrome',
-    description:
-      'Analyze data on any webpage with Prophet. Extract tables, interpret charts, identify trends, and get insights from dashboards without exporting to spreadsheets.',
+    description: 'Extract a table, read a chart and pull trends off a dashboard without exporting to a spreadsheet. Analysis on whatever page you are on.',
     painPoints: [
       'Data presented in web dashboards, reports, and tables requires manual export and reformatting before you can analyze it.',
       'Identifying trends and patterns across multiple data visualizations on a page requires domain expertise and careful observation.',
@@ -268,8 +289,7 @@ export const useCases: UseCaseData[] = [
     title: 'AI Code Review Assistant in Chrome',
     keyword: 'AI code review Chrome extension',
     h1: 'AI Code Review Assistant for Chrome',
-    description:
-      'Review pull requests and code changes faster with Prophet. Get AI-powered analysis of diffs, security checks, and improvement suggestions on GitHub and GitLab.',
+    description: 'Review diffs faster on GitHub and GitLab. Claude reads the changes on screen and flags bugs, security issues and missing edge cases.',
     painPoints: [
       'Reviewing large pull requests with hundreds of changed files requires hours of focused attention to catch subtle bugs.',
       'Identifying security vulnerabilities, performance issues, and edge cases in code diffs demands deep expertise across multiple domains.',

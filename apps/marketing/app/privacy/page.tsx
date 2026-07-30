@@ -3,8 +3,9 @@ import { Footer } from '@/components/Footer'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy',
-  description: 'How Prophet handles your data. Learn about browser permissions, data collection, encryption, and your privacy rights when using Prophet AI Chrome extension.',
+  title: { absolute: 'Prophet Privacy Policy: What We Collect and Why' },
+  description:
+    'What Prophet stores, what never leaves your machine, which browser permissions it needs, and how to delete your data.',
   alternates: { canonical: '/privacy' },
 }
 

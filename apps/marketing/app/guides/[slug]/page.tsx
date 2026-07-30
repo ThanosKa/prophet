@@ -37,6 +37,8 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     .map((s) => guides.find((g) => g.slug === s))
     .filter(Boolean)
 
+  const task = guide.slug.replace(/-/g, ' ')
+
   const howToJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'HowTo',
@@ -86,7 +88,14 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           </div>
 
           <section className="mb-12">
-            <h2 className="text-2xl font-bold mb-6">Steps</h2>
+            <h2 className="text-2xl font-bold mb-3">
+              {guide.steps.length} steps to {task}
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              A {guide.difficulty} walkthrough that takes about {guide.estimatedTime}.
+              Install Prophet first, then work through these in order on any page where
+              you would normally {task} by hand.
+            </p>
             <div className="space-y-6">
               {guide.steps.map((step, i) => (
                 <div key={i} className="flex gap-4">
@@ -103,7 +112,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           </section>
 
           <section className="mb-12 border rounded-lg p-6 bg-muted/30">
-            <h2 className="text-xl font-bold mb-4">Pro Tips</h2>
+            <h2 className="text-xl font-bold mb-4">Pro tips when you {task}</h2>
             <ul className="space-y-3">
               {guide.proTips.map((tip, i) => (
                 <li key={i} className="flex gap-3 text-sm">
@@ -115,7 +124,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           </section>
 
           <section className="mb-12">
-            <h2 className="text-xl font-bold mb-4">Example Prompts</h2>
+            <h2 className="text-xl font-bold mb-4">Prompts that {task}</h2>
             <div className="grid gap-3">
               {guide.examplePrompts.map((prompt, i) => (
                 <div key={i} className="border rounded-lg px-4 py-3 bg-muted/20">
@@ -147,7 +156,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
 
       <section className="py-16 text-center border-t">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold mb-4">Try This Guide Now</h2>
+          <h2 className="text-2xl font-bold mb-4">Try it: {task} in your next tab</h2>
           <p className="text-muted-foreground mb-6">
             Install Prophet and follow along with this guide. Free plan available — no credit card required.
           </p>

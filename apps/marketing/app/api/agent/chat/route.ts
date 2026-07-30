@@ -10,15 +10,52 @@ import {
   AGENT_SYSTEM_PROMPT,
   AGENT_MAX_TOKENS,
 } from "@/lib/agent/system-prompt";
-import { agentChatRequestSchema, DEFAULT_AGENT_MODEL, type ToolName, sanitizeForLog } from "@prophet/shared";
+import {
+  buildAgentTools,
+  buildThinkingConfig,
+  shouldUseWebSearch,
+  toEchoableContent,
+} from "@/lib/agent/web-search";
+import {
+  agentChatRequestSchema,
+  DEFAULT_AGENT_MODEL,
+  resolveAgentModel,
+  sanitizeForLog,
+} from "@prophet/shared";
 import { error } from "@/types";
 import { logger } from "@/lib/logger";
-import { calculateCostInCents, type ModelName } from "@/lib/pricing";
+import {
+  calculateCostInCents,
+  calculateWebSearchCostInCredits,
+  type ModelName,
+} from "@/lib/pricing";
 import { devLogger } from "@/lib/dev-logger";
 import type {
   MessageParam,
   ContentBlockParam,
+  ContentBlock,
 } from "@anthropic-ai/sdk/resources/messages";
+
+function extractCitations(blocks: ContentBlock[]) {
+  const seen = new Set<string>();
+  const citations: Array<{ url: string; title: string; citedText: string }> = [];
+
+  for (const block of blocks) {
+    if (block.type !== "text" || !block.citations) continue;
+    for (const citation of block.citations) {
+      if (citation.type !== "web_search_result_location") continue;
+      if (seen.has(citation.url)) continue;
+      seen.add(citation.url);
+      citations.push({
+        url: citation.url,
+        title: citation.title ?? citation.url,
+        citedText: citation.cited_text,
+      });
+    }
+  }
+
+  return citations;
+}
 
 export async function POST(req: Request) {
   try {
@@ -72,9 +109,21 @@ export async function POST(req: Request) {
       );
     }
 
-    const { chatId, userMessage, toolResults, previousContent, image, enableThinking } =
-      validation.data;
-    const model = (validation.data.model ?? DEFAULT_AGENT_MODEL) as ModelName;
+    const {
+      chatId,
+      userMessage,
+      toolResults,
+      previousContent,
+      image,
+      enableThinking,
+      enableWebSearch,
+    } = validation.data;
+    // Installed extensions still send pre-Claude-5 model IDs; everything after this
+    // point — the API call, pricing, credit deduction, usage rows — uses the
+    // resolved model so cost always matches the model actually invoked.
+    const requestedModel = validation.data.model ?? DEFAULT_AGENT_MODEL;
+    const model = resolveAgentModel(requestedModel) as ModelName;
+    const webSearchEnabled = shouldUseWebSearch(enableWebSearch);
 
     const [chat, user] = await Promise.all([
       db.query.chats.findFirst({
@@ -124,7 +173,9 @@ export async function POST(req: Request) {
     // This prevents duplicate assistant messages in the history.
     let anthropicMessages: MessageParam[];
     const isFirstTurn = !!userMessage;
-    const isContinuationTurn = !!(toolResults && previousContent);
+    // A `pause_turn` resume sends previousContent with no tool results — the
+    // assistant turn is replayed on its own so the server tool can finish.
+    const isContinuationTurn = !!(previousContent && previousContent.length > 0);
 
     if (isFirstTurn) {
       // First turn: Load existing conversation from DB + append new user message
@@ -194,15 +245,17 @@ export async function POST(req: Request) {
         role: "assistant",
         content: previousContent as ContentBlockParam[],
       });
-      anthropicMessages.push({
-        role: "user",
-        content: toolResults.map((tr) => ({
-          type: "tool_result" as const,
-          tool_use_id: tr.tool_use_id,
-          content: tr.content,
-          is_error: tr.is_error,
-        })),
-      });
+      if (toolResults && toolResults.length > 0) {
+        anthropicMessages.push({
+          role: "user",
+          content: toolResults.map((tr) => ({
+            type: "tool_result" as const,
+            tool_use_id: tr.tool_use_id,
+            content: tr.content,
+            is_error: tr.is_error,
+          })),
+        });
+      }
     } else {
       return NextResponse.json(
         error(
@@ -218,6 +271,9 @@ export async function POST(req: Request) {
         userId,
         chatId,
         model,
+        requestedModel,
+        modelAliased: requestedModel !== model,
+        webSearchEnabled,
         messageCount: anthropicMessages.length,
         hasToolResults: !!toolResults,
       },
@@ -233,9 +289,10 @@ export async function POST(req: Request) {
         let fullTextResponse = "";
         let inputTokens = 0;
         let outputTokens = 0;
-        const contentBlocks: ContentBlockParam[] = [];
 
         try {
+          const thinkingConfig = buildThinkingConfig(model, enableThinking);
+
           const anthropicStream = await anthropic.messages.stream({
             model,
             max_tokens: enableThinking ? 16000 : AGENT_MAX_TOKENS,
@@ -246,20 +303,16 @@ export async function POST(req: Request) {
                 cache_control: { type: "ephemeral" },
               },
             ],
-            tools: AGENT_TOOLS,
+            tools: buildAgentTools(AGENT_TOOLS, webSearchEnabled),
             messages: anthropicMessages,
-            ...(enableThinking && {
-              thinking: {
-                type: "enabled",
-                budget_tokens: 8000,
-              },
-            }),
+            ...(thinkingConfig && { thinking: thinkingConfig }),
           });
 
           let currentToolUse: {
             id: string;
             name: string;
             input: string;
+            isServerTool: boolean;
           } | null = null;
 
           // Send session_created at the start
@@ -278,7 +331,37 @@ export async function POST(req: Request) {
                   id: event.content_block.id,
                   name: event.content_block.name,
                   input: "",
+                  isServerTool: false,
                 };
+              } else if (event.content_block.type === "server_tool_use") {
+                currentToolUse = {
+                  id: event.content_block.id,
+                  name: event.content_block.name,
+                  input: "",
+                  isServerTool: true,
+                };
+              } else if (
+                event.content_block.type === "web_search_tool_result"
+              ) {
+                const result = event.content_block;
+                const payload = Array.isArray(result.content)
+                  ? {
+                      type: "web_search_results",
+                      toolUseId: result.tool_use_id,
+                      sources: result.content.map((r) => ({
+                        url: r.url,
+                        title: r.title,
+                        pageAge: r.page_age ?? null,
+                      })),
+                    }
+                  : {
+                      type: "web_search_error",
+                      toolUseId: result.tool_use_id,
+                      errorCode: result.content.error_code,
+                    };
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify(payload)}\n\n`)
+                );
               }
             } else if (event.type === "content_block_delta") {
               if (event.delta.type === "text_delta") {
@@ -319,29 +402,30 @@ export async function POST(req: Request) {
                   );
                 }
 
-                contentBlocks.push({
-                  type: "tool_use",
-                  id: currentToolUse.id,
-                  name: currentToolUse.name as ToolName,
-                  input: parsedInput,
-                });
-
-                const data = JSON.stringify({
-                  type: "tool_use",
-                  toolUse: {
+                if (currentToolUse.isServerTool) {
+                  // Anthropic runs this one; the client must never try to execute it.
+                  const searchData = JSON.stringify({
+                    type: "web_search_start",
+                    toolUseId: currentToolUse.id,
+                    query:
+                      (parsedInput as { query?: string }).query ?? "",
+                  });
+                  controller.enqueue(
+                    encoder.encode(`data: ${searchData}\n\n`)
+                  );
+                } else {
+                  const data = JSON.stringify({
                     type: "tool_use",
-                    id: currentToolUse.id,
-                    name: currentToolUse.name,
-                    input: parsedInput,
-                  },
-                });
-                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                    toolUse: {
+                      type: "tool_use",
+                      id: currentToolUse.id,
+                      name: currentToolUse.name,
+                      input: parsedInput,
+                    },
+                  });
+                  controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                }
                 currentToolUse = null;
-              } else if (fullTextResponse) {
-                contentBlocks.push({
-                  type: "text",
-                  text: fullTextResponse,
-                });
               }
             } else if (event.type === "message_delta") {
               if (event.usage) {
@@ -363,16 +447,27 @@ export async function POST(req: Request) {
           const stopReason = finalMessage.stop_reason;
           const cacheReadTokens = finalMessage.usage.cache_read_input_tokens || 0;
           const cacheCreationTokens = finalMessage.usage.cache_creation_input_tokens || 0;
+          const webSearchRequests =
+            finalMessage.usage.server_tool_use?.web_search_requests ?? 0;
+
+          // The API's own blocks are authoritative for replay: they carry the
+          // encrypted web-search payloads that must round-trip untouched.
+          const contentBlocks = toEchoableContent(finalMessage.content);
+          const citations = extractCitations(finalMessage.content);
 
           const costCents = calculateCostInCents(
             model,
             inputTokens,
-            outputTokens
+            outputTokens,
+            webSearchRequests
           );
+          const webSearchCostCents =
+            calculateWebSearchCostInCredits(webSearchRequests);
 
-          // Determine if this is the final turn of the agentic loop
-          // Final turn = model didn't request more tool calls
-          const isFinalTurn = stopReason !== "tool_use";
+          // `pause_turn` means Anthropic stopped a long server-tool turn early and
+          // the client has to replay the assistant turn, so it is not final either.
+          const isFinalTurn =
+            stopReason !== "tool_use" && stopReason !== "pause_turn";
 
           // Save messages to DB only on appropriate turns:
           // - User message: Save on first turn only
@@ -453,6 +548,8 @@ export async function POST(req: Request) {
               outputTokens,
               cacheReadTokens,
               cacheCreationTokens,
+              webSearchRequests,
+              webSearchCostCents,
               stopReason,
             },
             "Agent stream completed"
@@ -466,13 +563,24 @@ export async function POST(req: Request) {
             cache_creation_input_tokens: cacheCreationTokens,
           });
 
+          if (citations.length > 0) {
+            const citationsData = JSON.stringify({
+              type: "citations",
+              citations,
+            });
+            controller.enqueue(encoder.encode(`data: ${citationsData}\n\n`));
+          }
+
           const executionCompleteData = JSON.stringify({
             type: "execution_complete",
+            stopReason,
             finalOutput: fullTextResponse,
             metrics: {
               inputTokens,
               outputTokens,
               costCents,
+              webSearchRequests,
+              webSearchCostCents,
             },
           });
           controller.enqueue(encoder.encode(`data: ${executionCompleteData}\n\n`));
@@ -484,7 +592,10 @@ export async function POST(req: Request) {
               inputTokens,
               outputTokens,
               costCents,
+              webSearchRequests,
+              webSearchCostCents,
             },
+            citations,
             contentBlocks,
           });
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));

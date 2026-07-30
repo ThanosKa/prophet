@@ -7,7 +7,7 @@ export const homeFaqs: FAQ[] = [
   {
     question: 'Is there a free version?',
     answer:
-      'Yes. Prophet includes a free plan with $0.20 in credits — enough for roughly 50 messages with Haiku or 10 with Sonnet. No credit card required.',
+      'Yes. Prophet includes a free plan with $0.20 in credits — enough for roughly 20 messages with Haiku, 10 with Sonnet or 4 with Opus. No credit card required.',
   },
   {
     question: 'How is Prophet different from ChatGPT or Claude.ai?',
@@ -47,7 +47,7 @@ export const homeFaqs: FAQ[] = [
   {
     question: 'Which AI model does Prophet use?',
     answer:
-      'Prophet supports all Claude models including Claude 4.5 Haiku, Claude 4.6 Sonnet, and Claude 4.6 Opus. You can select any model you prefer at standard Anthropic pricing.',
+      'Prophet supports all Claude models including Claude Haiku 4.5, Claude Sonnet 5, and Claude Opus 5. You can select any model you prefer at standard Anthropic pricing.',
   },
   {
     question: 'Does my balance roll over?',
@@ -56,9 +56,8 @@ export const homeFaqs: FAQ[] = [
   },
 ]
 
-export function faqPageJsonLd(faqs: FAQ[]) {
+export function faqNode(faqs: FAQ[]) {
   return {
-    '@context': 'https://schema.org',
     '@type': 'FAQPage',
     mainEntity: faqs.map((f) => ({
       '@type': 'Question',
@@ -66,4 +65,8 @@ export function faqPageJsonLd(faqs: FAQ[]) {
       acceptedAnswer: { '@type': 'Answer', text: f.answer },
     })),
   }
+}
+
+export function faqPageJsonLd(faqs: FAQ[]) {
+  return { '@context': 'https://schema.org', ...faqNode(faqs) }
 }

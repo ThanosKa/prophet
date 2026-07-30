@@ -7,8 +7,9 @@ import type { Metadata } from 'next'
 import { integrations } from '@/lib/seo/integrations'
 
 export const metadata: Metadata = {
-  title: 'Integrations - Use AI on Any Website',
-  description: 'Prophet AI works on every website you use. See how to use AI assistance on GitHub, Gmail, Google Docs, Notion, LinkedIn, Reddit, YouTube, Stack Overflow, Jira, and Shopify.',
+  title: { absolute: 'Use Claude AI on GitHub, Gmail, Notion & Any Site' },
+  description:
+    'Prophet works on every site you already use. Concrete workflows for GitHub, Gmail, Docs, Notion, LinkedIn, Jira, Shopify and more.',
   alternates: { canonical: '/integrations' },
 }
 

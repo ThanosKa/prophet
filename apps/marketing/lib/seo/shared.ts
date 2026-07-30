@@ -1,3 +1,5 @@
+import type { UseCaseSlug } from './use-cases'
+
 export interface SEOPageData {
   slug: string
   title: string
@@ -6,25 +8,12 @@ export interface SEOPageData {
   description: string
 }
 
-export interface UseCaseData extends SEOPageData {
-  painPoints: string[]
-  features: string[]
-  examplePrompts: string[]
-  relatedSlugs: string[]
-}
-
 export interface ProfessionData extends SEOPageData {
   scenarios: Array<{ title: string; description: string }>
-  relatedUseCases: string[]
+  /** Rendered as links to /use-cases/{slug}, so only real use-case slugs are valid. */
+  relatedUseCases: UseCaseSlug[]
   recommendedModel: 'haiku' | 'sonnet' | 'opus'
   typicalSessionCost: string
-}
-
-export interface ComparisonData extends SEOPageData {
-  competitor: string
-  featureMatrix: Array<{ feature: string; prophet: string; competitor: string }>
-  prophetAdvantages: string[]
-  competitorAdvantages: string[]
 }
 
 export interface GuideData extends SEOPageData {
@@ -49,5 +38,4 @@ export interface IndustryData extends SEOPageData {
   relatedUseCases: string[]
 }
 
-export const CHROME_STORE_URL = 'https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif'
-export const BASE_URL = 'https://prophetchrome.com'
+export { BASE_URL, CHROME_STORE_URL } from '../constants'

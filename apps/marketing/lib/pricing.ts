@@ -1,15 +1,17 @@
 // Anthropic API pricing (per 1M tokens in USD)
-// Source: https://claude.com/pricing (Claude 4.6 series)
+// Source: https://claude.com/pricing
+// Sonnet 5 carries a promotional $2/$10 rate through 2026-08-31; we bill the
+// standard $3/$15 list rate so margin never inverts when the promo ends.
 export const MODEL_PRICING = {
   "claude-haiku-4-5": {
     input: 1.0,   // $1 per MTok
     output: 5.0,  // $5 per MTok
   },
-  "claude-sonnet-4-6": {
+  "claude-sonnet-5": {
     input: 3.0,   // $3 per MTok
     output: 15.0, // $15 per MTok
   },
-  "claude-opus-4-6": {
+  "claude-opus-5": {
     input: 5.0,   // $5 per MTok
     output: 25.0, // $25 per MTok
   },
@@ -17,7 +19,11 @@ export const MODEL_PRICING = {
 
 export const MARKUP = 1.20;
 
-export const ALL_MODELS = ['claude-haiku-4-5', 'claude-sonnet-4-6', 'claude-opus-4-6'] as const;
+// Anthropic bills server-side web search at $10 per 1,000 searches on top of tokens.
+export const WEB_SEARCH_PRICE_PER_1K_USD = 10.0;
+export const WEB_SEARCH_PRICE_PER_SEARCH_USD = WEB_SEARCH_PRICE_PER_1K_USD / 1000;
+
+export const ALL_MODELS = ['claude-haiku-4-5', 'claude-sonnet-5', 'claude-opus-5'] as const;
 
 // Stripe Price IDs (not secret - safe to hardcode as fallback)
 const STRIPE_PRICE_IDS = {
@@ -73,11 +79,16 @@ export type TierName = keyof typeof TIER_CONFIG;
  * - Output: (500/1M) * $15 = $0.0075
  * - Total: $0.0105 = 1.05 cents
  * - With 20% markup: 1.26 cents → 2 credits (rounded up)
+ *
+ * `webSearchRequests` bills Anthropic's per-search server-tool fee on top of tokens.
+ * A single search is $0.01, so it dominates a short turn's cost — omitting it would
+ * mean serving searches at a loss.
  */
 export function calculateCostInCredits(
   model: ModelName,
   inputTokens: number,
-  outputTokens: number
+  outputTokens: number,
+  webSearchRequests = 0
 ): number {
   const pricing = MODEL_PRICING[model];
 
@@ -88,7 +99,8 @@ export function calculateCostInCredits(
   // Calculate raw API cost in USD
   const inputCost = (inputTokens / 1_000_000) * pricing.input;
   const outputCost = (outputTokens / 1_000_000) * pricing.output;
-  const totalCostUSD = inputCost + outputCost;
+  const searchCost = Math.max(0, webSearchRequests) * WEB_SEARCH_PRICE_PER_SEARCH_USD;
+  const totalCostUSD = inputCost + outputCost + searchCost;
 
   // Apply markup and convert to credits (1 credit = 1 cent)
   const costWithMarkup = totalCostUSD * MARKUP;
@@ -98,13 +110,25 @@ export function calculateCostInCredits(
   return Math.max(1, credits);
 }
 
+/**
+ * Marked-up credit cost of the web-search portion of a turn, for reporting the
+ * search fee separately from token spend.
+ */
+export function calculateWebSearchCostInCredits(webSearchRequests: number): number {
+  if (webSearchRequests <= 0) return 0;
+  return Math.ceil(
+    webSearchRequests * WEB_SEARCH_PRICE_PER_SEARCH_USD * MARKUP * 100
+  );
+}
+
 // Legacy function for backwards compatibility
 export function calculateCostInCents(
   model: ModelName,
   inputTokens: number,
-  outputTokens: number
+  outputTokens: number,
+  webSearchRequests = 0
 ): number {
-  return calculateCostInCredits(model, inputTokens, outputTokens);
+  return calculateCostInCredits(model, inputTokens, outputTokens, webSearchRequests);
 }
 
 /**

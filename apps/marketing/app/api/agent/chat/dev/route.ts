@@ -5,7 +5,13 @@ import { eq } from 'drizzle-orm'
 import { anthropic } from '@/lib/anthropic'
 import { AGENT_TOOLS } from '@/lib/agent/tools'
 import { AGENT_SYSTEM_PROMPT, AGENT_MAX_TOKENS } from '@/lib/agent/system-prompt'
-import { agentChatRequestSchema, DEFAULT_AGENT_MODEL, sanitizeForLog } from '@prophet/shared'
+import { buildAgentTools, buildThinkingConfig, toEchoableContent } from '@/lib/agent/web-search'
+import {
+  agentChatRequestSchema,
+  DEFAULT_AGENT_MODEL,
+  resolveAgentModel,
+  sanitizeForLog,
+} from '@prophet/shared'
 import { error } from '@/types'
 import { logger } from '@/lib/logger'
 import { calculateCostInCents, type ModelName } from '@/lib/pricing'
@@ -42,15 +48,18 @@ export async function POST(req: Request) {
 
     logger.debug({}, '[DEV] Request validation passed')
 
-    const { chatId, userMessage, toolResults, previousContent, enableThinking } = validation.data
-    const model = (validation.data.model ?? DEFAULT_AGENT_MODEL) as ModelName
+    const { chatId, userMessage, toolResults, previousContent, enableThinking, enableWebSearch } =
+      validation.data
+    const model = resolveAgentModel(
+      validation.data.model ?? DEFAULT_AGENT_MODEL
+    ) as ModelName
 
     // Build Anthropic messages based on request type
     // IMPORTANT: For continuation turns (toolResults), we DON'T load from DB.
     // The client manages conversation state during the agentic loop.
     let anthropicMessages: MessageParam[]
     const isFirstTurn = !!userMessage
-    const isContinuationTurn = !!(toolResults && previousContent)
+    const isContinuationTurn = !!(previousContent && previousContent.length > 0)
 
     if (isFirstTurn) {
       // First turn: Load existing conversation from DB + append new user message
@@ -91,20 +100,25 @@ export async function POST(req: Request) {
 
       anthropicMessages = baseMessages
 
-      logger.debug({ toolResultCount: toolResults.length }, '[DEV] Building continuation message')
+      logger.debug(
+        { toolResultCount: toolResults?.length ?? 0 },
+        '[DEV] Building continuation message'
+      )
       anthropicMessages.push({
         role: 'assistant',
         content: previousContent as ContentBlockParam[],
       })
-      anthropicMessages.push({
-        role: 'user',
-        content: toolResults.map((tr) => ({
-          type: 'tool_result' as const,
-          tool_use_id: tr.tool_use_id,
-          content: tr.content,
-          is_error: tr.is_error,
-        })),
-      })
+      if (toolResults && toolResults.length > 0) {
+        anthropicMessages.push({
+          role: 'user',
+          content: toolResults.map((tr) => ({
+            type: 'tool_result' as const,
+            tool_use_id: tr.tool_use_id,
+            content: tr.content,
+            is_error: tr.is_error,
+          })),
+        })
+      }
     } else {
       logger.warn({}, '[DEV] Neither userMessage nor toolResults provided')
       return NextResponse.json(
@@ -151,10 +165,11 @@ export async function POST(req: Request) {
         let outputTokens = 0
         let contentDeltaCount = 0
         let toolUseCount = 0
-        const contentBlocks: ContentBlockParam[] = []
 
         try {
           logger.debug({ model, maxTokens: enableThinking ? 16000 : AGENT_MAX_TOKENS, enableThinking }, '[DEV] Creating Anthropic stream')
+
+          const thinkingConfig = buildThinkingConfig(model, enableThinking)
 
           const anthropicStream = await anthropic.messages.stream({
             model,
@@ -166,14 +181,9 @@ export async function POST(req: Request) {
                 cache_control: { type: 'ephemeral' },
               },
             ],
-            tools: AGENT_TOOLS,
+            tools: buildAgentTools(AGENT_TOOLS, enableWebSearch),
             messages: anthropicMessages,
-            ...(enableThinking && {
-              thinking: {
-                type: 'enabled',
-                budget_tokens: 8000,
-              },
-            }),
+            ...(thinkingConfig && { thinking: thinkingConfig }),
           })
 
           logger.debug({}, '[DEV] Anthropic stream created, processing events')
@@ -232,13 +242,6 @@ export async function POST(req: Request) {
                   )
                 }
 
-                contentBlocks.push({
-                  type: 'tool_use',
-                  id: currentToolUse.id,
-                  name: currentToolUse.name,
-                  input: parsedInput,
-                })
-
                 logger.debug(
                   { toolName: currentToolUse.name, inputKeys: Object.keys(parsedInput) },
                   '[DEV] Tool use completed'
@@ -254,11 +257,6 @@ export async function POST(req: Request) {
                   },
                 }))
                 currentToolUse = null
-              } else if (fullTextResponse) {
-                contentBlocks.push({
-                  type: 'text',
-                  text: fullTextResponse,
-                })
               }
             } else if (event.type === 'message_delta') {
               if (event.usage) {
@@ -279,11 +277,16 @@ export async function POST(req: Request) {
           const stopReason = finalMessage.stop_reason
           const cacheReadTokens = finalMessage.usage.cache_read_input_tokens || 0
           const cacheCreationTokens = finalMessage.usage.cache_creation_input_tokens || 0
+          const webSearchRequests =
+            finalMessage.usage.server_tool_use?.web_search_requests ?? 0
+
+          const contentBlocks = toEchoableContent(finalMessage.content)
 
           const costCents = calculateCostInCents(
             model,
             inputTokens,
-            outputTokens
+            outputTokens,
+            webSearchRequests
           )
 
           logger.info(
@@ -310,7 +313,7 @@ export async function POST(req: Request) {
           })
 
           // Determine if this is the final turn of the agentic loop
-          const isFinalTurn = stopReason !== 'tool_use'
+          const isFinalTurn = stopReason !== 'tool_use' && stopReason !== 'pause_turn'
 
           // Save messages only on appropriate turns (same logic as production)
           const assistantToolCalls = contentBlocks.filter(b => b.type === "tool_use");

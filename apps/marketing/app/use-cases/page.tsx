@@ -8,9 +8,9 @@ import { ArrowRight } from 'lucide-react'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'AI Assistant Use Cases',
+  title: { absolute: 'AI Chrome Extension Use Cases: 15 Real Workflows' },
   description:
-    'Discover how Prophet helps with research, writing, coding, studying, email drafting, content creation, data analysis, and more. AI-powered Chrome extension for every workflow.',
+    'Research, writing, coding, data analysis, form filling and more. What an AI side panel actually does all day, with prompts for each.',
   alternates: { canonical: '/use-cases' },
   keywords: [
     'AI Chrome extension use cases',

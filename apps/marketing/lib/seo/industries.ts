@@ -6,7 +6,7 @@ export const industries: IndustryData[] = [
     title: 'Prophet AI for E-Commerce',
     keyword: 'AI Chrome extension for ecommerce',
     h1: 'Prophet AI for E-Commerce Teams',
-    description: 'Streamline your e-commerce operations with Prophet AI. Write product descriptions, manage listings, analyze competitors, and handle customer communications from your browser.',
+    description: 'Write product copy, audit listings and read competitor pages without leaving the tab. Concrete e-commerce workflows for Claude in Chrome.',
     challenges: [
       'Writing unique product descriptions at scale across hundreds or thousands of SKUs',
       'Monitoring competitor pricing and product listings across multiple platforms',
@@ -26,7 +26,7 @@ export const industries: IndustryData[] = [
     title: 'Prophet AI for SaaS Companies',
     keyword: 'AI Chrome extension for SaaS',
     h1: 'Prophet AI for SaaS Teams',
-    description: 'Accelerate SaaS development and operations with Prophet AI. Review code, manage tickets, draft documentation, and streamline customer support from the browser.',
+    description: 'Review a diff, triage a ticket and draft the changelog from one side panel. How SaaS teams use Claude on the pages they already work in.',
     challenges: [
       'Keeping up with code reviews across multiple repositories and pull requests',
       'Writing and maintaining technical documentation alongside rapid development cycles',
@@ -46,7 +46,7 @@ export const industries: IndustryData[] = [
     title: 'Prophet AI for Healthcare',
     keyword: 'AI Chrome extension for healthcare',
     h1: 'Prophet AI for Healthcare Professionals',
-    description: 'Support healthcare workflows with Prophet AI. Research medical literature, draft patient communications, summarize clinical guidelines, and manage administrative tasks in the browser.',
+    description: 'Summarise clinical guidelines, search literature and draft admin correspondence in-browser. Workflows built for healthcare, not generic AI.',
     challenges: [
       'Staying current with rapidly evolving medical research and clinical guidelines',
       'Drafting clear patient communications that convey complex medical information',
@@ -66,7 +66,7 @@ export const industries: IndustryData[] = [
     title: 'Prophet AI for Legal Professionals',
     keyword: 'AI Chrome extension for legal',
     h1: 'Prophet AI for Legal Professionals',
-    description: 'Enhance legal research and document drafting with Prophet AI. Analyze case law, summarize contracts, draft correspondence, and review documents faster from the browser.',
+    description: 'Read a contract, summarise case law and draft correspondence from the page you are on. Practical legal workflows with Claude in Chrome.',
     challenges: [
       'Reviewing lengthy contracts, briefs, and regulatory documents under tight deadlines',
       'Conducting thorough legal research across multiple databases and jurisdictions',
@@ -86,7 +86,7 @@ export const industries: IndustryData[] = [
     title: 'Prophet AI for Finance',
     keyword: 'AI Chrome extension for finance',
     h1: 'Prophet AI for Finance Professionals',
-    description: 'Streamline financial analysis and reporting with Prophet AI. Analyze market data, draft reports, extract financial metrics, and research investment opportunities from your browser.',
+    description: 'Pull metrics off a filing, draft the report and scan market pages in one place. Finance workflows that run in your browser side panel.',
     challenges: [
       'Analyzing financial statements and reports spread across multiple web platforms',
       'Staying current with market news, earnings calls, and regulatory filings',
@@ -106,7 +106,7 @@ export const industries: IndustryData[] = [
     title: 'Prophet AI for Education',
     keyword: 'AI Chrome extension for education',
     h1: 'Prophet AI for Educators and Students',
-    description: 'Transform learning and teaching with Prophet AI. Create lesson plans, research topics, draft assignments, provide feedback on student work, and study more effectively.',
+    description: 'Build lesson plans, research topics and give feedback on student work from the browser. Practical AI workflows for teaching and study.',
     challenges: [
       'Creating engaging lesson plans and educational materials from scratch',
       'Providing detailed, constructive feedback on student submissions at scale',
@@ -126,7 +126,7 @@ export const industries: IndustryData[] = [
     title: 'Prophet AI for Marketing Agencies',
     keyword: 'AI Chrome extension for marketing agencies',
     h1: 'Prophet AI for Marketing Agencies',
-    description: 'Scale your marketing agency output with Prophet AI. Draft copy, analyze campaigns, research competitors, create social media content, and manage client deliverables from the browser.',
+    description: 'Draft client copy, tear down competitor pages and turn one article into five posts. Agency workflows that run where you already work.',
     challenges: [
       'Producing high volumes of unique content across multiple clients and platforms',
       'Analyzing competitor strategies and campaign performance across different tools',
@@ -146,7 +146,7 @@ export const industries: IndustryData[] = [
     title: 'Prophet AI for Consultants',
     keyword: 'AI Chrome extension for consultants',
     h1: 'Prophet AI for Consultants',
-    description: 'Deliver faster, higher-quality consulting work with Prophet AI. Research industries, draft deliverables, analyze data, and prepare presentations from your browser.',
+    description: 'Research an industry, structure the deliverable and prep the deck from your browser. Consulting workflows with Claude in the side panel.',
     challenges: [
       'Conducting rapid industry research across unfamiliar domains and markets',
       'Drafting polished client deliverables (decks, memos, reports) under tight timelines',

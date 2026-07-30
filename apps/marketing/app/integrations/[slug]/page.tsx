@@ -1,6 +1,7 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { breadcrumbJsonLd } from '@/lib/structured-data'
+import { faqPageJsonLd } from '@/lib/faqs'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -28,9 +29,13 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
   const integration = getIntegrationBySlug(slug)
   if (!integration) notFound()
 
-  const relatedIntegrations = integrations
-    .filter((i) => i.slug !== integration.slug)
-    .slice(0, 4)
+  // Rotate rather than slice(0, 4): a fixed slice put the same four links on all ten
+  // pages, leaving the rest of the set with no internal links at all.
+  const currentIndex = integrations.findIndex((i) => i.slug === integration.slug)
+  const relatedIntegrations = Array.from(
+    { length: Math.min(4, integrations.length - 1) },
+    (_, offset) => integrations[(currentIndex + offset + 1) % integrations.length]
+  )
 
   const faqItems = [
     {
@@ -43,23 +48,15 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
     },
     {
       question: `Does Prophet cost anything to use on ${integration.platform}?`,
-      answer: `Prophet has a free tier with $0.20 in credits, enough to try it on ${integration.platform} right away. After that it is pay-per-use: you are billed against your actual Claude API usage rather than a flat subscription, starting at $9.99/month for $11 in credits.`,
+      answer: `Prophet has a free tier with $0.20 in credits, enough to try it on ${integration.platform} right away. After that it is pay-per-use: you are billed against your Claude API usage plus a 20% platform margin rather than a flat subscription, starting at $9.99/month for $11 in credits.`,
     },
     {
       question: `Which AI model does Prophet use on ${integration.platform}?`,
-      answer: `Prophet runs on Claude. You can pick Haiku 4.5 for fast, low-cost ${integration.platform} tasks, Sonnet 4.6 for balanced everyday work, or Opus 4.6 for the most complex reasoning. Switch models any time from the side panel.`,
+      answer: `Prophet runs on Claude. You can pick Haiku 4.5 for fast, low-cost ${integration.platform} tasks, Sonnet 5 for balanced everyday work, or Opus 5 for the most complex reasoning. Switch models any time from the side panel.`,
     },
   ]
 
-  const faqJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqItems.map((item) => ({
-      '@type': 'Question',
-      name: item.question,
-      acceptedAnswer: { '@type': 'Answer', text: item.answer },
-    })),
-  }
+  const faqJsonLd = faqPageJsonLd(faqItems)
 
   const softwareAppJsonLd = {
     '@context': 'https://schema.org',

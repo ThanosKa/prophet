@@ -114,7 +114,7 @@ export const guides: GuideData[] = [
     title: 'How to Debug Code with AI',
     keyword: 'debug code AI Chrome extension',
     h1: 'How to Debug Code with Prophet AI',
-    description: 'Use Prophet AI to debug code on GitHub, Stack Overflow, or any code-sharing platform. Get explanations, fixes, and suggestions without leaving your browser.',
+    description: 'Debug on GitHub, Stack Overflow or any code page. Get the root cause and a fix explained against the stack trace already on your screen.',
     difficulty: 'advanced',
     estimatedTime: '5 minutes',
     steps: [
@@ -251,7 +251,7 @@ export const guides: GuideData[] = [
     title: 'How to Automate Data Entry with AI',
     keyword: 'automate data entry AI Chrome extension',
     h1: 'How to Automate Data Entry with Prophet AI',
-    description: 'Automate repetitive data entry tasks across web applications using Prophet AI browser automation. Save hours on CRM updates, spreadsheet entries, and form submissions.',
+    description: 'Automate CRM updates, spreadsheet entry and form submissions with plain English. A step-by-step walkthrough with the prompts to use.',
     difficulty: 'advanced',
     estimatedTime: '15 minutes',
     steps: [
