@@ -8,6 +8,7 @@ import { users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
 import { EXTRA_CREDITS } from '@/lib/pricing'
+import { getAppUrl } from '@/lib/constants'
 
 const subscriptionCheckoutSchema = z.object({
   priceId: z.string().min(1, 'Price ID is required'),
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prophetchrome.com'
+    const appUrl = getAppUrl()
 
     // Validate priceId is configured (env vars loaded at build time)
     if (!data.priceId) {

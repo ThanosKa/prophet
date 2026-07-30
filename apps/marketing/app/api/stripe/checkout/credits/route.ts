@@ -7,6 +7,7 @@ import { users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
 import { EXTRA_CREDITS } from '@/lib/pricing'
+import { getAppUrl } from '@/lib/constants'
 
 export async function POST() {
   try {
@@ -29,7 +30,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Extra credits not configured' }, { status: 500 })
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prophetchrome.com'
+    const appUrl = getAppUrl()
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'payment',
