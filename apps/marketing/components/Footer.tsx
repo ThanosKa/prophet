@@ -52,9 +52,13 @@ export function Footer() {
             <h4 className="font-semibold mb-4">Compare</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/best-ai-chrome-extensions" className="hover:text-foreground transition">Best AI Chrome Extensions</Link></li>
+              <li><Link href="/best-claude-chrome-extensions" className="hover:text-foreground transition">Best Claude Extensions</Link></li>
+              <li><Link href="/best-ai-sidebar-extensions" className="hover:text-foreground transition">Best AI Sidebar Extensions</Link></li>
+              <li><Link href="/free-claude-ai" className="hover:text-foreground transition">Free Claude AI</Link></li>
               <li><Link href="/compare/prophet-vs-claude-in-chrome" className="hover:text-foreground transition">Prophet vs Claude in Chrome</Link></li>
               <li><Link href="/compare/prophet-vs-sider" className="hover:text-foreground transition">Prophet vs Sider</Link></li>
               <li><Link href="/compare" className="hover:text-foreground transition">All Comparisons</Link></li>
+              <li><Link href="/alternatives" className="hover:text-foreground transition">Alternatives</Link></li>
             </ul>
           </div>
 

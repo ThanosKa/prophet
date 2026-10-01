@@ -27,6 +27,7 @@ export const organizationNode = {
     'https://x.com/KazakisThanos',
     'https://github.com/ThanosKa/prophet',
     'https://discord.gg/2YV53RbS',
+    CHROME_STORE_LISTING,
   ],
 }
 

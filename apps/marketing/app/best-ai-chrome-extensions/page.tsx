@@ -1,14 +1,14 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { InstallCta } from '@/components/InstallCta'
 import { RelatedLinks } from '@/components/RelatedLinks'
 import { breadcrumbNode, graphJsonLd, listicleItemListNode } from '@/lib/structured-data'
 import { faqNode } from '@/lib/faqs'
-import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: { absolute: 'Best AI Chrome Extensions 2026: 9 Ranked, Free Tiers Tested' },
+  title: { absolute: 'Best AI Chrome Extensions 2026: 9 Ranked, Free Tiers Compared' },
   description:
     'Nine AI extensions ranked on install count, real price and free-tier limits. What each one actually does, and which three are worth installing.',
   alternates: { canonical: '/best-ai-chrome-extensions' },
@@ -289,7 +289,7 @@ export default function BestAIChromeExtensionsPage() {
             <h1 className="text-4xl sm:text-5xl font-bold mb-4">Best AI Chrome Extensions in 2026</h1>
             <p className="text-sm text-muted-foreground mb-6">Last updated: July 29, 2026</p>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              AI Chrome extensions have become essential productivity tools for anyone who works in a browser. Whether you need help writing emails, summarizing research, automating repetitive tasks, or analyzing web pages, there is an AI extension that fits your workflow. We tested and compared the most popular options to help you choose the right one.
+              AI Chrome extensions have become essential productivity tools for anyone who works in a browser. Whether you need help writing emails, summarizing research, automating repetitive tasks, or analyzing web pages, there is an AI extension that fits your workflow. We compared the most popular options to help you choose the right one.
             </p>
             <p className="text-muted-foreground leading-relaxed mt-4">
               This list evaluates extensions on five criteria: AI model quality, feature depth, browser automation capabilities, pricing value, and privacy practices. We prioritize extensions that go beyond simple chat by offering meaningful integration with the web pages you visit. If you specifically want Claude rather than a general AI assistant, the narrower{' '}
@@ -303,9 +303,9 @@ export default function BestAIChromeExtensionsPage() {
               .
             </p>
             <aside className="mt-8 rounded-lg border border-border bg-muted/50 p-4 text-sm">
-              <p className="font-semibold mb-1">About our testing</p>
+              <p className="font-semibold mb-1">How this list is built</p>
               <p className="text-muted-foreground">
-                Rankings reflect hands-on use across March, April and May 2026 on Chrome 134 (macOS and Windows), using the same five tasks for every extension: summarising a long-form article, drafting an email reply, extracting structured data from a complex page, answering a technical reference question, and running a multi-step browser automation where supported. Pricing and feature claims come from each vendor&apos;s published documentation and were re-checked in July 2026. A controlled benchmark with measured latency and per-task cost is in progress; this page will be updated when it lands.
+                This ranking compares each extension&apos;s published documentation, pricing pages and Chrome Web Store listing against the same five tasks: summarising a long-form article, drafting an email reply, extracting structured data from a complex page, answering a technical reference question, and running a multi-step browser automation where supported. Pricing and feature claims were last checked against vendor documentation in July 2026. Prophet is our own product, so we know it first-hand; for the others we have not run a controlled benchmark, and this page does not report measured latency or per-task cost.
               </p>
             </aside>
           </div>
@@ -313,7 +313,7 @@ export default function BestAIChromeExtensionsPage() {
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">Best AI Chrome Extensions: Short Picks</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              If you want the answer without the detail, here is how the nine tested AI Chrome extensions rank by what you are actually trying to do:
+              If you want the answer without the detail, here is how the nine AI Chrome extensions rank by what you are actually trying to do:
             </p>
             <ul className="space-y-2 text-muted-foreground">
               <li><strong className="text-foreground">Best overall and only real browser automation:</strong> Prophet (Claude Haiku 4.5, Sonnet 5 and Opus 5, 18 automation tools, pay-per-use credits)</li>
@@ -367,7 +367,7 @@ export default function BestAIChromeExtensionsPage() {
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-6">How We Evaluated</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Every extension on this list was tested across the same five tasks: summarizing a long-form article, drafting an email reply, extracting structured data from a complex web page, answering a technical reference question, and (where supported) performing a multi-step browser automation. We ran tests in March, April, and May 2026 on Chrome 134 across both macOS and Windows.
+              Every extension on this list is compared against the same five tasks: summarizing a long-form article, drafting an email reply, extracting structured data from a complex web page, answering a technical reference question, and (where supported) performing a multi-step browser automation. The comparison rests on what each vendor documents and lists publicly, not on timed side-by-side runs.
             </p>
             <p className="text-muted-foreground leading-relaxed mb-4">
               The five criteria, weighted equally:
@@ -483,9 +483,9 @@ export default function BestAIChromeExtensionsPage() {
           </section>
 
           <section className="mb-12">
-            <h2 className="text-2xl font-bold mb-6">How We Tested</h2>
+            <h2 className="text-2xl font-bold mb-6">How We Evaluated</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              We evaluated over 20 AI Chrome extensions across several dimensions. Model quality matters, but what separates the best extensions is how deeply they integrate with your browsing experience. A great AI extension does not just answer questions; it understands the page you are on and can help you take action.
+              We compared nine AI Chrome extensions across several dimensions. Model quality matters, but what separates the best extensions is how deeply they integrate with your browsing experience. A great AI extension does not just answer questions; it understands the page you are on and can help you take action.
             </p>
             <p className="text-muted-foreground leading-relaxed mb-4">
               Browser automation is an emerging differentiator. Extensions that can interact with web pages, not just read them, unlock workflows that were previously impossible: automated form filling, data extraction, multi-step web tasks. We weighted this capability heavily because it represents the next evolution of AI browser tools.
@@ -620,19 +620,10 @@ export default function BestAIChromeExtensionsPage() {
         </div>
       </article>
 
-      <section className="py-16 text-center border-t">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold mb-4">Try the Top-Ranked AI Chrome Extension</h2>
-          <p className="text-muted-foreground mb-6">
-            Install Prophet and get AI chat plus browser automation in your Chrome side panel. Free plan available.
-          </p>
-          <Button asChild>
-            <Link href="https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif">
-              Add to Chrome
-            </Link>
-          </Button>
-        </div>
-      </section>
+      <InstallCta
+        title="Try the Top-Ranked AI Chrome Extension"
+        description="Install Prophet and get AI chat plus browser automation in your Chrome side panel. Free plan available."
+      />
 
       <Footer />
     </main>

@@ -23,7 +23,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const profession = getProfession(slug)
   if (!profession) return {}
   return {
-    title: profession.title,
+    // `absolute` skips the "| Prophet" template: titles already start with the brand.
+    title: { absolute: profession.title },
     description: profession.description,
     alternates: { canonical: `/for/${profession.slug}` },
   }
