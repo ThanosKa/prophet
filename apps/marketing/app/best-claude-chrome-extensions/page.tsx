@@ -1,9 +1,9 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { InstallCta } from '@/components/InstallCta'
 import { RelatedLinks } from '@/components/RelatedLinks'
 import { breadcrumbNode, graphJsonLd, listicleItemListNode } from '@/lib/structured-data'
 import { faqNode } from '@/lib/faqs'
-import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
@@ -417,19 +417,10 @@ export default function BestClaudeChromeExtensionsPage() {
         </div>
       </article>
 
-      <section className="py-16 text-center border-t">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold mb-4">Get Claude AI in Your Browser</h2>
-          <p className="text-muted-foreground mb-6">
-            Install Prophet for Claude Haiku, Sonnet, and Opus with browser automation. Free plan available.
-          </p>
-          <Button asChild>
-            <Link href="https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif">
-              Add to Chrome
-            </Link>
-          </Button>
-        </div>
-      </section>
+      <InstallCta
+        title="Get Claude AI in Your Browser"
+        description="Install Prophet for Claude Haiku, Sonnet, and Opus with browser automation. Free plan available."
+      />
 
       <Footer />
     </main>

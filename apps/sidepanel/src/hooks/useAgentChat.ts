@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useMemo } from 'react'
 import { useChatStore } from '@/store/chatStore'
 import { useUIStore } from '@/store/uiStore'
 import { useAgentStore } from '@/store/agentStore'
+import { useReviewPromptStore } from '@/store/reviewPromptStore'
 import { runAgentLoop } from '@/lib/agent'
 import { config } from '@/lib/config'
 import { chatAdapter } from '@/lib/agent/chat-adapter'
@@ -151,6 +152,11 @@ export function useAgentChat() {
               enableThinking
             )
 
+        // A run counts as successful when the final turn completes without an error event.
+        // These two events are only emitted once the model finishes without requesting more tools.
+        let finishedCleanly = false
+        let sawError = false
+
         for await (const event of eventStream) {
           if (abortRef.current) break
 
@@ -195,8 +201,11 @@ export function useAgentChat() {
             })
           }
 
+          if (event.type === 'done' || event.type === 'execution_complete') finishedCleanly = true
+
           // Handle errors
           if (event.type === 'error') {
+            sawError = true
             setStatus('error')
             setError(event.error || 'Agent execution failed')
             setErrorInfo({
@@ -210,6 +219,10 @@ export function useAgentChat() {
               setRemaining(event.details.remaining)
             }
           }
+        }
+
+        if (finishedCleanly && !sawError && !abortRef.current) {
+          void useReviewPromptStore.getState().recordSuccessfulRun()
         }
       } catch (err) {
         setStatus('error')

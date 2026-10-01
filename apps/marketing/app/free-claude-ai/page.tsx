@@ -1,10 +1,9 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { InstallCta } from '@/components/InstallCta'
 import { RelatedLinks } from '@/components/RelatedLinks'
 import { breadcrumbJsonLd } from '@/lib/structured-data'
 import { faqPageJsonLd } from '@/lib/faqs'
-import { Button } from '@/components/ui/button'
-import { CHROME_STORE_URL } from '@/lib/constants'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
@@ -365,23 +364,23 @@ export default function FreeClaudeAIPage() {
         </div>
       </article>
 
-      <section className="py-16 text-center border-t">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold mb-4">Try Claude free in your browser</h2>
-          <p className="text-muted-foreground mb-6">
-            $0.20 in credits, no card required, and Haiku 4.5, Sonnet 5.5 and Opus 5.5 all unlocked
-            from the start.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild>
-              <Link href={CHROME_STORE_URL}>Add to Chrome</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/pricing">See credit pricing</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+      <InstallCta
+        title="Try Claude free in your browser"
+        description="$0.20 in credits, no card required, and Haiku 4.5, Sonnet 5.5 and Opus 5.5 all unlocked from the start."
+        secondary={{ href: '/pricing', label: 'See credit pricing' }}
+      >
+        <p className="text-sm text-muted-foreground mb-6">
+          Weighing it against other options? See{' '}
+          <Link href="/compare/prophet-vs-claude-in-chrome" className="text-primary hover:underline">
+            Prophet vs Claude in Chrome
+          </Link>{' '}
+          and{' '}
+          <Link href="/best-claude-chrome-extensions" className="text-primary hover:underline">
+            the best Claude Chrome extensions
+          </Link>
+          .
+        </p>
+      </InstallCta>
 
       <Footer />
     </main>

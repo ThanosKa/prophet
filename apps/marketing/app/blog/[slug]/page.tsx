@@ -1,12 +1,12 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { InstallCta } from '@/components/InstallCta'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { blogPostingJsonLd, breadcrumbNode, graphJsonLd } from '@/lib/structured-data'
 import { faqNode } from '@/lib/faqs'
 import { getBlogPost, getAllBlogPosts } from '@/lib/blog'
-import { CHROME_STORE_URL } from '@/lib/constants'
+import { redirectedPaths } from '@/lib/seo/pruned.mjs'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -56,7 +56,9 @@ export default async function BlogPostPage({ params }: PageProps) {
   const post = getBlogPost(slug)
   if (!post) notFound()
 
-  const allOthers = getAllBlogPosts().filter((p) => p.slug !== post.slug)
+  const allOthers = getAllBlogPosts().filter(
+    (p) => p.slug !== post.slug && !redirectedPaths.has(`/blog/${p.slug}`)
+  )
   const sameCategory = allOthers.filter((p) => p.category === post.category)
   const sharedKeyword = (a: string[], b: string[]) => a.some((k) => b.includes(k))
   const byKeyword = allOthers.filter(
@@ -123,15 +125,11 @@ export default async function BlogPostPage({ params }: PageProps) {
             </section>
           )}
 
-          <section className="mt-16 py-12 text-center border-t">
-            <h2 className="text-2xl font-bold mb-3">Try Prophet Free</h2>
-            <p className="text-muted-foreground mb-6">
-              Access Claude Haiku, Sonnet, and Opus directly in your browser side panel with pay-per-use pricing.
-            </p>
-            <Button asChild size="lg">
-              <Link href={CHROME_STORE_URL}>Add to Chrome</Link>
-            </Button>
-          </section>
+          <InstallCta
+            className="mt-16 py-12"
+            title="Try Prophet Free"
+            description="Access Claude Haiku, Sonnet, and Opus directly in your browser side panel with pay-per-use pricing."
+          />
 
           {relatedPosts.length > 0 && (
             <section className="mt-12">

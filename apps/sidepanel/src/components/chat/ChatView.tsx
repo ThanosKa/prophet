@@ -3,6 +3,7 @@ import { ExternalLink, X, Zap } from 'lucide-react'
 import { EnhancedMessageList, type EnhancedMessageListHandle } from './EnhancedMessageList'
 import { EnhancedChatInput } from './EnhancedChatInput'
 import { RateLimitError } from './RateLimitError'
+import { ReviewPrompt } from './ReviewPrompt'
 import { Suggestions, Suggestion } from '@/components/ai-elements/suggestion'
 import { config } from '@/lib/config'
 import type { Message, ToolCall } from '@prophet/shared'
@@ -154,6 +155,7 @@ export function ChatView({
           )}
         </div>
       ) : null}
+      <ReviewPrompt isRunning={Boolean(isStreaming)} />
       <EnhancedChatInput
         onSend={handleSend}
         disabled={disabled}
