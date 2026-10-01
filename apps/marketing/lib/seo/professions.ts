@@ -1,6 +1,7 @@
 import type { ProfessionData } from './shared'
+import { redirectedPaths } from './pruned.mjs'
 
-export const professions: ProfessionData[] = [
+const allProfessions: ProfessionData[] = [
   {
     slug: 'developers',
     title: 'Prophet for Developers',
@@ -398,6 +399,11 @@ export const professions: ProfessionData[] = [
     typicalSessionCost: '$0.003 - $0.02',
   },
 ]
+
+// Professions whose page is 301ed elsewhere (lib/seo/pruned.mjs) must not be listed or linked.
+export const professions: ProfessionData[] = allProfessions.filter(
+  (p) => !redirectedPaths.has(`/for/${p.slug}`)
+)
 
 export function getProfession(slug: string): ProfessionData | undefined {
   return professions.find((p) => p.slug === slug)

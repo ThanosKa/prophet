@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { breadcrumbJsonLd } from '@/lib/structured-data'
 import { getAllBlogPosts } from '@/lib/blog'
+import { redirectedPaths } from '@/lib/seo/pruned.mjs'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
@@ -15,11 +16,17 @@ export const metadata: Metadata = {
     title: 'Blog | Prophet',
     description: 'Insights on AI Chrome extensions, Claude model comparisons, browser automation, and productivity tips from the Prophet team.',
     url: 'https://prophetchrome.com/blog',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Prophet AI Assistant' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Blog | Prophet',
+    images: ['/og-image.png'],
   },
 }
 
 export default function BlogPage() {
-  const posts = getAllBlogPosts()
+  const posts = getAllBlogPosts().filter((post) => !redirectedPaths.has(`/blog/${post.slug}`))
 
   return (
     <main className="flex flex-col min-h-screen">

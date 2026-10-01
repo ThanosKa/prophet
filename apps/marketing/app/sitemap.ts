@@ -5,6 +5,7 @@ import { guides } from '@/lib/seo/guides'
 import { industries } from '@/lib/seo/industries'
 import { integrations } from '@/lib/seo/integrations'
 import { professions } from '@/lib/seo/professions'
+import { isPrunedPath } from '@/lib/seo/pruned.mjs'
 import { redirectSources } from '@/lib/seo/redirects.mjs'
 import { useCases } from '@/lib/seo/use-cases'
 
@@ -77,6 +78,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     return [...staticPages, ...dynamicPages].filter((entry) => {
         if (seen.has(entry.url)) return false
         seen.add(entry.url)
-        return !redirectSources.has(entry.url.slice(baseUrl.length))
+        const path = entry.url.slice(baseUrl.length)
+        return !redirectSources.has(path) && !isPrunedPath(path)
     })
 }

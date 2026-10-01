@@ -1,3 +1,4 @@
+import { noindexPaths } from './lib/seo/pruned.mjs'
 import { permanentRedirects } from './lib/seo/redirects.mjs'
 
 /** @type {import('next').NextConfig} */
@@ -25,6 +26,12 @@ const nextConfig = {
           { key: "X-XSS-Protection", value: "1; mode=block" },
         ],
       },
+      // Reversible pruning: noindex pages stay reachable for users but drop out of the index.
+      // See lib/seo/pruned.mjs.
+      ...[...noindexPaths].map((path) => ({
+        source: path,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, follow" }],
+      })),
     ];
   },
 
