@@ -52,7 +52,7 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
     },
     {
       question: `Which AI model does Prophet use on ${integration.platform}?`,
-      answer: `Prophet runs on Claude. You can pick Haiku 4.5 for fast, low-cost ${integration.platform} tasks, Sonnet 5 for balanced everyday work, or Opus 5 for the most complex reasoning. Switch models any time from the side panel.`,
+      answer: `Prophet runs on Claude. You can pick Haiku 4.5 for fast, low-cost ${integration.platform} tasks, Sonnet 5.5 for balanced everyday work, or Opus 5.5 for the most complex reasoning. Switch models any time from the side panel.`,
     },
   ]
 

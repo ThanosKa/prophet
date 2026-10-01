@@ -27,8 +27,8 @@ import Link from 'next/link'
 
 const MODELS = {
   'claude-haiku': { name: 'Claude Haiku 4.5', provider: 'Anthropic', input: 1, output: 5 },
-  'claude-sonnet': { name: 'Claude Sonnet 5', provider: 'Anthropic', input: 3, output: 15 },
-  'claude-opus': { name: 'Claude Opus 5', provider: 'Anthropic', input: 5, output: 25 },
+  'claude-sonnet': { name: 'Claude Sonnet 5.5', provider: 'Anthropic', input: 2, output: 10 },
+  'claude-opus': { name: 'Claude Opus 5.5', provider: 'Anthropic', input: 4, output: 20 },
   'gpt-4o': { name: 'GPT-4o', provider: 'OpenAI', input: 2.5, output: 10 },
   'gpt-4.5': { name: 'GPT-4.5', provider: 'OpenAI', input: 75, output: 150 },
   'gemini-2.5-pro': { name: 'Gemini 2.5 Pro', provider: 'Google', input: 1.25, output: 10 },

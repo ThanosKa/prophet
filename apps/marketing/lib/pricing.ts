@@ -1,19 +1,17 @@
 // Anthropic API pricing (per 1M tokens in USD)
 // Source: https://claude.com/pricing
-// Sonnet 5 carries a promotional $2/$10 rate through 2026-08-31; we bill the
-// standard $3/$15 list rate so margin never inverts when the promo ends.
 export const MODEL_PRICING = {
   "claude-haiku-4-5": {
     input: 1.0,   // $1 per MTok
     output: 5.0,  // $5 per MTok
   },
-  "claude-sonnet-5": {
-    input: 3.0,   // $3 per MTok
-    output: 15.0, // $15 per MTok
+  "claude-sonnet-5-5": {
+    input: 2.0,   // $2 per MTok
+    output: 10.0, // $10 per MTok
   },
-  "claude-opus-5": {
-    input: 5.0,   // $5 per MTok
-    output: 25.0, // $25 per MTok
+  "claude-opus-5-5": {
+    input: 4.0,   // $4 per MTok
+    output: 20.0, // $20 per MTok
   },
 } as const;
 
@@ -23,7 +21,7 @@ export const MARKUP = 1.20;
 export const WEB_SEARCH_PRICE_PER_1K_USD = 10.0;
 export const WEB_SEARCH_PRICE_PER_SEARCH_USD = WEB_SEARCH_PRICE_PER_1K_USD / 1000;
 
-export const ALL_MODELS = ['claude-haiku-4-5', 'claude-sonnet-5', 'claude-opus-5'] as const;
+export const ALL_MODELS = ['claude-haiku-4-5', 'claude-sonnet-5-5', 'claude-opus-5-5'] as const;
 
 // Stripe Price IDs (not secret - safe to hardcode as fallback)
 const STRIPE_PRICE_IDS = {
@@ -75,10 +73,10 @@ export type TierName = keyof typeof TIER_CONFIG;
  * 1 credit = 1 cent of API cost (with 20% markup)
  *
  * Example: 1000 input + 500 output tokens with Sonnet
- * - Input: (1000/1M) * $3 = $0.003
- * - Output: (500/1M) * $15 = $0.0075
- * - Total: $0.0105 = 1.05 cents
- * - With 20% markup: 1.26 cents → 2 credits (rounded up)
+ * - Input: (1000/1M) * $2 = $0.002
+ * - Output: (500/1M) * $10 = $0.005
+ * - Total: $0.007 = 0.7 cents
+ * - With 20% markup: 0.84 cents → 1 credit (rounded up)
  *
  * `webSearchRequests` bills Anthropic's per-search server-tool fee on top of tokens.
  * A single search is $0.01, so it dominates a short turn's cost — omitting it would

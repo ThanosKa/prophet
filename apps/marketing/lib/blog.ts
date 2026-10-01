@@ -27,7 +27,7 @@ const chatgptVsClaudeExtension: BlogPost = {
     },
     {
       question: 'What is the best Claude Chrome extension in 2026?',
-      answer: 'Anthropic\'s official Claude in Chrome is a convenience shortcut to claude.ai with no page-reading. Third-party options like Prophet add full side-panel integration, all three Claude models (Haiku 4.5, Sonnet 5, Opus 5), and 18 built-in browser-automation tools. Pick first-party for casual chat, Prophet for automation and pay-per-use ($0.20 free credits, no card).',
+      answer: 'Anthropic\'s official Claude in Chrome is a convenience shortcut to claude.ai with no page-reading. Third-party options like Prophet add full side-panel integration, all three Claude models (Haiku 4.5, Sonnet 5.5, Opus 5.5), and 18 built-in browser-automation tools. Pick first-party for casual chat, Prophet for automation and pay-per-use ($0.20 free credits, no card).',
     },
     {
       question: 'Do ChatGPT extensions read the current page?',
@@ -47,10 +47,10 @@ const chatgptVsClaudeExtension: BlogPost = {
 <p>This comparison examines both ecosystems across the dimensions that matter most for daily productivity: model quality for different tasks, browser integration depth, pricing structures, privacy practices, and the overall user experience of working with AI in your browser.</p>
 
 <h2>Model Quality: Where Each Excels</h2>
-<p>GPT-4o and Claude Sonnet 5 are closer in capability than ever, but meaningful differences remain depending on the task type.</p>
+<p>GPT-4o and Claude Sonnet 5.5 are closer in capability than ever, but meaningful differences remain depending on the task type.</p>
 
 <h3>Reasoning and Analysis</h3>
-<p>Claude Sonnet 5 and Opus 5 consistently outperform GPT-4o on tasks requiring careful reasoning over long documents. In our testing, Claude produced fewer hallucinations when analyzing financial reports, legal documents, and technical specifications. Claude Opus 5, in particular, excels at tasks where the answer requires synthesizing information from multiple sections of a long document.</p>
+<p>Claude Sonnet 5.5 and Opus 5.5 consistently outperform GPT-4o on tasks requiring careful reasoning over long documents. In our testing, Claude produced fewer hallucinations when analyzing financial reports, legal documents, and technical specifications. Claude Opus 5.5, in particular, excels at tasks where the answer requires synthesizing information from multiple sections of a long document.</p>
 <p>GPT-4o performs comparably on shorter reasoning tasks and is slightly faster at producing initial responses. For quick analysis of a paragraph or a short article, the difference is negligible.</p>
 
 <h3>Code Generation</h3>
@@ -84,7 +84,7 @@ const chatgptVsClaudeExtension: BlogPost = {
 
 <h3>Claude Ecosystem</h3>
 <p>Claude Pro costs $20/month for access to claude.ai with higher limits. Anthropic's official extension is free with a Claude account. Third-party Claude extensions vary: Prophet starts with a free tier ($0.20 in credits) and scales from $9.99/month (Pro, $11 in credits) to $59.99/month (Ultra, $70 in credits).</p>
-<p>Prophet's pay-per-use model means you only pay for tokens consumed. A typical user sending 50 messages per day with Claude Haiku 4.5 spends roughly $3-5/month. The same usage with Sonnet 5 costs $8-15/month. With Opus 5, expect $15-30/month. This granularity lets you match costs to your actual usage rather than paying a flat rate that may be too high or too low.</p>
+<p>Prophet's pay-per-use model means you only pay for tokens consumed. A typical user sending 50 messages per day with Claude Haiku 4.5 spends roughly $3-5/month. The same usage with Sonnet 5.5 costs $8-15/month. With Opus 5.5, expect $15-30/month. This granularity lets you match costs to your actual usage rather than paying a flat rate that may be too high or too low.</p>
 
 <h3>Cost Efficiency</h3>
 <p>For light users (under 20 messages per day), Prophet's free or Pro tier is more economical than either ChatGPT Plus or Claude Pro. For heavy users who need the most capable model available, Claude Pro or ChatGPT Plus may offer better value since they provide unlimited (rate-limited) access to the top model.</p>
@@ -109,7 +109,7 @@ const chatgptVsClaudeExtension: BlogPost = {
 <p>Claude-based extensions like Prophet use Chrome's native side panel API, which provides a persistent, resizable panel that stays open as you navigate between pages. This is a significant UX advantage for workflows that require switching between the AI and the web page repeatedly.</p>
 
 <h3>Streaming and Latency</h3>
-<p>Both GPT-4o and Claude 5 support streaming responses. In practice, Claude Haiku 4.5 starts streaming slightly faster than GPT-4o mini, while GPT-4o and Claude Sonnet 5 are comparable in time-to-first-token. Claude Opus 5 is the slowest to start but produces the most thorough responses.</p>
+<p>Both GPT-4o and Claude 5 support streaming responses. In practice, Claude Haiku 4.5 starts streaming slightly faster than GPT-4o mini, while GPT-4o and Claude Sonnet 5.5 are comparable in time-to-first-token. Claude Opus 5.5 is the slowest to start but produces the most thorough responses.</p>
 
 <h3>Chat History</h3>
 <p>ChatGPT's official extension shares history with claude.ai. Third-party extensions manage their own history, which may or may not sync with the web interface. Prophet stores chat history server-side per user, with persistent access across devices and sessions.</p>
@@ -148,8 +148,8 @@ const chatgptVsClaudeExtension: BlogPost = {
 
 const claudeModelComparison: BlogPost = {
   slug: 'claude-haiku-vs-sonnet-vs-opus',
-  title: 'Claude Haiku vs Sonnet vs Opus 5: Cost and When to Use',
-  description: 'Haiku $1/$5, Sonnet $3/$15, Opus $5/$25 per million tokens. Which to pick for extraction, chat and hard reasoning, with real per-task costs.',
+  title: 'Claude Haiku vs Sonnet vs Opus 5.5: Cost and When to Use',
+  description: 'Haiku $1/$5, Sonnet $2/$10, Opus $4/$20 per million tokens. Which to pick for extraction, chat and hard reasoning, with real per-task costs.',
   date: '2026-02-28',
   lastModified: '2026-05-19',
   readingTime: '10 min read',
@@ -158,27 +158,27 @@ const claudeModelComparison: BlogPost = {
   faq: [
     {
       question: 'Which Claude model should I use?',
-      answer: 'Default to Sonnet 5. It handles roughly 80% of professional tasks (code review, document analysis, writing) at $3/$15 per million input/output tokens — about 40% cheaper than Opus. Switch to Haiku 4.5 ($1/$5 per Mtok) for high-volume or simple tasks, and to Opus 5 ($5/$25 per Mtok) only when Sonnet output feels shallow.',
+      answer: 'Default to Sonnet 5.5. It handles roughly 80% of professional tasks (code review, document analysis, writing) at $2/$10 per million input/output tokens — about 40% cheaper than Opus. Switch to Haiku 4.5 ($1/$5 per Mtok) for high-volume or simple tasks, and to Opus 5.5 ($5/$25 per Mtok) only when Sonnet output feels shallow.',
     },
     {
       question: 'How much does each Claude model cost per message?',
-      answer: 'On API list prices (May 2026): a typical Haiku 4.5 message costs about $0.003, Sonnet 5 about $0.013, and Opus 5 about $0.035. Output tokens cost 3-5× more than input tokens across all three. A user sending 30 mixed-model messages/day spends roughly $11/month in raw API cost.',
+      answer: 'On API list prices (May 2026): a typical Haiku 4.5 message costs about $0.003, Sonnet 5.5 about $0.013, and Opus 5.5 about $0.035. Output tokens cost 3-5× more than input tokens across all three. A user sending 30 mixed-model messages/day spends roughly $11/month in raw API cost.',
     },
     {
       question: 'Is Claude Haiku good enough for everyday use?',
       answer: 'For text transformation, summarization under 2,000 words, format conversion, and high-volume batch tasks, Haiku 4.5 produces output nearly identical to Sonnet at one-fifth the cost. It falters on multi-step reasoning and long-context analysis where holding many ideas simultaneously matters. Most users underuse Haiku and overspend on Sonnet.',
     },
     {
-      question: 'When is Claude Opus 5 worth the cost?',
+      question: 'When is Claude Opus 5.5 worth the cost?',
       answer: 'Opus is justified for documents over 15,000 words, mathematical or legal reasoning, architecture-level code decisions, and tasks where missing a nuance is expensive. At $0.05/message in credits it costs roughly 2.5× Sonnet, so reserve it for high-stakes outputs. A user sending 5 Opus messages/day spends about $7.50/month — still less than Claude Pro\'s $20 flat rate.',
     },
     {
       question: 'What is the context window for Claude models in 2026?',
-      answer: 'Sonnet 5 and Opus 5 support a 1,000,000-token context window — roughly 750,000 words — while Haiku 4.5 supports 200,000 tokens, about a 500-page book. Longer conversations accumulate input tokens with every message, so a 20-turn chat may cost 5-10× more per message than the first turn even if your text length stays the same.',
+      answer: 'Sonnet 5.5 and Opus 5.5 support a 1,000,000-token context window — roughly 750,000 words — while Haiku 4.5 supports 200,000 tokens, about a 500-page book. Longer conversations accumulate input tokens with every message, so a 20-turn chat may cost 5-10× more per message than the first turn even if your text length stays the same.',
     },
   ],
   content: `
-<p>Anthropic offers three Claude models with distinct tradeoffs between speed, quality, and cost. Choosing the right model for each task can reduce your costs by 5-10x without sacrificing output quality. This guide breaks down the practical differences between Claude Haiku 4.5, Sonnet 5, and Opus 5 based on real-world usage patterns.</p>
+<p>Anthropic offers three Claude models with distinct tradeoffs between speed, quality, and cost. Choosing the right model for each task can reduce your costs by 5-10x without sacrificing output quality. This guide breaks down the practical differences between Claude Haiku 4.5, Sonnet 5.5, and Opus 5.5 based on real-world usage patterns.</p>
 
 <h2>The Three Models at a Glance</h2>
 <table>
@@ -187,8 +187,8 @@ const claudeModelComparison: BlogPost = {
 </thead>
 <tbody>
 <tr><td>Haiku 4.5</td><td>$1/MTok</td><td>$5/MTok</td><td>Fastest</td><td>Quick tasks, high volume</td></tr>
-<tr><td>Sonnet 5</td><td>$3/MTok</td><td>$15/MTok</td><td>Moderate</td><td>Balanced daily driver</td></tr>
-<tr><td>Opus 5</td><td>$5/MTok</td><td>$25/MTok</td><td>Slowest</td><td>Complex reasoning, long documents</td></tr>
+<tr><td>Sonnet 5.5</td><td>$2/MTok</td><td>$10/MTok</td><td>Moderate</td><td>Balanced daily driver</td></tr>
+<tr><td>Opus 5.5</td><td>$4/MTok</td><td>$20/MTok</td><td>Slowest</td><td>Complex reasoning, long documents</td></tr>
 </tbody>
 </table>
 <p>MTok = million tokens. One token is roughly 3/4 of a word. A typical message (prompt plus response) might use 500-2,000 tokens total.</p>
@@ -215,11 +215,11 @@ const claudeModelComparison: BlogPost = {
 </ul>
 <p>At this rate, the Prophet Pro plan ($9.99/month for $11 in credits) supports roughly 1,100 Haiku messages per month, or about 36 per day.</p>
 
-<h2>Claude Sonnet 5: The Daily Driver</h2>
-<p>Sonnet 5 occupies the middle ground and is the model most users should default to. It offers a strong balance between response quality, speed, and cost. For most professional tasks, Sonnet produces output that is indistinguishable from Opus at 40% lower cost.</p>
+<h2>Claude Sonnet 5.5: The Daily Driver</h2>
+<p>Sonnet 5.5 occupies the middle ground and is the model most users should default to. It offers a strong balance between response quality, speed, and cost. For most professional tasks, Sonnet produces output that is indistinguishable from Opus at 40% lower cost.</p>
 
 <h3>Where Sonnet Excels</h3>
-<p><strong>Code generation and review.</strong> Sonnet 5 writes clean, well-structured code with appropriate error handling. It understands modern frameworks and follows current best practices. For code review, it identifies bugs, security issues, and performance problems with high accuracy.</p>
+<p><strong>Code generation and review.</strong> Sonnet 5.5 writes clean, well-structured code with appropriate error handling. It understands modern frameworks and follows current best practices. For code review, it identifies bugs, security issues, and performance problems with high accuracy.</p>
 <p><strong>Document analysis.</strong> Sonnet handles 5,000-15,000 word documents well, extracting key information, identifying themes, and answering specific questions about the content. It maintains context across long documents better than Haiku while responding faster than Opus.</p>
 <p><strong>Professional writing.</strong> Emails, reports, documentation, and blog content (like this article) are Sonnet's sweet spot. The writing is clear, well-organized, and professional without requiring extensive editing.</p>
 <p><strong>Web page interaction.</strong> When using browser automation features in tools like Prophet, Sonnet provides the best balance between understanding page structure and responding quickly. It parses accessibility trees accurately and generates reliable action sequences.</p>
@@ -237,8 +237,8 @@ const claudeModelComparison: BlogPost = {
 </ul>
 <p>The Prophet Pro plan supports roughly 550 Sonnet messages per month, or about 18 per day. The Premium plan ($29.99/month for $35 in credits) supports roughly 1,750 messages, or 58 per day.</p>
 
-<h2>Claude Opus 5: The Deep Thinker</h2>
-<p>Opus 5 is Anthropic's most capable model and the right choice when quality matters more than speed or cost. It handles complex reasoning, long-context analysis, and nuanced tasks that the smaller models cannot match.</p>
+<h2>Claude Opus 5.5: The Deep Thinker</h2>
+<p>Opus 5.5 is Anthropic's most capable model and the right choice when quality matters more than speed or cost. It handles complex reasoning, long-context analysis, and nuanced tasks that the smaller models cannot match.</p>
 
 <h3>Where Opus Excels</h3>
 <p><strong>Complex multi-step reasoning.</strong> Mathematical proofs, legal analysis, strategic planning, and any task that requires holding multiple interrelated concepts in mind simultaneously. Opus makes fewer logical errors on these tasks than Sonnet and significantly fewer than Haiku.</p>
@@ -314,8 +314,8 @@ const claudeModelComparison: BlogPost = {
 
 const isClaudeAiFree: BlogPost = {
   slug: 'is-claude-ai-free',
-  title: 'Is Claude AI Free? Sonnet 5 Limits + 5 Free Ways (2026)',
-  description: 'Yes, but the free tier caps Sonnet 5 at roughly 20-30 messages a day. Here are the exact limits, plus 5 ways to reach Opus 5 without $20/mo.',
+  title: 'Is Claude AI Free? Sonnet 5.5 Limits + 5 Free Ways (2026)',
+  description: 'Yes, but the free tier caps Sonnet 5.5 at roughly 20-30 messages a day. Here are the exact limits, plus 5 ways to reach Opus 5.5 without $20/mo.',
   date: '2026-02-20',
   lastModified: '2026-05-19',
   readingTime: '8 min read',
@@ -324,50 +324,50 @@ const isClaudeAiFree: BlogPost = {
   faq: [
     {
       question: 'Is Claude AI free?',
-      answer: 'Yes. Claude.ai\'s free tier offers Claude Sonnet 5 with a daily cap of roughly 10-30 messages depending on traffic (as of May 2026). The Anthropic API has no free tier but accepts deposits as low as $5. Prophet\'s Chrome extension gives $0.20 in free credits — about 20 Haiku, 10 Sonnet, or 4 Opus messages — with no card required.',
+      answer: 'Yes. Claude.ai\'s free tier offers Claude Sonnet 5.5 with a daily cap of roughly 10-30 messages depending on traffic (as of May 2026). The Anthropic API has no free tier but accepts deposits as low as $5. Prophet\'s Chrome extension gives $0.20 in free credits — about 20 Haiku, 10 Sonnet, or 4 Opus messages — with no card required.',
     },
     {
       question: 'What are Claude\'s free tier limits?',
-      answer: 'Claude.ai\'s free tier permits roughly 10-30 messages per day with Sonnet 5 before triggering a cooldown. Limits are not officially published and vary with server load. Free users cannot access Opus 5, Projects, or larger file uploads, and are deprioritized during peak hours when paid subscribers maintain access.',
+      answer: 'Claude.ai\'s free tier permits roughly 10-30 messages per day with Sonnet 5.5 before triggering a cooldown. Limits are not officially published and vary with server load. Free users cannot access Opus 5.5, Projects, or larger file uploads, and are deprioritized during peak hours when paid subscribers maintain access.',
     },
     {
       question: 'Does Claude have a free trial?',
-      answer: 'Anthropic does not offer a time-limited Claude Pro trial. Instead, the claude.ai free tier acts as an indefinite evaluation with capped daily messages. For API access, new accounts may receive a small starter credit. To trial all three Claude models (including Opus 5) for free, Prophet\'s $0.20 credit grant is the most direct option.',
+      answer: 'Anthropic does not offer a time-limited Claude Pro trial. Instead, the claude.ai free tier acts as an indefinite evaluation with capped daily messages. For API access, new accounts may receive a small starter credit. To trial all three Claude models (including Opus 5.5) for free, Prophet\'s $0.20 credit grant is the most direct option.',
     },
     {
       question: 'Is the Claude API free?',
-      answer: 'No — Anthropic\'s API is pure pay-per-use with no free tier. Prices as of May 2026: Haiku 4.5 at $1/$5 per million input/output tokens, Sonnet 5 at $3/$15, Opus 5 at $5/$25. Minimum deposit is $5. New AWS Bedrock and Google Cloud Vertex AI accounts sometimes include credits applicable to Claude calls.',
+      answer: 'No — Anthropic\'s API is pure pay-per-use with no free tier. Prices as of May 2026: Haiku 4.5 at $1/$5 per million input/output tokens, Sonnet 5.5 at $2/$10, Opus 5.5 at $4/$20. Minimum deposit is $5. New AWS Bedrock and Google Cloud Vertex AI accounts sometimes include credits applicable to Claude calls.',
     },
     {
       question: 'Is Claude Pro free?',
-      answer: 'No. Claude Pro costs $20/month and unlocks Opus 5, higher rate limits, Projects, and larger file uploads. It does not include a free trial period. For users who need Opus access without committing to $20/month, pay-per-use platforms like Prophet ($9.99/month for $11 in credits) typically cost less for under ~50 messages/day.',
+      answer: 'No. Claude Pro costs $20/month and unlocks Opus 5.5, higher rate limits, Projects, and larger file uploads. It does not include a free trial period. For users who need Opus access without committing to $20/month, pay-per-use platforms like Prophet ($9.99/month for $11 in credits) typically cost less for under ~50 messages/day.',
     },
   ],
   content: `
 <aside class="quick-answer" aria-label="Quick answer">
-  <strong>Quick answer:</strong> Yes, Claude AI is free at claude.ai with a daily cap of roughly 10-30 Sonnet 5 messages (varies with server load, as of May 2026). Opus 5 and higher limits require Claude Pro at $20/month. For all three Claude models without a subscription, Prophet's Chrome extension provides $0.20 in free pay-per-use credits &mdash; about 20 Haiku, 10 Sonnet, or 4 Opus messages &mdash; with no card required.
+  <strong>Quick answer:</strong> Yes, Claude AI is free at claude.ai with a daily cap of roughly 10-30 Sonnet 5.5 messages (varies with server load, as of May 2026). Opus 5.5 and higher limits require Claude Pro at $20/month. For all three Claude models without a subscription, Prophet's Chrome extension provides $0.20 in free pay-per-use credits &mdash; about 20 Haiku, 10 Sonnet, or 4 Opus messages &mdash; with no card required.
 </aside>
 <p>Claude AI is one of the most capable large language models available today, but understanding what you can use for free versus what requires payment is surprisingly confusing. Anthropic offers multiple access points with different pricing structures, and third-party tools like Prophet add additional free options. This guide covers every way to use Claude without paying, what limitations apply, and when upgrading makes sense.</p>
 
 <h2>Claude.ai Free Tier: What You Get</h2>
-<p>Anthropic's primary consumer product is claude.ai, and it does offer a free tier. Anyone can create an account and start chatting with Claude immediately. The free tier provides access to Claude Sonnet 5, Anthropic's mid-range model, with usage limits that reset periodically.</p>
+<p>Anthropic's primary consumer product is claude.ai, and it does offer a free tier. Anyone can create an account and start chatting with Claude immediately. The free tier provides access to Claude Sonnet 5.5, Anthropic's mid-range model, with usage limits that reset periodically.</p>
 <p>The free tier limitations are straightforward but can be frustrating during heavy use:</p>
 <ul>
 <li><strong>Rate limits.</strong> You can send a limited number of messages per day. The exact number varies based on demand and is not publicly documented, but users typically report 10-30 messages before hitting the limit.</li>
-<li><strong>Model access.</strong> Free users get Claude Sonnet 5 only. Haiku 4.5 (faster, cheaper) and Opus 5 (most capable) require a paid subscription.</li>
+<li><strong>Model access.</strong> Free users get Claude Sonnet 5.5 only. Haiku 4.5 (faster, cheaper) and Opus 5.5 (most capable) require a paid subscription.</li>
 <li><strong>No priority access.</strong> During peak usage times, free users may experience longer wait times or temporary lockouts while paying subscribers maintain access.</li>
 <li><strong>Basic features only.</strong> Projects, file uploads above a certain size, and some advanced features are reserved for Pro subscribers.</li>
 </ul>
 <p>For casual users who need an AI assistant a few times per day, the Claude.ai free tier is genuinely useful. The model quality is excellent even at the Sonnet tier, and the web interface is clean and responsive.</p>
 
 <h2>Claude AI Free Tier Limits (May 2026)</h2>
-<p>Anthropic does not officially publish numeric Claude AI free tier limits, and the cap shifts with server load and time-of-day. From community reporting in April-May 2026, free users see roughly 10-30 Sonnet 5 messages per rolling 5-hour window before hitting a cooldown. Long messages, attachments, and PDF uploads count more heavily than short questions. Opus 5 is gated entirely behind Claude Pro on the free tier, and Projects/larger uploads are also Pro-only. The free tier shares no rate-limit budget with the API &mdash; they are independent accounts.</p>
+<p>Anthropic does not officially publish numeric Claude AI free tier limits, and the cap shifts with server load and time-of-day. From community reporting in April-May 2026, free users see roughly 10-30 Sonnet 5.5 messages per rolling 5-hour window before hitting a cooldown. Long messages, attachments, and PDF uploads count more heavily than short questions. Opus 5.5 is gated entirely behind Claude Pro on the free tier, and Projects/larger uploads are also Pro-only. The free tier shares no rate-limit budget with the API &mdash; they are independent accounts.</p>
 
 <h2>Claude Pro: What the Subscription Adds</h2>
 <p>Claude Pro costs $20 per month and unlocks several meaningful upgrades over the free tier:</p>
 <ul>
 <li><strong>Higher rate limits.</strong> Significantly more messages per day, enough for most professional use cases.</li>
-<li><strong>Opus 5 access.</strong> The most capable Claude model, better at complex reasoning, long documents, and nuanced analysis.</li>
+<li><strong>Opus 5.5 access.</strong> The most capable Claude model, better at complex reasoning, long documents, and nuanced analysis.</li>
 <li><strong>Priority access.</strong> No waiting during peak times.</li>
 <li><strong>Projects and artifacts.</strong> Organize conversations into projects and generate interactive artifacts like code, charts, and documents.</li>
 <li><strong>Larger file uploads.</strong> Upload bigger files for analysis and conversation context.</li>
@@ -379,18 +379,18 @@ const isClaudeAiFree: BlogPost = {
 <p>What does $0.20 in credits get you? More than you might expect:</p>
 <ul>
 <li><strong>Approximately 200 messages with Claude Haiku 4.5</strong> at roughly $0.001 per message</li>
-<li><strong>Approximately 100 messages with Claude Sonnet 5</strong> at roughly $0.002 per message</li>
-<li><strong>Approximately 40 messages with Claude Opus 5</strong> at roughly $0.005 per message</li>
+<li><strong>Approximately 100 messages with Claude Sonnet 5.5</strong> at roughly $0.002 per message</li>
+<li><strong>Approximately 40 messages with Claude Opus 5.5</strong> at roughly $0.005 per message</li>
 </ul>
-<p>The key difference is that Prophet gives you access to all three Claude models on the free tier, including Opus 5, which Claude.ai reserves for paying subscribers. You also get full browser integration with the ability to read and interact with web pages, which Claude.ai does not offer at any price tier.</p>
+<p>The key difference is that Prophet gives you access to all three Claude models on the free tier, including Opus 5.5, which Claude.ai reserves for paying subscribers. You also get full browser integration with the ability to read and interact with web pages, which Claude.ai does not offer at any price tier.</p>
 <p>Prophet's free credits do not renew monthly. They are a one-time allocation to help you evaluate the service. Once depleted, you need to upgrade to a paid plan starting at $9.99/month. Check the <a href="/pricing">pricing page</a> for current plan details.</p>
 
 <h2>Anthropic API: Pay Only for What You Use</h2>
 <p>Developers and technical users can access Claude through Anthropic's API with pure pay-per-use pricing. There is no monthly subscription. You load credits into your account and pay per token consumed. The API pricing as of early 2026 is:</p>
 <ul>
 <li><strong>Haiku 4.5:</strong> $1 per million input tokens, $5 per million output tokens</li>
-<li><strong>Sonnet 5:</strong> $3 per million input tokens, $15 per million output tokens</li>
-<li><strong>Opus 5:</strong> $5 per million input tokens, $25 per million output tokens</li>
+<li><strong>Sonnet 5.5:</strong> $2 per million input tokens, $10 per million output tokens</li>
+<li><strong>Opus 5.5:</strong> $4 per million input tokens, $20 per million output tokens</li>
 </ul>
 <p>The API does not have a free tier, but the minimum deposit is small enough that a few dollars can last weeks for light usage. The trade-off is that you need technical knowledge to use the API directly. You need to write code or use a tool that interfaces with the API on your behalf, which is exactly what Prophet does.</p>
 
@@ -434,7 +434,7 @@ const isClaudeAiFree: BlogPost = {
 <p>For most people, the best starting point is Claude.ai's free tier for basic chat and Prophet's free credits for browser-integrated workflows. Together, they provide a comprehensive free Claude experience. When you outgrow the free tiers, Prophet's Pro plan at $9.99/month is the most economical path to consistent, full-featured Claude access.</p>
 
 <h2>Where to go next</h2>
-<p>This post covers the claude.ai free plan specifically. For the wider picture &mdash; including per-model free tier limits, why <a href="/free-claude-ai">free unlimited Claude Sonnet 5 does not exist</a>, and which "free Claude" sites are worth avoiding &mdash; see the full breakdown of <a href="/free-claude-ai">every free way to use Claude AI</a>.</p>
+<p>This post covers the claude.ai free plan specifically. For the wider picture &mdash; including per-model free tier limits, why <a href="/free-claude-ai">free unlimited Claude Sonnet 5.5 does not exist</a>, and which "free Claude" sites are worth avoiding &mdash; see the full breakdown of <a href="/free-claude-ai">every free way to use Claude AI</a>.</p>
 <p>If you have decided the free caps are too tight, <a href="/blog/use-claude-without-subscription">using Claude without a subscription</a> walks through the pay-per-use route in detail, and <a href="/blog/pay-per-use-ai-vs-subscription">pay-per-use AI vs subscription pricing</a> works out where the break-even against a $20/month plan actually sits. To pick the right model for your workload before you spend anything, <a href="/blog/claude-haiku-vs-sonnet-vs-opus">Claude Haiku vs Sonnet vs Opus</a> shows where the extra cost per token is and is not worth paying.</p>
 <p>If what you actually want is Claude inside your browser rather than in a separate tab, the ranked list of <a href="/best-claude-chrome-extensions">Chrome extensions for Claude AI</a> covers which ones have a usable free tier and which gate Claude behind a subscription. Current Prophet credit tiers are on the <a href="/pricing">pricing page</a>.</p>
 `
@@ -452,14 +452,14 @@ const useClaudeWithoutSubscription: BlogPost = {
   faq: [
     {
       question: 'How can I use Claude AI without a subscription?',
-      answer: 'Four routes work as of May 2026: (1) claude.ai\'s free tier with Sonnet 5 and a daily message cap; (2) the Anthropic API at pay-per-use rates starting at $5 minimum deposit; (3) Prophet\'s $0.20 free credits covering all three Claude models with browser integration; (4) cloud platform credits via AWS Bedrock or Google Vertex AI.',
+      answer: 'Four routes work as of May 2026: (1) claude.ai\'s free tier with Sonnet 5.5 and a daily message cap; (2) the Anthropic API at pay-per-use rates starting at $5 minimum deposit; (3) Prophet\'s $0.20 free credits covering all three Claude models with browser integration; (4) cloud platform credits via AWS Bedrock or Google Vertex AI.',
     },
     {
       question: 'Is there a Claude Pro alternative cheaper than $20/month?',
       answer: 'Yes. Prophet Pro at $9.99/month includes $11 in credits and access to all three Claude models — half the price of Claude Pro for most usage profiles. A user sending 20 Sonnet messages/day consumes roughly $12/month in credits on Prophet. Claude Pro becomes cheaper only above roughly 33 Sonnet messages/day.',
     },
     {
-      question: 'Can I use Claude Opus 5 without paying $20/month?',
+      question: 'Can I use Claude Opus 5.5 without paying $20/month?',
       answer: 'Yes, through pay-per-use. Anthropic locks Opus behind Claude Pro on claude.ai, but the API exposes it to anyone with a deposit. Prophet\'s free $0.20 credit covers about 4 Opus messages. For sustained Opus use, expect roughly $0.05 per message — light users still spend under $5/month on Opus this way.',
     },
     {
@@ -468,7 +468,7 @@ const useClaudeWithoutSubscription: BlogPost = {
     },
     {
       question: 'What is the cheapest way to use Claude AI in 2026?',
-      answer: 'Claude.ai\'s free tier costs nothing for casual Sonnet 5 chat within daily limits. For browser-integrated workflows or Opus access, Prophet\'s $0.20 free credit is the lowest-cost entry. The Anthropic API is cheapest per token at scale but requires writing code to invoke it — Prophet\'s backend handles that proxy and adds a transparent per-credit markup.',
+      answer: 'Claude.ai\'s free tier costs nothing for casual Sonnet 5.5 chat within daily limits. For browser-integrated workflows or Opus access, Prophet\'s $0.20 free credit is the lowest-cost entry. The Anthropic API is cheapest per token at scale but requires writing code to invoke it — Prophet\'s backend handles that proxy and adds a transparent per-credit markup.',
     },
   ],
   content: `
@@ -480,8 +480,8 @@ const useClaudeWithoutSubscription: BlogPost = {
 <p>Fortunately, several alternatives exist that let you pay proportionally to your actual usage.</p>
 
 <h2>Option 1: Prophet's Pay-Per-Use Model</h2>
-<p>Prophet is a Chrome extension that provides access to all three Claude models (Haiku 4.5, Sonnet 5, and Opus 5) through a credit-based system where one credit equals one cent of API cost plus a 20% platform margin. While Prophet does offer monthly subscription plans, the key advantage is that your credits directly reflect your consumption.</p>
-<p>Here is how the economics work in practice. A user who sends 20 messages per day using Claude Sonnet 5 consumes roughly $0.40 per day in credits, or about $12 per month. That same usage on Claude Pro would cost $20/month, so the saving is real but modest at that volume. The Prophet Pro plan at $9.99/month provides $11 in credits, which covers almost all of it.</p>
+<p>Prophet is a Chrome extension that provides access to all three Claude models (Haiku 4.5, Sonnet 5.5, and Opus 5.5) through a credit-based system where one credit equals one cent of API cost plus a 20% platform margin. While Prophet does offer monthly subscription plans, the key advantage is that your credits directly reflect your consumption.</p>
+<p>Here is how the economics work in practice. A user who sends 20 messages per day using Claude Sonnet 5.5 consumes roughly $0.40 per day in credits, or about $12 per month. That same usage on Claude Pro would cost $20/month, so the saving is real but modest at that volume. The Prophet Pro plan at $9.99/month provides $11 in credits, which covers almost all of it.</p>
 <p>For lighter users, the math is far more compelling:</p>
 <ul>
 <li><strong>5 Haiku messages per day:</strong> approximately $1.50/month in credit consumption</li>
@@ -504,14 +504,14 @@ const useClaudeWithoutSubscription: BlogPost = {
 <p>This is actually what Prophet does on your behalf. Prophet's backend proxies your requests to the Anthropic API, handles streaming, manages authentication, and provides the browser-integrated chat interface. The credit markup covers infrastructure costs while remaining substantially cheaper than a direct Claude Pro subscription for most usage patterns.</p>
 
 <h2>Option 3: Claude.ai Free Tier</h2>
-<p>The simplest no-cost option is Claude.ai's free tier. You get access to Claude Sonnet 5 with daily message limits. The limits vary but typically allow 10-30 messages per day before you hit the cap.</p>
+<p>The simplest no-cost option is Claude.ai's free tier. You get access to Claude Sonnet 5.5 with daily message limits. The limits vary but typically allow 10-30 messages per day before you hit the cap.</p>
 <p>The free tier is best suited for:</p>
 <ul>
 <li>Occasional one-off questions</li>
 <li>Evaluating whether Claude is the right model for your needs</li>
 <li>Light personal use where you do not depend on consistent access</li>
 </ul>
-<p>The free tier is not suitable for professional use because the rate limits are unpredictable and you cannot access Opus 5 for complex tasks.</p>
+<p>The free tier is not suitable for professional use because the rate limits are unpredictable and you cannot access Opus 5.5 for complex tasks.</p>
 
 <h2>Option 4: Cloud Platform Credits</h2>
 <p>Both AWS (Amazon Bedrock) and Google Cloud (Vertex AI) offer Claude model access through their platforms. New accounts on both platforms receive free credits:</p>
@@ -572,7 +572,7 @@ const useClaudeWithoutSubscription: BlogPost = {
 <p>The bottom line: you do not need a $20/month subscription to use Claude AI effectively. Between free tiers, pay-per-use platforms, and API access, there are options for every usage level and budget. Start free, measure your actual consumption, and upgrade only when the numbers justify it.</p>
 
 <h2>Related reading</h2>
-<p>For the complete map of what is available at $0 &mdash; per-model free tier limits, why <a href="/free-claude-ai">free unlimited Claude Sonnet 5 is not a real offer</a>, and which free-Claude sites to avoid &mdash; start with <a href="/free-claude-ai">free Claude AI: every free tier and limit</a>. <a href="/blog/is-claude-ai-free">Is Claude AI free?</a> goes deeper on the claude.ai free plan specifically and how its caps tighten under load.</p>
+<p>For the complete map of what is available at $0 &mdash; per-model free tier limits, why <a href="/free-claude-ai">free unlimited Claude Sonnet 5.5 is not a real offer</a>, and which free-Claude sites to avoid &mdash; start with <a href="/free-claude-ai">free Claude AI: every free tier and limit</a>. <a href="/blog/is-claude-ai-free">Is Claude AI free?</a> goes deeper on the claude.ai free plan specifically and how its caps tighten under load.</p>
 <p>To put numbers on your own usage before deciding, the <a href="/tools/ai-api-cost-calculator">AI API cost calculator</a> prices real message volume, <a href="/blog/claude-api-pricing-explained">Claude API pricing explained</a> covers how input, output and cached tokens bill differently, and <a href="/blog/hidden-costs-of-ai-subscriptions">the hidden costs of AI subscriptions</a> covers what a flat monthly fee charges you for in the months you barely use it. If you want Claude in the browser without a subscription, the <a href="/best-claude-chrome-extensions">best Chrome extensions for Claude AI</a> notes which ones require one, and <a href="/pricing">Prophet's credit pricing</a> shows the pay-per-use alternative.</p>
 `
 }
@@ -643,7 +643,7 @@ const summarizeWebPageWithAi: BlogPost = {
 <p>The quality of your summary depends on both the prompt and how you use the output. These tips help you get consistently good results.</p>
 
 <h3>Choose the Right Model</h3>
-<p>For short articles (under 2,000 words), Claude Haiku 4.5 produces good summaries at minimal cost. For long articles, research papers, or technical documentation, Claude Sonnet 5 handles the added complexity better. Reserve Claude Opus 5 for dense academic papers or documents where missing a nuance would be costly.</p>
+<p>For short articles (under 2,000 words), Claude Haiku 4.5 produces good summaries at minimal cost. For long articles, research papers, or technical documentation, Claude Sonnet 5.5 handles the added complexity better. Reserve Claude Opus 5.5 for dense academic papers or documents where missing a nuance would be costly.</p>
 
 <h3>Specify the Output Format</h3>
 <p>Vague prompts produce vague summaries. Compare these two prompts:</p>
@@ -823,8 +823,8 @@ const aiChromeExtensionForDevelopers: BlogPost = {
 <p>Different developer tasks benefit from different Claude models:</p>
 <ul>
 <li><strong>Haiku 4.5:</strong> Quick syntax lookups, simple code formatting, short explanations, generating test data</li>
-<li><strong>Sonnet 5:</strong> Code review, debugging, documentation writing, Stack Overflow research (best default for developers)</li>
-<li><strong>Opus 5:</strong> Complex architecture decisions, security audits, performance analysis of intricate algorithms, reviewing large PRs with subtle logic</li>
+<li><strong>Sonnet 5.5:</strong> Code review, debugging, documentation writing, Stack Overflow research (best default for developers)</li>
+<li><strong>Opus 5.5:</strong> Complex architecture decisions, security audits, performance analysis of intricate algorithms, reviewing large PRs with subtle logic</li>
 </ul>
 <p>Most developer tasks fall into the Sonnet sweet spot. Switch to Haiku for quick lookups and to Opus when the problem requires deep analysis.</p>
 
@@ -900,7 +900,7 @@ const aiFormFillingAutomation: BlogPost = {
 <p>Avoid sending passwords, social security numbers, or financial account numbers through the AI chat. For forms requiring sensitive information, let the AI fill the non-sensitive fields and enter sensitive data manually. Prophet processes your data through its secure backend, but minimizing sensitive data exposure is always good practice.</p>
 
 <h3>Use Sonnet for Complex Forms</h3>
-<p>For forms with many fields, conditional logic, or multi-page workflows, Claude Sonnet 5 handles the complexity better than Haiku. The accuracy difference on large forms justifies the marginal cost increase. For simple forms with fewer than ten fields, Haiku is fast and sufficient.</p>
+<p>For forms with many fields, conditional logic, or multi-page workflows, Claude Sonnet 5.5 handles the complexity better than Haiku. The accuracy difference on large forms justifies the marginal cost increase. For simple forms with fewer than ten fields, Haiku is fast and sufficient.</p>
 
 <h3>Save Templates for Recurring Forms</h3>
 <p>If you fill the same type of form regularly (weekly reports, recurring orders, regular data entry), save your data template in a text file or note. Paste it into the Prophet chat each time, and the AI fills the form consistently. This is especially useful for forms that do not change between sessions.</p>
@@ -922,7 +922,7 @@ const aiFormFillingAutomation: BlogPost = {
 </ul>
 
 <h2>Cost of AI Form Filling</h2>
-<p>Form filling uses Prophet's standard credit system. A typical form fill with 10-15 fields costs roughly 2-3 credits (2-3 cents) with Claude Sonnet 5. Multi-page forms with 30+ fields might cost 5-8 credits due to the additional back-and-forth between the AI and the browser.</p>
+<p>Form filling uses Prophet's standard credit system. A typical form fill with 10-15 fields costs roughly 2-3 credits (2-3 cents) with Claude Sonnet 5.5. Multi-page forms with 30+ fields might cost 5-8 credits due to the additional back-and-forth between the AI and the browser.</p>
 <p>For perspective, filling out 10 job applications per day with Sonnet would cost approximately $0.25/day or $7.50/month, well within Prophet's Pro plan allocation of $11 in monthly credits. Check the <a href="/tools/ai-api-cost-calculator">cost calculator</a> to estimate your specific usage.</p>
 
 <h2>Getting Started</h2>
@@ -972,7 +972,7 @@ const payPerUseVsSubscription: BlogPost = {
 <p>Key characteristics:</p>
 <ul>
 <li>Fixed $20/month for ChatGPT Plus or Claude Pro</li>
-<li>Access to top-tier models (GPT-4o, Claude Opus 5)</li>
+<li>Access to top-tier models (GPT-4o, Claude Opus 5.5)</li>
 <li>Rate limits cap your maximum usage (roughly 80-100 messages per 3 hours for top models)</li>
 <li>No per-message cost visibility</li>
 <li>You pay the same whether you use it 30 days or 3 days in a month</li>
@@ -1420,8 +1420,8 @@ const aiChromeExtensionForProductManagers: BlogPost = {
 <p>Different PM tasks benefit from different AI models. Prophet gives you access to <a href="/blog/claude-haiku-vs-sonnet-vs-opus">three Claude model tiers</a>, and matching the model to the task optimizes both quality and cost:</p>
 <ul>
 <li><strong>Haiku 4.5</strong> for quick data extraction from competitor pages, ticket formatting, and simple summarization.</li>
-<li><strong>Sonnet 5</strong> for PRD drafting, research synthesis, and competitive analysis. This is the default for most PM workflows.</li>
-<li><strong>Opus 5</strong> for complex strategic analysis, synthesizing conflicting research findings, and drafting executive-level communications where nuance matters.</li>
+<li><strong>Sonnet 5.5</strong> for PRD drafting, research synthesis, and competitive analysis. This is the default for most PM workflows.</li>
+<li><strong>Opus 5.5</strong> for complex strategic analysis, synthesizing conflicting research findings, and drafting executive-level communications where nuance matters.</li>
 </ul>
 
 <h2>Getting Started</h2>
@@ -1509,8 +1509,8 @@ const aiForFreelancersSaveTime: BlogPost = {
 <p>Prophet gives you access to multiple Claude models, and selecting the right one for each task keeps costs low while maintaining quality. Refer to the <a href="/blog/claude-haiku-vs-sonnet-vs-opus">model comparison guide</a> for detailed benchmarks.</p>
 <ul>
 <li><strong>Haiku 4.5</strong> for email drafts, invoice formatting, and quick administrative tasks. Fast and cheap.</li>
-<li><strong>Sonnet 5</strong> for proposals, research synthesis, and client-facing documents. The best balance of quality and cost for professional deliverables.</li>
-<li><strong>Opus 5</strong> for complex research analysis, strategic recommendations, and high-stakes client presentations where depth matters.</li>
+<li><strong>Sonnet 5.5</strong> for proposals, research synthesis, and client-facing documents. The best balance of quality and cost for professional deliverables.</li>
+<li><strong>Opus 5.5</strong> for complex research analysis, strategic recommendations, and high-stakes client presentations where depth matters.</li>
 </ul>
 
 <h2>Getting Started This Week</h2>
@@ -1761,7 +1761,7 @@ const aiPoweredResearchFaster: BlogPost = {
 <p><strong>Use consistent extraction prompts.</strong> Ask for the same data points from each competitor (positioning, pricing, features, target market) so the AI produces comparable data that is easy to synthesize into a matrix.</p>
 <p><strong>Navigate deliberately.</strong> Visit pages in a logical order: all competitor homepages first, then all pricing pages, then supplementary sources. This helps the AI build a coherent picture incrementally.</p>
 <p><strong>Request intermediate summaries.</strong> After every two or three sources, ask the AI to summarize what has been learned so far. This catches errors early and ensures the analysis is tracking toward your research objective.</p>
-<p><strong>Choose the right model.</strong> For research workflows, Claude Sonnet 5 provides the best balance of analytical depth and speed. Use Opus 5 only when synthesizing particularly complex or contradictory findings. Haiku 4.5 works well for simple data extraction from structured pages like pricing tables. See the <a href="/blog/claude-haiku-vs-sonnet-vs-opus">model comparison guide</a> for detailed recommendations.</p>
+<p><strong>Choose the right model.</strong> For research workflows, Claude Sonnet 5.5 provides the best balance of analytical depth and speed. Use Opus 5.5 only when synthesizing particularly complex or contradictory findings. Haiku 4.5 works well for simple data extraction from structured pages like pricing tables. See the <a href="/blog/claude-haiku-vs-sonnet-vs-opus">model comparison guide</a> for detailed recommendations.</p>
 
 <h2>Beyond Market Research</h2>
 <p>The same workflow pattern applies to other research types:</p>
@@ -2044,7 +2044,7 @@ const chatgptPlusVsClaudeProVsProphet: BlogPost = {
 </table>
 
 <h2>ChatGPT Plus Price vs Claude Pro Price (May 2026 update)</h2>
-<p>Both flagship plans sit at the same $20/month list price in May 2026. ChatGPT Plus buys GPT-4o access with a soft cap around 80 messages per 3-hour rolling window plus unlimited GPT-4o mini. Claude Pro buys "5x" the free-tier allowance (Anthropic does not publish a precise number) plus Opus 5 access, larger file uploads, and Projects. Team tiers are $30/user/month on both sides. The $20 list price has held steady since early 2025 on both products despite model upgrades.</p>
+<p>Both flagship plans sit at the same $20/month list price in May 2026. ChatGPT Plus buys GPT-4o access with a soft cap around 80 messages per 3-hour rolling window plus unlimited GPT-4o mini. Claude Pro buys "5x" the free-tier allowance (Anthropic does not publish a precise number) plus Opus 5.5 access, larger file uploads, and Projects. Team tiers are $30/user/month on both sides. The $20 list price has held steady since early 2025 on both products despite model upgrades.</p>
 
 <h2>Understanding the Pricing Models</h2>
 <h3>Flat Subscription: ChatGPT Plus and Claude Pro</h3>
@@ -2110,7 +2110,7 @@ const chatgptPlusVsClaudeProVsProphet: BlogPost = {
 <p>The flat subscriptions advertise their price clearly but obscure their limits. When you hit a rate limit during a critical work session, the cost is not just the $20/month you paid: it is the productivity you lose waiting for the limit to reset. Prophet does not throttle based on subscription tier in the same way. As long as you have credits, your requests process immediately.</p>
 
 <h3>Model Access</h3>
-<p>ChatGPT Plus gives you GPT-4o, GPT-4o mini, and access to DALL-E for image generation. Claude Pro gives you Claude Opus 5, Sonnet 5, and Haiku 4.5. Prophet gives you the same three Claude models. If you specifically need GPT-4o or image generation, ChatGPT Plus is your only option among these three. If you prefer Claude's models, Prophet offers them at a lower effective cost for most usage levels.</p>
+<p>ChatGPT Plus gives you GPT-4o, GPT-4o mini, and access to DALL-E for image generation. Claude Pro gives you Claude Opus 5.5, Sonnet 5.5, and Haiku 4.5. Prophet gives you the same three Claude models. If you specifically need GPT-4o or image generation, ChatGPT Plus is your only option among these three. If you prefer Claude's models, Prophet offers them at a lower effective cost for most usage levels.</p>
 
 <h3>Browser Integration</h3>
 <p>Neither ChatGPT Plus nor Claude Pro include browser automation as part of their subscription. You access both through web interfaces. Prophet, by contrast, lives in your browser as a Chrome extension with full page-reading and automation capabilities. For users who spend most of their AI time working with web content, Prophet's browser-native approach eliminates the constant tab-switching that web-based interfaces require. See our <a href="/pricing">pricing page</a> for the full breakdown of what each plan includes.</p>
@@ -2129,7 +2129,7 @@ const chatgptPlusVsClaudeProVsProphet: BlogPost = {
 const claudeApiPricingExplained: BlogPost = {
   slug: 'claude-api-pricing-explained',
   title: 'Claude API Pricing 2026: Real Token Cost Per Message',
-  description: 'Haiku $1/$5, Sonnet $3/$15, Opus $5/$25 per million tokens. What that means per actual message, and 4 ways to cut the bill. Free calculator.',
+  description: 'Haiku $1/$5, Sonnet $2/$10, Opus $4/$20 per million tokens. What that means per actual message, and 4 ways to cut the bill. Free calculator.',
   date: '2026-04-04',
   lastModified: '2026-05-19',
   readingTime: '10 min read',
@@ -2138,7 +2138,7 @@ const claudeApiPricingExplained: BlogPost = {
   faq: [
     {
       question: 'How much does the Claude API cost in 2026?',
-      answer: 'Anthropic\'s published rates as of May 2026: Claude Haiku 4.5 is $1 per million input tokens and $5 per million output tokens. Claude Sonnet 5 is $3 / $15. Claude Opus 5 is $5 / $25. Sonnet 5 and Opus 5 have a 1,000,000-token context window; Haiku 4.5 has 200,000. Output tokens cost 3-5× more than input tokens because generation is sequential.',
+      answer: 'Anthropic\'s published rates as of May 2026: Claude Haiku 4.5 is $1 per million input tokens and $5 per million output tokens. Claude Sonnet 5.5 is $2 / $10. Claude Opus 5.5 is $4 / $20. Sonnet 5.5 and Opus 5.5 have a 1,000,000-token context window; Haiku 4.5 has 200,000. Output tokens cost 3-5× more than input tokens because generation is sequential.',
     },
     {
       question: 'What is a token in the Claude API?',
@@ -2146,7 +2146,7 @@ const claudeApiPricingExplained: BlogPost = {
     },
     {
       question: 'What does a typical Claude API message cost?',
-      answer: 'A standard Sonnet 5 message — 860 input tokens (your prompt plus a 500-word article) and 150 output tokens — costs about $0.0048, roughly half a cent. The same call on Haiku 4.5 costs about $0.0016. On Opus 5, expect about $0.008. Long-context analysis (5,000-word document) ranges from $0.02 (Haiku) to $0.15 (Opus).',
+      answer: 'A standard Sonnet 5.5 message — 860 input tokens (your prompt plus a 500-word article) and 150 output tokens — costs about $0.0048, roughly half a cent. The same call on Haiku 4.5 costs about $0.0016. On Opus 5.5, expect about $0.008. Long-context analysis (5,000-word document) ranges from $0.02 (Haiku) to $0.15 (Opus).',
     },
     {
       question: 'Why does my Claude API bill grow over a conversation?',
@@ -2159,7 +2159,7 @@ const claudeApiPricingExplained: BlogPost = {
   ],
   content: `
 <aside class="quick-answer" aria-label="Quick answer">
-  <strong>Quick answer:</strong> The Claude API costs $1 / $5 per million input/output tokens for Haiku 4.5, $3 / $15 for Sonnet 5, and $5 / $25 for Opus 5 (Anthropic published rates, May 2026). A typical Sonnet message &mdash; about 860 input plus 150 output tokens &mdash; costs roughly half a cent. Minimum API deposit is $5, with no monthly subscription. Sonnet 5 and Opus 5 have a 1,000,000-token context window; Haiku 4.5 has 200,000.
+  <strong>Quick answer:</strong> The Claude API costs $1 / $5 per million input/output tokens for Haiku 4.5, $2 / $10 for Sonnet 5.5, and $4 / $20 for Opus 5.5 (Anthropic published rates, May 2026). A typical Sonnet message &mdash; about 860 input plus 150 output tokens &mdash; costs roughly half a cent. Minimum API deposit is $5, with no monthly subscription. Sonnet 5.5 and Opus 5.5 have a 1,000,000-token context window; Haiku 4.5 has 200,000.
 </aside>
 <p>If you have ever looked at Anthropic's API pricing page, you have probably encountered terms like "MTok," "input tokens," and "output tokens" without a clear sense of what they mean for your actual bill. This guide breaks down exactly how Claude API pricing works, what tokens are, how costs are calculated per message, and how tools like Prophet let you access the API without managing any of this complexity yourself.</p>
 
@@ -2185,14 +2185,14 @@ const claudeApiPricingExplained: BlogPost = {
 </thead>
 <tbody>
 <tr><td>Claude Haiku 4.5</td><td>$1.00</td><td>$5.00</td><td>200K tokens</td></tr>
-<tr><td>Claude Sonnet 5</td><td>$3.00</td><td>$15.00</td><td>1M tokens</td></tr>
-<tr><td>Claude Opus 5</td><td>$5.00</td><td>$25.00</td><td>1M tokens</td></tr>
+<tr><td>Claude Sonnet 5.5</td><td>$2.00</td><td>$10.00</td><td>1M tokens</td></tr>
+<tr><td>Claude Opus 5.5</td><td>$4.00</td><td>$20.00</td><td>1M tokens</td></tr>
 </tbody>
 </table>
 <p>To convert MTok pricing to per-token pricing, divide by 1,000,000. For example, Claude Sonnet input costs $3.00 / 1,000,000 = $0.000003 per token. Not particularly intuitive, which is why thinking in terms of message cost is more practical.</p>
 
 <h2>Anthropic API Free Tier Credits (2026)</h2>
-<p>Anthropic's API does not have a recurring free tier in 2026 &mdash; you pay per token from the first call, with a $5 minimum deposit on console.anthropic.com. New accounts occasionally receive a small one-time evaluation credit (historically $5), but this is not guaranteed and is not advertised as a free tier. For free Claude API access via a third party, AWS Bedrock and Google Cloud Vertex AI new-account credits both apply to Claude calls, and Prophet's $0.20 free credit covers around 100 Sonnet 5 messages with no card required. Treat these as one-time grants rather than ongoing free quotas.</p>
+<p>Anthropic's API does not have a recurring free tier in 2026 &mdash; you pay per token from the first call, with a $5 minimum deposit on console.anthropic.com. New accounts occasionally receive a small one-time evaluation credit (historically $5), but this is not guaranteed and is not advertised as a free tier. For free Claude API access via a third party, AWS Bedrock and Google Cloud Vertex AI new-account credits both apply to Claude calls, and Prophet's $0.20 free credit covers around 100 Sonnet 5.5 messages with no card required. Treat these as one-time grants rather than ongoing free quotas.</p>
 
 <h2>What Does a Typical Message Cost?</h2>
 <p>Let us walk through a real example. You paste a 500-word article (about 650 input tokens) into Claude Sonnet and ask it to "summarize this in three bullet points" (about 10 more input tokens). The system prompt adds another 200 tokens. Claude responds with a summary of about 150 tokens.</p>
@@ -2727,7 +2727,7 @@ const freeAiTools2026: BlogPost = {
   faq: [
     {
       question: 'What AI tools are actually free in 2026?',
-      answer: 'Genuinely useful free tiers include ChatGPT Free (GPT-4o mini unlimited, GPT-4o capped at ~15-20/day), Claude Free (Sonnet 5, ~20-30 messages/day), Google Gemini Free (Gemini 2.5 Pro with generous limits), Microsoft Copilot Free (GPT-4o-powered), Perplexity Free (5 Pro searches/day with citations), and Prophet Free ($0.20 in credits across all three Claude models with browser automation).',
+      answer: 'Genuinely useful free tiers include ChatGPT Free (GPT-4o mini unlimited, GPT-4o capped at ~15-20/day), Claude Free (Sonnet 5.5, ~20-30 messages/day), Google Gemini Free (Gemini 2.5 Pro with generous limits), Microsoft Copilot Free (GPT-4o-powered), Perplexity Free (5 Pro searches/day with citations), and Prophet Free ($0.20 in credits across all three Claude models with browser automation).',
     },
     {
       question: 'Which free AI tool is best for browser automation?',
@@ -2735,7 +2735,7 @@ const freeAiTools2026: BlogPost = {
     },
     {
       question: 'Is ChatGPT or Claude better on the free tier?',
-      answer: 'Claude Free gives access to a more capable mid-tier model (Sonnet 5) than ChatGPT Free\'s default (GPT-4o mini). ChatGPT Free does grant limited GPT-4o access, but throttles you to mini during peak hours. For reasoning and long-document work, Claude Free wins; for breadth of features (image gen, voice, custom GPTs), ChatGPT Free wins.',
+      answer: 'Claude Free gives access to a more capable mid-tier model (Sonnet 5.5) than ChatGPT Free\'s default (GPT-4o mini). ChatGPT Free does grant limited GPT-4o access, but throttles you to mini during peak hours. For reasoning and long-document work, Claude Free wins; for breadth of features (image gen, voice, custom GPTs), ChatGPT Free wins.',
     },
     {
       question: 'Can I build a fully free AI stack in 2026?',
@@ -2748,7 +2748,7 @@ const freeAiTools2026: BlogPost = {
   ],
   content: `
 <aside class="quick-answer" aria-label="Quick answer">
-  <strong>Quick answer:</strong> As of May 2026, the most useful genuinely-free AI tiers are ChatGPT Free (GPT-4o mini unlimited, GPT-4o capped near 15-20 messages/day), Claude Free (Sonnet 5, ~20-30 messages/day), Google Gemini Free (Gemini 2.5 Pro), Microsoft Copilot Free, Perplexity Free (5 cited Pro searches/day), and Prophet Free ($0.20 in credits across all three Claude models with full browser automation). Avoid Notion AI Free and GitHub Copilot Free if you need more than a 20-50 action trial.
+  <strong>Quick answer:</strong> As of May 2026, the most useful genuinely-free AI tiers are ChatGPT Free (GPT-4o mini unlimited, GPT-4o capped near 15-20 messages/day), Claude Free (Sonnet 5.5, ~20-30 messages/day), Google Gemini Free (Gemini 2.5 Pro), Microsoft Copilot Free, Perplexity Free (5 cited Pro searches/day), and Prophet Free ($0.20 in credits across all three Claude models with full browser automation). Avoid Notion AI Free and GitHub Copilot Free if you need more than a 20-50 action trial.
 </aside>
 <p>Every AI tool advertises a free tier, but what you actually get for free varies enormously. Some free tiers are genuinely useful for daily work. Others are barely functional demos designed to push you toward a paid plan within minutes. This guide examines 12 popular AI tools in 2026, detailing exactly what their free tiers include, what limitations you will encounter, and at what point upgrading becomes necessary. No marketing spin: just what you get.</p>
 
@@ -2758,12 +2758,12 @@ const freeAiTools2026: BlogPost = {
 <p><strong>When to upgrade:</strong> If you need reliable GPT-4o access for more than 15 messages per day, or if you want DALL-E, custom GPTs, or advanced data analysis. ChatGPT Plus is $20/month.</p>
 
 <h2>2. Claude Free (Anthropic)</h2>
-<p><strong>What you get:</strong> Access to Claude Sonnet 5 with a daily message limit (roughly 20-30 messages, varying by load). File uploads. Artifacts for interactive content. Basic projects.</p>
-<p><strong>What you do not get:</strong> Claude Opus 5 access. Priority during high-traffic periods (you may wait or be temporarily blocked). Extended context window for very long conversations. Team features.</p>
+<p><strong>What you get:</strong> Access to Claude Sonnet 5.5 with a daily message limit (roughly 20-30 messages, varying by load). File uploads. Artifacts for interactive content. Basic projects.</p>
+<p><strong>What you do not get:</strong> Claude Opus 5.5 access. Priority during high-traffic periods (you may wait or be temporarily blocked). Extended context window for very long conversations. Team features.</p>
 <p><strong>When to upgrade:</strong> If you hit the daily limit regularly or need Opus for complex reasoning tasks. Claude Pro is $20/month.</p>
 
 <h2>3. Prophet Free</h2>
-<p><strong>What you get:</strong> $0.20 in credits (roughly 20 Haiku messages or 10 Sonnet messages). Access to all three Claude models (Haiku 4.5, Sonnet 5, Opus 5). Full browser automation capabilities. Chat history. All 18 browser tools.</p>
+<p><strong>What you get:</strong> $0.20 in credits (roughly 20 Haiku messages or 10 Sonnet messages). Access to all three Claude models (Haiku 4.5, Sonnet 5.5, Opus 5.5). Full browser automation capabilities. Chat history. All 18 browser tools.</p>
 <p><strong>What you do not get:</strong> The free credits do not last long with heavy use. No credit replenishment without upgrading. Rate limits are more restrictive (5 requests per minute).</p>
 <p><strong>When to upgrade:</strong> As soon as you exhaust the $0.20 in credits and want to continue using the tool. Prophet Pro at $9.99/month gives you $11 in credits. See the full breakdown on our <a href="/pricing">pricing page</a>.</p>
 
@@ -2834,7 +2834,7 @@ const freeAiTools2026: BlogPost = {
 <p>The moment you find yourself waiting for rate limits to reset, downgrading your prompt because the free model cannot handle it, or copying text between tabs because the free tier does not integrate where you work, it is time to consider a paid plan. The productivity cost of working around free-tier limitations often exceeds the subscription cost within the first week. Most of the tools listed here offer monthly subscriptions with no commitment, so you can try a paid tier for one month and evaluate whether the upgrade justifies the cost.</p>
 
 <h2>Going deeper on free AI</h2>
-<p>Claude is the model most often searched for with the word "free" attached, and it has the most misinformation around it. <a href="/free-claude-ai">Free Claude AI: every free tier, limit and workaround</a> covers what claude.ai actually gives away, the per-model caps on Sonnet 5 and Opus 5, and why <a href="/free-claude-ai">"free unlimited Claude"</a> is not something any legitimate provider can offer. <a href="/blog/is-claude-ai-free">Is Claude AI free?</a> handles the claude.ai free plan in detail.</p>
+<p>Claude is the model most often searched for with the word "free" attached, and it has the most misinformation around it. <a href="/free-claude-ai">Free Claude AI: every free tier, limit and workaround</a> covers what claude.ai actually gives away, the per-model caps on Sonnet 5.5 and Opus 5.5, and why <a href="/free-claude-ai">"free unlimited Claude"</a> is not something any legitimate provider can offer. <a href="/blog/is-claude-ai-free">Is Claude AI free?</a> handles the claude.ai free plan in detail.</p>
 <p>For free tools that live in the browser specifically, the <a href="/best-ai-chrome-extensions">ranked list of AI Chrome extensions</a> separates permanently free tools from daily-quota trials from bring-your-own-key setups &mdash; three very different meanings of "free" that get conflated constantly. If you are avoiding subscriptions on principle, <a href="/blog/use-claude-without-subscription">using Claude without a subscription</a> and <a href="/blog/pay-per-use-ai-vs-subscription">pay-per-use vs subscription pricing</a> cover the metered alternative.</p>
 `
 }
@@ -2921,7 +2921,7 @@ const accessibilityTreeVsScreenshots: BlogPost = {
     },
     {
       question: 'How much does screenshot-based browser AI cost vs accessibility-tree AI?',
-      answer: 'Per perception step (May 2026): a Sonnet 5 text call on a 5,000-token accessibility tree costs about $0.015-0.04. The equivalent vision call with a screenshot costs $0.03-0.08 because image tokens are billed at roughly 2× text tokens and add OCR overhead. Over a 15-step task that\'s $0.30 vs $1.20 — a 4× cost difference.',
+      answer: 'Per perception step (May 2026): a Sonnet 5.5 text call on a 5,000-token accessibility tree costs about $0.015-0.04. The equivalent vision call with a screenshot costs $0.03-0.08 because image tokens are billed at roughly 2× text tokens and add OCR overhead. Over a 15-step task that\'s $0.30 vs $1.20 — a 4× cost difference.',
     },
     {
       question: 'What is the accessibility tree in a web browser?',
@@ -2936,7 +2936,7 @@ const accessibilityTreeVsScreenshots: BlogPost = {
 <p>Every AI browser agent must answer a fundamental question: how does the AI "see" the web page? The answer determines the agent's speed, cost, accuracy, and reliability. There are two dominant approaches in 2026: reading the accessibility tree (a structured text representation of the page) and analyzing screenshots (sending a visual image to a vision model). Prophet uses the accessibility tree. Anthropic's Claude computer use and most screenshot-based agents use the visual approach. This article provides a technical comparison of both methods so you can understand the tradeoffs.</p>
 
 <aside class="methodology-note">
-<p><strong>About these numbers:</strong> Speed and cost figures here are estimates based on Anthropic's published Sonnet 5 token pricing, our own Chrome DevTools instrumentation of accessibility-tree extraction latency, and reported response times for vision API calls in Anthropic's and OpenAI's documentation as of May 2026. A full controlled benchmark (five standardized tasks across Prophet, Anthropic's Claude in Chrome, Browser Use, and a manual human baseline — measuring time and cost per step over 3 runs each) is in progress and this page will be updated with measured data when the benchmark is published.</p>
+<p><strong>About these numbers:</strong> Speed and cost figures here are estimates based on Anthropic's published Sonnet 5.5 token pricing, our own Chrome DevTools instrumentation of accessibility-tree extraction latency, and reported response times for vision API calls in Anthropic's and OpenAI's documentation as of May 2026. A full controlled benchmark (five standardized tasks across Prophet, Anthropic's Claude in Chrome, Browser Use, and a manual human baseline — measuring time and cost per step over 3 runs each) is in progress and this page will be updated with measured data when the benchmark is published.</p>
 </aside>
 
 <h2>What Is the Accessibility Tree?</h2>

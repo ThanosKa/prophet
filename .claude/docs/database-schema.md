@@ -47,7 +47,7 @@ messages {
   chatId: uuid            // FK → chats.id (cascade delete)
   role: 'user' | 'assistant'
   content: text
-  model: string           // resolved model actually called, e.g. 'claude-sonnet-5'
+  model: string           // resolved model actually called, e.g. 'claude-sonnet-5-5'
   inputTokens: number
   outputTokens: number
   costCents: number       // Actual API cost in cents

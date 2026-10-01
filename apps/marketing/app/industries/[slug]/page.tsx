@@ -43,7 +43,7 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
     },
     {
       question: `Which Claude model is best for this work?`,
-      answer: `Prophet lets you choose Claude Haiku 4.5 for fast, low-cost tasks, Sonnet 5 for balanced everyday work, or Opus 5 for the most complex reasoning. You can switch models at any time from the side panel.`,
+      answer: `Prophet lets you choose Claude Haiku 4.5 for fast, low-cost tasks, Sonnet 5.5 for balanced everyday work, or Opus 5.5 for the most complex reasoning. You can switch models at any time from the side panel.`,
     },
   ]
 

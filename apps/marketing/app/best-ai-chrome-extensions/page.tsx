@@ -28,7 +28,7 @@ const extensions = [
       'Accessibility tree approach is faster and cheaper than screenshot-based AI',
       'Pay-per-use credits instead of flat monthly fees for unused capacity',
       'Open source with full transparency into how it works',
-      'Multiple Claude models (Haiku 4.5, Sonnet 5, Opus 5)',
+      'Multiple Claude models (Haiku 4.5, Sonnet 5.5, Opus 5.5)',
     ],
     cons: [
       'Claude-only; no GPT or Gemini model options',
@@ -316,7 +316,7 @@ export default function BestAIChromeExtensionsPage() {
               If you want the answer without the detail, here is how the nine tested AI Chrome extensions rank by what you are actually trying to do:
             </p>
             <ul className="space-y-2 text-muted-foreground">
-              <li><strong className="text-foreground">Best overall and only real browser automation:</strong> Prophet (Claude Haiku 4.5, Sonnet 5 and Opus 5, 18 automation tools, pay-per-use credits)</li>
+              <li><strong className="text-foreground">Best overall and only real browser automation:</strong> Prophet (Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5, 18 automation tools, pay-per-use credits)</li>
               <li><strong className="text-foreground">Best multi-model assistant:</strong> Monica (GPT-4o, Claude and Gemini plus image generation in one sidebar)</li>
               <li><strong className="text-foreground">Best for comparing model answers:</strong> Sider (group chat queries several models on the same prompt)</li>
               <li><strong className="text-foreground">Best with live web search:</strong> Merlin (search-grounded answers and document analysis)</li>
@@ -373,7 +373,7 @@ export default function BestAIChromeExtensionsPage() {
               The five criteria, weighted equally:
             </p>
             <ul className="space-y-2 text-muted-foreground">
-              <li><strong className="text-foreground">Model quality and selection.</strong> Access to current frontier models (GPT-4o, Claude Sonnet 5, Gemini 2.5) and the ability to choose between speed and depth for a given task.</li>
+              <li><strong className="text-foreground">Model quality and selection.</strong> Access to current frontier models (GPT-4o, Claude Sonnet 5.5, Gemini 2.5) and the ability to choose between speed and depth for a given task.</li>
               <li><strong className="text-foreground">Browser integration.</strong> How well the extension reads the current page and interacts with it. Chat-only sidebars score lower; tools that can click, fill, and extract score higher.</li>
               <li><strong className="text-foreground">Pricing transparency.</strong> Whether you can predict the monthly bill before committing. Pay-per-use beats opaque query quotas.</li>
               <li><strong className="text-foreground">Privacy.</strong> Data retention policies, whether page content is stored server-side, and whether the source is auditable.</li>

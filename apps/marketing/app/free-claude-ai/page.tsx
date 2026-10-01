@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   // then denies is what produces the 0% CTR pattern elsewhere on this site.
   title: { absolute: "Free Claude AI: What's Actually Free in 2026 (Real Limits)" },
   description:
-    'Claude is free, with caps. The real Sonnet 5 and Opus free limits, why free unlimited Claude is a myth, and the cheapest honest routes.',
+    'Claude is free, with caps. The real Sonnet 5.5 and Opus free limits, why free unlimited Claude is a myth, and the cheapest honest routes.',
   alternates: { canonical: '/free-claude-ai' },
 }
 
@@ -22,14 +22,14 @@ const freeOptions = [
   {
     name: 'claude.ai free plan',
     cost: '$0',
-    models: 'Sonnet 5 (Opus not included)',
+    models: 'Sonnet 5.5 (Opus not included)',
     limits: 'Rolling message cap that resets every ~5 hours. Tightens at peak load.',
     catch: 'No API access, no browser integration, cannot read the page you are on.',
   },
   {
     name: 'Prophet free tier',
     cost: '$0 (no card)',
-    models: 'Haiku 4.5, Sonnet 5, Opus 5',
+    models: 'Haiku 4.5, Sonnet 5.5, Opus 5.5',
     limits: '$0.20 in credits — roughly 20 Haiku messages, 10 Sonnet or 4 Opus.',
     catch: 'Credits are finite. When they run out you either stop or buy more.',
   },
@@ -53,22 +53,22 @@ const faqItems = [
   {
     question: 'Is Claude AI free?',
     answer:
-      'Yes, partially. Anthropic runs a free plan on claude.ai that gives you access to Claude Sonnet 5 with a rolling message cap that resets roughly every five hours. It is genuinely free and requires no card, but it is metered, it gets tighter during peak demand, and it does not include Opus. There is no free plan that gives unlimited Claude usage, because every message costs Anthropic real compute.',
+      'Yes, partially. Anthropic runs a free plan on claude.ai that gives you access to Claude Sonnet 5.5 with a rolling message cap that resets roughly every five hours. It is genuinely free and requires no card, but it is metered, it gets tighter during peak demand, and it does not include Opus. There is no free plan that gives unlimited Claude usage, because every message costs Anthropic real compute.',
   },
   {
-    question: 'Is Claude Sonnet 5 free?',
+    question: 'Is Claude Sonnet 5.5 free?',
     answer:
-      'Claude Sonnet 5 is available on the claude.ai free plan, but with a message cap rather than unlimited use. You get a set number of messages in a rolling window; once you hit it, you wait for the window to reset or upgrade. Sonnet 5 through the Anthropic API is never free — it is billed per token. Prophet gives you Sonnet 5 on its free tier through $0.20 of included credits, with no card required.',
+      'Claude Sonnet 5.5 is available on the claude.ai free plan, but with a message cap rather than unlimited use. You get a set number of messages in a rolling window; once you hit it, you wait for the window to reset or upgrade. Sonnet 5.5 through the Anthropic API is never free — it is billed per token. Prophet gives you Sonnet 5.5 on its free tier through $0.20 of included credits, with no card required.',
   },
   {
-    question: 'Is there a way to get Claude Sonnet 5 free and unlimited?',
+    question: 'Is there a way to get Claude Sonnet 5.5 free and unlimited?',
     answer:
       'No, and any site claiming otherwise is either reselling a cracked key, proxying through someone else\'s account, or simply wrong. Anthropic bills compute per token, so unlimited free access is not something any legitimate provider can offer. The honest options are: use the metered claude.ai free plan, pay per token through the API, or use a pay-per-use client like Prophet where you only pay for the messages you actually send. Beware of "unlimited free Claude" sites — they routinely harvest credentials or serve a much weaker model than advertised.',
   },
   {
-    question: 'Is Claude Opus 5 free?',
+    question: 'Is Claude Opus 5.5 free?',
     answer:
-      'Not on claude.ai. Opus 5 is Anthropic\'s most expensive model and is reserved for paid claude.ai plans. The only way to use Opus without a monthly subscription is through the API on a pay-per-token basis, or through a pay-per-use client that resells API access. Prophet includes Opus 5 on its free tier, though Opus burns through the $0.20 of free credits fast — expect about four messages rather than dozens.',
+      'Not on claude.ai. Opus 5.5 is Anthropic\'s most expensive model and is reserved for paid claude.ai plans. The only way to use Opus without a monthly subscription is through the API on a pay-per-token basis, or through a pay-per-use client that resells API access. Prophet includes Opus 5.5 on its free tier, though Opus burns through the $0.20 of free credits fast — expect about four messages rather than dozens.',
   },
   {
     question: 'What are the Claude free tier limits in 2026?',
@@ -121,7 +121,7 @@ export default function FreeClaudeAIPage() {
             <aside className="mt-8 rounded-lg border border-border bg-muted/50 p-4">
               <p className="font-semibold mb-2">The short answer</p>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Claude Sonnet 5 is free on claude.ai with a rolling message cap. Claude Opus 5 is
+                Claude Sonnet 5.5 is free on claude.ai with a rolling message cap. Claude Opus 5.5 is
                 not free on claude.ai. Nobody offers free unlimited Claude, because Anthropic bills
                 real compute per token. If the free cap is too tight but $20/month is too much, the
                 middle option is paying per message instead of per month.
@@ -133,7 +133,7 @@ export default function FreeClaudeAIPage() {
             <h2 className="text-2xl font-bold mb-4">Is Claude AI free?</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
               Yes. Anthropic runs a free plan on claude.ai that requires no payment method. You sign
-              up with an email, and you get Claude Sonnet 5 with a message allowance that resets on
+              up with an email, and you get Claude Sonnet 5.5 with a message allowance that resets on
               a rolling window of roughly five hours. For casual use — a few questions a day, some
               writing help, the occasional document — the free plan is genuinely sufficient and
               always has been.
@@ -152,15 +152,15 @@ export default function FreeClaudeAIPage() {
           </section>
 
           <section className="mb-12">
-            <h2 className="text-2xl font-bold mb-4">Is Claude Sonnet 5 free?</h2>
+            <h2 className="text-2xl font-bold mb-4">Is Claude Sonnet 5.5 free?</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Sonnet 5 is the model you get on the claude.ai free plan, so yes — free, but metered.
+              Sonnet 5.5 is the model you get on the claude.ai free plan, so yes — free, but metered.
               This is the source of most of the confusion, because &ldquo;Sonnet is on the free
               tier&rdquo; and &ldquo;Sonnet is free to use as much as you like&rdquo; are very
               different statements, and only the first one is true.
             </p>
             <p className="text-muted-foreground leading-relaxed">
-              Through the Anthropic API, Sonnet 5 is never free. It is billed per input and output
+              Through the Anthropic API, Sonnet 5.5 is never free. It is billed per input and output
               token, which is why any tool built on the API has to either charge you or resell someone
               else&apos;s quota. If you want to see what your actual usage would cost per token before
               committing to anything, the{' '}
@@ -177,13 +177,13 @@ export default function FreeClaudeAIPage() {
 
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">
-              &ldquo;Claude Sonnet 5 free unlimited&rdquo; — the honest answer
+              &ldquo;Claude Sonnet 5.5 free unlimited&rdquo; — the honest answer
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
               There is no such thing, and we would rather say that plainly than sell you something on
               a false premise. Every Claude message consumes GPU time that Anthropic pays for. No
               legitimate provider can give that away without limit. When you find a site promising
-              unlimited free Claude Sonnet 5, one of four things is happening:
+              unlimited free Claude Sonnet 5.5, one of four things is happening:
             </p>
             <ul className="space-y-3 text-muted-foreground mb-4">
               <li>
@@ -193,7 +193,7 @@ export default function FreeClaudeAIPage() {
               </li>
               <li>
                 <strong className="text-foreground">It is silently serving a cheaper model.</strong>{' '}
-                You are told it is Sonnet 5; you are getting a small open-weights model. This is the
+                You are told it is Sonnet 5.5; you are getting a small open-weights model. This is the
                 most common variant.
               </li>
               <li>
@@ -213,16 +213,16 @@ export default function FreeClaudeAIPage() {
           </section>
 
           <section className="mb-12">
-            <h2 className="text-2xl font-bold mb-4">Is Claude Opus 5 free?</h2>
+            <h2 className="text-2xl font-bold mb-4">Is Claude Opus 5.5 free?</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Not on claude.ai. Opus 5 is Anthropic&apos;s frontier model and costs several times
+              Not on claude.ai. Opus 5.5 is Anthropic&apos;s frontier model and costs several times
               more per token than Sonnet, so it is gated behind the paid claude.ai plans. If you have
               only ever used the free plan, you have never used Opus.
             </p>
             <p className="text-muted-foreground leading-relaxed">
               The only routes to Opus without a monthly subscription are the API on a pay-per-token
               basis, or a client that resells API access per message. Prophet takes the second route:
-              Opus 5 is available on the free tier, though it consumes the included credits quickly.
+              Opus 5.5 is available on the free tier, though it consumes the included credits quickly.
               If you are unsure whether you actually need Opus, the{' '}
               <Link href="/blog/claude-haiku-vs-sonnet-vs-opus" className="text-primary hover:underline">
                 Claude Haiku vs Sonnet vs Opus comparison
@@ -267,7 +267,7 @@ export default function FreeClaudeAIPage() {
             </p>
             <p className="text-muted-foreground leading-relaxed mb-4">
               <strong className="text-foreground">What is free:</strong> $0.20 in credits when you
-              sign up, no credit card. All three models — Haiku 4.5, Sonnet 5 and Opus 5 — are
+              sign up, no credit card. All three models — Haiku 4.5, Sonnet 5.5 and Opus 5.5 — are
               unlocked on the free tier, which is unusual; most extensions reserve the strong models
               for paid plans. All 18 browser automation tools work on the free tier. In practice
               $0.20 is roughly 20 Haiku messages, 10 Sonnet messages, or four Opus messages at
@@ -369,7 +369,7 @@ export default function FreeClaudeAIPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold mb-4">Try Claude free in your browser</h2>
           <p className="text-muted-foreground mb-6">
-            $0.20 in credits, no card required, and Haiku 4.5, Sonnet 5 and Opus 5 all unlocked
+            $0.20 in credits, no card required, and Haiku 4.5, Sonnet 5.5 and Opus 5.5 all unlocked
             from the start.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

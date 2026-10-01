@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 
 const modelLabels: Record<string, string> = {
   haiku: 'Haiku 4.5',
-  sonnet: 'Sonnet 5',
-  opus: 'Opus 5',
+  sonnet: 'Sonnet 5.5',
+  opus: 'Opus 5.5',
 }
 
 export default function ProfessionsHubPage() {

@@ -243,7 +243,7 @@ afterEach(() => {
 })
 
 describe('Legacy model ids from already-installed extensions', () => {
-  it('accepts claude-opus-4-6 and calls Opus 5 instead', async () => {
+  it('accepts claude-opus-4-6 and calls Opus 5.5 instead', async () => {
     primeRequestContext()
     mockPlainTurn(1000, 500)
 
@@ -251,10 +251,10 @@ describe('Legacy model ids from already-installed extensions', () => {
     expect(response.status).toBe(200)
     await drain(response)
 
-    expect(calledModel()).toBe('claude-opus-5')
+    expect(calledModel()).toBe('claude-opus-5-5')
   })
 
-  it('accepts claude-sonnet-4-6 and calls Sonnet 5 instead', async () => {
+  it('accepts claude-sonnet-4-6 and calls Sonnet 5.5 instead', async () => {
     primeRequestContext()
     mockPlainTurn(1000, 500)
 
@@ -262,7 +262,7 @@ describe('Legacy model ids from already-installed extensions', () => {
     expect(response.status).toBe(200)
     await drain(response)
 
-    expect(calledModel()).toBe('claude-sonnet-5')
+    expect(calledModel()).toBe('claude-sonnet-5-5')
   })
 
   it('still accepts claude-haiku-4-5, which was not renamed', async () => {
@@ -282,21 +282,21 @@ describe('Legacy model ids from already-installed extensions', () => {
 
     const events = await drain(await post({ model: 'claude-opus-4-6' }))
 
-    // Opus 5: (1000/1M x $5) + (500/1M x $25) = $0.0175 -> x1.2 markup = 2.1c -> 3 credits
-    const expected = calculateCostInCredits('claude-opus-5', 1000, 500)
-    expect(expected).toBe(3)
+    // Opus 5.5: (1000/1M x $4) + (500/1M x $20) = $0.014 -> x1.2 markup = 1.68c -> 2 credits
+    const expected = calculateCostInCredits('claude-opus-5-5', 1000, 500)
+    expect(expected).toBe(2)
 
     const done = events.find((e) => e.type === 'done') as {
       usage: { costCents: number }
     }
     expect(done.usage.costCents).toBe(expected)
     expect(usageRow(captured)).toMatchObject({
-      model: 'claude-opus-5',
+      model: 'claude-opus-5-5',
       costCents: expected,
     })
 
     const assistantRow = captured.inserts.find((row) => row.role === 'assistant')
-    expect(assistantRow).toMatchObject({ model: 'claude-opus-5', costCents: expected })
+    expect(assistantRow).toMatchObject({ model: 'claude-opus-5-5', costCents: expected })
   })
 
   it('records the resolved model and cost for every legacy alias', async () => {
@@ -323,7 +323,7 @@ describe('Legacy model ids from already-installed extensions', () => {
 
     expect(captured.updates.some((u) => 'creditsRemaining' in u)).toBe(true)
     expect(usageRow(captured)?.costCents).toBe(
-      calculateCostInCredits('claude-sonnet-5', 1000, 500)
+      calculateCostInCredits('claude-sonnet-5-5', 1000, 500)
     )
   })
 

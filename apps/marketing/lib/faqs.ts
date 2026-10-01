@@ -47,7 +47,7 @@ export const homeFaqs: FAQ[] = [
   {
     question: 'Which AI model does Prophet use?',
     answer:
-      'Prophet supports all Claude models including Claude Haiku 4.5, Claude Sonnet 5, and Claude Opus 5. You can select any model you prefer at standard Anthropic pricing.',
+      'Prophet supports all Claude models including Claude Haiku 4.5, Claude Sonnet 5.5, and Claude Opus 5.5. You can select any model you prefer at standard Anthropic pricing.',
   },
   {
     question: 'Does my balance roll over?',

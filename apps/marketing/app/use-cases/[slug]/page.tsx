@@ -302,7 +302,7 @@ export default async function UseCasePage({
               {
                 href: '/best-claude-chrome-extensions',
                 anchor: 'Best Chrome extensions for Claude AI',
-                context: 'the Claude-specific ranking, including which expose Opus 5.',
+                context: 'the Claude-specific ranking, including which expose Opus 5.5.',
               },
               {
                 href: '/best-ai-sidebar-extensions',

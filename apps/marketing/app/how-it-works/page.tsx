@@ -353,13 +353,13 @@ chrome.debugger.sendCommand(
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 pb-4">
-                  <p className="font-semibold text-sm">Sonnet 5</p>
+                  <p className="font-semibold text-sm">Sonnet 5.5</p>
                   <p className="text-xs text-muted-foreground mt-1">Balanced performance & capability</p>
                 </CardContent>
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 pb-4">
-                  <p className="font-semibold text-sm">Opus 5</p>
+                  <p className="font-semibold text-sm">Opus 5.5</p>
                   <p className="text-xs text-muted-foreground mt-1">Most capable for complex tasks</p>
                 </CardContent>
               </Card>

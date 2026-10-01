@@ -53,7 +53,7 @@ export const softwareApplicationNode = {
   name: 'Prophet',
   alternateName: 'Prophet Chrome Extension',
   description:
-    'Chrome side panel extension that runs Claude Haiku 4.5, Sonnet 5 and Opus 5 against the page you are on, with 18 browser-automation tools and pay-per-use credits.',
+    'Chrome side panel extension that runs Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5 against the page you are on, with 18 browser-automation tools and pay-per-use credits.',
   applicationCategory: 'BrowserApplication',
   applicationSubCategory: 'AI Assistant',
   operatingSystem: 'Chrome OS, Windows, macOS, Linux',
@@ -70,7 +70,7 @@ export const softwareApplicationNode = {
     'Chrome side panel integration',
     'Streaming Claude responses',
     '18 browser-automation tools (click, type, navigate, extract)',
-    'Claude Haiku 4.5, Sonnet 5 and Opus 5',
+    'Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5',
     'Accessibility-tree page reading instead of screenshots',
     'Pay-per-use credits billed at Anthropic API cost',
     'Persistent chat history',

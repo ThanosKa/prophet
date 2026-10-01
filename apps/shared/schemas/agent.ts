@@ -46,8 +46,8 @@ export const textContentSchema = z.object({
 // Currently released Claude model IDs. These strings carry no date suffix.
 export const CLAUDE_MODELS = {
   HAIKU: "claude-haiku-4-5",
-  SONNET: "claude-sonnet-5",
-  OPUS: "claude-opus-5",
+  SONNET: "claude-sonnet-5-5",
+  OPUS: "claude-opus-5-5",
 } as const;
 
 // Models on the Claude 5 generation reject `thinking.budget_tokens` and default
@@ -68,12 +68,12 @@ export const MODEL_CONFIG = [
   },
   {
     id: CLAUDE_MODELS.SONNET,
-    label: 'Sonnet 5',
+    label: 'Sonnet 5.5',
     description: 'Balanced',
   },
   {
     id: CLAUDE_MODELS.OPUS,
-    label: 'Opus 5',
+    label: 'Opus 5.5',
     description: 'Most capable',
   },
 ] as const;
@@ -90,6 +90,8 @@ export type ModelConfig = typeof MODEL_CONFIG[number];
  * Retire an entry only once telemetry shows no installs still sending it.
  */
 export const LEGACY_MODEL_ALIASES = {
+  "claude-sonnet-5": CLAUDE_MODELS.SONNET,
+  "claude-opus-5": CLAUDE_MODELS.OPUS,
   "claude-sonnet-4-6": CLAUDE_MODELS.SONNET,
   "claude-opus-4-6": CLAUDE_MODELS.OPUS,
 } as const;
@@ -108,6 +110,8 @@ export const agentModelSchema = z.enum([
   CLAUDE_MODELS.HAIKU,
   CLAUDE_MODELS.SONNET,
   CLAUDE_MODELS.OPUS,
+  "claude-sonnet-5",
+  "claude-opus-5",
   "claude-sonnet-4-6",
   "claude-opus-4-6",
 ]);

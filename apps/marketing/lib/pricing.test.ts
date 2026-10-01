@@ -207,8 +207,8 @@ describe('calculateCostInCents (legacy alias)', () => {
 describe('Model Pricing Table', () => {
   it('prices the current Claude models at published rates', () => {
     expect(MODEL_PRICING['claude-haiku-4-5']).toEqual({ input: 1.0, output: 5.0 })
-    expect(MODEL_PRICING['claude-sonnet-5']).toEqual({ input: 3.0, output: 15.0 })
-    expect(MODEL_PRICING['claude-opus-5']).toEqual({ input: 5.0, output: 25.0 })
+    expect(MODEL_PRICING['claude-sonnet-5-5']).toEqual({ input: 2.0, output: 10.0 })
+    expect(MODEL_PRICING['claude-opus-5-5']).toEqual({ input: 4.0, output: 20.0 })
   })
 
   it('ALL_MODELS matches the shared model constants', () => {
@@ -243,15 +243,15 @@ describe('Web Search Cost Accounting', () => {
   })
 
   it('adds nothing when no searches ran', () => {
-    const withoutSearch = calculateCostInCredits('claude-sonnet-5', 1000, 500)
-    const explicitZero = calculateCostInCredits('claude-sonnet-5', 1000, 500, 0)
+    const withoutSearch = calculateCostInCredits('claude-sonnet-5-5', 1000, 500)
+    const explicitZero = calculateCostInCredits('claude-sonnet-5-5', 1000, 500, 0)
     expect(explicitZero).toBe(withoutSearch)
     expect(calculateWebSearchCostInCredits(0)).toBe(0)
   })
 
   it('charges more when searches ran', () => {
-    const withoutSearch = calculateCostInCredits('claude-sonnet-5', 1000, 500, 0)
-    const withSearch = calculateCostInCredits('claude-sonnet-5', 1000, 500, 3)
+    const withoutSearch = calculateCostInCredits('claude-sonnet-5-5', 1000, 500, 0)
+    const withSearch = calculateCostInCredits('claude-sonnet-5-5', 1000, 500, 3)
     expect(withSearch).toBeGreaterThan(withoutSearch)
   })
 
@@ -286,8 +286,8 @@ describe('Web Search Cost Accounting', () => {
   })
 
   it('ignores a negative search count instead of crediting the user', () => {
-    const baseline = calculateCostInCredits('claude-opus-5', 1000, 500, 0)
-    expect(calculateCostInCredits('claude-opus-5', 1000, 500, -5)).toBe(baseline)
+    const baseline = calculateCostInCredits('claude-opus-5-5', 1000, 500, 0)
+    expect(calculateCostInCredits('claude-opus-5-5', 1000, 500, -5)).toBe(baseline)
   })
 
   it('legacy alias resolves to the same cost as the model actually called', () => {
@@ -304,8 +304,8 @@ describe('Web Search Cost Accounting', () => {
   })
 
   it('calculateCostInCents forwards the search count', () => {
-    expect(calculateCostInCents('claude-opus-5', 1000, 500, 3)).toBe(
-      calculateCostInCredits('claude-opus-5', 1000, 500, 3)
+    expect(calculateCostInCents('claude-opus-5-5', 1000, 500, 3)).toBe(
+      calculateCostInCredits('claude-opus-5-5', 1000, 500, 3)
     )
   })
 })

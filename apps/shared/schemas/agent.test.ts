@@ -540,8 +540,8 @@ describe('toolUseSchema', () => {
 describe('Model constants and legacy aliases', () => {
   it('exposes the current Claude model ids', () => {
     expect(CLAUDE_MODELS.HAIKU).toBe('claude-haiku-4-5')
-    expect(CLAUDE_MODELS.SONNET).toBe('claude-sonnet-5')
-    expect(CLAUDE_MODELS.OPUS).toBe('claude-opus-5')
+    expect(CLAUDE_MODELS.SONNET).toBe('claude-sonnet-5-5')
+    expect(CLAUDE_MODELS.OPUS).toBe('claude-opus-5-5')
   })
 
   it('MODEL_CONFIG covers exactly the current models', () => {
@@ -706,7 +706,7 @@ describe('Web search content blocks', () => {
   it('accepts text blocks carrying web search citations', () => {
     const result = contentBlockSchema.safeParse({
       type: 'text',
-      text: 'Claude Opus 5 costs $5 per million input tokens.',
+      text: 'Claude Opus 5.5 costs $5 per million input tokens.',
       citations: [
         {
           type: 'web_search_result_location',

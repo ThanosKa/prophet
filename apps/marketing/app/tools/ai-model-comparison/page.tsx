@@ -41,7 +41,7 @@ const MODELS: Model[] = [
     bestFor: 'Quick tasks, summarization, simple Q&A',
   },
   {
-    name: 'Claude Sonnet 5',
+    name: 'Claude Sonnet 5.5',
     provider: 'Anthropic',
     inputPrice: 3,
     outputPrice: 15,
@@ -51,7 +51,7 @@ const MODELS: Model[] = [
     bestFor: 'Balanced coding, analysis, writing',
   },
   {
-    name: 'Claude Opus 5',
+    name: 'Claude Opus 5.5',
     provider: 'Anthropic',
     inputPrice: 5,
     outputPrice: 25,
