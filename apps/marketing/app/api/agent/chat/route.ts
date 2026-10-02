@@ -6,13 +6,12 @@ import { eq, sql } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { anthropic } from "@/lib/anthropic";
 import { AGENT_TOOLS } from "@/lib/agent/tools";
-import {
-  AGENT_SYSTEM_PROMPT,
-  AGENT_MAX_TOKENS,
-} from "@/lib/agent/system-prompt";
+import { AGENT_SYSTEM_PROMPT } from "@/lib/agent/system-prompt";
 import {
   buildAgentTools,
+  buildOutputConfig,
   buildThinkingConfig,
+  getAgentMaxTokens,
   shouldUseWebSearch,
   toEchoableContent,
 } from "@/lib/agent/web-search";
@@ -292,10 +291,11 @@ export async function POST(req: Request) {
 
         try {
           const thinkingConfig = buildThinkingConfig(model, enableThinking);
+          const outputConfig = buildOutputConfig({ model, enableThinking });
 
           const anthropicStream = await anthropic.messages.stream({
             model,
-            max_tokens: enableThinking ? 16000 : AGENT_MAX_TOKENS,
+            max_tokens: getAgentMaxTokens({ model, enableThinking }),
             system: [
               {
                 type: "text",
@@ -306,6 +306,7 @@ export async function POST(req: Request) {
             tools: buildAgentTools(AGENT_TOOLS, webSearchEnabled),
             messages: anthropicMessages,
             ...(thinkingConfig && { thinking: thinkingConfig }),
+            ...(outputConfig && { output_config: outputConfig }),
           });
 
           let currentToolUse: {

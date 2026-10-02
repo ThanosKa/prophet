@@ -5,6 +5,7 @@ import type {
 } from '@anthropic-ai/sdk/resources/messages'
 import { ADAPTIVE_THINKING_MODELS } from '@prophet/shared'
 import type { AgentModel } from '@prophet/shared'
+import { AGENT_MAX_TOKENS } from './system-prompt'
 
 /**
  * Anthropic-executed web search.
@@ -52,25 +53,48 @@ export function buildAgentTools(
 
 type ThinkingConfig =
   | { type: 'adaptive'; display: 'summarized' }
-  | { type: 'disabled' }
   | { type: 'enabled'; budget_tokens: number }
 
+type ReasoningOptions = {
+  model: AgentModel
+  enableThinking: boolean
+}
+
 /**
- * Claude 5 models reject `budget_tokens`, think by default when `thinking` is
- * omitted, and default `display` to `"omitted"` (which streams empty thinking
- * deltas). Both states therefore have to be sent explicitly. Haiku 4.5 predates
- * adaptive thinking and still takes a fixed budget.
+ * Claude Opus 5.5 and Sonnet 5.5 reject `thinking: {type: "disabled"}` with a 400
+ * and think adaptively when `thinking` is omitted, so "thinking off" on these
+ * models means omitting the field and running at low effort (`buildOutputConfig`).
+ * `display` defaults to `"omitted"` (empty thinking deltas), so thinking-on asks
+ * for summaries explicitly. Haiku 4.5 predates adaptive thinking and still takes a
+ * fixed budget.
  */
 export function buildThinkingConfig(
   model: AgentModel,
   enableThinking: boolean
 ): ThinkingConfig | null {
   if (ADAPTIVE_THINKING_MODELS.includes(model)) {
-    return enableThinking
-      ? { type: 'adaptive', display: 'summarized' }
-      : { type: 'disabled' }
+    return enableThinking ? { type: 'adaptive', display: 'summarized' } : null
   }
   return enableThinking ? { type: 'enabled', budget_tokens: 8000 } : null
+}
+
+export function buildOutputConfig({
+  model,
+  enableThinking,
+}: ReasoningOptions): { effort: 'low' } | null {
+  return !enableThinking && ADAPTIVE_THINKING_MODELS.includes(model)
+    ? { effort: 'low' }
+    : null
+}
+
+/**
+ * Thinking counts toward `max_tokens`, and adaptive models always think, so they
+ * get the thinking-sized limit even when the user turned thinking off.
+ */
+export function getAgentMaxTokens({ model, enableThinking }: ReasoningOptions): number {
+  return enableThinking || ADAPTIVE_THINKING_MODELS.includes(model)
+    ? 16000
+    : AGENT_MAX_TOKENS
 }
 
 const ECHOABLE_BLOCK_TYPES = new Set([

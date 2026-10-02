@@ -1,12 +1,15 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { CLAUDE_MODELS } from '@prophet/shared'
 import { AGENT_TOOLS } from './tools'
+import { AGENT_MAX_TOKENS } from './system-prompt'
 import {
   WEB_SEARCH_TOOL,
   WEB_SEARCH_TOOL_TYPE,
   WEB_SEARCH_MAX_USES,
   buildAgentTools,
+  buildOutputConfig,
   buildThinkingConfig,
+  getAgentMaxTokens,
   isWebSearchEnabled,
   shouldUseWebSearch,
 } from './web-search'
@@ -89,16 +92,16 @@ describe('buildThinkingConfig', () => {
     }
   })
 
-  it('disables thinking explicitly on Claude 5 models, which think by default', () => {
+  it('never sends disabled thinking to Opus 5.5 / Sonnet 5.5, which reject it with a 400', () => {
     for (const model of [CLAUDE_MODELS.SONNET, CLAUDE_MODELS.OPUS]) {
-      expect(buildThinkingConfig(model, false)).toEqual({ type: 'disabled' })
+      expect(buildThinkingConfig(model, false)).toBeNull()
     }
   })
 
   it('never sends budget_tokens to a Claude 5 model', () => {
     for (const model of [CLAUDE_MODELS.SONNET, CLAUDE_MODELS.OPUS]) {
       for (const enabled of [true, false]) {
-        expect(buildThinkingConfig(model, enabled)).not.toHaveProperty('budget_tokens')
+        expect(buildThinkingConfig(model, enabled) ?? {}).not.toHaveProperty('budget_tokens')
       }
     }
   })
@@ -110,5 +113,37 @@ describe('buildThinkingConfig', () => {
 
   it('omits the parameter entirely on Haiku 4.5 when thinking is off', () => {
     expect(buildThinkingConfig(CLAUDE_MODELS.HAIKU, false)).toBeNull()
+  })
+})
+
+describe('buildOutputConfig', () => {
+  it('runs Claude 5 models at low effort when thinking is off', () => {
+    for (const model of [CLAUDE_MODELS.SONNET, CLAUDE_MODELS.OPUS]) {
+      expect(buildOutputConfig({ model, enableThinking: false })).toEqual({ effort: 'low' })
+    }
+  })
+
+  it('leaves effort at the model default when thinking is on', () => {
+    for (const model of [CLAUDE_MODELS.SONNET, CLAUDE_MODELS.OPUS]) {
+      expect(buildOutputConfig({ model, enableThinking: true })).toBeNull()
+    }
+  })
+
+  it('never sends effort to Haiku 4.5', () => {
+    for (const enableThinking of [true, false]) {
+      expect(buildOutputConfig({ model: CLAUDE_MODELS.HAIKU, enableThinking })).toBeNull()
+    }
+  })
+})
+
+describe('getAgentMaxTokens', () => {
+  it('leaves room for thinking on Claude 5 models even when thinking is off', () => {
+    for (const model of [CLAUDE_MODELS.SONNET, CLAUDE_MODELS.OPUS]) {
+      expect(getAgentMaxTokens({ model, enableThinking: false })).toBe(16000)
+    }
+  })
+
+  it('keeps the short limit on Haiku 4.5 without thinking', () => {
+    expect(getAgentMaxTokens({ model: CLAUDE_MODELS.HAIKU, enableThinking: false })).toBe(AGENT_MAX_TOKENS)
   })
 })

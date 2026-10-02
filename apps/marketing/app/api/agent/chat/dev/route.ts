@@ -4,8 +4,8 @@ import { messages, chats } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { anthropic } from '@/lib/anthropic'
 import { AGENT_TOOLS } from '@/lib/agent/tools'
-import { AGENT_SYSTEM_PROMPT, AGENT_MAX_TOKENS } from '@/lib/agent/system-prompt'
-import { buildAgentTools, buildThinkingConfig, toEchoableContent } from '@/lib/agent/web-search'
+import { AGENT_SYSTEM_PROMPT } from '@/lib/agent/system-prompt'
+import { buildAgentTools, buildOutputConfig, buildThinkingConfig, getAgentMaxTokens, toEchoableContent } from '@/lib/agent/web-search'
 import {
   agentChatRequestSchema,
   DEFAULT_AGENT_MODEL,
@@ -167,13 +167,14 @@ export async function POST(req: Request) {
         let toolUseCount = 0
 
         try {
-          logger.debug({ model, maxTokens: enableThinking ? 16000 : AGENT_MAX_TOKENS, enableThinking }, '[DEV] Creating Anthropic stream')
+          logger.debug({ model, maxTokens: getAgentMaxTokens({ model, enableThinking }), enableThinking }, '[DEV] Creating Anthropic stream')
 
           const thinkingConfig = buildThinkingConfig(model, enableThinking)
+          const outputConfig = buildOutputConfig({ model, enableThinking })
 
           const anthropicStream = await anthropic.messages.stream({
             model,
-            max_tokens: enableThinking ? 16000 : AGENT_MAX_TOKENS,
+            max_tokens: getAgentMaxTokens({ model, enableThinking }),
             system: [
               {
                 type: 'text',
@@ -184,6 +185,7 @@ export async function POST(req: Request) {
             tools: buildAgentTools(AGENT_TOOLS, enableWebSearch),
             messages: anthropicMessages,
             ...(thinkingConfig && { thinking: thinkingConfig }),
+            ...(outputConfig && { output_config: outputConfig }),
           })
 
           logger.debug({}, '[DEV] Anthropic stream created, processing events')
