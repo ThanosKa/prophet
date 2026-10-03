@@ -33,6 +33,16 @@ describe('estimateInputTokens', () => {
       referenceTokens: 95,
     },
     {
+      name: 'Greek',
+      text: 'Καλημέρα, θέλω να μου γράψεις μια περίληψη για την ιστορία της Αθήνας και των αρχαίων Ελλήνων φιλοσόφων.',
+      referenceTokens: 157,
+    },
+    {
+      name: 'Greek mixed with English names',
+      text: 'Άνοιξε το Gmail μου, βρες το τελευταίο τιμολόγιο από τη Stripe και κατέβασε το συνημμένο PDF στην επιφάνεια εργασίας. Μετά γράψε σε μία πρόταση το συνολικό ποσό και την ημερομηνία λήξης.',
+      referenceTokens: 257,
+    },
+    {
       name: 'accessibility snapshot tool result',
       text: '[1_0] RootWebArea "Inbox (3) - Gmail" focusable\n  [1_1] link "Skip to content" url="https://mail.google.com/#inbox"\n  [1_2] button "Main menu" expanded=false\n  [1_3] textbox "Search mail" value=""\n  [1_4] row "Stripe, Your invoice #4821 is ready, 10:42 AM" selectable\n  [1_5] checkbox "Select" checked=false\n  [1_6] link "Invoice INV-4821.pdf" url="https://mail.google.com/mail/u/0/?ui=2&ik=abc123&attid=0.1"',
       referenceTokens: 216,

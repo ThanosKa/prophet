@@ -7,12 +7,15 @@ import { calculateCostInCredits, type ModelName } from '@/lib/pricing'
 type CreditStore = Pick<PgDatabase<PgQueryResultHKT>, 'update'>
 
 /**
- * Deliberately pessimistic: 2 bytes per token covers English (~3.5 bytes/token),
- * CJK (3 bytes/char, ~1 token/char), code and accessibility snapshots (~1.9) even
- * with the Opus 4.7+ tokenizer's up-to-1.35x inflation. Over-estimating only makes
- * the hold temporarily larger; under-estimating lets a turn settle above its hold.
+ * Deliberately pessimistic: 2 ASCII bytes per token covers English (~3.5 bytes/token),
+ * code and accessibility snapshots (~1.9); 2 tokens per non-ASCII character covers
+ * Greek (~1.7 tokens/char), CJK (~1.4) and Cyrillic, all measured with the published
+ * tokenizer x1.35 (the Opus 4.7+ inflation bound). Bytes alone undercount Greek, whose
+ * letters are 2 bytes but ~1.7 tokens. Over-estimating only makes the hold temporarily
+ * larger; under-estimating lets a turn settle above its hold.
  */
-const BYTES_PER_TOKEN = 2
+const ASCII_BYTES_PER_TOKEN = 2
+const TOKENS_PER_NON_ASCII_CHAR = 2
 // Tool-use system prompt Anthropic injects (346 tokens on Claude 4) x1.35, rounded up.
 const REQUEST_OVERHEAD_TOKENS = 500
 // High-res vision caps an image at ~4784 tokens on Claude 5 models (Haiku 4.5: ~1600).
@@ -28,7 +31,13 @@ function isImageBlock(value: unknown): boolean {
 }
 
 export function estimateTextTokens(text: string): number {
-  return Math.ceil(Buffer.byteLength(text, 'utf8') / BYTES_PER_TOKEN)
+  let asciiChars = 0
+  let nonAsciiChars = 0
+  for (const char of text) {
+    if (char.charCodeAt(0) < 0x80) asciiChars++
+    else nonAsciiChars++
+  }
+  return Math.ceil(asciiChars / ASCII_BYTES_PER_TOKEN + nonAsciiChars * TOKENS_PER_NON_ASCII_CHAR)
 }
 
 export function estimateInputTokens({
