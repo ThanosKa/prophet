@@ -23,8 +23,9 @@ export function useAgentChat() {
   const [remaining, setRemaining] = useState<number | null>(null)
   const [status, setStatus] = useState<AgentStatus>('idle')
   const [currentToolCall, setCurrentToolCall] = useState<ToolCall | null>(null) // Legacy support for ChatView
-  const abortRef = useRef<boolean>(false)
-  const activeStreamRef = useRef<{ chatId: string; abort: () => void } | null>(null)
+  // Each sendMessage owns its run. Shared state (streaming flag, overlay) may only be torn down by the
+  // run that is still current, so a stopped run finishing late can never end or abort a newer one.
+  const activeRunRef = useRef<AbortController | null>(null)
   const overlayTabIdRef = useRef<number | null>(null)
   const overlayListenersRef = useRef<{
     onUpdated: (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => void
@@ -54,14 +55,13 @@ export function useAgentChat() {
 
   const sendMessage = useCallback(
     async (chatId: string, content: string, image?: ImageData) => {
-      if (activeStreamRef.current && activeStreamRef.current.chatId !== chatId) {
-        activeStreamRef.current.abort()
-      }
+      activeRunRef.current?.abort()
 
-      const abortStream = () => {
-        abortRef.current = true
-      }
-      activeStreamRef.current = { chatId, abort: abortStream }
+      // Activate agent overlay
+      setActive(true)
+      const run = createAbortController()
+      activeRunRef.current = run
+      const { signal } = run
 
       try {
         setError(null)
@@ -71,12 +71,7 @@ export function useAgentChat() {
         setStatus('submitted')
         setStreaming(true)
         setCurrentToolCall(null)
-        abortRef.current = false
         clearActions()
-
-        // Activate agent overlay
-        setActive(true)
-        const abortController = createAbortController()
 
         cleanupOverlayListeners()
 
@@ -139,7 +134,7 @@ export function useAgentChat() {
         // Use dev endpoint when VITE_USE_DEV_API=true to bypass credits
         // Otherwise use production endpoint
         const eventStream = config.useMockApi
-          ? mockAgentStream(chatId, content, selectedModel, abortController.signal, enableThinking)
+          ? mockAgentStream(chatId, content, selectedModel, signal, enableThinking)
           : runAgentLoop(
               config.useDevApi
                 ? `${config.apiUrl}/api/agent/chat/dev`
@@ -148,7 +143,7 @@ export function useAgentChat() {
               content,
               selectedModel,
               image,
-              abortController.signal,
+              signal,
               enableThinking
             )
 
@@ -156,9 +151,17 @@ export function useAgentChat() {
         // These two events are only emitted once the model finishes without requesting more tools.
         let finishedCleanly = false
         let sawError = false
+        let truncated = false
 
         for await (const event of eventStream) {
-          if (abortRef.current) break
+          if (signal.aborted) break
+
+          if (event.type === 'output_truncated') {
+            truncated = true
+            setError('This response was cut off because it reached the maximum length. Ask to continue for the rest.')
+            setErrorInfo({ code: 'OUTPUT_TRUNCATED' })
+            continue
+          }
 
           // Legacy: Handle currentToolCall
           if (event.type === 'tool_call_start' && event.toolCallId && event.toolName) {
@@ -221,32 +224,34 @@ export function useAgentChat() {
           }
         }
 
-        if (finishedCleanly && !sawError && !abortRef.current) {
+        if (finishedCleanly && !sawError && !truncated && !signal.aborted) {
           void useReviewPromptStore.getState().recordSuccessfulRun()
         }
       } catch (err) {
-        setStatus('error')
-        setError(err instanceof Error ? err.message : 'Agent error')
-      } finally {
-        if (activeStreamRef.current?.chatId === chatId) {
-          activeStreamRef.current = null
+        if (!signal.aborted) {
+          setStatus('error')
+          setError(err instanceof Error ? err.message : 'Agent error')
         }
-        setStreaming(false)
-        if (status !== 'error') setStatus('idle')
-        setCurrentToolCall(null)
+      } finally {
+        if (activeRunRef.current === run) {
+          activeRunRef.current = null
+          setStreaming(false)
+          if (status !== 'error') setStatus('idle')
+          setCurrentToolCall(null)
 
-        // Deactivate agent overlay
-        setActive(false)
-        const lastOverlayTabId = overlayTabIdRef.current
-        cleanupOverlayListeners()
-        if (lastOverlayTabId) {
-          chrome.tabs.sendMessage(lastOverlayTabId, { type: 'AGENT_INACTIVE' }).catch(() => { })
-        } else {
-          chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
-            if (tab?.id) {
-              chrome.tabs.sendMessage(tab.id, { type: 'AGENT_INACTIVE' }).catch(() => { })
-            }
-          })
+          // Deactivate agent overlay
+          setActive(false)
+          const lastOverlayTabId = overlayTabIdRef.current
+          cleanupOverlayListeners()
+          if (lastOverlayTabId) {
+            chrome.tabs.sendMessage(lastOverlayTabId, { type: 'AGENT_INACTIVE' }).catch(() => { })
+          } else {
+            chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
+              if (tab?.id) {
+                chrome.tabs.sendMessage(tab.id, { type: 'AGENT_INACTIVE' }).catch(() => { })
+              }
+            })
+          }
         }
       }
     },
@@ -269,10 +274,8 @@ export function useAgentChat() {
 
   const abort = useCallback(() => {
     setStreaming(false)  // Immediate feedback - stop spinner
-    if (activeStreamRef.current) {
-      activeStreamRef.current.abort()
-      activeStreamRef.current = null
-    }
+    // The ref is left set so the stopped run's own finally still removes the page overlay.
+    activeRunRef.current?.abort()
     abortAgentStore()
     adapter.clear()
     setCurrentToolCall(null)
