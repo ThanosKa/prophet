@@ -3,7 +3,7 @@ import { defineManifest } from "@crxjs/vite-plugin";
 const manifest = defineManifest({
   manifest_version: 3,
   name: "Prophet: AI Side Panel Agent",
-  version: "1.0.3",
+  version: "1.0.4",
   description:
     "Works with Claude Haiku, Sonnet and Opus. Lives in your side panel, acts on the page you're on, and bills pay per use.",
 
