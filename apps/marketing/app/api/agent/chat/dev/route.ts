@@ -12,7 +12,7 @@ import {
   resolveAgentModel,
   sanitizeForLog,
 } from '@prophet/shared'
-import { error } from '@/types'
+import { error, INTERNAL_ERROR_MESSAGE } from '@/types'
 import { logger } from '@/lib/logger'
 import { calculateCostInCents, type ModelName } from '@/lib/pricing'
 import type { MessageParam, ContentBlockParam } from '@anthropic-ai/sdk/resources/messages'
@@ -454,7 +454,7 @@ export async function POST(req: Request) {
       '[DEV] Agent chat endpoint error'
     )
     return NextResponse.json(
-      error('Internal server error', 'INTERNAL_ERROR', err),
+      error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'),
       { status: 500 }
     )
   }

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { usageRecords } from '@/lib/db/schema'
 import { eq, and, gte, lte, desc, type SQL } from 'drizzle-orm'
-import { error, success } from '@/types'
+import { error, success, INTERNAL_ERROR_MESSAGE } from '@/types'
 import { logger } from '@/lib/logger'
 
 export async function GET(req: Request) {
@@ -55,7 +55,7 @@ export async function GET(req: Request) {
     }))
   } catch (err) {
     logger.error({ error: err }, 'Failed to fetch usage records')
-    return NextResponse.json(error('Internal server error', 'INTERNAL_ERROR'), { status: 500 })
+    return NextResponse.json(error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'), { status: 500 })
   }
 }
 

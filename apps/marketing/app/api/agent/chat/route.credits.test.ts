@@ -43,8 +43,16 @@ beforeEach(async () => {
   vi.mocked(checkRateLimit).mockResolvedValue({ success: true, limit: 60, remaining: 59, reset: 60 })
 })
 
-async function seedUser({ credits, history = [] }: { credits: number; history?: string[] }) {
-  await db.insert(schema.users).values({ id: USER_ID, email: 'free@example.com', creditsRemaining: credits })
+async function seedUser({
+  credits,
+  history = [],
+  tier = 'free',
+}: {
+  credits: number
+  history?: string[]
+  tier?: 'free' | 'pro' | 'premium' | 'ultra'
+}) {
+  await db.insert(schema.users).values({ id: USER_ID, email: 'free@example.com', creditsRemaining: credits, tier })
   await db.insert(schema.chats).values({ id: CHAT_ID, userId: USER_ID, title: 'Chat' })
   for (const [index, content] of history.entries()) {
     await db.insert(schema.messages).values({
@@ -69,6 +77,18 @@ function post(body: Record<string, unknown>) {
       body: JSON.stringify({ chatId: CHAT_ID, ...body }),
     })
   )
+}
+
+function continuationTurn({ model }: { model: string }) {
+  return {
+    model,
+    enableThinking: false,
+    previousContent: [
+      { type: 'text', text: 'Opening your inbox.' },
+      { type: 'tool_use', id: 'toolu_1', name: 'navigate', input: { url: 'https://mail.google.com' } },
+    ],
+    toolResults: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: 'Navigated' }],
+  }
 }
 
 function completedTurn({ inputTokens, outputTokens }: { inputTokens: number; outputTokens: number }) {
@@ -121,6 +141,14 @@ async function readUntil(reader: ReadableStreamDefaultReader<Uint8Array>, marker
     if (done) throw new Error(`stream ended before ${marker}`)
     seen += decoder.decode(value)
   }
+}
+
+function doneEvent(events: string): unknown {
+  const done = events
+    .split('\n\n')
+    .map((frame) => frame.replace(/^data: /, ''))
+    .filter((data) => data.includes('"type":"done"'))
+  return done.length === 1 ? JSON.parse(done[0]) : undefined
 }
 
 function sentMaxTokens(): number | undefined {
@@ -184,7 +212,8 @@ describe('credit reservation in POST /api/agent/chat', () => {
     await Promise.all(responses.map((response) => response.text()))
 
     const served = responses.filter((response) => response.status === 200).length
-    const refused = responses.filter((response) => response.status === 402).length
+    // losers of the reserve race get 409 BALANCE_HELD; later readers of the drained row get 402
+    const refused = responses.filter((response) => response.status === 409 || response.status === 402).length
     expect(served + refused).toBe(20)
     expect(served).toBeGreaterThanOrEqual(1)
     // each served turn settles at 2 credits; before reservations all 20 ran (-20)
@@ -270,12 +299,144 @@ describe('credit reservation in POST /api/agent/chat', () => {
     const body = await response.json()
 
     expect(response.status).toBe(402)
-    expect(body).toMatchObject({
-      error: 'Insufficient balance. Please upgrade your plan.',
+    expect(body).toEqual({
+      error: 'Not enough credits left for Opus 5.5. Switch to Haiku 4.5 or buy more credits.',
       code: 'INSUFFICIENT_BALANCE',
-      details: { pricingUrl: '/pricing' },
+      details: {
+        pricingUrl: '/pricing',
+        isContinuation: false,
+        suggestedModel: 'claude-haiku-4-5',
+        canUpgrade: true,
+      },
     })
     expect(anthropic.messages.stream).not.toHaveBeenCalled()
     expect(await balance()).toBe(20)
+  })
+})
+
+describe('done event in POST /api/agent/chat', () => {
+  it('flags maxTokensReducedForBalance when a low balance shrank the turn', async () => {
+    await seedUser({ credits: 20 })
+    vi.mocked(anthropic.messages.stream).mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    )
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+
+    expect(doneEvent(await response.text())).toMatchObject({ type: 'done', maxTokensReducedForBalance: true })
+  })
+
+  it('does not flag maxTokensReducedForBalance when the balance covers the full turn', async () => {
+    await seedUser({ credits: 1000 })
+    vi.mocked(anthropic.messages.stream).mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    )
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+
+    expect(sentMaxTokens()).toBe(16_000)
+    expect(doneEvent(await response.text())).toMatchObject({ type: 'done', maxTokensReducedForBalance: false })
+  })
+})
+
+describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
+  it('tells a fresh free account on Opus 5.5 + Thinking to turn Thinking off or switch to Haiku', async () => {
+    await seedUser({ credits: 20 })
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5', enableThinking: true })
+    const body = await response.json()
+
+    expect(response.status).toBe(402)
+    expect(body).toEqual({
+      error:
+        'Not enough credits left for Opus 5.5 with Thinking. Turn off Thinking, switch to Haiku 4.5, or buy more credits.',
+      code: 'INSUFFICIENT_BALANCE',
+      details: {
+        pricingUrl: '/pricing',
+        isContinuation: false,
+        suggestedModel: 'claude-haiku-4-5',
+        suggestDisableThinking: true,
+        canUpgrade: true,
+      },
+    })
+    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+  })
+
+  it('mid-agent-loop on Opus 5.5, tells the user to switch to Haiku and send "continue"', async () => {
+    // fresh-chat floors: Haiku 4 credits, Opus 13
+    await seedUser({ credits: 8, history: ['Open my inbox'] })
+
+    const response = await post(continuationTurn({ model: 'claude-opus-5-5' }))
+    const body = await response.json()
+
+    expect(response.status).toBe(402)
+    expect(body).toEqual({
+      error:
+        'Stopped partway: not enough credits left to finish this task. Switch to Haiku 4.5 and send "continue", or buy more credits.',
+      code: 'INSUFFICIENT_BALANCE',
+      details: {
+        pricingUrl: '/pricing',
+        isContinuation: true,
+        suggestedModel: 'claude-haiku-4-5',
+        canUpgrade: true,
+      },
+    })
+  })
+
+  it('mid-agent-loop with not even Haiku affordable, says the task stopped and to buy credits then "continue"', async () => {
+    await seedUser({ credits: 2, history: ['Open my inbox'] })
+
+    const response = await post(continuationTurn({ model: 'claude-opus-5-5' }))
+    const body = await response.json()
+
+    expect(response.status).toBe(402)
+    expect(body).toEqual({
+      error: `Stopped partway: you're out of credits. Buy more credits, then send "continue".`,
+      code: 'INSUFFICIENT_BALANCE',
+      details: { pricingUrl: '/pricing', isContinuation: true, canUpgrade: true },
+    })
+  })
+
+  it('first turn with not even Haiku affordable, tells a free user to buy credits or upgrade', async () => {
+    await seedUser({ credits: 2 })
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-4-5' })
+    const body = await response.json()
+
+    expect(response.status).toBe(402)
+    expect(body).toEqual({
+      error: `You're out of credits. Buy more credits or upgrade your plan to keep going.`,
+      code: 'INSUFFICIENT_BALANCE',
+      details: { pricingUrl: '/pricing', isContinuation: false, canUpgrade: true },
+    })
+  })
+
+  it('first turn with nothing affordable on the top plan, only offers extra credits', async () => {
+    await seedUser({ credits: 2, tier: 'ultra' })
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    const body = await response.json()
+
+    expect(response.status).toBe(402)
+    expect(body).toEqual({
+      error: `You're out of credits. Buy extra credits to keep going.`,
+      code: 'INSUFFICIENT_BALANCE',
+      details: { pricingUrl: '/pricing', isContinuation: false, canUpgrade: false },
+    })
+  })
+
+  it('on Haiku 4.5 + Thinking, only suggests turning Thinking off (there is no cheaper model)', async () => {
+    // fresh-chat Haiku floors: 4 credits without Thinking, 8 with it
+    await seedUser({ credits: 5 })
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-4-5', enableThinking: true })
+    const body = await response.json()
+
+    expect(response.status).toBe(402)
+    expect(body).toEqual({
+      error: 'Not enough credits left for Haiku 4.5 with Thinking. Turn off Thinking or buy more credits.',
+      code: 'INSUFFICIENT_BALANCE',
+      details: { pricingUrl: '/pricing', isContinuation: false, suggestDisableThinking: true, canUpgrade: true },
+    })
   })
 })

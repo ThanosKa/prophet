@@ -5,7 +5,7 @@ import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { error, success } from '@/types'
+import { error, success, INTERNAL_ERROR_MESSAGE } from '@/types'
 import { logger } from '@/lib/logger'
 import { TIER_CONFIG } from '@/lib/pricing'
 import { sendWelcomeEmail } from '@/lib/email'
@@ -148,7 +148,7 @@ export async function POST(req: Request) {
   } catch (err) {
     logger.error({ error: err instanceof Error ? err.message : String(err) }, 'Webhook processing error')
     return NextResponse.json(
-      error('Internal server error', 'INTERNAL_ERROR', err),
+      error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'),
       { status: 500 }
     )
   }

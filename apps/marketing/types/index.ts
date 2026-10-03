@@ -30,3 +30,7 @@ export function success<T>(data: T): SuccessResponse<T> {
 export function error(message: string, code?: string, details?: unknown): ErrorResponse {
   return { error: message, code, details }
 }
+
+export const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please sign out and sign in again.'
+
+export const INTERNAL_ERROR_MESSAGE = 'Something went wrong on our side. Please try again in a moment.'

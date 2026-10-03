@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
+import { error, SESSION_EXPIRED_MESSAGE } from '@/types'
 
 // Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
@@ -22,7 +23,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (req.nextUrl.pathname.startsWith('/api/')) {
     const { userId } = await auth()
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json(error(SESSION_EXPIRED_MESSAGE, 'UNAUTHORIZED'), { status: 401 })
     }
   }
 

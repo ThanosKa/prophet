@@ -5,7 +5,7 @@ import { chats } from '@/lib/db/schema'
 import { and, eq, desc, lt } from 'drizzle-orm'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { createChatSchema } from '@prophet/shared'
-import { error, success } from '@/types'
+import { error, success, INTERNAL_ERROR_MESSAGE } from '@/types'
 import { logger } from '@/lib/logger'
 
 export async function GET(req: Request) {
@@ -76,7 +76,7 @@ export async function GET(req: Request) {
   } catch (err) {
     logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to fetch chats')
     return NextResponse.json(
-      error('Internal server error', 'INTERNAL_ERROR', err),
+      error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'),
       { status: 500 }
     )
   }
@@ -131,7 +131,7 @@ export async function POST(req: Request) {
   } catch (err) {
     logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to create chat')
     return NextResponse.json(
-      error('Internal server error', 'INTERNAL_ERROR', err),
+      error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'),
       { status: 500 }
     )
   }

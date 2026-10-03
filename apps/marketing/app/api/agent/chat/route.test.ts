@@ -75,7 +75,7 @@ describe('POST /api/agent/chat', () => {
   })
 
   describe('Authentication & Authorization', () => {
-    it('rejects unauthenticated requests', async () => {
+    it('rejects unauthenticated requests with a sign-in-again message', async () => {
       vi.mocked(auth).mockResolvedValue({ userId: null } as any)
 
       const request = new Request('http://localhost:3000/api/agent/chat', {
@@ -91,7 +91,8 @@ describe('POST /api/agent/chat', () => {
       const data = await response.json()
 
       expect(response.status).toBe(401)
-      expect(data.error).toContain('Unauthorized')
+      expect(data.code).toBe('UNAUTHORIZED')
+      expect(data.error).toBe('Your session has expired. Please sign out and sign in again.')
     })
 
     it('rejects access to chats owned by other users', async () => {
@@ -324,7 +325,7 @@ describe('POST /api/agent/chat', () => {
   })
 
   describe('Credits System', () => {
-    it('rejects with 402 when the atomic reserve loses a race for the balance', async () => {
+    it('answers 409 BALANCE_HELD with Retry-After when the atomic reserve loses a race for the balance', async () => {
       vi.mocked(auth).mockResolvedValue({ userId: 'user1' } as any)
       vi.mocked(checkRateLimit).mockResolvedValue({ success: true, limit: 10, remaining: 9, reset: 60 })
       vi.mocked(db.query.chats.findFirst).mockResolvedValue({
@@ -363,8 +364,13 @@ describe('POST /api/agent/chat', () => {
       const response = await POST(request)
       const data = await response.json()
 
-      expect(response.status).toBe(402)
-      expect(data.code).toBe('INSUFFICIENT_BALANCE')
+      expect(response.status).toBe(409)
+      expect(response.headers.get('Retry-After')).toBe('5')
+      expect(data).toEqual({
+        error: "Some of your balance is held by another request that's still running. Try again in a few seconds.",
+        code: 'BALANCE_HELD',
+        details: { retryAfter: 5 },
+      })
       expect(anthropic.messages.stream).not.toHaveBeenCalled()
     })
 
@@ -403,7 +409,8 @@ describe('POST /api/agent/chat', () => {
       const data = await response.json()
 
       expect(response.status).toBe(402)
-      expect(data.error).toContain('Insufficient balance')
+      expect(data.code).toBe('INSUFFICIENT_BALANCE')
+      expect(data.error).toBe("You're out of credits. Buy more credits or upgrade your plan to keep going.")
     })
 
     it('accepts request when user has exactly 10 credits', async () => {
