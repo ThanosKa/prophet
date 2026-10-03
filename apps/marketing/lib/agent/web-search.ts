@@ -51,6 +51,8 @@ export function buildAgentTools(
     : clientTools
 }
 
+const THINKING_BUDGET_TOKENS = 8000
+
 type ThinkingConfig =
   | { type: 'adaptive'; display: 'summarized' }
   | { type: 'enabled'; budget_tokens: number }
@@ -75,7 +77,7 @@ export function buildThinkingConfig(
   if (ADAPTIVE_THINKING_MODELS.includes(model)) {
     return enableThinking ? { type: 'adaptive', display: 'summarized' } : null
   }
-  return enableThinking ? { type: 'enabled', budget_tokens: 8000 } : null
+  return enableThinking ? { type: 'enabled', budget_tokens: THINKING_BUDGET_TOKENS } : null
 }
 
 export function buildOutputConfig({
@@ -95,6 +97,16 @@ export function getAgentMaxTokens({ model, enableThinking }: ReasoningOptions): 
   return enableThinking || ADAPTIVE_THINKING_MODELS.includes(model)
     ? 16000
     : AGENT_MAX_TOKENS
+}
+
+/**
+ * Smallest `max_tokens` a low balance may shrink a turn to: one full non-thinking
+ * answer, plus the thinking budget when thinking was requested. Below this, turns
+ * tend to end mid-`tool_use` or inside thinking with no answer, and Haiku's fixed
+ * `budget_tokens` must stay strictly below `max_tokens` or the API returns a 400.
+ */
+export function getAgentMinTokens({ enableThinking }: ReasoningOptions): number {
+  return enableThinking ? THINKING_BUDGET_TOKENS + AGENT_MAX_TOKENS : AGENT_MAX_TOKENS
 }
 
 const ECHOABLE_BLOCK_TYPES = new Set([

@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { users, chats, messages, usageRecords } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { anthropic } from "@/lib/anthropic";
 import { AGENT_TOOLS } from "@/lib/agent/tools";
@@ -12,9 +12,18 @@ import {
   buildOutputConfig,
   buildThinkingConfig,
   getAgentMaxTokens,
+  getAgentMinTokens,
   shouldUseWebSearch,
   toEchoableContent,
+  WEB_SEARCH_MAX_USES,
 } from "@/lib/agent/web-search";
+import {
+  estimateInputTokens,
+  estimateTextTokens,
+  planCreditReservation,
+  reserveCredits,
+  settleCredits,
+} from "@/lib/credit-reservation";
 import {
   agentChatRequestSchema,
   DEFAULT_AGENT_MODEL,
@@ -55,6 +64,9 @@ function extractCitations(blocks: ContentBlock[]) {
 
   return citations;
 }
+
+// A function killed at this limit never settles, so the user forfeits that turn's hold.
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   try {
@@ -149,21 +161,6 @@ export async function POST(req: Request) {
       return NextResponse.json(error("User not found", "USER_NOT_FOUND"), {
         status: 404,
       });
-    }
-
-    if (user.creditsRemaining < 10) {
-      logger.warn(
-        { userId, creditsRemaining: user.creditsRemaining },
-        "Insufficient balance for agent chat"
-      );
-      return NextResponse.json(
-        error(
-          "Insufficient balance. Please upgrade your plan.",
-          "INSUFFICIENT_BALANCE",
-          { pricingUrl: "/pricing" }
-        ),
-        { status: 402 }
-      );
     }
 
     // Build Anthropic messages based on request type
@@ -282,20 +279,122 @@ export async function POST(req: Request) {
     // DEV LOGGING: Log request to LLM
     await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking });
 
+    const tools = buildAgentTools(AGENT_TOOLS, webSearchEnabled);
+    const plan = planCreditReservation({
+      model,
+      balanceCents: user.creditsRemaining,
+      estimatedInputTokens: estimateInputTokens({
+        system: AGENT_SYSTEM_PROMPT,
+        tools,
+        messages: anthropicMessages,
+      }),
+      maxTokens: getAgentMaxTokens({ model, enableThinking }),
+      minTokens: getAgentMinTokens({ model, enableThinking }),
+      webSearchMaxUses: webSearchEnabled ? WEB_SEARCH_MAX_USES : 0,
+    });
+
+    if (
+      !plan.ok ||
+      !(await reserveCredits({ db, userId, reserveCents: plan.reserveCents }))
+    ) {
+      logger.warn(
+        {
+          userId,
+          model,
+          creditsRemaining: user.creditsRemaining,
+          requiredCents: plan.ok ? plan.reserveCents : plan.requiredCents,
+        },
+        "Insufficient balance for agent chat"
+      );
+      return NextResponse.json(
+        error(
+          "Insufficient balance. Please upgrade your plan.",
+          "INSUFFICIENT_BALANCE",
+          { pricingUrl: "/pricing" }
+        ),
+        { status: 402 }
+      );
+    }
+    const { reserveCents, maxTokens } = plan;
+
     const encoder = new TextEncoder();
+    const upstream = new AbortController();
+    const abortUpstream = () => upstream.abort();
+    req.signal.addEventListener("abort", abortUpstream, { once: true });
+    let clientConnected = !req.signal.aborted;
+
     const stream = new ReadableStream({
       async start(controller) {
+        const send = (data: string) => {
+          if (!clientConnected) return;
+          try {
+            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+          } catch {
+            clientConnected = false;
+          }
+        };
+        const close = () => {
+          if (!clientConnected) return;
+          clientConnected = false;
+          controller.close();
+        };
+
         let fullTextResponse = "";
+        let streamedOutput = "";
         let inputTokens = 0;
         let outputTokens = 0;
+        let webSearchesStarted = 0;
+        let usageReported = false;
+        let settled = false;
+
+        // Runs on every path that did not reach the billing transaction. Before
+        // message_start nothing was billed upstream, so the hold goes back in full.
+        // After it, output usage only arrives with the final message_delta, so the
+        // streamed text stands in for it; a deliberate disconnect cannot dodge it.
+        const settleUnfinishedTurn = async () => {
+          outputTokens = Math.max(outputTokens, estimateTextTokens(streamedOutput));
+          const actualCents = usageReported
+            ? Math.min(
+                reserveCents,
+                calculateCostInCents(model, inputTokens, outputTokens, webSearchesStarted)
+              )
+            : 0;
+          try {
+            await db.transaction(async (tx) => {
+              await settleCredits({ db: tx, userId, reserveCents, actualCents });
+              if (actualCents > 0) {
+                await tx.insert(usageRecords).values({
+                  userId,
+                  inputTokens,
+                  outputTokens,
+                  costCents: actualCents,
+                  model,
+                });
+              }
+            });
+          } catch (settleError) {
+            logger.error(
+              {
+                userId,
+                chatId,
+                reserveCents,
+                actualCents,
+                error: settleError instanceof Error ? settleError.message : String(settleError),
+              },
+              "Failed to settle credit reservation; hold kept"
+            );
+          }
+        };
 
         try {
+          if (!clientConnected) throw new Error("Client disconnected before the stream started");
+
           const thinkingConfig = buildThinkingConfig(model, enableThinking);
           const outputConfig = buildOutputConfig({ model, enableThinking });
 
           const anthropicStream = await anthropic.messages.stream({
             model,
-            max_tokens: getAgentMaxTokens({ model, enableThinking }),
+            max_tokens: maxTokens,
             system: [
               {
                 type: "text",
@@ -303,11 +402,11 @@ export async function POST(req: Request) {
                 cache_control: { type: "ephemeral" },
               },
             ],
-            tools: buildAgentTools(AGENT_TOOLS, webSearchEnabled),
+            tools,
             messages: anthropicMessages,
             ...(thinkingConfig && { thinking: thinkingConfig }),
             ...(outputConfig && { output_config: outputConfig }),
-          });
+          }, { signal: upstream.signal });
 
           let currentToolUse: {
             id: string;
@@ -321,11 +420,12 @@ export async function POST(req: Request) {
             type: "session_created",
             sessionId: chatId,
           });
-          controller.enqueue(encoder.encode(`data: ${sessionData}\n\n`));
+          send(sessionData);
 
           for await (const event of anthropicStream) {
             if (event.type === "message_start") {
               inputTokens = event.message.usage.input_tokens;
+              usageReported = true;
             } else if (event.type === "content_block_start") {
               if (event.content_block.type === "tool_use") {
                 currentToolUse = {
@@ -335,6 +435,7 @@ export async function POST(req: Request) {
                   isServerTool: false,
                 };
               } else if (event.content_block.type === "server_tool_use") {
+                webSearchesStarted += 1;
                 currentToolUse = {
                   id: event.content_block.id,
                   name: event.content_block.name,
@@ -360,30 +461,31 @@ export async function POST(req: Request) {
                       toolUseId: result.tool_use_id,
                       errorCode: result.content.error_code,
                     };
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify(payload)}\n\n`)
-                );
+                send(JSON.stringify(payload));
               }
             } else if (event.type === "content_block_delta") {
               if (event.delta.type === "text_delta") {
                 const text = event.delta.text;
                 fullTextResponse += text;
+                streamedOutput += text;
                 const data = JSON.stringify({
                   type: "content_delta",
                   delta: text,
                 });
-                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                send(data);
               } else if (event.delta.type === "thinking_delta") {
+                streamedOutput += event.delta.thinking;
                 const data = JSON.stringify({
                   type: "thinking_delta",
                   delta: event.delta.thinking,
                 });
-                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                send(data);
               } else if (
                 event.delta.type === "input_json_delta" &&
                 currentToolUse
               ) {
                 currentToolUse.input += event.delta.partial_json;
+                streamedOutput += event.delta.partial_json;
               }
             } else if (event.type === "content_block_stop") {
               if (currentToolUse) {
@@ -411,9 +513,7 @@ export async function POST(req: Request) {
                     query:
                       (parsedInput as { query?: string }).query ?? "",
                   });
-                  controller.enqueue(
-                    encoder.encode(`data: ${searchData}\n\n`)
-                  );
+                  send(searchData);
                 } else {
                   const data = JSON.stringify({
                     type: "tool_use",
@@ -424,7 +524,7 @@ export async function POST(req: Request) {
                       input: parsedInput,
                     },
                   });
-                  controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                  send(data);
                 }
                 currentToolUse = null;
               }
@@ -439,7 +539,7 @@ export async function POST(req: Request) {
                     costCents: calculateCostInCents(model, inputTokens, outputTokens),
                   },
                 });
-                controller.enqueue(encoder.encode(`data: ${metricsData}\n\n`));
+                send(metricsData);
               }
             }
           }
@@ -506,14 +606,7 @@ export async function POST(req: Request) {
               });
             }
 
-            // Always deduct credits (even on intermediate turns) for accurate billing
-            await tx
-              .update(users)
-              .set({
-                creditsRemaining: sql`${users.creditsRemaining} - ${costCents}`,
-                updatedAt: new Date(),
-              })
-              .where(eq(users.id, userId));
+            await settleCredits({ db: tx, userId, reserveCents, actualCents: costCents });
 
             // Always record usage for billing audit trail
             await tx.insert(usageRecords).values({
@@ -538,12 +631,21 @@ export async function POST(req: Request) {
                 .where(eq(chats.id, chatId));
             }
           });
+          settled = true;
+
+          if (costCents > reserveCents) {
+            logger.warn(
+              { userId, chatId, model, reserveCents, costCents, inputTokens },
+              "Turn cost exceeded its credit reservation (input estimate miss)"
+            );
+          }
 
           logger.info(
             {
               userId,
               chatId,
               model,
+              reserveCents,
               costCents,
               inputTokens,
               outputTokens,
@@ -569,7 +671,7 @@ export async function POST(req: Request) {
               type: "citations",
               citations,
             });
-            controller.enqueue(encoder.encode(`data: ${citationsData}\n\n`));
+            send(citationsData);
           }
 
           const executionCompleteData = JSON.stringify({
@@ -584,7 +686,7 @@ export async function POST(req: Request) {
               webSearchCostCents,
             },
           });
-          controller.enqueue(encoder.encode(`data: ${executionCompleteData}\n\n`));
+          send(executionCompleteData);
 
           const doneData = JSON.stringify({
             type: "done",
@@ -599,9 +701,9 @@ export async function POST(req: Request) {
             citations,
             contentBlocks,
           });
-          controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
+          send(doneData);
 
-          controller.close();
+          close();
         } catch (err) {
           logger.error(
             {
@@ -658,10 +760,17 @@ export async function POST(req: Request) {
             code: errorCode,
             details: errorDetails,
           });
-          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
+          send(errorData);
 
-          controller.close();
+          close();
+        } finally {
+          req.signal.removeEventListener("abort", abortUpstream);
+          if (!settled) await settleUnfinishedTurn();
         }
+      },
+      cancel() {
+        clientConnected = false;
+        abortUpstream();
       },
     });
 

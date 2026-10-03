@@ -24,7 +24,9 @@ vi.mock('@/lib/db', () => ({
     })),
     update: vi.fn(() => ({
       set: vi.fn(() => ({
-        where: vi.fn(() => Promise.resolve()),
+        where: vi.fn(() => ({
+          returning: vi.fn(() => Promise.resolve([{ creditsRemaining: 0 }])),
+        })),
       })),
     })),
     transaction: vi.fn((callback) => callback({
@@ -322,7 +324,7 @@ describe('POST /api/agent/chat', () => {
   })
 
   describe('Credits System', () => {
-    it('rejects requests when user has insufficient credits (<10)', async () => {
+    it('rejects with 402 when the atomic reserve loses a race for the balance', async () => {
       vi.mocked(auth).mockResolvedValue({ userId: 'user1' } as any)
       vi.mocked(checkRateLimit).mockResolvedValue({ success: true, limit: 10, remaining: 9, reset: 60 })
       vi.mocked(db.query.chats.findFirst).mockResolvedValue({
@@ -340,8 +342,53 @@ describe('POST /api/agent/chat', () => {
       vi.mocked(db.query.users.findFirst).mockResolvedValue({
         id: 'user1',
         email: 'test@example.com',
-        creditsRemaining: 5, // Less than 10!
+        creditsRemaining: 1000, // read before a parallel request drained it
       } as any)
+      vi.mocked(db.query.messages.findMany).mockResolvedValue([])
+      vi.mocked(db.update).mockReturnValueOnce({
+        set: vi.fn(() => ({
+          where: vi.fn(() => ({ returning: vi.fn(() => Promise.resolve([])) })),
+        })),
+      } as any)
+
+      const request = new Request('http://localhost:3000/api/agent/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId: '550e8400-e29b-41d4-a716-446655440000',
+          userMessage: 'Hello',
+        }),
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(402)
+      expect(data.code).toBe('INSUFFICIENT_BALANCE')
+      expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    })
+
+    it('rejects requests when the balance cannot cover the smallest allowed turn', async () => {
+      vi.mocked(auth).mockResolvedValue({ userId: 'user1' } as any)
+      vi.mocked(checkRateLimit).mockResolvedValue({ success: true, limit: 10, remaining: 9, reset: 60 })
+      vi.mocked(db.query.chats.findFirst).mockResolvedValue({
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        userId: 'user1',
+        title: 'Chat',
+        contextTokens: 0,
+        contextInputTokens: 0,
+        contextOutputTokens: 0,
+        contextReasoningTokens: 0,
+        contextCachedInputTokens: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      vi.mocked(db.query.users.findFirst).mockResolvedValue({
+        id: 'user1',
+        email: 'test@example.com',
+        creditsRemaining: 1, // a 4096-token Haiku turn alone costs 3
+      } as any)
+      vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 
       const request = new Request('http://localhost:3000/api/agent/chat', {
         method: 'POST',

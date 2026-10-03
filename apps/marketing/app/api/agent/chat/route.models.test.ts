@@ -87,7 +87,9 @@ function primeRequestContext(): Captured {
     set: (values: Record<string, unknown>) => ({
       where: () => {
         captured.updates.push(values)
-        return Promise.resolve()
+        return Object.assign(Promise.resolve(), {
+          returning: () => Promise.resolve([{ creditsRemaining: 1000 }]),
+        })
       },
     }),
   })
