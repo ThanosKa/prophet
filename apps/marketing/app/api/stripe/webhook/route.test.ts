@@ -1,30 +1,47 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type Stripe from 'stripe'
+import { PgDialect } from 'drizzle-orm/pg-core'
+import { SQL } from 'drizzle-orm'
 import { TIER_CONFIG } from '@/lib/pricing'
 
-const mockFindFirst = vi.fn()
-const mockUpdate = vi.fn(() => ({
-  set: vi.fn(() => ({
-    where: vi.fn(),
-  })),
-}))
+const mocks = vi.hoisted(() => {
+  const where = vi.fn()
+  const set = vi.fn((_values: Record<string, unknown>) => ({ where }))
+  return {
+    findFirst: vi.fn(),
+    set,
+    update: vi.fn(() => ({ set })),
+    constructEvent: vi.fn(),
+    invalidateUserTierCache: vi.fn(),
+    sendPurchaseEmail: vi.fn(() => Promise.resolve()),
+  }
+})
 
 vi.mock('@/lib/db', () => ({
   db: {
     query: {
       users: {
-        findFirst: mockFindFirst,
+        findFirst: mocks.findFirst,
       },
     },
-    update: mockUpdate,
+    update: mocks.update,
   },
 }))
 
 vi.mock('@/lib/stripe', () => ({
   stripe: {
     webhooks: {
-      constructEvent: vi.fn(),
+      constructEvent: mocks.constructEvent,
     },
   },
+}))
+
+vi.mock('@/lib/cache', () => ({
+  invalidateUserTierCache: mocks.invalidateUserTierCache,
+}))
+
+vi.mock('@/lib/email', () => ({
+  sendPurchaseEmail: mocks.sendPurchaseEmail,
 }))
 
 vi.mock('@/lib/logger', () => ({
@@ -225,5 +242,246 @@ describe('100% discount checkout (promo code)', () => {
     const tier = session.metadata?.tier
     expect(tier).toBe('pro')
     expect(session.mode).toBe('subscription')
+  })
+})
+
+const PERIOD_START = 1_767_225_600
+const PERIOD_END = 1_769_904_000
+
+function renderSql(value: unknown) {
+  if (!(value instanceof SQL)) throw new Error(`Expected an SQL expression, got ${JSON.stringify(value)}`)
+  return new PgDialect().sqlToQuery(value)
+}
+
+function subscriptionEvent({
+  type,
+  subscriptionId = 'sub_123',
+  priceId,
+  status = 'active',
+  cancelAtPeriodEnd = false,
+}: {
+  type: 'customer.subscription.created' | 'customer.subscription.updated' | 'customer.subscription.deleted'
+  subscriptionId?: string
+  priceId: string
+  status?: Stripe.Subscription.Status
+  cancelAtPeriodEnd?: boolean
+}) {
+  return {
+    id: 'evt_123',
+    type,
+    data: {
+      object: {
+        id: subscriptionId,
+        customer: 'cus_123',
+        status,
+        cancel_at_period_end: cancelAtPeriodEnd,
+        items: {
+          data: [
+            {
+              price: { id: priceId },
+              current_period_start: PERIOD_START,
+              current_period_end: PERIOD_END,
+            },
+          ],
+        },
+      },
+    },
+  }
+}
+
+function paidUser(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'user_123',
+    email: 'user@example.com',
+    firstName: 'Ada',
+    lastName: 'Lovelace',
+    tier: 'pro',
+    creditsRemaining: 300,
+    creditsIncluded: TIER_CONFIG.pro.credits,
+    stripeCustomerId: 'cus_123',
+    stripeSubscriptionId: 'sub_123',
+    stripePriceId: TIER_CONFIG.pro.priceId,
+    subscriptionStatus: 'active',
+    cancelAtPeriodEnd: false,
+    billingPeriodStart: new Date(PERIOD_START * 1000),
+    billingPeriodEnd: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+    ...overrides,
+  }
+}
+
+async function postWebhook(event: unknown) {
+  mocks.constructEvent.mockReturnValue(event)
+  const { POST } = await import('./route')
+  return POST(new Request('http://localhost/api/stripe/webhook', { method: 'POST', body: '{}' }))
+}
+
+function lastSetPayload(): Record<string, unknown> {
+  const call = mocks.set.mock.calls.at(-1)
+  if (!call) throw new Error('db.update().set() was never called')
+  return call[0]
+}
+
+describe('POST /api/stripe/webhook', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_test')
+  })
+
+  describe('customer.subscription.updated', () => {
+    it('does not refill credits when the user toggles cancel_at_period_end', async () => {
+      mocks.findFirst.mockResolvedValue(paidUser())
+
+      const response = await postWebhook(
+        subscriptionEvent({
+          type: 'customer.subscription.updated',
+          priceId: TIER_CONFIG.pro.priceId,
+          cancelAtPeriodEnd: true,
+        })
+      )
+
+      expect(response.status).toBe(200)
+      const payload = lastSetPayload()
+      expect(payload.cancelAtPeriodEnd).toBe(true)
+      expect(payload.creditsRemaining).toBeUndefined()
+    })
+
+    it('does not refill credits on a non-billing update (e.g. payment method change)', async () => {
+      mocks.findFirst.mockResolvedValue(paidUser({ creditsRemaining: 0 }))
+
+      await postWebhook(
+        subscriptionEvent({ type: 'customer.subscription.updated', priceId: TIER_CONFIG.pro.priceId })
+      )
+
+      expect(lastSetPayload().creditsRemaining).toBeUndefined()
+      expect(mocks.sendPurchaseEmail).not.toHaveBeenCalled()
+    })
+
+    it('does not refill credits when a past_due subscription recovers (invoice.payment_succeeded handles the reset)', async () => {
+      mocks.findFirst.mockResolvedValue(paidUser({ creditsRemaining: 0, subscriptionStatus: 'past_due' }))
+
+      await postWebhook(
+        subscriptionEvent({ type: 'customer.subscription.updated', priceId: TIER_CONFIG.pro.priceId })
+      )
+
+      const payload = lastSetPayload()
+      expect(payload.subscriptionStatus).toBe('active')
+      expect(payload.creditsRemaining).toBeUndefined()
+    })
+
+    it('preserves credits on a mid-period upgrade and updates tier/price/allocation', async () => {
+      mocks.findFirst.mockResolvedValue(paidUser({ creditsRemaining: 300 }))
+
+      await postWebhook(
+        subscriptionEvent({ type: 'customer.subscription.updated', priceId: TIER_CONFIG.ultra.priceId })
+      )
+
+      const payload = lastSetPayload()
+      expect(payload.tier).toBe('ultra')
+      expect(payload.stripePriceId).toBe(TIER_CONFIG.ultra.priceId)
+      expect(payload.creditsIncluded).toBe(TIER_CONFIG.ultra.credits)
+      expect(payload.creditsRemaining).toBeUndefined()
+      expect(mocks.invalidateUserTierCache).toHaveBeenCalledWith('user_123')
+    })
+
+    it('does not grant credits on a downgrade', async () => {
+      mocks.findFirst.mockResolvedValue(
+        paidUser({ tier: 'ultra', stripePriceId: TIER_CONFIG.ultra.priceId, creditsRemaining: 0 })
+      )
+
+      await postWebhook(
+        subscriptionEvent({ type: 'customer.subscription.updated', priceId: TIER_CONFIG.pro.priceId })
+      )
+
+      const payload = lastSetPayload()
+      expect(payload.tier).toBe('pro')
+      expect(payload.creditsRemaining).toBeUndefined()
+    })
+
+    it('grants the tier allocation once when an incomplete subscription becomes active', async () => {
+      mocks.findFirst.mockResolvedValue(paidUser({ creditsRemaining: 20, subscriptionStatus: 'incomplete' }))
+
+      await postWebhook(
+        subscriptionEvent({ type: 'customer.subscription.updated', priceId: TIER_CONFIG.pro.priceId })
+      )
+
+      expect(lastSetPayload().creditsRemaining).toBe(TIER_CONFIG.pro.credits)
+      expect(mocks.sendPurchaseEmail).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('customer.subscription.created', () => {
+    const freeUser = () =>
+      paidUser({
+        tier: 'free',
+        creditsRemaining: 5,
+        creditsIncluded: TIER_CONFIG.free.credits,
+        stripeSubscriptionId: null,
+        stripePriceId: null,
+        subscriptionStatus: null,
+        billingPeriodStart: null,
+        billingPeriodEnd: null,
+      })
+
+    it('grants the full tier allocation for a new active subscription', async () => {
+      mocks.findFirst.mockResolvedValue(freeUser())
+
+      await postWebhook(
+        subscriptionEvent({ type: 'customer.subscription.created', priceId: TIER_CONFIG.pro.priceId })
+      )
+
+      const payload = lastSetPayload()
+      expect(payload.tier).toBe('pro')
+      expect(payload.creditsRemaining).toBe(TIER_CONFIG.pro.credits)
+      expect(payload.billingPeriodEnd).toEqual(new Date(PERIOD_END * 1000))
+      expect(mocks.sendPurchaseEmail).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not grant credits while the first payment is still incomplete', async () => {
+      mocks.findFirst.mockResolvedValue(freeUser())
+
+      await postWebhook(
+        subscriptionEvent({
+          type: 'customer.subscription.created',
+          priceId: TIER_CONFIG.pro.priceId,
+          status: 'incomplete',
+        })
+      )
+
+      expect(lastSetPayload().creditsRemaining).toBeUndefined()
+    })
+
+    it('is idempotent when Stripe redelivers the created event', async () => {
+      mocks.findFirst.mockResolvedValue(paidUser({ creditsRemaining: 900 }))
+
+      await postWebhook(
+        subscriptionEvent({ type: 'customer.subscription.created', priceId: TIER_CONFIG.pro.priceId })
+      )
+
+      expect(lastSetPayload().creditsRemaining).toBeUndefined()
+      expect(mocks.sendPurchaseEmail).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('customer.subscription.deleted', () => {
+    it('never raises a negative balance (caps the balance at the free allocation atomically)', async () => {
+      mocks.findFirst.mockResolvedValue(paidUser({ creditsRemaining: -50 }))
+
+      await postWebhook(
+        subscriptionEvent({
+          type: 'customer.subscription.deleted',
+          priceId: TIER_CONFIG.pro.priceId,
+          status: 'canceled',
+        })
+      )
+
+      const payload = lastSetPayload()
+      expect(payload.tier).toBe('free')
+      expect(payload.creditsIncluded).toBe(TIER_CONFIG.free.credits)
+      expect(renderSql(payload.creditsRemaining)).toMatchObject({
+        sql: 'least("users"."credits_remaining", $1)',
+        params: [TIER_CONFIG.free.credits],
+      })
+      expect(mocks.invalidateUserTierCache).toHaveBeenCalledWith('user_123')
+    })
   })
 })
