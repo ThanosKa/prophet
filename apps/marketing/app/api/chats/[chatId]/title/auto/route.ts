@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { chats, messages } from '@/lib/db/schema'
+import { chats, messages, users } from '@/lib/db/schema'
 import { and, eq, asc } from 'drizzle-orm'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { anthropic } from '@/lib/anthropic'
@@ -28,8 +28,38 @@ function sanitizeTitle(title: string): string {
     .substring(0, 100)
 }
 
+const MAX_SOURCE_CHARS = 1000
+const MAX_FALLBACK_TITLE_CHARS = 50
+const UNTITLED_CHAT = 'Untitled Chat'
+
 function isDefaultTitle(title: string): boolean {
   return title.startsWith('New Chat')
+}
+
+// The title must never stay at a 'New Chat' default once generation was attempted,
+// because the sidepanel re-requests generation for as long as it sees that prefix.
+function fallbackTitle(firstUserMessage: string): string {
+  const title = firstUserMessage.replace(/\s+/g, ' ').trim().substring(0, MAX_FALLBACK_TITLE_CHARS).trim()
+  return title && !isDefaultTitle(title) ? title : UNTITLED_CHAT
+}
+
+async function generateTitle({ userMessage, assistantMessage }: { userMessage: string; assistantMessage: string }) {
+  const prompt = TITLE_GENERATION_PROMPT
+    .replace('{userMessage}', () => userMessage.substring(0, MAX_SOURCE_CHARS))
+    .replace('{assistantMessage}', () => assistantMessage.substring(0, MAX_SOURCE_CHARS))
+
+  const response = await anthropic.messages.create({
+    model: CLAUDE_MODELS.HAIKU,
+    max_tokens: 50,
+    messages: [
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+  })
+
+  return response.content[0]?.type === 'text' ? sanitizeTitle(response.content[0].text) : ''
 }
 
 export async function POST(
@@ -89,41 +119,64 @@ export async function POST(
 
     const firstUserMessage = userMessages[0].content
     const firstAssistantMessage = assistantMessages[0].content
+    const fallback = fallbackTitle(firstUserMessage)
 
-    const prompt = TITLE_GENERATION_PROMPT
-      .replace('{userMessage}', firstUserMessage)
-      .replace('{assistantMessage}', firstAssistantMessage)
+    // Claim the chat by swapping the default title for the fallback in one conditional
+    // UPDATE: only the request that wins it may call Anthropic, at most once per chat.
+    const claimed = await db
+      .update(chats)
+      .set({ title: fallback, updatedAt: new Date() })
+      .where(and(eq(chats.id, chatId), eq(chats.title, chat.title)))
+      .returning({ id: chats.id })
+
+    if (claimed.length === 0) {
+      logger.info({ userId, chatId }, 'Skipping auto-title: already claimed by another request')
+      return NextResponse.json(success({ chatId, title: fallback }))
+    }
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: { creditsRemaining: true },
+    })
+
+    if (!user || user.creditsRemaining <= 0) {
+      logger.info({ userId, chatId }, 'Skipping auto-title generation: no credits, using fallback title')
+      return NextResponse.json(success({ chatId, title: fallback }))
+    }
 
     logger.debug({ userId, chatId }, 'Generating title with Haiku')
 
-    const response = await anthropic.messages.create({
-      model: CLAUDE_MODELS.HAIKU,
-      max_tokens: 50,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-    })
+    let generatedTitle = ''
+    try {
+      generatedTitle = await generateTitle({
+        userMessage: firstUserMessage,
+        assistantMessage: firstAssistantMessage,
+      })
+    } catch (err) {
+      logger.warn(
+        { userId, chatId, error: err instanceof Error ? err.message : String(err) },
+        'Title generation failed, keeping fallback title'
+      )
+    }
 
-    const generatedTitle = response.content[0]?.type === 'text' ? response.content[0].text : 'New Chat'
-    const sanitizedTitle = sanitizeTitle(generatedTitle)
+    if (!generatedTitle || isDefaultTitle(generatedTitle)) {
+      return NextResponse.json(success({ chatId, title: fallback }))
+    }
 
     await db
       .update(chats)
       .set({
-        title: sanitizedTitle,
+        title: generatedTitle,
         updatedAt: new Date(),
       })
       .where(eq(chats.id, chatId))
 
     logger.info(
-      { userId, chatId, newTitle: sanitizedTitle },
+      { userId, chatId, newTitle: generatedTitle },
       'Chat title auto-generated successfully'
     )
 
-    return NextResponse.json(success({ chatId, title: sanitizedTitle }), { status: 200 })
+    return NextResponse.json(success({ chatId, title: generatedTitle }), { status: 200 })
   } catch (err) {
     logger.error(
       { error: err instanceof Error ? err.message : String(err), userId },
