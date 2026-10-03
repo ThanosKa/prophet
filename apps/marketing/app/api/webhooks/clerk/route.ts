@@ -4,12 +4,25 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
-import type { ClerkWebhookEvent } from '@/types'
+import { z } from 'zod'
 import { error, success } from '@/types'
 import { logger } from '@/lib/logger'
 import { TIER_CONFIG } from '@/lib/pricing'
-import { invalidateUserTierCache } from '@/lib/cache'
 import { sendWelcomeEmail } from '@/lib/email'
+
+const clerkUserSchema = z.object({
+  id: z.string(),
+  email_addresses: z.array(z.object({ email_address: z.string() })),
+  first_name: z.string().nullish(),
+  last_name: z.string().nullish(),
+})
+
+// public_metadata is deliberately not read: Stripe webhooks own `tier`.
+const clerkWebhookEventSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('user.created'), data: clerkUserSchema }),
+  z.object({ type: z.literal('user.updated'), data: clerkUserSchema }),
+  z.object({ type: z.literal('user.deleted'), data: z.object({ id: z.string() }) }),
+])
 
 /**
  * POST /api/webhooks/clerk
@@ -44,14 +57,14 @@ export async function POST(req: Request) {
 
     const wh = new Webhook(WEBHOOK_SECRET)
 
-    let evt: ClerkWebhookEvent
+    let verifiedPayload: unknown
 
     try {
-      evt = wh.verify(body, {
+      verifiedPayload = wh.verify(body, {
         'svix-id': svix_id,
         'svix-timestamp': svix_timestamp,
         'svix-signature': svix_signature,
-      }) as ClerkWebhookEvent
+      })
     } catch (err) {
       logger.error({ error: err instanceof Error ? err.message : String(err) }, 'Webhook verification failed')
       return NextResponse.json(
@@ -60,10 +73,27 @@ export async function POST(req: Request) {
       )
     }
 
-    const eventType = evt.type
+    const parsed = clerkWebhookEventSchema.safeParse(verifiedPayload)
 
-    if (eventType === 'user.created') {
-      const { id, email_addresses, first_name, last_name, public_metadata } = evt.data
+    if (!parsed.success) {
+      const isUnhandledEventType = parsed.error.issues.some(
+        (issue) => issue.code === 'invalid_union_discriminator'
+      )
+      if (isUnhandledEventType) {
+        return NextResponse.json(success({ received: true }))
+      }
+
+      logger.error({ issues: parsed.error.issues }, 'Invalid Clerk webhook payload')
+      return NextResponse.json(
+        error('Invalid webhook payload', 'INVALID_PAYLOAD'),
+        { status: 400 }
+      )
+    }
+
+    const evt = parsed.data
+
+    if (evt.type === 'user.created') {
+      const { id, email_addresses, first_name, last_name } = evt.data
 
       const primaryEmail = email_addresses[0]?.email_address
       if (!primaryEmail) {
@@ -78,7 +108,7 @@ export async function POST(req: Request) {
         email: primaryEmail,
         firstName: first_name ?? null,
         lastName: last_name ?? null,
-        tier: (public_metadata?.tier as 'free' | 'pro' | 'premium' | 'ultra') || 'free',
+        tier: 'free',
         creditsRemaining: TIER_CONFIG.free.credits,
       })
 
@@ -89,8 +119,8 @@ export async function POST(req: Request) {
       }).catch(() => {})
 
       logger.info({ userId: id, email: primaryEmail }, 'User created from webhook')
-    } else if (eventType === 'user.updated') {
-      const { id, email_addresses, first_name, last_name, public_metadata } = evt.data
+    } else if (evt.type === 'user.updated') {
+      const { id, email_addresses, first_name, last_name } = evt.data
 
       const primaryEmail = email_addresses[0]?.email_address
 
@@ -100,19 +130,16 @@ export async function POST(req: Request) {
           email: primaryEmail,
           firstName: first_name ?? undefined,
           lastName: last_name ?? undefined,
-          tier: (public_metadata?.tier as 'free' | 'pro' | 'premium' | 'ultra') || 'free',
           updatedAt: new Date(),
         })
         .where(eq(users.id, id))
 
-      await invalidateUserTierCache(id)
-
       logger.info({ userId: id, email: primaryEmail }, 'User updated from webhook')
-    } else if (eventType === 'user.deleted') {
+    } else {
       const { id } = evt.data
 
       // Delete user from database (cascade will delete chats, messages, usage records)
-      await db.delete(users).where(eq(users.id, id!))
+      await db.delete(users).where(eq(users.id, id))
 
       logger.info({ userId: id }, 'User deleted from webhook')
     }

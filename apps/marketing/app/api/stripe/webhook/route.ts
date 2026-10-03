@@ -178,6 +178,13 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   const isFirstSubscription = !user.stripeSubscriptionId
   const now = new Date()
 
+  // Stripe fires subscription.updated for cancel/resume toggles, payment method and
+  // status changes, and plan switches. Only the first activation of a subscription is
+  // paid for here; monthly refills happen on invoice.payment_succeeded, and plan
+  // changes keep the balance so toggling plans can't mint credits.
+  const isNewSubscription = status === 'active' &&
+    (user.stripeSubscriptionId !== subscription.id || user.subscriptionStatus === 'incomplete')
+
   // For mid-cycle upgrades, preserve existing billing period if it's still in the future
   const shouldPreserveBillingPeriod = !isFirstSubscription &&
     user.billingPeriodEnd &&
@@ -190,8 +197,6 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     ? user.billingPeriodEnd
     : stripeBillingEnd
 
-  const isNewSubscription = isFirstSubscription && status === 'active'
-
   await db
     .update(users)
     .set({
@@ -201,7 +206,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
       subscriptionStatus: status,
       cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
       creditsIncluded: tierConfig.credits,
-      creditsRemaining: tierConfig.credits,
+      ...(isNewSubscription && { creditsRemaining: tierConfig.credits }),
       billingPeriodStart,
       billingPeriodEnd,
       updatedAt: new Date(),
@@ -226,7 +231,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     userId: user.id,
     tier,
     status,
-    creditsRemaining: tierConfig.credits,
+    creditsGranted: isNewSubscription ? tierConfig.credits : 0,
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
   }, 'Subscription updated')
 }
@@ -250,7 +255,8 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       stripePriceId: null,
       subscriptionStatus: null,
       creditsIncluded: TIER_CONFIG.free.credits,
-      creditsRemaining: TIER_CONFIG.free.credits,
+      // Unused paid credits lapse to the free allocation, but a negative balance is kept
+      creditsRemaining: sql`least(${users.creditsRemaining}, ${TIER_CONFIG.free.credits})`,
       billingPeriodStart: null,
       billingPeriodEnd: null,
       updatedAt: new Date(),

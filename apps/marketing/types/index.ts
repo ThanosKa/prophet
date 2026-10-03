@@ -30,17 +30,3 @@ export function success<T>(data: T): SuccessResponse<T> {
 export function error(message: string, code?: string, details?: unknown): ErrorResponse {
   return { error: message, code, details }
 }
-
-// Clerk webhook types
-export interface ClerkWebhookEvent {
-  type: 'user.created' | 'user.updated' | 'user.deleted'
-  data: {
-    id: string
-    email_addresses: Array<{ email_address: string }>
-    first_name?: string | null
-    last_name?: string | null
-    public_metadata?: {
-      tier?: 'free' | 'pro' | 'premium' | 'ultra'
-    }
-  }
-}
