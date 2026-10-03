@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { APIError, BadRequestError } from "@anthropic-ai/sdk";
 import { db } from "@/lib/db";
 import { users, chats, messages, usageRecords } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -30,7 +31,8 @@ import {
   resolveAgentModel,
   sanitizeForLog,
 } from "@prophet/shared";
-import { error } from "@/types";
+import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
+import { error, INTERNAL_ERROR_MESSAGE, SESSION_EXPIRED_MESSAGE } from "@/types";
 import { logger } from "@/lib/logger";
 import {
   calculateCostInCents,
@@ -65,6 +67,39 @@ function extractCitations(blocks: ContentBlock[]) {
   return citations;
 }
 
+function describeInvalidRequest(err: unknown): { message: string; code: string } | null {
+  if (!(err instanceof Error)) return null;
+  const isInvalidRequest =
+    err instanceof BadRequestError ||
+    (err instanceof APIError && err.type === "invalid_request_error") ||
+    err.message.includes("invalid_request");
+  if (!isInvalidRequest) return null;
+
+  const text = err.message.toLowerCase();
+  if (
+    text.includes("prompt is too long") ||
+    text.includes("too many tokens") ||
+    text.includes("context")
+  ) {
+    return {
+      message: "This chat is too long for the model. Start a new chat to continue.",
+      code: "CONTEXT_TOO_LONG",
+    };
+  }
+  if (text.includes("image")) {
+    return {
+      message: "That image is too large or unsupported. Try a smaller image.",
+      code: "IMAGE_INVALID",
+    };
+  }
+  return {
+    message: "Claude couldn't process this request. Start a new chat and try again.",
+    code: "ANTHROPIC_INVALID_REQUEST",
+  };
+}
+
+const BALANCE_HELD_RETRY_AFTER_SECONDS = 5;
+
 // A function killed at this limit never settles, so the user forfeits that turn's hold.
 export const maxDuration = 300;
 
@@ -73,7 +108,7 @@ export async function POST(req: Request) {
     const auth_ = await auth();
     const userId = auth_.userId;
     if (!userId) {
-      return NextResponse.json(error("Unauthorized", "UNAUTHORIZED"), {
+      return NextResponse.json(error(SESSION_EXPIRED_MESSAGE, "UNAUTHORIZED"), {
         status: 401,
       });
     }
@@ -280,42 +315,65 @@ export async function POST(req: Request) {
     await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking });
 
     const tools = buildAgentTools(AGENT_TOOLS, webSearchEnabled);
-    const plan = planCreditReservation({
-      model,
-      balanceCents: user.creditsRemaining,
-      estimatedInputTokens: estimateInputTokens({
-        system: AGENT_SYSTEM_PROMPT,
-        tools,
-        messages: anthropicMessages,
-      }),
-      maxTokens: getAgentMaxTokens({ model, enableThinking }),
-      minTokens: getAgentMinTokens({ model, enableThinking }),
-      webSearchMaxUses: webSearchEnabled ? WEB_SEARCH_MAX_USES : 0,
+    const estimatedInputTokens = estimateInputTokens({
+      system: AGENT_SYSTEM_PROMPT,
+      tools,
+      messages: anthropicMessages,
     });
+    const planFor = (option: { model: ModelName; enableThinking: boolean }) =>
+      planCreditReservation({
+        model: option.model,
+        balanceCents: user.creditsRemaining,
+        estimatedInputTokens,
+        maxTokens: getAgentMaxTokens(option),
+        minTokens: getAgentMinTokens(option),
+        webSearchMaxUses: webSearchEnabled ? WEB_SEARCH_MAX_USES : 0,
+      });
+    const plan = planFor({ model, enableThinking });
 
-    if (
-      !plan.ok ||
-      !(await reserveCredits({ db, userId, reserveCents: plan.reserveCents }))
-    ) {
+    if (!plan.ok) {
       logger.warn(
         {
           userId,
           model,
           creditsRemaining: user.creditsRemaining,
-          requiredCents: plan.ok ? plan.reserveCents : plan.requiredCents,
+          requiredCents: plan.requiredCents,
         },
         "Insufficient balance for agent chat"
       );
+      const { message, details } = describeInsufficientBalance({
+        model,
+        enableThinking,
+        isContinuation: isContinuationTurn,
+        tier: user.tier,
+        fits: (option) => planFor(option).ok,
+      });
       return NextResponse.json(
-        error(
-          "Insufficient balance. Please upgrade your plan.",
-          "INSUFFICIENT_BALANCE",
-          { pricingUrl: "/pricing" }
-        ),
+        error(message, "INSUFFICIENT_BALANCE", details),
         { status: 402 }
       );
     }
+
+    if (!(await reserveCredits({ db, userId, reserveCents: plan.reserveCents }))) {
+      logger.warn(
+        { userId, model, creditsRemaining: user.creditsRemaining, requiredCents: plan.reserveCents },
+        "Credit reservation lost a race for the balance"
+      );
+      return NextResponse.json(
+        error(
+          "Some of your balance is held by another request that's still running. Try again in a few seconds.",
+          "BALANCE_HELD",
+          { retryAfter: BALANCE_HELD_RETRY_AFTER_SECONDS }
+        ),
+        {
+          status: 409,
+          headers: { "Retry-After": String(BALANCE_HELD_RETRY_AFTER_SECONDS) },
+        }
+      );
+    }
     const { reserveCents, maxTokens } = plan;
+    const maxTokensReducedForBalance =
+      maxTokens < getAgentMaxTokens({ model, enableThinking });
 
     const encoder = new TextEncoder();
     const upstream = new AbortController();
@@ -700,6 +758,7 @@ export async function POST(req: Request) {
             },
             citations,
             contentBlocks,
+            maxTokensReducedForBalance,
           });
           send(doneData);
 
@@ -719,7 +778,11 @@ export async function POST(req: Request) {
           let errorCode: string | undefined;
           let errorDetails: Record<string, unknown> | undefined;
 
-          if (err instanceof Error) {
+          const invalidRequest = describeInvalidRequest(err);
+          if (invalidRequest) {
+            userFriendlyError = invalidRequest.message;
+            errorCode = invalidRequest.code;
+          } else if (err instanceof Error) {
             const errMessage = err.message;
 
             // Handle Anthropic rate limit errors (429)
@@ -741,11 +804,6 @@ export async function POST(req: Request) {
             else if (errMessage.includes("authentication") || errMessage.includes("api_key")) {
               userFriendlyError = "Service configuration error. Please contact support.";
               errorCode = "ANTHROPIC_AUTH_ERROR";
-            }
-            // Handle invalid request errors
-            else if (errMessage.includes("invalid_request")) {
-              userFriendlyError = "Invalid request. Please try a different message.";
-              errorCode = "ANTHROPIC_INVALID_REQUEST";
             }
             // For other errors, use a generic message (don't expose raw error to user)
             else {
@@ -787,7 +845,7 @@ export async function POST(req: Request) {
       "Agent chat endpoint error"
     );
     return NextResponse.json(
-      error("Internal server error", "INTERNAL_ERROR", err),
+      error(INTERNAL_ERROR_MESSAGE, "INTERNAL_ERROR"),
       { status: 500 }
     );
   }

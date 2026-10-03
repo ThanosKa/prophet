@@ -6,7 +6,7 @@ import { and, eq, asc } from 'drizzle-orm'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { anthropic } from '@/lib/anthropic'
 import { CLAUDE_MODELS } from '@prophet/shared'
-import { error, success } from '@/types'
+import { error, success, INTERNAL_ERROR_MESSAGE } from '@/types'
 import { logger } from '@/lib/logger'
 
 const TITLE_GENERATION_PROMPT = `Generate a concise, descriptive title for a chat conversation based on the first user message and assistant response. The title should:
@@ -183,7 +183,7 @@ export async function POST(
       'Failed to auto-generate chat title'
     )
     return NextResponse.json(
-      error('Internal server error', 'INTERNAL_ERROR', err),
+      error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'),
       { status: 500 }
     )
   }

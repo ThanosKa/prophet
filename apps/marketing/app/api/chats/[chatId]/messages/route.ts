@@ -4,7 +4,7 @@ import { db } from '@/lib/db'
 import { chats, messages } from '@/lib/db/schema'
 import { and, eq, desc, lt } from 'drizzle-orm'
 import { checkRateLimit } from '@/lib/ratelimit'
-import { error, success } from '@/types'
+import { error, success, INTERNAL_ERROR_MESSAGE } from '@/types'
 import { logger } from '@/lib/logger'
 
 export async function GET(
@@ -83,7 +83,7 @@ export async function GET(
   } catch (err) {
     logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to fetch messages')
     return NextResponse.json(
-      error('Internal server error', 'INTERNAL_ERROR', err),
+      error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'),
       { status: 500 }
     )
   }

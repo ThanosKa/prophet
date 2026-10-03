@@ -225,4 +225,27 @@ describe('GET /api/chats', () => {
     expect(data.data.chats[0].id).toBe('chat_1')
     expect(data.data.chats[1].id).toBe('chat_2')
   })
+
+  it('answers a database failure with a generic 500 that leaks no connection details', async () => {
+    // postgres-js connection errors carry these as own enumerable fields
+    const dbError = Object.assign(new Error('connect ECONNREFUSED 10.0.0.12:6543'), {
+      code: 'ECONNREFUSED',
+      address: '10.0.0.12',
+      port: 6543,
+      detail: 'Key (id)=(user_123) already exists.',
+    })
+    vi.mocked(db.query.chats.findMany).mockRejectedValue(dbError)
+
+    const response = await GET(new Request('http://localhost:3000/api/chats'))
+    const body = await response.text()
+
+    expect(response.status).toBe(500)
+    expect(JSON.parse(body)).toEqual({
+      error: 'Something went wrong on our side. Please try again in a moment.',
+      code: 'INTERNAL_ERROR',
+    })
+    expect(body).not.toContain('10.0.0.12')
+    expect(body).not.toContain('6543')
+    expect(body).not.toContain('user_123')
+  })
 })
