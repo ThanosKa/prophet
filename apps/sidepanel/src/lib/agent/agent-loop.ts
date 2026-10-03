@@ -20,10 +20,22 @@ interface StreamAgentChatOptions {
   enableThinking?: boolean;
 }
 
-async function* streamAgentChat(
-  baseUrl: string,
-  options: StreamAgentChatOptions
-): AsyncGenerator<AgentStreamEvent> {
+export type AgentRunEvent = AgentLoopEvent | { type: "output_truncated" };
+
+const CANCELLED_EVENT: AgentRunEvent = {
+  type: "error",
+  error: "Agent execution cancelled by user",
+};
+
+async function* streamAgentChat({
+  baseUrl,
+  options,
+  signal,
+}: {
+  baseUrl: string;
+  options: StreamAgentChatOptions;
+  signal?: AbortSignal;
+}): AsyncGenerator<AgentStreamEvent> {
   const tokenResponse = await chrome.runtime.sendMessage({
     type: "GET_AUTH_TOKEN",
   });
@@ -52,18 +64,26 @@ async function* streamAgentChat(
   });
   */
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(options),
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(options),
+      signal,
+    });
+  } catch (error) {
+    if (signal?.aborted) return;
+    throw error;
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
 
     if (response.status === 429) {
       const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10)
-      const remaining = parseInt(response.headers.get('X-RateLimit-Remaining') || '0', 10)
+      // Concurrency 429s carry no request quota, so only show "N remaining" when the server sent it.
+      const remainingHeader = response.headers.get('X-RateLimit-Remaining')
 
       yield {
         type: "error",
@@ -72,7 +92,7 @@ async function* streamAgentChat(
         details: {
           ...errorData.details,
           retryAfter,
-          remaining,
+          ...(remainingHeader !== null && { remaining: parseInt(remainingHeader, 10) }),
         },
       };
     } else {
@@ -97,11 +117,28 @@ async function* streamAgentChat(
 
   const decoder = new TextDecoder();
   let buffer = "";
+  let fullyRead = false;
+
+  // releaseLock() alone leaves the connection open and the server generating; cancel() closes it.
+  const cancelBody = () => {
+    reader.cancel().catch(() => {});
+  };
+  signal?.addEventListener("abort", cancelBody, { once: true });
 
   try {
     while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      let chunk: ReadableStreamReadResult<Uint8Array>;
+      try {
+        chunk = await reader.read();
+      } catch (error) {
+        if (signal?.aborted) return;
+        throw error;
+      }
+      const { done, value } = chunk;
+      if (done) {
+        fullyRead = true;
+        break;
+      }
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split("\n");
@@ -128,6 +165,10 @@ async function* streamAgentChat(
       }
     }
   } finally {
+    signal?.removeEventListener("abort", cancelBody);
+    if (!fullyRead) {
+      await reader.cancel().catch(() => {});
+    }
     reader.releaseLock();
   }
 }
@@ -140,7 +181,7 @@ export async function* runAgentLoop(
   image?: ImageData,
   signal?: AbortSignal,
   enableThinking?: boolean
-): AsyncGenerator<AgentLoopEvent> {
+): AsyncGenerator<AgentRunEvent> {
   let previousContent: ContentBlock[] = [];
   let turnCount = 0;
   let toolResults: ToolResult[] = [];
@@ -152,10 +193,7 @@ export async function* runAgentLoop(
 
   while (turnCount < maxTurns) {
     if (signal?.aborted) {
-      yield {
-        type: "error",
-        error: "Agent execution cancelled by user",
-      };
+      yield CANCELLED_EVENT;
       return;
     }
 
@@ -185,7 +223,13 @@ export async function* runAgentLoop(
     const assistantContent: ContentBlock[] = [];
     let turnTextContent = ""; // Text content for this turn only
 
-    for await (const event of streamAgentChat(baseUrl, streamOptions)) {
+    for await (const event of streamAgentChat({ baseUrl, options: streamOptions, signal })) {
+      // Checked per event so a stopped run never executes the remaining tool_use blocks of its turn.
+      if (signal?.aborted) {
+        yield CANCELLED_EVENT;
+        return;
+      }
+
       switch (event.type) {
         case "session_created":
           yield {
@@ -338,6 +382,9 @@ export async function* runAgentLoop(
 
         case "done":
           if (!hasToolUse) {
+            if (event.stopReason === "max_tokens") {
+              yield { type: "output_truncated" };
+            }
             yield {
               type: "done",
               usage: event.usage,
@@ -350,9 +397,16 @@ export async function* runAgentLoop(
           yield {
             type: "error",
             error: event.error || "Unknown error",
+            code: event.code,
+            details: event.details,
           };
           return;
       }
+    }
+
+    if (signal?.aborted) {
+      yield CANCELLED_EVENT;
+      return;
     }
 
     if (!hasToolUse) {
