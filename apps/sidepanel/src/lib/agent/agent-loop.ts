@@ -1,5 +1,13 @@
+import { z } from "zod";
 import { executeToolViaBackground } from "./background-bridge";
 import { DEFAULT_AGENT_MODEL } from "@prophet/shared";
+import {
+  USER_FACING_TEXT,
+  describeHttpFailure,
+  parseErrorBody,
+  parseErrorDetails,
+  type ErrorDetails,
+} from "@/lib/user-facing-errors";
 import type {
   AgentStreamEvent,
   AgentModel,
@@ -20,7 +28,16 @@ interface StreamAgentChatOptions {
   enableThinking?: boolean;
 }
 
-export type AgentRunEvent = AgentLoopEvent | { type: "output_truncated" };
+export type AgentRunErrorEvent = { type: "error"; error: string; code?: string; details?: ErrorDetails };
+
+export type AgentRunEvent =
+  | Exclude<AgentLoopEvent, { type: "error" }>
+  | AgentRunErrorEvent
+  | { type: "output_truncated"; reducedForBalance: boolean }
+  | { type: "turn_limit_reached" };
+
+// Older servers omit the flag; only an explicit true means max_tokens was lowered to fit the balance.
+const reducedForBalanceSchema = z.object({ maxTokensReducedForBalance: z.literal(true) });
 
 const CANCELLED_EVENT: AgentRunEvent = {
   type: "error",
@@ -78,7 +95,7 @@ async function* streamAgentChat({
   }
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
+    const errorData = parseErrorBody(await response.json().catch(() => ({})));
 
     if (response.status === 429) {
       const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10)
@@ -96,11 +113,20 @@ async function* streamAgentChat({
         },
       };
     } else {
+      if (!errorData.error) {
+        console.error("[agent-loop] HTTP error without a JSON error body", response.status);
+      }
+      const retryAfterHeader = Number.parseInt(response.headers.get("Retry-After") ?? "", 10);
+      const details =
+        errorData.details?.retryAfter === undefined && retryAfterHeader > 0
+          ? { ...errorData.details, retryAfter: retryAfterHeader }
+          : errorData.details;
+
       yield {
         type: "error",
-        error: errorData.error || `HTTP ${response.status}`,
+        error: describeHttpFailure({ status: response.status, body: errorData }),
         code: errorData.code,
-        details: errorData.details,
+        details,
       };
     }
     return;
@@ -108,9 +134,10 @@ async function* streamAgentChat({
 
   const reader = response.body?.getReader();
   if (!reader) {
+    console.error("[agent-loop] Response had no body", response.status);
     yield {
       type: "error",
-      error: "No response body",
+      error: USER_FACING_TEXT.serverUnavailable,
     };
     return;
   }
@@ -219,6 +246,7 @@ export async function* runAgentLoop(
     }
 
     let hasToolUse = false;
+    let sawDone = false;
     toolResults = []; // Reset for the CURRENT turn only
     const assistantContent: ContentBlock[] = [];
     let turnTextContent = ""; // Text content for this turn only
@@ -350,10 +378,18 @@ export async function* runAgentLoop(
                 toolCallId: toolUse.id,
               };
             } catch (error) {
+              const message = error instanceof Error ? error.message : String(error);
+              // Anthropic rejects the next turn if any tool_use lacks a matching tool_result.
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: toolUse.id,
+                content: `Tool execution failed: ${message}`,
+                is_error: true,
+              });
               yield {
                 type: "tool_call_error",
                 toolName: toolUse.name,
-                error: error instanceof Error ? error.message : String(error),
+                error: message,
                 toolCallId: toolUse.id,
               };
             }
@@ -381,9 +417,13 @@ export async function* runAgentLoop(
           break;
 
         case "done":
+          sawDone = true;
           if (!hasToolUse) {
             if (event.stopReason === "max_tokens") {
-              yield { type: "output_truncated" };
+              yield {
+                type: "output_truncated",
+                reducedForBalance: reducedForBalanceSchema.safeParse(event).success,
+              };
             }
             yield {
               type: "done",
@@ -396,9 +436,9 @@ export async function* runAgentLoop(
         case "error":
           yield {
             type: "error",
-            error: event.error || "Unknown error",
+            error: event.error || USER_FACING_TEXT.generic,
             code: event.code,
-            details: event.details,
+            details: parseErrorDetails(event.details),
           };
           return;
       }
@@ -406,6 +446,13 @@ export async function* runAgentLoop(
 
     if (signal?.aborted) {
       yield CANCELLED_EVENT;
+      return;
+    }
+
+    // The server always ends a turn with done or error; anything else means a function timeout or proxy cut.
+    if (!sawDone) {
+      console.error("[agent-loop] Stream ended without done or error", { chatId, turnCount });
+      yield { type: "error", error: USER_FACING_TEXT.streamCut };
       return;
     }
 
@@ -423,4 +470,6 @@ export async function* runAgentLoop(
     previousContent = assistantContent;
     // toolResults is already populated from the loop above
   }
+
+  yield { type: "turn_limit_reached" };
 }

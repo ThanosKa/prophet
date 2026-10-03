@@ -58,7 +58,7 @@ export function PromptInput({
   className,
 }: {
   children: React.ReactNode;
-  onSubmit: (message: PromptInputMessage) => void | Promise<void>;
+  onSubmit: (message: PromptInputMessage) => void | boolean | Promise<void | boolean>;
   disabled?: boolean;
   inputDisabled?: boolean;
   submitDisabled?: boolean;
@@ -68,6 +68,7 @@ export function PromptInput({
 }) {
   const [text, setText] = React.useState("");
   const [attachments, setAttachments] = React.useState<Attachment[]>([]);
+  const isSubmittingRef = React.useRef(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const openFilePicker = React.useCallback(() => {
@@ -110,17 +111,22 @@ export function PromptInput({
   const handleSubmit = React.useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (resolvedSubmitDisabled) return;
+      if (resolvedSubmitDisabled || isSubmittingRef.current) return;
 
       const hasText = Boolean(text.trim());
       const hasAttachments = attachments.length > 0;
       if (!hasText && !hasAttachments) return;
 
-      await onSubmit({
-        text: text.trim() || undefined,
-        files: attachments.map((a) => a.file),
-      });
-      clear();
+      isSubmittingRef.current = true;
+      try {
+        const accepted = await onSubmit({
+          text: text.trim() || undefined,
+          files: attachments.map((a) => a.file),
+        });
+        if (accepted !== false) clear();
+      } finally {
+        isSubmittingRef.current = false;
+      }
     },
     [attachments, clear, onSubmit, resolvedSubmitDisabled, text]
   );

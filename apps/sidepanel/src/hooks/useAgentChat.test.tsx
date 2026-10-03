@@ -145,11 +145,11 @@ describe('useAgentChat run isolation', () => {
     expect(runAgentLoop).toHaveBeenCalledTimes(1)
   })
 
-  it('shows a notice when the final answer was cut off at max_tokens', async () => {
+  it('shows a neutral notice, not an error, when the final answer was cut off at max_tokens', async () => {
     const runs = scriptRuns([
       {
         before: [{ type: 'content_delta', delta: 'The answer is' }],
-        after: [{ type: 'output_truncated' }, { type: 'done' }],
+        after: [{ type: 'output_truncated', reducedForBalance: false }, { type: 'done' }],
       },
     ])
 
@@ -158,8 +158,142 @@ describe('useAgentChat run isolation', () => {
     })
     await act(async () => runs[0].release())
 
-    expect(current().error).toMatch(/cut off/)
-    expect(current().errorInfo?.code).toBe('OUTPUT_TRUNCATED')
+    expect(current().notice).toBe('This answer hit the length limit and was cut short. Send "continue" for the rest.')
+    expect(current().error).toBeNull()
     expect(useChatStore.getState().isStreaming).toBe(false)
+  })
+
+  it('blames the low balance when the server shrank max_tokens to fit it', async () => {
+    const runs = scriptRuns([
+      { before: [], after: [{ type: 'output_truncated', reducedForBalance: true }, { type: 'done' }] },
+    ])
+
+    await act(async () => {
+      void current().sendMessage('chat-1', 'hi')
+    })
+    await act(async () => runs[0].release())
+
+    expect(current().notice).toBe(
+      'This answer was cut short because your balance is low. Buy credits or switch to Haiku 4.5 for full-length answers.'
+    )
+  })
+
+  it('shows a neutral notice when the run pauses at the step cap', async () => {
+    const runs = scriptRuns([{ before: [], after: [{ type: 'turn_limit_reached' }] }])
+
+    await act(async () => {
+      void current().sendMessage('chat-1', 'hi')
+    })
+    await act(async () => runs[0].release())
+
+    expect(current().notice).toBe('Prophet paused after 10 steps. Send "continue" to keep going.')
+    expect(current().error).toBeNull()
+  })
+
+  it.each([
+    [new TypeError('Failed to fetch'), "Can't reach Prophet. Check your connection and try again."],
+    [new TypeError('NetworkError when attempting to fetch resource.'), "Can't reach Prophet. Check your connection and try again."],
+    [new Error('net::ERR_INTERNET_DISCONNECTED network error'), "Can't reach Prophet. Check your connection and try again."],
+    [
+      new Error('Could not establish connection. Receiving end does not exist.'),
+      'Prophet lost its connection to the browser. Reopen the side panel and try again.',
+    ],
+    [new Error('Extension context invalidated.'), 'Prophet lost its connection to the browser. Reopen the side panel and try again.'],
+    [new Error('Cannot read properties of undefined (reading "x")'), 'Something went wrong. Please try again.'],
+  ])('shows a plain-language error when the run throws %s', async (thrown, expected) => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(runAgentLoop).mockImplementation(async function* () {
+      yield* []
+      throw thrown
+    })
+
+    await act(async () => {
+      await current().sendMessage('chat-1', 'hi')
+    })
+
+    expect(current().error).toBe(expected)
+    expect(consoleError).toHaveBeenCalledWith(expect.any(String), thrown)
+    consoleError.mockRestore()
+  })
+
+  it('falls back to a generic retry message for an error event without text', async () => {
+    const runs = scriptRuns([{ before: [{ type: 'error', error: '' }], after: [] }])
+
+    await act(async () => {
+      void current().sendMessage('chat-1', 'hi')
+    })
+    await act(async () => runs[0].release())
+
+    expect(current().error).toBe('Something went wrong. Please try again.')
+  })
+
+  it('passes the 402 hints through so the banner can offer Haiku, Thinking off, and hide Upgrade', async () => {
+    const runs = scriptRuns([
+      {
+        before: [
+          {
+            type: 'error',
+            error: 'Not enough credits for Opus.',
+            code: 'INSUFFICIENT_BALANCE',
+            details: {
+              pricingUrl: '/pricing',
+              isContinuation: false,
+              suggestedModel: 'claude-haiku-4-5',
+              suggestDisableThinking: true,
+              canUpgrade: false,
+            },
+          },
+        ],
+        after: [],
+      },
+    ])
+
+    await act(async () => {
+      void current().sendMessage('chat-1', 'hi')
+    })
+    await act(async () => runs[0].release())
+
+    expect(current().error).toBe('Not enough credits for Opus.')
+    expect(current().errorInfo).toEqual({
+      code: 'INSUFFICIENT_BALANCE',
+      pricingUrl: '/pricing',
+      suggestedModel: 'claude-haiku-4-5',
+      suggestDisableThinking: true,
+      canUpgrade: false,
+    })
+  })
+
+  it('shows an error only in the banner, never as words in the assistant message', async () => {
+    const runs = scriptRuns([
+      {
+        before: [{ type: 'content_delta', delta: 'Partial answer' }],
+        after: [{ type: 'error', error: 'AI service is temporarily busy.' }],
+      },
+    ])
+
+    await act(async () => {
+      void current().sendMessage('chat-1', 'hi')
+    })
+    await act(async () => runs[0].release())
+
+    const assistant = (useChatStore.getState().messages['chat-1'] ?? []).find((m) => m.role === 'assistant')
+    expect(current().error).toBe('AI service is temporarily busy.')
+    expect(assistant?.content).toBe('Partial answer')
+    expect(JSON.stringify(assistant?.parts)).not.toContain('temporarily busy')
+  })
+
+  it('clears the error banner and notice when the user switches to another chat', async () => {
+    const runs = scriptRuns([{ before: [{ type: 'error', error: 'Not enough credits.', code: 'INSUFFICIENT_BALANCE' }], after: [] }])
+    await act(async () => {
+      void current().sendMessage('chat-1', 'hi')
+    })
+    await act(async () => runs[0].release())
+    expect(current().error).toBe('Not enough credits.')
+
+    await act(async () => useChatStore.getState().setActiveChatId('chat-2'))
+
+    expect(current().error).toBeNull()
+    expect(current().errorInfo).toBeNull()
+    expect(current().notice).toBeNull()
   })
 })

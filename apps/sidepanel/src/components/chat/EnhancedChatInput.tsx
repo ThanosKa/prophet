@@ -37,8 +37,11 @@ interface ImageData {
   mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 }
 
+// Resolving to false means the message was not sent, so the input keeps the draft.
+export type OnSend = (message: string, image?: ImageData) => void | Promise<boolean | void>;
+
 interface EnhancedChatInputProps {
-  onSend: (message: string, image?: ImageData) => void;
+  onSend: OnSend;
   onAbort?: () => void;
   disabled?: boolean;
   placeholder?: string;
@@ -88,7 +91,7 @@ export function EnhancedChatInput({
         : file
         ? "Sent with attachments"
         : "";
-    onSend(text, imageForApi);
+    return onSend(text, imageForApi);
   };
 
   return (

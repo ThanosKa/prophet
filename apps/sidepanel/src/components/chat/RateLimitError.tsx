@@ -40,7 +40,7 @@ export function RateLimitError({ error, retryAfter, remaining, onDismiss }: Rate
   }
 
   return (
-    <div className="mx-4 mb-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+    <div role="alert" className="mx-4 mb-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
       <div className="flex items-start gap-3">
         <Clock className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">

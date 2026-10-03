@@ -187,15 +187,10 @@ export class ChatAdapter {
                 this.status = 'idle'
                 break
 
-            case 'error': {
-                const msg = this.updateCurrentAssistant((m) => {
-                    m.parts.push({ type: 'text', text: event.error || 'Unknown error' })
-                    return m
-                })
-                if (msg) changedMessages.push(msg)
+            case 'error':
+                // The error banner shows the text; writing it here would put words in Claude's mouth.
                 this.status = 'error'
                 break
-            }
 
             case 'done':
                 this.currentAssistantId = null

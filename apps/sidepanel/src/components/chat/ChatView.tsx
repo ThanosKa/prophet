@@ -1,28 +1,21 @@
 import { useRef, useEffect } from 'react'
-import { ExternalLink, X, Zap } from 'lucide-react'
 import { EnhancedMessageList, type EnhancedMessageListHandle } from './EnhancedMessageList'
-import { EnhancedChatInput } from './EnhancedChatInput'
-import { RateLimitError } from './RateLimitError'
+import { EnhancedChatInput, type OnSend } from './EnhancedChatInput'
+import { ChatBanner, type ChatBannerProps } from './ChatBanner'
 import { ReviewPrompt } from './ReviewPrompt'
 import { Suggestions, Suggestion } from '@/components/ai-elements/suggestion'
-import { config } from '@/lib/config'
 import type { Message, ToolCall } from '@prophet/shared'
 
 interface AgentMessage extends Message {
   toolCalls?: ToolCall[]
 }
 
-interface ImageData {
-  base64: string
-  mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
-}
-
-interface ChatViewProps {
+interface ChatViewProps extends ChatBannerProps {
   messages: AgentMessage[]
   isLoading?: boolean
   isStreaming?: boolean
   currentToolCall?: ToolCall | null
-  onSend: (message: string, image?: ImageData) => void
+  onSend: OnSend
   onAbort?: () => void
   disabled?: boolean
   inputPlaceholder?: string
@@ -30,11 +23,6 @@ interface ChatViewProps {
   hasMore?: boolean
   isLoadingOlder?: boolean
   onLoadOlder?: () => void
-  error?: string | null
-  errorInfo?: { code?: string; pricingUrl?: string } | null
-  retryAfter?: number | null
-  remaining?: number | null
-  onDismissError?: () => void
 }
 
 export function ChatView({
@@ -54,7 +42,9 @@ export function ChatView({
   errorInfo,
   retryAfter,
   remaining,
+  notice,
   onDismissError,
+  onDismissNotice,
 }: ChatViewProps) {
   const messageListRef = useRef<EnhancedMessageListHandle>(null)
   const showSuggestions = suggestions && suggestions.length > 0 && messages.length === 0
@@ -67,25 +57,8 @@ export function ChatView({
     prevMessagesLength.current = messages.length
   }, [messages.length])
 
-  const handleUpgradeClick = () => {
-    const pricingUrl = errorInfo?.pricingUrl || '/pricing'
-    const fullUrl = `${config.apiUrl}${pricingUrl}`
-    window.open(fullUrl, '_blank')
-    onDismissError?.()
-  }
-
-  const handleBuyCreditsClick = () => {
-    const billingUrl = `${config.apiUrl}/account/billing`
-    window.open(billingUrl, '_blank')
-    onDismissError?.()
-  }
-
   const handleSuggestionClick = (suggestion: string) => {
-    onSend(suggestion)
-  }
-
-  const handleSend = (message: string, image?: ImageData) => {
-    onSend(message, image)
+    void onSend(suggestion)
   }
 
   return (
@@ -113,51 +86,18 @@ export function ChatView({
           </Suggestions>
         </div>
       )}
-      {error && retryAfter !== null && retryAfter !== undefined ? (
-        <RateLimitError
-          error={error}
-          retryAfter={retryAfter}
-          remaining={remaining}
-          onDismiss={onDismissError}
-        />
-      ) : error ? (
-        <div className="mx-4 mb-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm text-destructive font-medium">{error}</p>
-            {errorInfo?.code === 'INSUFFICIENT_BALANCE' && (
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                <button
-                  onClick={handleBuyCreditsClick}
-                  className="cursor-pointer inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium"
-                >
-                  <Zap className="h-3.5 w-3.5" />
-                  Buy Extra Credits
-                </button>
-                <span className="text-muted-foreground text-sm">or</span>
-                <button
-                  onClick={handleUpgradeClick}
-                  className="cursor-pointer inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                >
-                  Upgrade your plan
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
-          </div>
-          {onDismissError && (
-            <button
-              onClick={onDismissError}
-              className="cursor-pointer shrink-0 p-1 hover:bg-destructive/10 rounded transition-colors"
-              aria-label="Dismiss error"
-            >
-              <X className="h-4 w-4 text-destructive" />
-            </button>
-          )}
-        </div>
-      ) : null}
+      <ChatBanner
+        error={error}
+        errorInfo={errorInfo}
+        retryAfter={retryAfter}
+        remaining={remaining}
+        notice={notice}
+        onDismissError={onDismissError}
+        onDismissNotice={onDismissNotice}
+      />
       <ReviewPrompt isRunning={Boolean(isStreaming)} />
       <EnhancedChatInput
-        onSend={handleSend}
+        onSend={onSend}
         disabled={disabled}
         isRunning={Boolean(isStreaming)}
         onAbort={onAbort}

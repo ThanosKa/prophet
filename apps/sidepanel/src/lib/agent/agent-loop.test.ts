@@ -192,6 +192,88 @@ describe('runAgentLoop', () => {
     })
   })
 
+  describe('Silent stops', () => {
+    const API = 'http://localhost:3000'
+    const sse = (lines: string[]) => lines.map((line) => `data: ${line}\n\n`).join('')
+
+    it('sends an is_error tool_result for a tool that threw, so the next turn stays valid', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(
+            sse([
+              '{"type":"tool_use","toolUse":{"type":"tool_use","id":"t1","name":"click","input":{"ref":"a"}}}',
+              '{"type":"done"}',
+            ])
+          )
+        )
+        .mockResolvedValueOnce(new Response(sse(['{"type":"content_delta","delta":"ok"}', '{"type":"done"}'])))
+      vi.stubGlobal('fetch', fetchMock)
+      vi.mocked(executeToolViaBackground).mockRejectedValue(new Error('Could not establish connection'))
+
+      const events = []
+      for await (const event of runAgentLoop(API, 'chat-1', 'Go')) events.push(event)
+
+      expect(events).toContainEqual(expect.objectContaining({ type: 'tool_call_error', toolCallId: 't1' }))
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      const continuation = JSON.parse(fetchMock.mock.calls[1][1].body)
+      expect(continuation.toolResults).toEqual([
+        {
+          type: 'tool_result',
+          tool_use_id: 't1',
+          content: expect.stringContaining('Could not establish connection'),
+          is_error: true,
+        },
+      ])
+    })
+
+    it('announces the pause when the run hits the 10-turn cap', async () => {
+      const fetchMock = vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            sse([
+              '{"type":"tool_use","toolUse":{"type":"tool_use","id":"t1","name":"scroll","input":{}}}',
+              '{"type":"done","stopReason":"tool_use"}',
+            ])
+          )
+        )
+      )
+      vi.stubGlobal('fetch', fetchMock)
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'ok', durationMs: 1 })
+
+      const events = []
+      for await (const event of runAgentLoop(API, 'chat-1', 'Hi')) events.push(event)
+
+      expect(fetchMock).toHaveBeenCalledTimes(10)
+      expect(events.at(-1)).toEqual({ type: 'turn_limit_reached' })
+    })
+
+    it('reports a stream that ends without done or error as an unexpected stop', async () => {
+      vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(sse(['{"type":"content_delta","delta":"Half an ans"}'])))))
+
+      const events = []
+      for await (const event of runAgentLoop(API, 'chat-1', 'Hi')) events.push(event)
+
+      expect(events.at(-1)).toEqual({ type: 'error', error: 'The response stopped unexpectedly. Please try again.' })
+    })
+
+    it('does not start another turn when a tool turn was cut before done', async () => {
+      const fetchMock = vi.fn(() =>
+        Promise.resolve(
+          new Response(sse(['{"type":"tool_use","toolUse":{"type":"tool_use","id":"t1","name":"click","input":{}}}']))
+        )
+      )
+      vi.stubGlobal('fetch', fetchMock)
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'ok', durationMs: 1 })
+
+      const events = []
+      for await (const event of runAgentLoop(API, 'chat-1', 'Hi')) events.push(event)
+
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(events.at(-1)).toEqual({ type: 'error', error: 'The response stopped unexpectedly. Please try again.' })
+    })
+  })
+
   describe('Error Handling', () => {
     it('yields error event on stream error', async () => {
       const mockResponseText = `data: {"type":"error","error":"Something failed"}\n\n`
@@ -228,11 +310,7 @@ describe('runAgentLoop', () => {
 
     it('yields error event on HTTP error', async () => {
       global.fetch = vi.fn(() =>
-        Promise.resolve({
-          ok: false,
-          status: 500,
-          json: async () => ({ error: 'Server error' }),
-        } as any)
+        Promise.resolve(new Response(JSON.stringify({ error: 'Server error' }), { status: 500 }))
       )
 
       const events: any[] = []
@@ -243,7 +321,7 @@ describe('runAgentLoop', () => {
 
       const errorEvent = events.find((e) => e.type === 'error')
       expect(errorEvent).toBeDefined()
-      expect(errorEvent.error).toBeDefined()
+      expect(errorEvent.error).toBe('Server error')
     })
   })
 
@@ -409,6 +487,47 @@ describe('runAgentLoop', () => {
       )
     })
 
+    it('keeps code and a Retry-After countdown for a 409 BALANCE_HELD', async () => {
+      const body = JSON.stringify({
+        error: 'Your balance is held by another request. Try again in a few seconds.',
+        code: 'BALANCE_HELD',
+      })
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve(new Response(body, { status: 409, headers: { 'Retry-After': '5' } })))
+      )
+
+      const events = await collect()
+
+      expect(events).toContainEqual({
+        type: 'error',
+        error: 'Your balance is held by another request. Try again in a few seconds.',
+        code: 'BALANCE_HELD',
+        details: { retryAfter: 5 },
+      })
+    })
+
+    it('keeps the 402 hints that offer cheaper options', async () => {
+      const details = {
+        pricingUrl: '/pricing',
+        isContinuation: true,
+        suggestedModel: 'claude-haiku-4-5',
+        suggestDisableThinking: true,
+        canUpgrade: false,
+      }
+      const body = JSON.stringify({ error: 'Not enough credits for Opus.', code: 'INSUFFICIENT_BALANCE', details })
+      vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(body, { status: 402 }))))
+
+      const events = await collect()
+
+      expect(events).toContainEqual({
+        type: 'error',
+        error: 'Not enough credits for Opus.',
+        code: 'INSUFFICIENT_BALANCE',
+        details,
+      })
+    })
+
     it('keeps code and details for an error sent inside the stream', async () => {
       const line = JSON.stringify({
         type: 'error',
@@ -429,6 +548,65 @@ describe('runAgentLoop', () => {
     })
   })
 
+  describe('User-facing error texts', () => {
+    const API = 'http://localhost:3000'
+
+    const collect = async () => {
+      const events = []
+      for await (const event of runAgentLoop(API, 'chat-1', 'Hi')) events.push(event)
+      return events
+    }
+
+    it('explains a 413 without a JSON body as an image that is too large', async () => {
+      vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response('Request Entity Too Large', { status: 413 }))))
+
+      const events = await collect()
+
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: 'error', error: 'That image is too large to send. Try a smaller one.' })
+      )
+    })
+
+    it('explains a 5xx without a JSON body as the server not responding', async () => {
+      vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response('<html>Bad Gateway</html>', { status: 502 }))))
+
+      const events = await collect()
+
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: 'error', error: "Prophet's server didn't respond. Please try again." })
+      )
+    })
+
+    it('explains an OK response without a body as the server not responding', async () => {
+      vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(null, { status: 200 }))))
+
+      const events = await collect()
+
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: 'error', error: "Prophet's server didn't respond. Please try again." })
+      )
+    })
+
+    it('replaces a stream error without text by a generic retry message', async () => {
+      vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response('data: {"type":"error"}\n\n'))))
+
+      const events = await collect()
+
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: 'error', error: 'Something went wrong. Please try again.' })
+      )
+    })
+
+    it("shows the server's own error text when the body has one", async () => {
+      const body = JSON.stringify({ error: 'Please sign in again.', code: 'UNAUTHORIZED' })
+      vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(body, { status: 401 }))))
+
+      const events = await collect()
+
+      expect(events).toContainEqual(expect.objectContaining({ type: 'error', error: 'Please sign in again.' }))
+    })
+  })
+
   describe('Truncation', () => {
     const collectFrom = async (payload: string[]) => {
       const body = payload.map((line) => `data: ${line}\n\n`).join('')
@@ -445,7 +623,16 @@ describe('runAgentLoop', () => {
         '{"type":"done","stopReason":"max_tokens"}',
       ])
 
-      expect(events).toContainEqual({ type: 'output_truncated' })
+      expect(events).toContainEqual({ type: 'output_truncated', reducedForBalance: false })
+    })
+
+    it('says when the cut came from max_tokens being lowered for a low balance', async () => {
+      const events = await collectFrom([
+        '{"type":"content_delta","delta":"The answer is"}',
+        '{"type":"done","stopReason":"max_tokens","maxTokensReducedForBalance":true}',
+      ])
+
+      expect(events).toContainEqual({ type: 'output_truncated', reducedForBalance: true })
     })
 
     it('does not flag a normal end_turn answer', async () => {

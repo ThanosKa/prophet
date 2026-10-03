@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react'
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import { useChatStore } from '@/store/chatStore'
 import { useUIStore } from '@/store/uiStore'
 import { useAgentStore } from '@/store/agentStore'
@@ -7,6 +7,7 @@ import { runAgentLoop } from '@/lib/agent'
 import { config } from '@/lib/config'
 import { chatAdapter } from '@/lib/agent/chat-adapter'
 import { mockAgentStream } from '@/lib/agent/mock-agent'
+import { USER_FACING_TEXT, describeThrownError, parseErrorDetails, type ErrorInfo } from '@/lib/user-facing-errors'
 import type { Message, ImageData, AgentStatus, ToolCall } from '@prophet/shared'
 
 export interface AgentMessage extends Message {
@@ -18,9 +19,10 @@ export function useAgentChat() {
   const { selectedModel, addContextUsage, enableThinking } = useUIStore()
   const { createAbortController, abort: abortAgentStore, setActive, clearActions } = useAgentStore()
   const [error, setError] = useState<string | null>(null)
-  const [errorInfo, setErrorInfo] = useState<{ code?: string; pricingUrl?: string } | null>(null)
+  const [errorInfo, setErrorInfo] = useState<ErrorInfo | null>(null)
   const [retryAfter, setRetryAfter] = useState<number | null>(null)
   const [remaining, setRemaining] = useState<number | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [status, setStatus] = useState<AgentStatus>('idle')
   const [currentToolCall, setCurrentToolCall] = useState<ToolCall | null>(null) // Legacy support for ChatView
   // Each sendMessage owns its run. Shared state (streaming flag, overlay) may only be torn down by the
@@ -33,6 +35,30 @@ export function useAgentChat() {
   } | null>(null)
 
   const adapter = useMemo(() => chatAdapter, [])
+
+  const clearBanner = useCallback(() => {
+    setError(null)
+    setErrorInfo(null)
+    setRetryAfter(null)
+    setRemaining(null)
+    setNotice(null)
+  }, [])
+
+  const showError = useCallback(
+    (message: string) => {
+      clearBanner()
+      setError(message)
+    },
+    [clearBanner]
+  )
+
+  useEffect(
+    () =>
+      useChatStore.subscribe((state, prev) => {
+        if (state.activeChatId !== prev.activeChatId) clearBanner()
+      }),
+    [clearBanner]
+  )
 
   const cleanupOverlayListeners = useCallback(() => {
     const listeners = overlayListenersRef.current
@@ -64,10 +90,7 @@ export function useAgentChat() {
       const { signal } = run
 
       try {
-        setError(null)
-        setErrorInfo(null)
-        setRetryAfter(null)
-        setRemaining(null)
+        clearBanner()
         setStatus('submitted')
         setStreaming(true)
         setCurrentToolCall(null)
@@ -158,8 +181,12 @@ export function useAgentChat() {
 
           if (event.type === 'output_truncated') {
             truncated = true
-            setError('This response was cut off because it reached the maximum length. Ask to continue for the rest.')
-            setErrorInfo({ code: 'OUTPUT_TRUNCATED' })
+            setNotice(event.reducedForBalance ? USER_FACING_TEXT.truncatedLowBalance : USER_FACING_TEXT.truncated)
+            continue
+          }
+
+          if (event.type === 'turn_limit_reached') {
+            setNotice(USER_FACING_TEXT.turnLimit)
             continue
           }
 
@@ -209,17 +236,21 @@ export function useAgentChat() {
           // Handle errors
           if (event.type === 'error') {
             sawError = true
+            const details = parseErrorDetails(event.details)
             setStatus('error')
-            setError(event.error || 'Agent execution failed')
+            setError(event.error || USER_FACING_TEXT.generic)
             setErrorInfo({
               code: event.code,
-              pricingUrl: event.details?.pricingUrl,
+              pricingUrl: details?.pricingUrl,
+              suggestedModel: details?.suggestedModel,
+              suggestDisableThinking: details?.suggestDisableThinking,
+              canUpgrade: details?.canUpgrade,
             })
-            if (event.details && 'retryAfter' in event.details && event.details.retryAfter !== undefined) {
-              setRetryAfter(event.details.retryAfter)
+            if (details?.retryAfter !== undefined) {
+              setRetryAfter(details.retryAfter)
             }
-            if (event.details && 'remaining' in event.details && event.details.remaining !== undefined) {
-              setRemaining(event.details.remaining)
+            if (details?.remaining !== undefined) {
+              setRemaining(details.remaining)
             }
           }
         }
@@ -229,8 +260,9 @@ export function useAgentChat() {
         }
       } catch (err) {
         if (!signal.aborted) {
+          console.error('[useAgentChat] Agent run failed:', err)
           setStatus('error')
-          setError(err instanceof Error ? err.message : 'Agent error')
+          setError(describeThrownError(err))
         }
       } finally {
         if (activeRunRef.current === run) {
@@ -269,6 +301,7 @@ export function useAgentChat() {
       cleanupOverlayListeners,
       sendAgentActiveToTab,
       enableThinking,
+      clearBanner,
     ]
   )
 
@@ -286,7 +319,10 @@ export function useAgentChat() {
     abort,
     error,
     setError,
+    showError,
     errorInfo,
+    notice,
+    setNotice,
     retryAfter,
     remaining,
     currentToolCall,

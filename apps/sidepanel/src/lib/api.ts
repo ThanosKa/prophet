@@ -1,4 +1,5 @@
 import { config } from './config'
+import { describeHttpFailure, describeThrownError, parseErrorBody } from './user-facing-errors'
 import type { ApiResponse, Chat, User, PaginatedMessages } from '@prophet/shared'
 
 class ApiClient {
@@ -40,9 +41,10 @@ class ApiClient {
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
+        const errorData = parseErrorBody(await response.json().catch(() => ({})))
+        if (!errorData.error) console.error(`[API] ${endpoint} failed with HTTP ${response.status}`)
         return {
-          error: errorData.error || `HTTP ${response.status}`,
+          error: describeHttpFailure({ status: response.status, body: errorData }),
           code: errorData.code || 'HTTP_ERROR',
         }
       }
@@ -50,8 +52,9 @@ class ApiClient {
       const data = await response.json()
       return data
     } catch (err) {
+      console.error(`[API] ${endpoint} request failed:`, err)
       return {
-        error: err instanceof Error ? err.message : 'Request failed',
+        error: describeThrownError(err),
         code: 'NETWORK_ERROR',
       }
     }

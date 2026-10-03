@@ -15,6 +15,7 @@ import { SignInButton } from '@/components/auth/SignInButton'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { apiClient } from '@/lib/api'
+import { describeThrownError } from '@/lib/user-facing-errors'
 
 interface ImageData {
   base64: string
@@ -28,7 +29,19 @@ export default function App() {
   const { activeChatId, setActiveChatId, isStreaming, messages: messagesByChat } = useChatStore()
   const { resetContextTokens, setContextUsage, theme } = useUIStore()
   const { isLoading: messagesLoading, loadOlder, hasMore, isLoadingOlder } = useMessages(activeChatId)
-  const { sendMessage, abort, currentToolCall, error, setError, errorInfo, retryAfter, remaining } = useAgentChat()
+  const {
+    sendMessage,
+    abort,
+    currentToolCall,
+    error,
+    setError,
+    showError,
+    errorInfo,
+    retryAfter,
+    remaining,
+    notice,
+    setNotice,
+  } = useAgentChat()
 
   useEffect(() => {
     const handleStatusUpdate = (message: { type: string; status: string }) => {
@@ -123,18 +136,24 @@ export default function App() {
     }
   }
 
-  const handleSendMessage = async (content: string, image?: ImageData) => {
-    if (!activeChatId || activeChatId.startsWith('draft-')) {
-      const chat = await createChatAsync('New Chat')
-      if (chat) {
-        setActiveChatId(chat.id)
-        await sendMessage(chat.id, content, image)
-        await triggerAutoTitle(chat.id)
+  // Resolves false when nothing was sent, so the input keeps the user's draft.
+  const handleSendMessage = async (content: string, image?: ImageData): Promise<boolean> => {
+    let chatId = activeChatId
+    if (!chatId || chatId.startsWith('draft-')) {
+      try {
+        const chat = await createChatAsync('New Chat')
+        chatId = chat.id
+        setActiveChatId(chatId)
+      } catch (err) {
+        console.error('Failed to create chat:', err)
+        showError(describeThrownError(err))
+        return false
       }
-    } else {
-      await sendMessage(activeChatId, content, image)
-      await triggerAutoTitle(activeChatId)
     }
+
+    const sentChatId = chatId
+    void sendMessage(sentChatId, content, image).then(() => triggerAutoTitle(sentChatId))
+    return true
   }
 
   const triggerAutoTitle = async (chatId: string) => {
@@ -229,12 +248,21 @@ export default function App() {
           errorInfo={errorInfo}
           retryAfter={retryAfter}
           remaining={remaining}
+          notice={notice}
           onDismissError={() => setError(null)}
+          onDismissNotice={() => setNotice(null)}
         />
       ) : (
         <WelcomeScreen
           onSend={handleSendMessage}
           disabled={isStreaming}
+          error={error}
+          errorInfo={errorInfo}
+          retryAfter={retryAfter}
+          remaining={remaining}
+          notice={notice}
+          onDismissError={() => setError(null)}
+          onDismissNotice={() => setNotice(null)}
         />
       )}
     </AppShell>
