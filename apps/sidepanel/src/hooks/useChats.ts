@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { useMutation, useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { useChatStore } from '@/store/chatStore'
 import { apiClient } from '@/lib/api'
+import { USER_FACING_TEXT, UserFacingError } from '@/lib/user-facing-errors'
 
 export function useChats() {
   const queryClient = useQueryClient()
@@ -61,6 +62,7 @@ export function useChats() {
 
   const createChatAsync = async (title: string) => {
     const response = await createMutation.mutateAsync(title)
+    if (!response.data) throw new UserFacingError(response.error || USER_FACING_TEXT.generic)
     return response.data
   }
 

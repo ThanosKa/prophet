@@ -1,16 +1,12 @@
-import { EnhancedChatInput } from './EnhancedChatInput'
+import { EnhancedChatInput, type OnSend } from './EnhancedChatInput'
+import { ChatBanner, type ChatBannerProps } from './ChatBanner'
 
-interface ImageData {
-  base64: string
-  mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
-}
-
-interface WelcomeScreenProps {
-  onSend: (message: string, image?: ImageData) => void
+interface WelcomeScreenProps extends ChatBannerProps {
+  onSend: OnSend
   disabled?: boolean
 }
 
-export function WelcomeScreen({ onSend, disabled }: WelcomeScreenProps) {
+export function WelcomeScreen({ onSend, disabled, ...bannerProps }: WelcomeScreenProps) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 flex items-center justify-center">
@@ -21,6 +17,7 @@ export function WelcomeScreen({ onSend, disabled }: WelcomeScreenProps) {
         </div>
       </div>
 
+      <ChatBanner {...bannerProps} />
       <EnhancedChatInput onSend={onSend} disabled={disabled} />
     </div>
   )
