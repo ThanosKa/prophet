@@ -9,6 +9,7 @@ import {
   WEB_SEARCH_PRICE_PER_1K_USD,
   WEB_SEARCH_PRICE_PER_SEARCH_USD,
   calculateWebSearchCostInCredits,
+  calculateUsageCostInCredits,
   type ModelName,
 } from './pricing'
 import { CLAUDE_MODELS, LEGACY_MODEL_ALIASES, resolveAgentModel } from '@prophet/shared'
@@ -206,9 +207,9 @@ describe('calculateCostInCents (legacy alias)', () => {
 
 describe('Model Pricing Table', () => {
   it('prices the current Claude models at published rates', () => {
-    expect(MODEL_PRICING['claude-haiku-4-5']).toEqual({ input: 1.0, output: 5.0 })
-    expect(MODEL_PRICING['claude-sonnet-5-5']).toEqual({ input: 2.0, output: 10.0 })
-    expect(MODEL_PRICING['claude-opus-5-5']).toEqual({ input: 4.0, output: 20.0 })
+    expect(MODEL_PRICING['claude-haiku-4-5']).toEqual({ input: 1.0, output: 5.0, cacheWrite: 1.25, cacheRead: 0.1 })
+    expect(MODEL_PRICING['claude-sonnet-5-5']).toEqual({ input: 2.0, output: 10.0, cacheWrite: 2.5, cacheRead: 0.2 })
+    expect(MODEL_PRICING['claude-opus-5-5']).toEqual({ input: 4.0, output: 20.0, cacheWrite: 5.0, cacheRead: 0.2 })
   })
 
   it('ALL_MODELS matches the shared model constants', () => {
@@ -307,5 +308,65 @@ describe('Web Search Cost Accounting', () => {
     expect(calculateCostInCents('claude-opus-5-5', 1000, 500, 3)).toBe(
       calculateCostInCredits('claude-opus-5-5', 1000, 500, 3)
     )
+  })
+})
+
+describe('calculateUsageCostInCredits (prompt-cache-aware billing)', () => {
+  const noUsage = {
+    inputTokens: 0,
+    cacheCreationInputTokens: 0,
+    cacheReadInputTokens: 0,
+    outputTokens: 0,
+  }
+
+  it('charges Opus 5.5 cache reads at $0.20/MTok, not the base input rate', () => {
+    // 1M x $0.20 = $0.20 -> x1.2 = 24 credits
+    expect(
+      calculateUsageCostInCredits('claude-opus-5-5', { ...noUsage, cacheReadInputTokens: 1_000_000 })
+    ).toBe(24)
+  })
+
+  it('charges Sonnet 5.5 cache reads at $0.20/MTok (0.1x input)', () => {
+    expect(
+      calculateUsageCostInCredits('claude-sonnet-5-5', { ...noUsage, cacheReadInputTokens: 1_000_000 })
+    ).toBe(24)
+  })
+
+  it('charges Haiku 4.5 cache reads at $0.10/MTok (0.1x input)', () => {
+    // 1M x $0.10 = $0.10 -> x1.2 = 12 credits
+    expect(
+      calculateUsageCostInCredits('claude-haiku-4-5', { ...noUsage, cacheReadInputTokens: 1_000_000 })
+    ).toBe(12)
+  })
+
+  it('charges 5-minute cache writes at 1.25x input: Haiku $1.25, Sonnet $2.50, Opus $5.00 per MTok', () => {
+    const write = { ...noUsage, cacheCreationInputTokens: 1_000_000 }
+    expect(calculateUsageCostInCredits('claude-haiku-4-5', write)).toBe(150)
+    expect(calculateUsageCostInCredits('claude-sonnet-5-5', write)).toBe(300)
+    expect(calculateUsageCostInCredits('claude-opus-5-5', write)).toBe(600)
+  })
+
+  const cachedAgentTurn = {
+    inputTokens: 1_000,
+    cacheCreationInputTokens: 2_000,
+    cacheReadInputTokens: 100_000,
+    outputTokens: 500,
+  }
+
+  it('bills every input bucket plus output on Sonnet 5.5', () => {
+    // $0.002 input + $0.005 write + $0.02 read + $0.005 output = $0.032 -> x1.2 = 3.84 -> 4
+    expect(calculateUsageCostInCredits('claude-sonnet-5-5', cachedAgentTurn)).toBe(4)
+  })
+
+  it('bills every input bucket plus output on Opus 5.5', () => {
+    // $0.004 input + $0.01 write + $0.02 read + $0.01 output = $0.044 -> x1.2 = 5.28 -> 6
+    expect(calculateUsageCostInCredits('claude-opus-5-5', cachedAgentTurn)).toBe(6)
+  })
+
+  it('adds the per-search fee on top of cached tokens', () => {
+    // $0.044 tokens + 2 x $0.01 searches = $0.064 -> x1.2 = 7.68 -> 8
+    expect(
+      calculateUsageCostInCredits('claude-opus-5-5', { ...cachedAgentTurn, webSearchRequests: 2 })
+    ).toBe(8)
   })
 })
