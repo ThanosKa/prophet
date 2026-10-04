@@ -61,7 +61,9 @@ messages {
 usageRecords {
   id: uuid
   userId: string          // FK → users.id (cascade delete)
-  inputTokens: number
+  inputTokens: number     // Uncached input only (Anthropic `input_tokens`)
+  cacheCreationInputTokens: number  // Prompt-cache writes (billed 1.25x input)
+  cacheReadInputTokens: number      // Prompt-cache reads (0.1x input, 0.05x on Opus 5.5)
   outputTokens: number
   costCents: number       // Actual API cost in cents
   model: string

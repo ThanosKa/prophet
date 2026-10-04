@@ -40,26 +40,42 @@ const model = resolveAgentModel(requestedModel)
 const stream = await anthropic.messages.stream({
   model,
   max_tokens: 4096,
-  messages: [...],
+  // Automatic caching: the breakpoint follows the newest block on every request.
+  cache_control: { type: 'ephemeral' },
+  // Explicit breakpoint on the static prefix (tools + system), shared by every chat.
+  system: [{ type: 'text', text: AGENT_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
   tools: buildAgentTools(AGENT_TOOLS, enableWebSearch),
+  // DB history + the run's opening message + every earlier turn of the run, append-only
+  messages: buildAgentMessages({ history, userMessage, image, runTurns }),
 })
 
 const finalMessage = await stream.finalMessage()
-const webSearchRequests = finalMessage.usage.server_tool_use?.web_search_requests ?? 0
+const { usage } = finalMessage
 
-const costCents = calculateCostInCents(
-  model,
-  finalMessage.usage.input_tokens,
-  finalMessage.usage.output_tokens,
-  webSearchRequests,
-)
+// `input_tokens` is only the uncached remainder; cache writes and reads are billed
+// separately (writes 1.25x input, reads 0.1x, 0.05x on Opus 5.5).
+const costCents = calculateUsageCostInCredits(model, {
+  inputTokens: usage.input_tokens,
+  cacheCreationInputTokens: usage.cache_creation_input_tokens ?? 0,
+  cacheReadInputTokens: usage.cache_read_input_tokens ?? 0,
+  outputTokens: usage.output_tokens,
+  webSearchRequests: usage.server_tool_use?.web_search_requests ?? 0,
+})
 
 await db.transaction(async tx => {
   await tx.update(users)
     .set({ creditsRemaining: sql`${users.creditsRemaining} - ${costCents}` })
     .where(eq(users.id, userId))
 
-  await tx.insert(usageRecords).values({ userId, costCents, model })
+  await tx.insert(usageRecords).values({
+    userId,
+    inputTokens: usage.input_tokens,
+    cacheCreationInputTokens: usage.cache_creation_input_tokens ?? 0,
+    cacheReadInputTokens: usage.cache_read_input_tokens ?? 0,
+    outputTokens: usage.output_tokens,
+    costCents,
+    model,
+  })
 })
 
 return new Response(stream.toReadableStream(), {
@@ -72,9 +88,41 @@ return new Response(stream.toReadableStream(), {
 - Use `anthropic.messages.stream()` for streaming responses
 - Await `finalMessage()` for authoritative usage, including `server_tool_use.web_search_requests`
 - Resolve legacy model IDs before the call and bill from the model actually invoked
+- Bill all three input buckets with `calculateUsageCostInCredits`; the prompt's size is `input_tokens + cache_creation_input_tokens + cache_read_input_tokens`, which is what context displays must show
 - Deduct credits in a database transaction
 - Return stream with proper Content-Type header
 - Never expose `ANTHROPIC_API_KEY` to client
+
+### Prompt Caching
+
+Caching is a prefix match over `tools` -> `system` -> `messages`; any changed byte
+invalidates everything after it. The agent route uses two of the four breakpoints:
+
+| Breakpoint | Covers | Why |
+| --- | --- | --- |
+| `cache_control` on the system block | 18 tools + system prompt (~3k tokens) | Identical for every user and chat, so it is a guaranteed read point that survives anything later in `messages` |
+| Top-level `cache_control` (automatic) | The whole conversation so far | Moves to the newest block each request, so turn N+1 reads what turn N wrote |
+
+Rules that keep it hitting:
+
+- **Append-only runs.** The extension resends every earlier turn of the run as
+  `previousTurns` (the server's `contentBlocks` from each `done` event, unchanged),
+  plus the run's image. Never trim, reorder or rewrite an earlier turn.
+- **Replay thinking blocks.** They are part of the prefix and are signature-checked by
+  the API; dropping or editing them breaks the cache and, on Sonnet 5.5 / Opus 5.5,
+  the preserved-thinking check.
+- **Same settings for the whole run.** The same `enableThinking` on every request, so
+  `thinking` and `output_config.effort` never change mid-run. Tool order is a fixed
+  array; web search is a server-wide flag. No timestamps or IDs in the system prompt.
+- **Minimums.** Opus 5.5 and Sonnet 5.5 cache prefixes from 512 tokens; Haiku 4.5
+  needs 4,096, so on Haiku the tools + system breakpoint alone never caches and
+  savings start once the conversation passes that size. Don't pad the prompt.
+- **Verify** with `usage.cache_read_input_tokens` (persisted on `usage_records`); in a
+  healthy run it grows every turn while `cache_creation_input_tokens` stays near the
+  size of the last turn.
+- Credit reservations deliberately ignore caching and price the whole estimated prompt
+  as uncached input. The estimator over-counts ASCII text ~1.75-2x, which covers the
+  1.25x cache-write premium; a turn that settles above its hold is logged.
 
 ### Model IDs and Legacy Aliases
 
