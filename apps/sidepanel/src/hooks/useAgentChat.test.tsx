@@ -24,6 +24,7 @@ const { runAgentLoop } = await import('@/lib/agent')
 const { useAgentChat } = await import('./useAgentChat')
 const { useChatStore } = await import('@/store/chatStore')
 const { useAgentStore } = await import('@/store/agentStore')
+const { useUIStore } = await import('@/store/uiStore')
 
 function deferred() {
   let resolve = () => {}
@@ -176,6 +177,37 @@ describe('useAgentChat run isolation', () => {
     expect(current().notice).toBe(
       'This answer was cut short because your balance is low. Buy credits or switch to Haiku 4.5 for full-length answers.'
     )
+  })
+
+  it("shows the latest request's whole prompt as the chat context, not the sum of every turn", async () => {
+    useUIStore.getState().resetContextTokens()
+    const runs = scriptRuns([
+      {
+        before: [
+          {
+            type: 'metrics_update',
+            metrics: { inputTokens: 40_000, cacheReadInputTokens: 36_000, outputTokens: 300 },
+          },
+          {
+            type: 'metrics_update',
+            metrics: { inputTokens: 45_000, cacheReadInputTokens: 40_000, outputTokens: 200 },
+          },
+        ],
+        after: [{ type: 'done' }],
+      },
+    ])
+
+    await act(async () => {
+      void current().sendMessage('chat-1', 'hi')
+    })
+    await act(async () => runs[0].release())
+
+    expect(useUIStore.getState()).toMatchObject({
+      contextTokens: 45_200,
+      contextInputTokens: 45_000,
+      contextCachedInputTokens: 40_000,
+      contextOutputTokens: 200,
+    })
   })
 
   it('shows a neutral notice when the run pauses at the step cap', async () => {

@@ -29,6 +29,7 @@ export interface MockAgentEvent {
   }
   metrics?: {
     inputTokens: number
+    cacheReadInputTokens?: number
     outputTokens: number
     costCents: number
   }
