@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { executeToolViaBackground } from "./background-bridge";
-import { DEFAULT_AGENT_MODEL } from "@prophet/shared";
+import { DEFAULT_AGENT_MODEL, MAX_AGENT_TURNS } from "@prophet/shared";
 import {
   USER_FACING_TEXT,
   describeHttpFailure,
@@ -15,6 +15,7 @@ import type {
   ContentBlock,
   ImageData,
   AgentLoopEvent,
+  AgentTurn,
   ToolName,
 } from "@prophet/shared";
 
@@ -22,8 +23,7 @@ interface StreamAgentChatOptions {
   chatId: string;
   model: AgentModel;
   userMessage?: string;
-  toolResults?: ToolResult[];
-  previousContent?: ContentBlock[];
+  previousTurns?: AgentTurn[];
   image?: ImageData;
   enableThinking?: boolean;
 }
@@ -75,8 +75,7 @@ async function* streamAgentChat({
   /*
   console.log(`[Turn Debug] Sending Turn Request for ${options.chatId}:`, {
     hasUserMessage: !!options.userMessage,
-    toolResultsCount: options.toolResults?.length || 0,
-    previousContentCount: options.previousContent?.length || 0,
+    previousTurnsCount: options.previousTurns?.length || 0,
     payload: sanitizeForLog(options)
   });
   */
@@ -209,11 +208,13 @@ export async function* runAgentLoop(
   signal?: AbortSignal,
   enableThinking?: boolean
 ): AsyncGenerator<AgentRunEvent> {
-  let previousContent: ContentBlock[] = [];
+  // Append-only: each request resends the previous one's turns unchanged, so the
+  // server's prompt cache hits and the model keeps every earlier tool observation.
+  const previousTurns: AgentTurn[] = [];
   let turnCount = 0;
   let toolResults: ToolResult[] = [];
   let isFirstRequest = true;
-  const maxTurns = 10;
+  const maxTurns = MAX_AGENT_TURNS;
 
   // Track tool calls to detect repetitive patterns (like Manus does)
   const toolCallHistory: Array<{ name: string; inputHash: string }> = [];
@@ -225,28 +226,25 @@ export async function* runAgentLoop(
     }
 
     turnCount++;
+    // The server rebuilds the run's opening message from the DB, which keeps only its
+    // text, so the image goes with every request to keep that message unchanged.
     const streamOptions: StreamAgentChatOptions = {
       chatId,
       model,
       enableThinking,
+      ...(image && { image }),
     };
 
     if (isFirstRequest) {
       streamOptions.userMessage = userMessage;
-      if (image) {
-        streamOptions.image = image;
-      }
       isFirstRequest = false;
     } else {
-      streamOptions.previousContent = previousContent;
-      streamOptions.toolResults = toolResults;
-      // Disable thinking on continuation turns - Claude's API requires thinking blocks
-      // to be included in previousContent, but we only have text/tool_use blocks
-      streamOptions.enableThinking = false;
+      streamOptions.previousTurns = [...previousTurns];
     }
 
     let hasToolUse = false;
     let sawDone = false;
+    let serverContent: ContentBlock[] | undefined;
     toolResults = []; // Reset for the CURRENT turn only
     const assistantContent: ContentBlock[] = [];
     let turnTextContent = ""; // Text content for this turn only
@@ -418,6 +416,9 @@ export async function* runAgentLoop(
 
         case "done":
           sawDone = true;
+          if (event.contentBlocks && event.contentBlocks.length > 0) {
+            serverContent = event.contentBlocks;
+          }
           if (!hasToolUse) {
             if (event.stopReason === "max_tokens") {
               yield {
@@ -467,8 +468,9 @@ export async function* runAgentLoop(
       });
     }
 
-    previousContent = assistantContent;
-    // toolResults is already populated from the loop above
+    // The server's blocks are authoritative: they carry the signed thinking a
+    // tool-use turn must replay. Fall back to the streamed blocks if none came.
+    previousTurns.push({ content: serverContent ?? assistantContent, toolResults });
   }
 
   yield { type: "turn_limit_reached" };
