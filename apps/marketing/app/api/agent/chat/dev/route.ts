@@ -244,6 +244,10 @@ export async function POST(req: Request) {
 
           const finalMessage = await anthropicStream.finalMessage()
           const stopReason = finalMessage.stop_reason
+          inputTokens = finalMessage.usage.input_tokens
+          cacheCreationInputTokens = finalMessage.usage.cache_creation_input_tokens ?? 0
+          cacheReadInputTokens = finalMessage.usage.cache_read_input_tokens ?? 0
+          outputTokens = finalMessage.usage.output_tokens
           const webSearchRequests =
             finalMessage.usage.server_tool_use?.web_search_requests ?? 0
 

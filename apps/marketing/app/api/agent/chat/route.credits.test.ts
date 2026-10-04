@@ -409,6 +409,37 @@ describe('prompt-cache billing in POST /api/agent/chat', () => {
     })
   })
 
+  it('bills the final usage when server-tool iterations grew the prompt after message_start', async () => {
+    await seedUser({ credits: 1000 })
+    vi.mocked(anthropic.messages.stream).mockReturnValue({
+      [Symbol.asyncIterator]: async function* () {
+        yield { type: 'message_start', message: { usage: { ...CACHED_USAGE, output_tokens: 1 } } }
+        yield { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }
+        yield { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Done.' } }
+        yield { type: 'content_block_stop', index: 0 }
+        yield { type: 'message_delta', delta: { stop_reason: 'end_turn' }, usage: { output_tokens: 500 } }
+      },
+      finalMessage: () =>
+        Promise.resolve({
+          stop_reason: 'end_turn',
+          content: [{ type: 'text', text: 'Done.' }],
+          usage: {
+            ...CACHED_USAGE,
+            input_tokens: 6_000,
+            output_tokens: 500,
+            server_tool_use: { web_search_requests: 1 },
+          },
+        }),
+    } as never)
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    await response.text()
+
+    // 6,000 x $4 + 2,000 x $5 + 100,000 x $0.20 + 500 x $20 + 1 search x $0.01
+    // = $0.074 -> x1.2 = 8.88 -> 9 credits
+    expect(await balance()).toBe(991)
+  })
+
   it('a disconnect mid-stream still bills the cache writes and reads already reported', async () => {
     await seedUser({ credits: 1000 })
     turnThatHangsAfterStreaming(CACHED_USAGE)
