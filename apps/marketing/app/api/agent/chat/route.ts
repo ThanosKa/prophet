@@ -35,9 +35,10 @@ import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
 import { error, INTERNAL_ERROR_MESSAGE, SESSION_EXPIRED_MESSAGE } from "@/types";
 import { logger } from "@/lib/logger";
 import {
-  calculateCostInCents,
+  calculateUsageCostInCredits,
   calculateWebSearchCostInCredits,
   type ModelName,
+  type TokenUsage,
 } from "@/lib/pricing";
 import { devLogger } from "@/lib/dev-logger";
 import type {
@@ -400,10 +401,29 @@ export async function POST(req: Request) {
         let fullTextResponse = "";
         let streamedOutput = "";
         let inputTokens = 0;
+        let cacheCreationInputTokens = 0;
+        let cacheReadInputTokens = 0;
         let outputTokens = 0;
         let webSearchesStarted = 0;
         let usageReported = false;
         let settled = false;
+
+        const turnUsage = (webSearchRequests: number): TokenUsage => ({
+          inputTokens,
+          cacheCreationInputTokens,
+          cacheReadInputTokens,
+          outputTokens,
+          webSearchRequests,
+        });
+        // The extension shows `inputTokens` as context size, so it carries the whole
+        // prompt; Anthropic's own `input_tokens` is only the uncached remainder.
+        const reportedUsage = (costCents: number) => ({
+          inputTokens: inputTokens + cacheCreationInputTokens + cacheReadInputTokens,
+          cacheCreationInputTokens,
+          cacheReadInputTokens,
+          outputTokens,
+          costCents,
+        });
 
         // Runs on every path that did not reach the billing transaction. Before
         // message_start nothing was billed upstream, so the hold goes back in full.
@@ -414,7 +434,7 @@ export async function POST(req: Request) {
           const actualCents = usageReported
             ? Math.min(
                 reserveCents,
-                calculateCostInCents(model, inputTokens, outputTokens, webSearchesStarted)
+                calculateUsageCostInCredits(model, turnUsage(webSearchesStarted))
               )
             : 0;
           try {
@@ -424,6 +444,8 @@ export async function POST(req: Request) {
                 await tx.insert(usageRecords).values({
                   userId,
                   inputTokens,
+                  cacheCreationInputTokens,
+                  cacheReadInputTokens,
                   outputTokens,
                   costCents: actualCents,
                   model,
@@ -483,6 +505,8 @@ export async function POST(req: Request) {
           for await (const event of anthropicStream) {
             if (event.type === "message_start") {
               inputTokens = event.message.usage.input_tokens;
+              cacheCreationInputTokens = event.message.usage.cache_creation_input_tokens ?? 0;
+              cacheReadInputTokens = event.message.usage.cache_read_input_tokens ?? 0;
               usageReported = true;
             } else if (event.type === "content_block_start") {
               if (event.content_block.type === "tool_use") {
@@ -591,11 +615,9 @@ export async function POST(req: Request) {
                 outputTokens = event.usage.output_tokens;
                 const metricsData = JSON.stringify({
                   type: "metrics_update",
-                  metrics: {
-                    inputTokens,
-                    outputTokens,
-                    costCents: calculateCostInCents(model, inputTokens, outputTokens),
-                  },
+                  metrics: reportedUsage(
+                    calculateUsageCostInCredits(model, turnUsage(webSearchesStarted))
+                  ),
                 });
                 send(metricsData);
               }
@@ -604,8 +626,6 @@ export async function POST(req: Request) {
 
           const finalMessage = await anthropicStream.finalMessage();
           const stopReason = finalMessage.stop_reason;
-          const cacheReadTokens = finalMessage.usage.cache_read_input_tokens || 0;
-          const cacheCreationTokens = finalMessage.usage.cache_creation_input_tokens || 0;
           const webSearchRequests =
             finalMessage.usage.server_tool_use?.web_search_requests ?? 0;
 
@@ -614,12 +634,7 @@ export async function POST(req: Request) {
           const contentBlocks = toEchoableContent(finalMessage.content);
           const citations = extractCitations(finalMessage.content);
 
-          const costCents = calculateCostInCents(
-            model,
-            inputTokens,
-            outputTokens,
-            webSearchRequests
-          );
+          const costCents = calculateUsageCostInCredits(model, turnUsage(webSearchRequests));
           const webSearchCostCents =
             calculateWebSearchCostInCredits(webSearchRequests);
 
@@ -670,6 +685,8 @@ export async function POST(req: Request) {
             await tx.insert(usageRecords).values({
               userId,
               inputTokens,
+              cacheCreationInputTokens,
+              cacheReadInputTokens,
               outputTokens,
               costCents,
               model,
@@ -677,13 +694,15 @@ export async function POST(req: Request) {
 
             // Update context tokens on final turn only
             if (isFinalTurn) {
-              const newContextTokens = Math.min(inputTokens + outputTokens, MAX_CONTEXT_TOKENS);
+              const promptTokens = inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
+              const newContextTokens = Math.min(promptTokens + outputTokens, MAX_CONTEXT_TOKENS);
               await tx
                 .update(chats)
                 .set({
                   contextTokens: newContextTokens,
-                  contextInputTokens: inputTokens,
+                  contextInputTokens: promptTokens,
                   contextOutputTokens: outputTokens,
+                  contextCachedInputTokens: cacheReadInputTokens,
                   updatedAt: new Date(),
                 })
                 .where(eq(chats.id, chatId));
@@ -707,8 +726,8 @@ export async function POST(req: Request) {
               costCents,
               inputTokens,
               outputTokens,
-              cacheReadTokens,
-              cacheCreationTokens,
+              cacheReadInputTokens,
+              cacheCreationInputTokens,
               webSearchRequests,
               webSearchCostCents,
               stopReason,
@@ -720,8 +739,8 @@ export async function POST(req: Request) {
           await devLogger.logResponse(fullTextResponse, {
             input_tokens: inputTokens,
             output_tokens: outputTokens,
-            cache_read_input_tokens: cacheReadTokens,
-            cache_creation_input_tokens: cacheCreationTokens,
+            cache_read_input_tokens: cacheReadInputTokens,
+            cache_creation_input_tokens: cacheCreationInputTokens,
           });
 
           if (citations.length > 0) {
@@ -737,9 +756,7 @@ export async function POST(req: Request) {
             stopReason,
             finalOutput: fullTextResponse,
             metrics: {
-              inputTokens,
-              outputTokens,
-              costCents,
+              ...reportedUsage(costCents),
               webSearchRequests,
               webSearchCostCents,
             },
@@ -750,9 +767,7 @@ export async function POST(req: Request) {
             type: "done",
             stopReason,
             usage: {
-              inputTokens,
-              outputTokens,
-              costCents,
+              ...reportedUsage(costCents),
               webSearchRequests,
               webSearchCostCents,
             },
