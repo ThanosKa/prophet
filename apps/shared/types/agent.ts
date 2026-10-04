@@ -26,7 +26,10 @@ export interface ToolDefinition {
 }
 
 export interface AgentMetrics {
+  // Whole prompt: uncached input plus cache writes and cache reads.
   inputTokens: number;
+  cacheCreationInputTokens?: number;
+  cacheReadInputTokens?: number;
   outputTokens: number;
   costCents?: number;
   durationMs?: number;
@@ -60,6 +63,8 @@ export type AgentLoopEvent =
       type: "done";
       usage?: {
         inputTokens: number;
+        cacheCreationInputTokens?: number;
+        cacheReadInputTokens?: number;
         outputTokens: number;
         costCents?: number;
         webSearchRequests?: number;
@@ -105,6 +110,8 @@ export interface AgentStreamEvent {
   stopReason?: string | null;
   usage?: {
     inputTokens: number;
+    cacheCreationInputTokens?: number;
+    cacheReadInputTokens?: number;
     outputTokens: number;
     costCents?: number;
     webSearchRequests?: number;

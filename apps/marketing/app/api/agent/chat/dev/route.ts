@@ -14,8 +14,8 @@ import {
 } from '@prophet/shared'
 import { error, INTERNAL_ERROR_MESSAGE } from '@/types'
 import { logger } from '@/lib/logger'
-import { calculateCostInCents, type ModelName } from '@/lib/pricing'
-import type { MessageParam, ContentBlockParam } from '@anthropic-ai/sdk/resources/messages'
+import { calculateUsageCostInCredits, type ModelName, type TokenUsage } from '@/lib/pricing'
+import { buildAgentMessages, resolveRunTurns } from '@/lib/agent/conversation'
 import { devLogger } from '@/lib/dev-logger'
 
 export async function POST(req: Request) {
@@ -48,78 +48,23 @@ export async function POST(req: Request) {
 
     logger.debug({}, '[DEV] Request validation passed')
 
-    const { chatId, userMessage, toolResults, previousContent, enableThinking, enableWebSearch } =
-      validation.data
+    const {
+      chatId,
+      userMessage,
+      previousTurns,
+      toolResults,
+      previousContent,
+      image,
+      enableThinking,
+      enableWebSearch,
+    } = validation.data
     const model = resolveAgentModel(
       validation.data.model ?? DEFAULT_AGENT_MODEL
     ) as ModelName
 
-    // Build Anthropic messages based on request type
-    // IMPORTANT: For continuation turns (toolResults), we DON'T load from DB.
-    // The client manages conversation state during the agentic loop.
-    let anthropicMessages: MessageParam[]
     const isFirstTurn = !!userMessage
-    const isContinuationTurn = !!(previousContent && previousContent.length > 0)
-
-    if (isFirstTurn) {
-      // First turn: Load existing conversation from DB + append new user message
-      const chatMessages = await db.query.messages.findMany({
-        where: eq(messages.chatId, chatId),
-        orderBy: (messages, { asc }) => [asc(messages.createdAt)],
-      })
-
-      anthropicMessages = chatMessages.map((msg) => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-      }))
-
-      logger.debug({ messageLength: userMessage.length }, '[DEV] Building initial message')
-      anthropicMessages.push({
-        role: 'user',
-        content: userMessage,
-      })
-    } else if (isContinuationTurn) {
-      // Continuation turn: DON'T load from DB - use client-provided state only
-      const chatMessages = await db.query.messages.findMany({
-        where: eq(messages.chatId, chatId),
-        orderBy: (messages, { asc }) => [asc(messages.createdAt)],
-      })
-
-      // Only include messages up to the last USER message
-      const baseMessages: MessageParam[] = []
-      for (const msg of chatMessages) {
-        baseMessages.push({
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content,
-        })
-      }
-      // Remove the last assistant message if it exists (it's duplicated in previousContent)
-      if (baseMessages.length > 0 && baseMessages[baseMessages.length - 1].role === 'assistant') {
-        baseMessages.pop()
-      }
-
-      anthropicMessages = baseMessages
-
-      logger.debug(
-        { toolResultCount: toolResults?.length ?? 0 },
-        '[DEV] Building continuation message'
-      )
-      anthropicMessages.push({
-        role: 'assistant',
-        content: previousContent as ContentBlockParam[],
-      })
-      if (toolResults && toolResults.length > 0) {
-        anthropicMessages.push({
-          role: 'user',
-          content: toolResults.map((tr) => ({
-            type: 'tool_result' as const,
-            tool_use_id: tr.tool_use_id,
-            content: tr.content,
-            is_error: tr.is_error,
-          })),
-        })
-      }
-    } else {
+    const runTurns = resolveRunTurns({ previousTurns, previousContent, toolResults })
+    if (!isFirstTurn && runTurns.length === 0) {
       logger.warn({}, '[DEV] Neither userMessage nor toolResults provided')
       return NextResponse.json(
         error('Either userMessage or toolResults is required', 'VALIDATION_ERROR'),
@@ -127,8 +72,14 @@ export async function POST(req: Request) {
       )
     }
 
+    const history = await db.query.messages.findMany({
+      where: eq(messages.chatId, chatId),
+      orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+    })
+    const anthropicMessages = buildAgentMessages({ history, userMessage, image, runTurns })
+
     logger.debug(
-      { model, messageCount: anthropicMessages.length, hasToolResults: !!toolResults },
+      { model, messageCount: anthropicMessages.length, runTurns: runTurns.length },
       '[DEV] Starting agent stream'
     )
 
@@ -162,8 +113,25 @@ export async function POST(req: Request) {
 
         let fullTextResponse = ''
         let inputTokens = 0
+        let cacheCreationInputTokens = 0
+        let cacheReadInputTokens = 0
         let outputTokens = 0
         let contentDeltaCount = 0
+
+        const turnUsage = (webSearchRequests: number): TokenUsage => ({
+          inputTokens,
+          cacheCreationInputTokens,
+          cacheReadInputTokens,
+          outputTokens,
+          webSearchRequests,
+        })
+        const reportedUsage = (costCents: number) => ({
+          inputTokens: inputTokens + cacheCreationInputTokens + cacheReadInputTokens,
+          cacheCreationInputTokens,
+          cacheReadInputTokens,
+          outputTokens,
+          costCents,
+        })
         let toolUseCount = 0
 
         try {
@@ -175,6 +143,7 @@ export async function POST(req: Request) {
           const anthropicStream = await anthropic.messages.stream({
             model,
             max_tokens: getAgentMaxTokens({ model, enableThinking }),
+            cache_control: { type: 'ephemeral' },
             system: [
               {
                 type: 'text',
@@ -201,6 +170,8 @@ export async function POST(req: Request) {
           for await (const event of anthropicStream) {
             if (event.type === 'message_start') {
               inputTokens = event.message.usage.input_tokens
+              cacheCreationInputTokens = event.message.usage.cache_creation_input_tokens ?? 0
+              cacheReadInputTokens = event.message.usage.cache_read_input_tokens ?? 0
               logger.debug({ inputTokens }, '[DEV] Message started')
             } else if (event.type === 'content_block_start') {
               if (event.content_block.type === 'tool_use') {
@@ -265,11 +236,7 @@ export async function POST(req: Request) {
                 outputTokens = event.usage.output_tokens
                 safeEnqueue(JSON.stringify({
                   type: 'metrics_update',
-                  metrics: {
-                    inputTokens,
-                    outputTokens,
-                    costCents: calculateCostInCents(model, inputTokens, outputTokens),
-                  },
+                  metrics: reportedUsage(calculateUsageCostInCredits(model, turnUsage(0))),
                 }))
               }
             }
@@ -277,27 +244,20 @@ export async function POST(req: Request) {
 
           const finalMessage = await anthropicStream.finalMessage()
           const stopReason = finalMessage.stop_reason
-          const cacheReadTokens = finalMessage.usage.cache_read_input_tokens || 0
-          const cacheCreationTokens = finalMessage.usage.cache_creation_input_tokens || 0
           const webSearchRequests =
             finalMessage.usage.server_tool_use?.web_search_requests ?? 0
 
           const contentBlocks = toEchoableContent(finalMessage.content)
 
-          const costCents = calculateCostInCents(
-            model,
-            inputTokens,
-            outputTokens,
-            webSearchRequests
-          )
+          const costCents = calculateUsageCostInCredits(model, turnUsage(webSearchRequests))
 
           logger.info(
             {
               model,
               inputTokens,
               outputTokens,
-              cacheReadTokens,
-              cacheCreationTokens,
+              cacheReadInputTokens,
+              cacheCreationInputTokens,
               stopReason,
               contentDeltaCount,
               toolUseCount,
@@ -310,8 +270,8 @@ export async function POST(req: Request) {
           await devLogger.logResponse(fullTextResponse, {
             input_tokens: inputTokens,
             output_tokens: outputTokens,
-            cache_read_input_tokens: cacheReadTokens,
-            cache_creation_input_tokens: cacheCreationTokens,
+            cache_read_input_tokens: cacheReadInputTokens,
+            cache_creation_input_tokens: cacheCreationInputTokens,
           })
 
           // Determine if this is the final turn of the agentic loop
@@ -322,7 +282,8 @@ export async function POST(req: Request) {
           const hasContent = fullTextResponse.trim().length > 0 || assistantToolCalls.length > 0;
 
           const MAX_CONTEXT_TOKENS = 200000;
-          const newContextTokens = Math.min(inputTokens + outputTokens, MAX_CONTEXT_TOKENS);
+          const promptTokens = inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
+          const newContextTokens = Math.min(promptTokens + outputTokens, MAX_CONTEXT_TOKENS);
 
           await db.transaction(async (tx) => {
             // Save user message on first turn only
@@ -358,8 +319,9 @@ export async function POST(req: Request) {
                 .update(chats)
                 .set({
                   contextTokens: newContextTokens,
-                  contextInputTokens: inputTokens,
+                  contextInputTokens: promptTokens,
                   contextOutputTokens: outputTokens,
+                  contextCachedInputTokens: cacheReadInputTokens,
                   updatedAt: new Date(),
                 })
                 .where(eq(chats.id, chatId));
@@ -369,21 +331,13 @@ export async function POST(req: Request) {
           safeEnqueue(JSON.stringify({
             type: 'execution_complete',
             finalOutput: fullTextResponse,
-            metrics: {
-              inputTokens,
-              outputTokens,
-              costCents,
-            },
+            metrics: reportedUsage(costCents),
           }))
 
           safeEnqueue(JSON.stringify({
             type: 'done',
             stopReason,
-            usage: {
-              inputTokens,
-              outputTokens,
-              costCents,
-            },
+            usage: reportedUsage(costCents),
             contentBlocks,
           }))
 

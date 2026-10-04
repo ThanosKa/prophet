@@ -32,6 +32,7 @@ import {
   sanitizeForLog,
 } from "@prophet/shared";
 import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
+import { buildAgentMessages, resolveRunTurns } from "@/lib/agent/conversation";
 import { error, INTERNAL_ERROR_MESSAGE, SESSION_EXPIRED_MESSAGE } from "@/types";
 import { logger } from "@/lib/logger";
 import {
@@ -41,11 +42,7 @@ import {
   type TokenUsage,
 } from "@/lib/pricing";
 import { devLogger } from "@/lib/dev-logger";
-import type {
-  MessageParam,
-  ContentBlockParam,
-  ContentBlock,
-} from "@anthropic-ai/sdk/resources/messages";
+import type { ContentBlock } from "@anthropic-ai/sdk/resources/messages";
 
 function extractCitations(blocks: ContentBlock[]) {
   const seen = new Set<string>();
@@ -159,6 +156,7 @@ export async function POST(req: Request) {
     const {
       chatId,
       userMessage,
+      previousTurns,
       toolResults,
       previousContent,
       image,
@@ -199,96 +197,10 @@ export async function POST(req: Request) {
       });
     }
 
-    // Build Anthropic messages based on request type
-    // IMPORTANT: For continuation turns (toolResults), we DON'T load from DB.
-    // The client manages conversation state during the agentic loop.
-    // This prevents duplicate assistant messages in the history.
-    let anthropicMessages: MessageParam[];
     const isFirstTurn = !!userMessage;
-    // A `pause_turn` resume sends previousContent with no tool results — the
-    // assistant turn is replayed on its own so the server tool can finish.
-    const isContinuationTurn = !!(previousContent && previousContent.length > 0);
-
-    if (isFirstTurn) {
-      // First turn: Load existing conversation from DB + append new user message
-      const chatMessages = await db.query.messages.findMany({
-        where: eq(messages.chatId, chatId),
-        orderBy: (messages, { asc }) => [asc(messages.createdAt)],
-      });
-
-      anthropicMessages = chatMessages.map((msg) => ({
-        role: msg.role as "user" | "assistant",
-        content: msg.content,
-      }));
-
-      if (image) {
-        anthropicMessages.push({
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: image.mediaType,
-                data: image.base64,
-              },
-            },
-            {
-              type: "text",
-              text: userMessage,
-            },
-          ],
-        });
-      } else {
-        anthropicMessages.push({
-          role: "user",
-          content: userMessage,
-        });
-      }
-    } else if (isContinuationTurn) {
-      // Continuation turn: DON'T load from DB - use client-provided state only.
-      // This prevents the bug where we'd have [user, assistant (from DB), assistant (from client)]
-      // Instead, the client sends the accumulated previousContent which already has the full context.
-
-      // Load ONLY the original user message from this conversation (before agentic loop)
-      const chatMessages = await db.query.messages.findMany({
-        where: eq(messages.chatId, chatId),
-        orderBy: (messages, { asc }) => [asc(messages.createdAt)],
-      });
-
-      // Only include messages up to the last USER message (the one that started this loop)
-      // Skip any assistant messages that were saved during intermediate turns
-      const baseMessages: MessageParam[] = [];
-      for (const msg of chatMessages) {
-        baseMessages.push({
-          role: msg.role as "user" | "assistant",
-          content: msg.content,
-        });
-      }
-      // Remove the last assistant message if it exists (it's duplicated in previousContent)
-      if (baseMessages.length > 0 && baseMessages[baseMessages.length - 1].role === "assistant") {
-        baseMessages.pop();
-      }
-
-      anthropicMessages = baseMessages;
-
-      // Append the current turn's context from client
-      anthropicMessages.push({
-        role: "assistant",
-        content: previousContent as ContentBlockParam[],
-      });
-      if (toolResults && toolResults.length > 0) {
-        anthropicMessages.push({
-          role: "user",
-          content: toolResults.map((tr) => ({
-            type: "tool_result" as const,
-            tool_use_id: tr.tool_use_id,
-            content: tr.content,
-            is_error: tr.is_error,
-          })),
-        });
-      }
-    } else {
+    const runTurns = resolveRunTurns({ previousTurns, previousContent, toolResults });
+    const isContinuationTurn = !isFirstTurn && runTurns.length > 0;
+    if (!isFirstTurn && !isContinuationTurn) {
       return NextResponse.json(
         error(
           "Either userMessage or toolResults is required",
@@ -297,6 +209,14 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    // The client owns the run's intermediate turns; the DB holds the chat up to and
+    // including the run's opening message (assistant replies are saved only when a run ends).
+    const history = await db.query.messages.findMany({
+      where: eq(messages.chatId, chatId),
+      orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+    });
+    const anthropicMessages = buildAgentMessages({ history, userMessage, image, runTurns });
 
     logger.debug(
       {
@@ -307,7 +227,7 @@ export async function POST(req: Request) {
         modelAliased: requestedModel !== model,
         webSearchEnabled,
         messageCount: anthropicMessages.length,
-        hasToolResults: !!toolResults,
+        runTurns: runTurns.length,
       },
       "Starting agent stream"
     );
@@ -475,6 +395,9 @@ export async function POST(req: Request) {
           const anthropicStream = await anthropic.messages.stream({
             model,
             max_tokens: maxTokens,
+            // Automatic caching moves this breakpoint to the newest block on every
+            // request, so each turn of a run reads the prefix the previous turn wrote.
+            cache_control: { type: "ephemeral" },
             system: [
               {
                 type: "text",

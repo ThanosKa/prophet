@@ -110,6 +110,8 @@ export function getAgentMinTokens({ enableThinking }: ReasoningOptions): number 
 }
 
 const ECHOABLE_BLOCK_TYPES = new Set([
+  'thinking',
+  'redacted_thinking',
   'text',
   'tool_use',
   'server_tool_use',
@@ -117,9 +119,10 @@ const ECHOABLE_BLOCK_TYPES = new Set([
 ])
 
 /**
- * Blocks the client may safely send back as `previousContent`. Thinking blocks are
- * dropped because continuation turns run with thinking off; web search blocks are
- * kept verbatim so their `encrypted_content` still decrypts on the next turn.
+ * Blocks the client sends back unchanged in `previousTurns`. Thinking blocks are kept
+ * because a tool-use turn with thinking on must replay them, and an append-only run
+ * history keeps every request a prompt-cache hit; web search blocks are kept verbatim
+ * so their `encrypted_content` still decrypts on the next turn.
  */
 export function toEchoableContent(blocks: ContentBlock[]): ContentBlockParam[] {
   return blocks.filter((block) =>
