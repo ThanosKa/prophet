@@ -109,17 +109,42 @@ function completedTurn({ inputTokens, outputTokens }: { inputTokens: number; out
   }
 }
 
+const CACHED_USAGE = {
+  input_tokens: 1_000,
+  cache_creation_input_tokens: 2_000,
+  cache_read_input_tokens: 100_000,
+}
+
+/** message_start reports the cache buckets; message_delta only the output count. */
+function cachedTurn({ outputTokens, stopReason = 'end_turn' }: { outputTokens: number; stopReason?: string }) {
+  return {
+    [Symbol.asyncIterator]: async function* () {
+      yield { type: 'message_start', message: { usage: { ...CACHED_USAGE, output_tokens: 1 } } }
+      yield { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }
+      yield { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Done.' } }
+      yield { type: 'content_block_stop', index: 0 }
+      yield { type: 'message_delta', delta: { stop_reason: stopReason }, usage: { output_tokens: outputTokens } }
+    },
+    finalMessage: () =>
+      Promise.resolve({
+        stop_reason: stopReason,
+        content: [{ type: 'text', text: 'Done.' }],
+        usage: { ...CACHED_USAGE, output_tokens: outputTokens },
+      }),
+  }
+}
+
 /**
- * 10,000 input tokens reported, 4,000 bytes of text streamed, then the turn hangs
- * until the route aborts the upstream request.
+ * 10,000 input tokens reported (unless `usage` says otherwise), 4,000 bytes of text
+ * streamed, then the turn hangs until the route aborts the upstream request.
  */
-function turnThatHangsAfterStreaming() {
+function turnThatHangsAfterStreaming(usage: Record<string, number> = { input_tokens: 10_000 }) {
   const upstream: { signal?: AbortSignal } = {}
   vi.mocked(anthropic.messages.stream).mockImplementation(((_params: unknown, options?: { signal?: AbortSignal }) => {
     upstream.signal = options?.signal
     return {
       [Symbol.asyncIterator]: async function* () {
-        yield { type: 'message_start', message: { usage: { input_tokens: 10_000, output_tokens: 1 } } }
+        yield { type: 'message_start', message: { usage: { ...usage, output_tokens: 1 } } }
         yield { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }
         yield { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'x'.repeat(4000) } }
         await new Promise((_resolve, reject) => {
@@ -143,12 +168,16 @@ async function readUntil(reader: ReadableStreamDefaultReader<Uint8Array>, marker
   }
 }
 
-function doneEvent(events: string): unknown {
-  const done = events
+function streamEvent(events: string, type: string): unknown {
+  const matching = events
     .split('\n\n')
     .map((frame) => frame.replace(/^data: /, ''))
-    .filter((data) => data.includes('"type":"done"'))
-  return done.length === 1 ? JSON.parse(done[0]) : undefined
+    .filter((data) => data.includes(`"type":"${type}"`))
+  return matching.length === 1 ? JSON.parse(matching[0]) : undefined
+}
+
+function doneEvent(events: string): unknown {
+  return streamEvent(events, 'done')
 }
 
 function sentMaxTokens(): number | undefined {
@@ -311,6 +340,118 @@ describe('credit reservation in POST /api/agent/chat', () => {
     })
     expect(anthropic.messages.stream).not.toHaveBeenCalled()
     expect(await balance()).toBe(20)
+  })
+})
+
+describe('prompt-cache billing in POST /api/agent/chat', () => {
+  it('charges cache writes and cache reads on top of uncached input for Opus 5.5', async () => {
+    await seedUser({ credits: 1000 })
+    vi.mocked(anthropic.messages.stream).mockReturnValue(cachedTurn({ outputTokens: 500 }) as never)
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    await response.text()
+
+    // 1,000 x $4 + 2,000 x $5 + 100,000 x $0.20 + 500 x $20 = $0.044 -> x1.2 = 5.28 -> 6 credits
+    expect(await balance()).toBe(994)
+  })
+
+  it('reports the full prompt size, cached tokens included, as the chat context', async () => {
+    await seedUser({ credits: 1000 })
+    vi.mocked(anthropic.messages.stream).mockReturnValue(cachedTurn({ outputTokens: 500 }) as never)
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    await response.text()
+
+    const chat = await db.query.chats.findFirst({ where: eq(schema.chats.id, CHAT_ID) })
+    expect(chat).toMatchObject({
+      contextInputTokens: 103_000,
+      contextCachedInputTokens: 100_000,
+      contextOutputTokens: 500,
+      contextTokens: 103_500,
+    })
+  })
+
+  it('streams the full prompt size and the cache-aware cost to the extension', async () => {
+    await seedUser({ credits: 1000 })
+    vi.mocked(anthropic.messages.stream).mockReturnValue(cachedTurn({ outputTokens: 500 }) as never)
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    const events = await response.text()
+
+    const usage = {
+      inputTokens: 103_000,
+      cacheCreationInputTokens: 2_000,
+      cacheReadInputTokens: 100_000,
+      outputTokens: 500,
+      costCents: 6,
+    }
+    expect(streamEvent(events, 'metrics_update')).toMatchObject({ metrics: usage })
+    expect(streamEvent(events, 'execution_complete')).toMatchObject({ metrics: usage })
+    expect(streamEvent(events, 'done')).toMatchObject({ usage })
+  })
+
+  it('records the cache buckets on the usage row so the charge can be audited', async () => {
+    await seedUser({ credits: 1000 })
+    vi.mocked(anthropic.messages.stream).mockReturnValue(cachedTurn({ outputTokens: 500 }) as never)
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    await response.text()
+
+    const usage = await db.select().from(schema.usageRecords).where(eq(schema.usageRecords.userId, USER_ID))
+    expect(usage).toHaveLength(1)
+    expect(usage[0]).toMatchObject({
+      inputTokens: 1_000,
+      cacheCreationInputTokens: 2_000,
+      cacheReadInputTokens: 100_000,
+      outputTokens: 500,
+      costCents: 6,
+      model: 'claude-opus-5-5',
+    })
+  })
+
+  it('bills the final usage when server-tool iterations grew the prompt after message_start', async () => {
+    await seedUser({ credits: 1000 })
+    vi.mocked(anthropic.messages.stream).mockReturnValue({
+      [Symbol.asyncIterator]: async function* () {
+        yield { type: 'message_start', message: { usage: { ...CACHED_USAGE, output_tokens: 1 } } }
+        yield { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }
+        yield { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Done.' } }
+        yield { type: 'content_block_stop', index: 0 }
+        yield { type: 'message_delta', delta: { stop_reason: 'end_turn' }, usage: { output_tokens: 500 } }
+      },
+      finalMessage: () =>
+        Promise.resolve({
+          stop_reason: 'end_turn',
+          content: [{ type: 'text', text: 'Done.' }],
+          usage: {
+            ...CACHED_USAGE,
+            input_tokens: 6_000,
+            output_tokens: 500,
+            server_tool_use: { web_search_requests: 1 },
+          },
+        }),
+    } as never)
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    await response.text()
+
+    // 6,000 x $4 + 2,000 x $5 + 100,000 x $0.20 + 500 x $20 + 1 search x $0.01
+    // = $0.074 -> x1.2 = 8.88 -> 9 credits
+    expect(await balance()).toBe(991)
+  })
+
+  it('a disconnect mid-stream still bills the cache writes and reads already reported', async () => {
+    await seedUser({ credits: 1000 })
+    turnThatHangsAfterStreaming(CACHED_USAGE)
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    const reader = response.body!.getReader()
+    await readUntil(reader, 'content_delta')
+    await reader.cancel()
+
+    // $0.004 input + $0.01 write + $0.02 read + ~2,000 streamed output tokens x $20 ($0.04)
+    // = $0.074 -> x1.2 = 8.88 -> 9 credits
+    await vi.waitFor(async () => expect(await balance()).toBe(991))
   })
 })
 

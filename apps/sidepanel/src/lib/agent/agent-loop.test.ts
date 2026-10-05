@@ -142,7 +142,7 @@ describe('runAgentLoop', () => {
   })
 
   describe('History / Continuation', () => {
-    it('includes previousContent + toolResults on the second turn', async () => {
+    it('includes the first turn and its tool results on the second turn', async () => {
       const turn1 = `data: {"type":"tool_use","toolUse":{"type":"tool_use","id":"tool_1","name":"navigate","input":{"url":"https://example.com"}}}\n\ndata: {"type":"done"}\n\n`
       const turn2 = `data: {"type":"content_delta","delta":"Done"}\n\ndata: {"type":"done"}\n\n`
 
@@ -186,9 +186,9 @@ describe('runAgentLoop', () => {
       expect(fetchMock).toHaveBeenCalledTimes(2)
 
       const bodies = (fetchMock as any).mock.calls.map((call: any[]) => JSON.parse(call[1].body))
-      const continuation = bodies.find((b: any) => b.previousContent && b.toolResults)
+      const continuation = bodies.find((b: any) => b.previousTurns)
       expect(continuation).toBeDefined()
-      expect(continuation.toolResults[0].tool_use_id).toBe('tool_1')
+      expect(continuation.previousTurns[0].toolResults[0].tool_use_id).toBe('tool_1')
     })
   })
 
@@ -217,7 +217,7 @@ describe('runAgentLoop', () => {
       expect(events).toContainEqual(expect.objectContaining({ type: 'tool_call_error', toolCallId: 't1' }))
       expect(fetchMock).toHaveBeenCalledTimes(2)
       const continuation = JSON.parse(fetchMock.mock.calls[1][1].body)
-      expect(continuation.toolResults).toEqual([
+      expect(continuation.previousTurns[0].toolResults).toEqual([
         {
           type: 'tool_result',
           tool_use_id: 't1',
@@ -639,6 +639,97 @@ describe('runAgentLoop', () => {
       const events = await collectFrom(['{"type":"done","stopReason":"end_turn"}'])
 
       expect(events.map((e) => e.type)).not.toContain('output_truncated')
+    })
+  })
+
+  describe('Append-only run history (prompt caching)', () => {
+    const API = 'http://localhost:3000'
+    const sse = (events: unknown[]) => events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join('')
+    const navigate = { type: 'tool_use', id: 't1', name: 'navigate', input: { url: 'https://mail.google.com/' } }
+    const snapshot = { type: 'tool_use', id: 't2', name: 'take_snapshot', input: {} }
+
+    function serveTurns(turns: unknown[][]) {
+      const fetchMock = vi.fn()
+      for (const turn of turns) fetchMock.mockResolvedValueOnce(new Response(sse(turn)))
+      vi.stubGlobal('fetch', fetchMock)
+      return () => fetchMock.mock.calls.map((call) => JSON.parse(call[1].body))
+    }
+
+    async function run(...args: [model?: 'claude-sonnet-5-5', image?: { base64: string; mediaType: 'image/png' }, signal?: AbortSignal, enableThinking?: boolean]) {
+      const events = []
+      for await (const event of runAgentLoop(API, 'chat-1', 'Find the March invoice', ...args)) events.push(event)
+      return events
+    }
+
+    beforeEach(() => {
+      vi.mocked(executeToolViaBackground)
+        .mockResolvedValueOnce({ success: true, data: 'Navigated to Inbox', durationMs: 1 })
+        .mockResolvedValueOnce({ success: true, data: 'uid=1 link "Invoice March"', durationMs: 1 })
+    })
+
+    it('resends every earlier turn of the run, oldest first, on each continuation', async () => {
+      const bodies = serveTurns([
+        [{ type: 'content_delta', delta: 'Opening your inbox.' }, { type: 'tool_use', toolUse: navigate }, { type: 'done', stopReason: 'tool_use' }],
+        [{ type: 'tool_use', toolUse: snapshot }, { type: 'done', stopReason: 'tool_use' }],
+        [{ type: 'content_delta', delta: 'Found it.' }, { type: 'done', stopReason: 'end_turn' }],
+      ])
+
+      await run()
+
+      const navigateTurn = {
+        content: [{ type: 'text', text: 'Opening your inbox.' }, navigate],
+        toolResults: [{ type: 'tool_result', tool_use_id: 't1', content: 'Navigated to Inbox', is_error: false }],
+      }
+      const snapshotTurn = {
+        content: [snapshot],
+        toolResults: [{ type: 'tool_result', tool_use_id: 't2', content: 'uid=1 link "Invoice March"', is_error: false }],
+      }
+      expect(bodies()[1].previousTurns).toEqual([navigateTurn])
+      expect(bodies()[2].previousTurns).toEqual([navigateTurn, snapshotTurn])
+    })
+
+    it("keeps the user's Thinking choice on every request of the run", async () => {
+      const bodies = serveTurns([
+        [{ type: 'tool_use', toolUse: navigate }, { type: 'done', stopReason: 'tool_use' }],
+        [{ type: 'content_delta', delta: 'Done.' }, { type: 'done', stopReason: 'end_turn' }],
+      ])
+
+      await run('claude-sonnet-5-5', undefined, undefined, true)
+
+      expect(bodies().map((body) => body.enableThinking)).toEqual([true, true])
+    })
+
+    it("replays the server's own content blocks, signed thinking included, as the turn", async () => {
+      const contentBlocks = [
+        { type: 'thinking', thinking: 'The inbox is one click away.', signature: 'sig-abc' },
+        { type: 'text', text: 'Opening your inbox.', citations: null },
+        navigate,
+      ]
+      const bodies = serveTurns([
+        [
+          { type: 'thinking_delta', delta: 'The inbox is one click away.' },
+          { type: 'content_delta', delta: 'Opening your inbox.' },
+          { type: 'tool_use', toolUse: navigate },
+          { type: 'done', stopReason: 'tool_use', contentBlocks },
+        ],
+        [{ type: 'content_delta', delta: 'Done.' }, { type: 'done', stopReason: 'end_turn' }],
+      ])
+
+      await run('claude-sonnet-5-5', undefined, undefined, true)
+
+      expect(bodies()[1].previousTurns[0].content).toEqual(contentBlocks)
+    })
+
+    it('resends the attached image with every request of the run', async () => {
+      const image = { base64: 'iVBORw0KGgo=', mediaType: 'image/png' as const }
+      const bodies = serveTurns([
+        [{ type: 'tool_use', toolUse: navigate }, { type: 'done', stopReason: 'tool_use' }],
+        [{ type: 'content_delta', delta: 'Done.' }, { type: 'done', stopReason: 'end_turn' }],
+      ])
+
+      await run('claude-sonnet-5-5', image)
+
+      expect(bodies().map((body) => body.image)).toEqual([image, image])
     })
   })
 })

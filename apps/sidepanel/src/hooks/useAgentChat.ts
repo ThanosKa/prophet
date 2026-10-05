@@ -16,7 +16,7 @@ export interface AgentMessage extends Message {
 
 export function useAgentChat() {
   const { addMessage: addLegacyMessage, updateMessage: updateLegacyMessage, setStreaming } = useChatStore()
-  const { selectedModel, addContextUsage, enableThinking } = useUIStore()
+  const { selectedModel, setContextUsage, enableThinking } = useUIStore()
   const { createAbortController, abort: abortAgentStore, setActive, clearActions } = useAgentStore()
   const [error, setError] = useState<string | null>(null)
   const [errorInfo, setErrorInfo] = useState<ErrorInfo | null>(null)
@@ -223,11 +223,15 @@ export function useAgentChat() {
             })
           }
 
-          // Handle metrics separately
+          // Each request carries the whole conversation, so its prompt size replaces
+          // the context reading instead of adding to it.
           if (event.type === 'metrics_update' && event.metrics) {
-            addContextUsage({
-              inputTokens: event.metrics.inputTokens,
-              outputTokens: event.metrics.outputTokens,
+            setContextUsage({
+              contextTokens: event.metrics.inputTokens + event.metrics.outputTokens,
+              contextInputTokens: event.metrics.inputTokens,
+              contextOutputTokens: event.metrics.outputTokens,
+              contextReasoningTokens: 0,
+              contextCachedInputTokens: event.metrics.cacheReadInputTokens ?? 0,
             })
           }
 
@@ -292,7 +296,7 @@ export function useAgentChat() {
       updateLegacyMessage,
       setStreaming,
       selectedModel,
-      addContextUsage,
+      setContextUsage,
       status,
       adapter,
       createAbortController,

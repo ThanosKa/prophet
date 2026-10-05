@@ -259,17 +259,60 @@ export const webSearchToolResultSchema = z.object({
   ]),
 });
 
+// Replayed verbatim on the next turn of a run. The API verifies `signature` / `data`,
+// so a client cannot forge reasoning, and dropping them would change the prefix.
+export const thinkingBlockSchema = z.object({
+  type: z.literal("thinking"),
+  thinking: z.string(),
+  signature: z.string(),
+});
+
+export const redactedThinkingBlockSchema = z.object({
+  type: z.literal("redacted_thinking"),
+  data: z.string(),
+});
+
 export const contentBlockSchema = z.union([
   textContentSchema,
   toolUseSchema,
   serverToolUseSchema,
   webSearchToolResultSchema,
+  thinkingBlockSchema,
+  redactedThinkingBlockSchema,
 ]);
+
+// The extension's agent loop stops after this many requests per run.
+export const MAX_AGENT_TURNS = 10;
+
+// One completed request of an agent run: what the model said, then what the tools returned.
+export const agentTurnSchema = z
+  .object({
+    content: z.array(contentBlockSchema).min(1),
+    toolResults: z.array(toolResultSchema),
+  })
+  .superRefine(({ content, toolResults }, ctx) => {
+    const toolUseIds = new Set(
+      content.flatMap((block) => (block.type === "tool_use" ? [block.id] : []))
+    );
+    toolResults.forEach((result, index) => {
+      if (!toolUseIds.has(result.tool_use_id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Tool result does not answer a tool call of this turn",
+          path: ["toolResults", index, "tool_use_id"],
+        });
+      }
+    });
+  });
 
 export const agentChatRequestSchema = z.object({
   chatId: z.string().uuid("Invalid chat ID"),
   model: agentModelSchema.default(DEFAULT_AGENT_MODEL),
   userMessage: z.string().min(1).max(50000).optional(),
+  // Every earlier turn of the current run, oldest first. Resending them all keeps the
+  // conversation append-only, so each request is a prompt-cache hit on the last one.
+  previousTurns: z.array(agentTurnSchema).min(1).max(MAX_AGENT_TURNS).optional(),
+  // Legacy single-turn form, still sent by already-installed extension builds.
   toolResults: z.array(toolResultSchema).optional(),
   previousContent: z.array(contentBlockSchema).optional(),
   image: imageDataSchema.optional(),
@@ -305,6 +348,7 @@ export type ServerToolUse = z.infer<typeof serverToolUseSchema>;
 export type WebSearchToolResult = z.infer<typeof webSearchToolResultSchema>;
 export type AgentModel = z.infer<typeof agentModelSchema>;
 export type AgentChatRequest = z.infer<typeof agentChatRequestSchema>;
+export type AgentTurn = z.infer<typeof agentTurnSchema>;
 export type ClickElementInput = z.infer<typeof clickElementInputSchema>;
 export type FillElementInput = z.infer<typeof fillElementInputSchema>;
 export type HoverElementInput = z.infer<typeof hoverElementInputSchema>;

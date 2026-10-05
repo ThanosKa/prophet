@@ -98,6 +98,8 @@ export const usageRecords = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     inputTokens: integer('input_tokens').notNull(),
+    cacheCreationInputTokens: integer('cache_creation_input_tokens').notNull().default(0),
+    cacheReadInputTokens: integer('cache_read_input_tokens').notNull().default(0),
     outputTokens: integer('output_tokens').notNull(),
     costCents: integer('cost_cents').notNull(),
     model: text('model').notNull(),

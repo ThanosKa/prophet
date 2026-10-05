@@ -1,17 +1,23 @@
 // Anthropic API pricing (per 1M tokens in USD)
-// Source: https://claude.com/pricing
+// Source: https://claude.com/pricing (cache rates: https://platform.claude.com/docs/en/build-with-claude/prompt-caching)
 export const MODEL_PRICING = {
   "claude-haiku-4-5": {
     input: 1.0,   // $1 per MTok
     output: 5.0,  // $5 per MTok
+    cacheWrite: 1.25, // $1.25 per MTok (5-minute TTL, 1.25x input)
+    cacheRead: 0.1,  // $0.10 per MTok (0.1x input)
   },
   "claude-sonnet-5-5": {
     input: 2.0,   // $2 per MTok
     output: 10.0, // $10 per MTok
+    cacheWrite: 2.5, // $2.50 per MTok (5-minute TTL, 1.25x input)
+    cacheRead: 0.2,  // $0.20 per MTok (0.1x input)
   },
   "claude-opus-5-5": {
     input: 4.0,   // $4 per MTok
     output: 20.0, // $20 per MTok
+    cacheWrite: 5.0, // $5 per MTok (5-minute TTL, 1.25x input)
+    cacheRead: 0.2,  // $0.20 per MTok (0.05x input)
   },
 } as const;
 
@@ -69,7 +75,44 @@ export type ModelName = keyof typeof MODEL_PRICING;
 export type TierName = keyof typeof TIER_CONFIG;
 
 /**
- * Calculate the credit cost for an API call
+ * Mirrors Anthropic's `usage` buckets, which are disjoint: `inputTokens` is only the
+ * uncached remainder after the last cache breakpoint, so the prompt's full size is
+ * inputTokens + cacheCreationInputTokens + cacheReadInputTokens.
+ */
+export type TokenUsage = {
+  inputTokens: number;
+  cacheCreationInputTokens: number;
+  cacheReadInputTokens: number;
+  outputTokens: number;
+  webSearchRequests?: number;
+};
+
+/**
+ * Credit cost of one API call from its reported usage. Cache writes use the
+ * 5-minute TTL rate; nothing here requests the 1-hour TTL.
+ */
+export function calculateUsageCostInCredits(model: ModelName, usage: TokenUsage): number {
+  const pricing = MODEL_PRICING[model];
+
+  if (!pricing) {
+    throw new Error(`Unknown model: ${model}`);
+  }
+
+  const perToken = (tokens: number, usdPerMTok: number) => (tokens / 1_000_000) * usdPerMTok;
+  const totalCostUSD =
+    perToken(usage.inputTokens, pricing.input) +
+    perToken(usage.cacheCreationInputTokens, pricing.cacheWrite) +
+    perToken(usage.cacheReadInputTokens, pricing.cacheRead) +
+    perToken(usage.outputTokens, pricing.output) +
+    Math.max(0, usage.webSearchRequests ?? 0) * WEB_SEARCH_PRICE_PER_SEARCH_USD;
+
+  // Apply markup and convert to credits (1 credit = 1 cent), minimum 1 credit per request
+  const credits = Math.ceil(totalCostUSD * MARKUP * 100);
+  return Math.max(1, credits);
+}
+
+/**
+ * Calculate the credit cost for an API call with no prompt caching
  * 1 credit = 1 cent of API cost (with 20% markup)
  *
  * Example: 1000 input + 500 output tokens with Sonnet
@@ -88,24 +131,13 @@ export function calculateCostInCredits(
   outputTokens: number,
   webSearchRequests = 0
 ): number {
-  const pricing = MODEL_PRICING[model];
-
-  if (!pricing) {
-    throw new Error(`Unknown model: ${model}`);
-  }
-
-  // Calculate raw API cost in USD
-  const inputCost = (inputTokens / 1_000_000) * pricing.input;
-  const outputCost = (outputTokens / 1_000_000) * pricing.output;
-  const searchCost = Math.max(0, webSearchRequests) * WEB_SEARCH_PRICE_PER_SEARCH_USD;
-  const totalCostUSD = inputCost + outputCost + searchCost;
-
-  // Apply markup and convert to credits (1 credit = 1 cent)
-  const costWithMarkup = totalCostUSD * MARKUP;
-  const credits = Math.ceil(costWithMarkup * 100);
-
-  // Minimum 1 credit per request
-  return Math.max(1, credits);
+  return calculateUsageCostInCredits(model, {
+    inputTokens,
+    cacheCreationInputTokens: 0,
+    cacheReadInputTokens: 0,
+    outputTokens,
+    webSearchRequests,
+  });
 }
 
 /**
