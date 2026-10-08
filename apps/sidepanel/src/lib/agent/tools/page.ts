@@ -69,18 +69,19 @@ export async function scrollPage(input: {
       }
     }
 
+    // Negative pixels scroll the other way. Negate the number, not the text: `-${-500}` is `--500`, a syntax error.
     const pixels = input.pixels ?? 500
     let scrollExpression: string
 
     switch (input.direction) {
       case 'up':
-        scrollExpression = `window.scrollBy(0, -${pixels})`
+        scrollExpression = `window.scrollBy(0, ${-pixels})`
         break
       case 'down':
         scrollExpression = `window.scrollBy(0, ${pixels})`
         break
       case 'left':
-        scrollExpression = `window.scrollBy(-${pixels}, 0)`
+        scrollExpression = `window.scrollBy(${-pixels}, 0)`
         break
       case 'right':
         scrollExpression = `window.scrollBy(${pixels}, 0)`
