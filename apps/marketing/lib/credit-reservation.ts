@@ -1,6 +1,6 @@
 import type { MessageParam, ToolUnion } from '@anthropic-ai/sdk/resources/messages'
 import { and, eq, gte, sql } from 'drizzle-orm'
-import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core'
+import type { AnyPgColumn, PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core'
 import { users } from '@/lib/db/schema'
 import { calculateCostInCredits, type ModelName } from '@/lib/pricing'
 
@@ -136,7 +136,7 @@ export async function reserveCredits({
       .for('update')
   )
   // Subscription credits can be negative after an overage; they then give nothing.
-  const fromSubscription = (subscription: typeof users.creditsRemaining) =>
+  const fromSubscription = (subscription: AnyPgColumn) =>
     sql`LEAST(GREATEST(${subscription}, 0), ${reserveCents}::integer)`
 
   const [row] = await db
