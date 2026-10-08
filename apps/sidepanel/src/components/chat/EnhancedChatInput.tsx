@@ -14,7 +14,7 @@ import {
   ContextReasoningUsage,
   ContextTrigger,
 } from "@/components/ai-elements/context";
-import { useUIStore } from "@/store/uiStore";
+import { selectMaxContextTokens, useUIStore } from "@/store/uiStore";
 import {
   PromptInput,
   PromptInputActionAddAttachments,
@@ -61,7 +61,6 @@ export function EnhancedChatInput({
     contextOutputTokens,
     contextReasoningTokens,
     contextCachedInputTokens,
-    maxContextTokens,
     selectedModel,
     enableThinking,
     toggleThinking,
@@ -164,7 +163,7 @@ export function EnhancedChatInput({
               </AnimatePresence>
             </button>
             <Context
-              maxTokens={maxContextTokens}
+              maxTokens={selectMaxContextTokens({ selectedModel })}
               modelId={selectedModel}
               usage={{
                 inputTokens: contextInputTokens,

@@ -1,10 +1,19 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { z } from 'zod'
-import { DEFAULT_AGENT_MODEL, CLAUDE_MODELS, agentModelSchema, resolveAgentModel } from '@prophet/shared'
+import {
+  DEFAULT_AGENT_MODEL,
+  CLAUDE_MODELS,
+  agentModelSchema,
+  getModelContextWindow,
+  resolveAgentModel,
+} from '@prophet/shared'
 import type { AgentModel } from '@prophet/shared'
 
-const MAX_CONTEXT_TOKENS = 200000
+/** The context meter's denominator and clamp: the active model's window. */
+export function selectMaxContextTokens(state: Pick<UIState, 'selectedModel'>): number {
+  return getModelContextWindow(resolveAgentModel(state.selectedModel))
+}
 
 type Theme = 'light' | 'dark'
 
@@ -24,7 +33,6 @@ interface UIState {
   contextOutputTokens: number
   contextReasoningTokens: number
   contextCachedInputTokens: number
-  maxContextTokens: number
   selectedModel: AgentModel
   theme: Theme
   enableThinking: boolean
@@ -52,7 +60,6 @@ export const useUIStore = create<UIState>()(
       contextOutputTokens: 0,
       contextReasoningTokens: 0,
       contextCachedInputTokens: 0,
-      maxContextTokens: MAX_CONTEXT_TOKENS,
       selectedModel: DEFAULT_AGENT_MODEL,
       theme: 'dark' as Theme,
       enableThinking: false,
@@ -65,7 +72,7 @@ export const useUIStore = create<UIState>()(
 
       addContextTokens: (tokens) =>
         set((state) => ({
-          contextTokens: Math.min(state.contextTokens + tokens, MAX_CONTEXT_TOKENS),
+          contextTokens: Math.min(state.contextTokens + tokens, selectMaxContextTokens(state)),
         })),
 
       addContextUsage: (usage) =>
@@ -77,7 +84,7 @@ export const useUIStore = create<UIState>()(
           const total = input + output + reasoning + cached
 
           return {
-            contextTokens: Math.min(state.contextTokens + total, MAX_CONTEXT_TOKENS),
+            contextTokens: Math.min(state.contextTokens + total, selectMaxContextTokens(state)),
             contextInputTokens: state.contextInputTokens + input,
             contextOutputTokens: state.contextOutputTokens + output,
             contextReasoningTokens: state.contextReasoningTokens + reasoning,
@@ -86,13 +93,13 @@ export const useUIStore = create<UIState>()(
         }),
 
       setContextUsage: (usage) =>
-        set({
-          contextTokens: Math.min(usage.contextTokens, MAX_CONTEXT_TOKENS),
+        set((state) => ({
+          contextTokens: Math.min(usage.contextTokens, selectMaxContextTokens(state)),
           contextInputTokens: usage.contextInputTokens,
           contextOutputTokens: usage.contextOutputTokens,
           contextReasoningTokens: usage.contextReasoningTokens,
           contextCachedInputTokens: usage.contextCachedInputTokens,
-        }),
+        })),
 
       resetContextTokens: () =>
         set({
@@ -105,7 +112,7 @@ export const useUIStore = create<UIState>()(
 
       getContextPercentage: () => {
         const state = get()
-        return (state.contextTokens / state.maxContextTokens) * 100
+        return (state.contextTokens / selectMaxContextTokens(state)) * 100
       },
 
       setTheme: (theme) => set({ theme }),
