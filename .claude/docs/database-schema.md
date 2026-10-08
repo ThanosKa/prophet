@@ -12,7 +12,8 @@ users {
   lastName: string
   profileImageUrl: string
   tier: 'free' | 'pro' | 'premium' | 'ultra'
-  creditsRemaining: number             // Current balance (cents)
+  creditsRemaining: number             // Subscription credits + Free grant (cents); may go negative after an overage
+  purchasedCredits: number             // Purchased credits (cents); never expire, CHECK >= 0, default 0
   creditsIncluded: number              // Monthly allocation (cents)
   billingPeriodStart: timestamp
   billingPeriodEnd: timestamp
@@ -24,6 +25,32 @@ users {
   pendingTierEffectiveDate: timestamp                 // When pendingTier takes effect
   createdAt: timestamp
   updatedAt: timestamp
+}
+```
+
+### Two credit balances
+
+A user's balance is `creditsRemaining + purchasedCredits`; APIs return that total as
+`creditsRemaining` plus `purchasedCredits` on its own (`totalCredits()` in
+`apps/marketing/lib/credit-balance.ts`). `reserveCredits` checks a Turn's hold against
+the total and takes it Subscription credits first, then Purchased credits, returning the
+split as a `CreditHold`. `settleCredits` returns the unused hold Purchased-first and
+takes any overage from `creditsRemaining` down to 0, then `purchasedCredits` down to 0;
+only the remainder pushes `creditsRemaining` negative. Both are single SQL-expression
+`UPDATE`s that compute the split in SQL.
+
+Stripe webhooks never touch `purchasedCredits` except to add a purchase: renewal and a new
+subscription set `creditsRemaining` to the plan's Credits, plan changes leave it alone, and
+cancellation lapses it to `least(creditsRemaining, Free grant)`.
+
+## Credit Purchases
+
+```typescript
+creditPurchases {
+  stripeCheckoutSessionId: string  // PK; a redelivered checkout.session.completed adds nothing
+  userId: string                   // FK → users.id (cascade delete)
+  credits: number                  // Purchased credits added by this checkout
+  createdAt: timestamp
 }
 ```
 
@@ -63,7 +90,7 @@ usageRecords {
   userId: string          // FK → users.id (cascade delete)
   inputTokens: number     // Uncached input only (Anthropic `input_tokens`)
   cacheCreationInputTokens: number  // Prompt-cache writes (billed 1.25x input)
-  cacheReadInputTokens: number      // Prompt-cache reads (0.1x input, 0.05x on Opus 5.5)
+  cacheReadInputTokens: number      // Prompt-cache reads (0.1x input, 0.05x on Opus 5.5 / Sonnet 5.5)
   outputTokens: number
   costCents: number       // Actual API cost in cents
   model: string
@@ -76,6 +103,7 @@ usageRecords {
 - **users → chats**: One-to-many (cascade delete)
 - **chats → messages**: One-to-many (cascade delete)
 - **users → usageRecords**: One-to-many (cascade delete)
+- **users → creditPurchases**: One-to-many (cascade delete)
 - **users → messages**: Indirect via chats
 
 ## Database Commands

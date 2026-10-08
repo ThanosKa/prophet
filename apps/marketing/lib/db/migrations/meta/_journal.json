@@ -43,6 +43,20 @@
       "when": 1791110634236,
       "tag": "0005_rare_madelyne_pryor",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791450483863,
+      "tag": "0006_purchased_credits",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791450920116,
+      "tag": "0007_credit_purchases",
+      "breakpoints": true
     }
   ]
 }

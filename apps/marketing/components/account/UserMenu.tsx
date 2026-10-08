@@ -20,7 +20,8 @@ import {
   LogOut,
   Shield,
 } from "lucide-react";
-import type { User } from "@prophet/shared";
+import { describeBalance, type User } from "@prophet/shared";
+import { describeAccountBalance } from "@/lib/credit-balance";
 
 export function UserMenu() {
   const { user: clerkUser } = useClerkUser();
@@ -42,7 +43,13 @@ export function UserMenu() {
       .catch((err) => console.error("Failed to fetch user in menu:", err));
   }, [userContext?.user]);
 
-  const dbUser = userContext?.user || fetchedUser;
+  // The context carries the DB row and its named balances; /api/auth/user sends the total.
+  const contextBalance = userContext?.balance;
+  const balance = contextBalance
+    ? describeAccountBalance(contextBalance)
+    : fetchedUser
+      ? describeBalance(fetchedUser)
+      : null;
 
   if (!clerkUser) return null;
 
@@ -72,12 +79,17 @@ export function UserMenu() {
           </p>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="flex justify-between items-center pointer-events-none opacity-100">
-          <span className="text-xs font-semibold">Balance</span>
-          {dbUser ? (
-            <span className="font-bold">${(dbUser.creditsRemaining / 100).toFixed(2)}</span>
-          ) : (
-            <Skeleton className="h-4 w-12" />
+        <DropdownMenuItem className="flex flex-col items-stretch gap-0.5 pointer-events-none opacity-100">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-semibold">Balance</span>
+            {balance ? (
+              <span className="font-bold">{balance.total}</span>
+            ) : (
+              <Skeleton className="h-4 w-12" />
+            )}
+          </div>
+          {balance?.neverExpiresNote && (
+            <span className="text-xs text-muted-foreground">{balance.neverExpiresNote}</span>
           )}
         </DropdownMenuItem>
         <DropdownMenuSeparator />

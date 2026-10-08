@@ -10,9 +10,9 @@ import { AGENT_TOOLS } from "@/lib/agent/tools";
 import { AGENT_SYSTEM_PROMPT } from "@/lib/agent/system-prompt";
 import {
   buildAgentTools,
+  AGENT_TURN_MAX_TOKENS,
   buildOutputConfig,
   buildThinkingConfig,
-  getAgentMaxTokens,
   getAgentMinTokens,
   shouldUseWebSearch,
   toEchoableContent,
@@ -32,6 +32,7 @@ import {
   sanitizeForLog,
 } from "@prophet/shared";
 import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
+import { totalCredits } from "@/lib/credit-balance";
 import { buildAgentMessages, resolveRunTurns } from "@/lib/agent/conversation";
 import { error, INTERNAL_ERROR_MESSAGE, SESSION_EXPIRED_MESSAGE } from "@/types";
 import { logger } from "@/lib/logger";
@@ -163,7 +164,7 @@ export async function POST(req: Request) {
       enableThinking,
       enableWebSearch,
     } = validation.data;
-    // Installed extensions still send pre-Claude-5 model IDs; everything after this
+    // Installed extensions still send legacy model IDs; everything after this
     // point — the API call, pricing, credit deduction, usage rows — uses the
     // resolved model so cost always matches the model actually invoked.
     const requestedModel = validation.data.model ?? DEFAULT_AGENT_MODEL;
@@ -241,13 +242,14 @@ export async function POST(req: Request) {
       tools,
       messages: anthropicMessages,
     });
+    const balanceCents = totalCredits(user);
     const planFor = (option: { model: ModelName; enableThinking: boolean }) =>
       planCreditReservation({
         model: option.model,
-        balanceCents: user.creditsRemaining,
+        balanceCents,
         estimatedInputTokens,
-        maxTokens: getAgentMaxTokens(option),
-        minTokens: getAgentMinTokens(option),
+        maxTokens: AGENT_TURN_MAX_TOKENS,
+        minTokens: getAgentMinTokens(option.enableThinking),
         webSearchMaxUses: webSearchEnabled ? WEB_SEARCH_MAX_USES : 0,
       });
     const plan = planFor({ model, enableThinking });
@@ -257,7 +259,7 @@ export async function POST(req: Request) {
         {
           userId,
           model,
-          creditsRemaining: user.creditsRemaining,
+          balanceCents,
           requiredCents: plan.requiredCents,
         },
         "Insufficient balance for agent chat"
@@ -275,9 +277,10 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!(await reserveCredits({ db, userId, reserveCents: plan.reserveCents }))) {
+    const hold = await reserveCredits({ db, userId, reserveCents: plan.reserveCents });
+    if (!hold) {
       logger.warn(
-        { userId, model, creditsRemaining: user.creditsRemaining, requiredCents: plan.reserveCents },
+        { userId, model, balanceCents, requiredCents: plan.reserveCents },
         "Credit reservation lost a race for the balance"
       );
       return NextResponse.json(
@@ -293,8 +296,7 @@ export async function POST(req: Request) {
       );
     }
     const { reserveCents, maxTokens } = plan;
-    const maxTokensReducedForBalance =
-      maxTokens < getAgentMaxTokens({ model, enableThinking });
+    const maxTokensReducedForBalance = maxTokens < AGENT_TURN_MAX_TOKENS;
 
     const encoder = new TextEncoder();
     const upstream = new AbortController();
@@ -359,7 +361,7 @@ export async function POST(req: Request) {
             : 0;
           try {
             await db.transaction(async (tx) => {
-              await settleCredits({ db: tx, userId, reserveCents, actualCents });
+              await settleCredits({ db: tx, userId, hold, actualCents });
               if (actualCents > 0) {
                 await tx.insert(usageRecords).values({
                   userId,
@@ -389,8 +391,8 @@ export async function POST(req: Request) {
         try {
           if (!clientConnected) throw new Error("Client disconnected before the stream started");
 
-          const thinkingConfig = buildThinkingConfig(model, enableThinking);
-          const outputConfig = buildOutputConfig({ model, enableThinking });
+          const thinkingConfig = buildThinkingConfig(enableThinking);
+          const outputConfig = buildOutputConfig(enableThinking);
 
           const anthropicStream = await anthropic.messages.stream({
             model,
@@ -608,7 +610,7 @@ export async function POST(req: Request) {
               });
             }
 
-            await settleCredits({ db: tx, userId, reserveCents, actualCents: costCents });
+            await settleCredits({ db: tx, userId, hold, actualCents: costCents });
 
             // Always record usage for billing audit trail
             await tx.insert(usageRecords).values({
@@ -671,6 +673,22 @@ export async function POST(req: Request) {
             cache_read_input_tokens: cacheReadInputTokens,
             cache_creation_input_tokens: cacheCreationInputTokens,
           });
+
+          // Safety classifiers decline with HTTP 200 and no answer; without an error the
+          // extension would end the run on a blank reply.
+          if (stopReason === "refusal") {
+            logger.warn(
+              { userId, chatId, model, category: finalMessage.stop_details?.category ?? null },
+              "Model declined the request"
+            );
+            send(JSON.stringify({
+              type: "error",
+              error: "Claude declined this request. Try rephrasing it or start a new chat.",
+              code: "MODEL_REFUSED",
+            }));
+            close();
+            return;
+          }
 
           if (citations.length > 0) {
             const citationsData = JSON.stringify({

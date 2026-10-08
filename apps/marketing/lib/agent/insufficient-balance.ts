@@ -33,6 +33,7 @@ export function describeInsufficientBalance({
   fits: (option: { model: ModelName; enableThinking: boolean }) => boolean
 }): { message: string; details: InsufficientBalanceDetails } {
   const haiku = CLAUDE_MODELS.HAIKU
+  const haikuLabel = modelLabel(haiku)
   const haikuFits = model !== haiku && fits({ model: haiku, enableThinking: false })
   const base: InsufficientBalanceDetails = {
     pricingUrl: '/pricing',
@@ -43,7 +44,7 @@ export function describeInsufficientBalance({
   if (!isContinuation && enableThinking && fits({ model, enableThinking: false })) {
     return {
       message: haikuFits
-        ? `Not enough credits left for ${modelLabel(model)} with Thinking. Turn off Thinking, switch to Haiku 4.5, or buy more credits.`
+        ? `Not enough credits left for ${modelLabel(model)} with Thinking. Turn off Thinking, switch to ${haikuLabel}, or buy more credits.`
         : `Not enough credits left for ${modelLabel(model)} with Thinking. Turn off Thinking or buy more credits.`,
       details: {
         ...base,
@@ -55,8 +56,7 @@ export function describeInsufficientBalance({
 
   if (isContinuation && haikuFits) {
     return {
-      message:
-        'Stopped partway: not enough credits left to finish this task. Switch to Haiku 4.5 and send "continue", or buy more credits.',
+      message: `Stopped partway: not enough credits left to finish this task. Switch to ${haikuLabel} and send "continue", or buy more credits.`,
       details: { ...base, suggestedModel: haiku },
     }
   }
@@ -70,7 +70,7 @@ export function describeInsufficientBalance({
 
   if (haikuFits) {
     return {
-      message: `Not enough credits left for ${modelLabel(model)}. Switch to Haiku 4.5 or buy more credits.`,
+      message: `Not enough credits left for ${modelLabel(model)}. Switch to ${haikuLabel} or buy more credits.`,
       details: { ...base, suggestedModel: haiku },
     }
   }

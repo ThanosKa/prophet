@@ -17,7 +17,7 @@ export const anthropic = new Anthropic({
 
 /**
  * Default model for chat completions
- * Claude Haiku 4.5 - Fast and efficient for most tasks
+ * Claude Haiku 5.5 - Fast and efficient for most tasks
  */
 export const DEFAULT_MODEL = CLAUDE_MODELS.HAIKU
 

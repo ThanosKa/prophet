@@ -49,9 +49,9 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Page Understanding', prophet: 'Accessibility tree (structured data)', competitor: 'Screenshots (vision model)' },
       { feature: 'Speed', prophet: 'Fast - direct element targeting via UIDs', competitor: 'Slower - screenshot/analyze cycle each step' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits (no subscription required)', competitor: 'Claude Pro/Team/Enterprise subscription' },
-      { feature: 'Starting Price', prophet: 'Free ($0.20 credits included)', competitor: '$20/month (Claude Pro)' },
+      { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: '$20/month (Claude Pro)' },
       { feature: 'Browser Automation', prophet: '18 tools via Chrome DevTools Protocol', competitor: 'Computer Use (coordinate-based clicks)' },
-      { feature: 'Models Available', prophet: 'Claude Haiku 4.5, Sonnet 5.5, Opus 5.5', competitor: 'Claude Sonnet, Opus (depends on subscription)' },
+      { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'Claude Sonnet, Opus (depends on subscription)' },
       { feature: 'Data Privacy', prophet: 'Page content stays local; only messages sent to API', competitor: 'Screenshots sent to Anthropic servers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
@@ -70,7 +70,7 @@ export const comparisons: ComparisonEntry[] = [
     pricingReality: {
       heading: 'The $20 floor',
       body:
-        'Claude in Chrome has no standalone price because it is not a standalone product — it is a feature of a Claude subscription. That means the entry cost is $20/month for Claude Pro (or $25/user/month for Team), and it is the same $20 whether you run one automation this month or four hundred. There is no metered option and no way to pay less by using it less. Prophet starts at $0 with $0.20 of credits and no card, then bills credits at Anthropic API cost plus a 20% margin. For a user running a handful of browser automations a week on Sonnet, realistic spend is well under $2/month, which is roughly a tenth of the Claude Pro floor. The arithmetic inverts at high volume: if you are running Claude constantly all day, every day, a flat $20 eventually becomes the cheaper deal, and at that point Claude Pro plus Claude in Chrome is genuinely the rational purchase.',
+        'Claude in Chrome has no standalone price because it is not a standalone product — it is a feature of a Claude subscription. That means the entry cost is $20/month for Claude Pro (or $25/user/month for Team), and it is the same $20 whether you run one automation this month or four hundred. There is no metered option and no way to pay less by using it less. Prophet starts at $0 with a one-time $0.07 of credits and no card, then bills pay-per-use credits for the tokens you actually use. For a user running a handful of browser automations a week on Sonnet, realistic spend is well under $2/month, which is roughly a tenth of the Claude Pro floor. The arithmetic inverts at high volume: if you are running Claude constantly all day, every day, a flat $20 eventually becomes the cheaper deal, and at that point Claude Pro plus Claude in Chrome is genuinely the rational purchase.',
     },
     switchingNotes:
       'Nothing transfers, and nothing needs to. Claude in Chrome keeps its conversation history inside your claude.ai account, where it stays; Prophet keeps its own history against your Prophet account. The two extensions coexist in Chrome without conflict, so the low-risk path is to install Prophet alongside your existing subscription and run the same task through both for a week. The one genuine adjustment is prompting style: Computer Use responds well to visual instructions ("click the blue button top right"), whereas the accessibility tree responds to semantic ones ("click the Submit button in the checkout form"). Users coming from Claude in Chrome tend to over-describe position for the first day or two.',
@@ -85,7 +85,7 @@ export const comparisons: ComparisonEntry[] = [
       {
         question: 'Do I need a Claude Pro subscription to use Prophet?',
         answer:
-          'No. Prophet talks to the Anthropic API through its own backend, so you do not need any claude.ai subscription. You get $0.20 in credits on signup without a card, and all three models — Haiku 4.5, Sonnet 5.5 and Opus 5.5 — are available on the free tier.',
+          'No. Prophet talks to the Anthropic API through its own backend, so you do not need any claude.ai subscription. You get a one-time $0.07 in credits on signup without a card, enough to try Haiku 5.5, and Sonnet 5.5 and Opus 5.5 are pay-per-use from there with no subscription.',
       },
       {
         question: 'Which is faster for browser automation?',
@@ -110,9 +110,9 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Page Understanding', prophet: 'Accessibility tree snapshots', competitor: 'Page text extraction' },
       { feature: 'Speed', prophet: 'Fast - structured data, no vision model', competitor: 'Fast for chat; limited automation speed' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Monthly subscription tiers' },
-      { feature: 'Starting Price', prophet: 'Free ($0.20 credits included)', competitor: 'Free tier with daily limits, Pro from $10/month' },
+      { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free tier with daily limits, Pro from $10/month' },
       { feature: 'Browser Automation', prophet: '18 tools (click, fill, navigate, tab management)', competitor: 'Limited - mainly text selection and summarization' },
-      { feature: 'Models Available', prophet: 'Claude Haiku 4.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, and others' },
+      { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, and others' },
       { feature: 'Data Privacy', prophet: 'Page content processed locally; messages only to API', competitor: 'Page content sent to multiple third-party AI providers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
@@ -131,7 +131,7 @@ export const comparisons: ComparisonEntry[] = [
     pricingReality: {
       heading: 'Four tiers versus no tier',
       body:
-        'Sider prices in the normal SaaS way: a capped free tier, then Basic at $8.99/month, Pro at $12.99/month, and Unlimited at $24.99/month, with the better models and higher quotas gated to the upper tiers. The friction point users report most often is that "Unlimited" still meters advanced-model queries, so the top tier does not remove the thing you were paying to remove. Prophet has no tiers in that sense — credits are credits, every model is available at every level including free, and 1 credit is 1 cent of real Anthropic API cost plus a 20% margin. The comparison that matters: Sider Pro costs $155.88 a year whether you use it or not. Prophet at 20-30 Sonnet messages a day runs roughly $12-18 a month, light use runs a couple of dollars, and a month where you forget the extension exists costs exactly nothing. Sider wins on price only if you are a heavy multi-model user who would otherwise be buying two subscriptions.',
+        'Sider prices in the normal SaaS way: a capped free tier, then Basic at $8.99/month, Pro at $12.99/month, and Unlimited at $24.99/month, with the better models and higher quotas gated to the upper tiers. The friction point users report most often is that "Unlimited" still meters advanced-model queries, so the top tier does not remove the thing you were paying to remove. Prophet has no tiers in that sense — credits are credits, every model is available at every level including free, and 1 credit is 1 cent, charged by the tokens each Turn actually uses. The comparison that matters: Sider Pro costs $155.88 a year whether you use it or not. Prophet at 20-30 Sonnet messages a day runs roughly $12-18 a month, light use runs a couple of dollars, and a month where you forget the extension exists costs exactly nothing. Sider wins on price only if you are a heavy multi-model user who would otherwise be buying two subscriptions.',
     },
     switchingNotes:
       'Sider stores conversations and reading lists in its own account and offers no export, so history does not come with you — most people treat the switch as a clean start rather than a migration. Both extensions can be installed simultaneously, and because Sider is popup-and-sidebar while Prophet is a true Chrome side panel, they do not fight over screen space. The habit that takes longest to unlearn is Sider\'s selection-first workflow: you highlight text, then choose an action. Prophet is instruction-first — you describe the outcome and Claude decides which of the 18 tools to use. Users switching over typically spend their first week still highlighting things before realising they can just ask.',
@@ -151,7 +151,7 @@ export const comparisons: ComparisonEntry[] = [
       {
         question: 'Is Prophet cheaper than Sider?',
         answer:
-          'For light and moderate users, substantially. Sider Basic is $8.99/month and Pro is $12.99/month regardless of usage. Prophet bills pay-per-use credits at Anthropic API cost plus a 20% margin, so typical sidebar usage of 20-30 Sonnet messages a day lands around $12-18/month, light use costs a couple of dollars, and an unused month costs nothing. Heavy daily multi-model users may find Sider Unlimited better value.',
+          'For light and moderate users, substantially. Sider Basic is $8.99/month and Pro is $12.99/month regardless of usage. Prophet bills pay-per-use credits for the tokens you use, so typical sidebar usage of 20-30 Sonnet messages a day lands around $12-18/month, light use costs a couple of dollars, and an unused month costs nothing. Heavy daily multi-model users may find Sider Unlimited better value.',
       },
       {
         question: 'Can I use both Sider and Prophet at the same time?',
@@ -161,7 +161,7 @@ export const comparisons: ComparisonEntry[] = [
       {
         question: 'Which models does each support?',
         answer:
-          'Sider covers GPT-4, Claude and Gemini, with model access tied to your subscription tier. Prophet is Claude-exclusive but offers all three current tiers — Haiku 4.5, Sonnet 5.5 and Opus 5.5 — on every plan including the free one, which is unusual; most extensions reserve frontier models for paid tiers.',
+          'Sider covers GPT-4, Claude and Gemini, with model access tied to your subscription tier. Prophet is Claude-exclusive but offers all three current tiers — Haiku 5.5, Sonnet 5.5 and Opus 5.5 — on every plan including the free one, which is unusual; most extensions reserve frontier models for paid tiers.',
       },
     ],
   },
@@ -176,9 +176,9 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Page Understanding', prophet: 'Accessibility tree snapshots', competitor: 'Page text extraction and summarization' },
       { feature: 'Speed', prophet: 'Fast - direct element targeting', competitor: 'Fast for chat, slower for complex page tasks' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Daily free queries + subscription plans' },
-      { feature: 'Starting Price', prophet: 'Free ($0.20 credits included)', competitor: 'Free with daily limits, Pro from $9.90/month' },
+      { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with daily limits, Pro from $9.90/month' },
       { feature: 'Browser Automation', prophet: '18 tools via Chrome DevTools Protocol', competitor: 'Page summarization, writing, translation; no deep automation' },
-      { feature: 'Models Available', prophet: 'Claude Haiku 4.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, Llama, and more' },
+      { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, Llama, and more' },
       { feature: 'Data Privacy', prophet: 'Page data stays local; only chat messages leave your machine', competitor: 'Page content processed by multiple third-party providers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
@@ -212,7 +212,7 @@ export const comparisons: ComparisonEntry[] = [
       {
         question: 'Does Monica AI have daily limits?',
         answer:
-          'Yes, on every tier including Unlimited, where advanced models remain metered daily. This is the most common complaint about Monica in reviews. Prophet has no daily reset — your credit balance is the only limit, and credits are billed at Anthropic API cost plus a 20% margin.',
+          'Yes, on every tier including Unlimited, where advanced models remain metered daily. This is the most common complaint about Monica in reviews. Prophet has no daily reset — your credit balance is the only limit, and credits are pay-per-use, charged by the tokens each Turn uses.',
       },
       {
         question: 'Can Monica fill out forms for me?',
@@ -237,9 +237,9 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Page Understanding', prophet: 'Accessibility tree (semantic element data)', competitor: 'Page text extraction with context menu' },
       { feature: 'Speed', prophet: 'Fast - structured snapshots, no vision overhead', competitor: 'Fast for text tasks; no deep page interaction' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Free tier + subscription plans' },
-      { feature: 'Starting Price', prophet: 'Free ($0.20 credits included)', competitor: 'Free with limits, Pro from $9.99/month' },
+      { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with limits, Pro from $9.99/month' },
       { feature: 'Browser Automation', prophet: '18 tools (click, fill, navigate, scroll, tab management)', competitor: 'Context-menu actions: summarize, explain, translate; no form automation' },
-      { feature: 'Models Available', prophet: 'Claude Haiku 4.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, Llama' },
+      { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, Llama' },
       { feature: 'Data Privacy', prophet: 'Browsing data stays local; only messages sent to API', competitor: 'Selected text sent to third-party model providers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
@@ -258,7 +258,7 @@ export const comparisons: ComparisonEntry[] = [
     pricingReality: {
       heading: 'Paying for speed versus paying for capability',
       body:
-        'MaxAI runs a heavily restricted free tier, Pro at $9.99/month and Elite at $19.99/month. What you are buying at $9.99 is quota for text actions — the capability set does not meaningfully change between tiers, only how often you can use it. That is reasonable value if you read a lot and use the highlight menu dozens of times a day. It is poor value if you use it twice a week, because the fee is identical. Prophet\'s $0.20 free credits and pay-per-use billing mean sporadic use costs sporadic money. The comparison is slightly unfair in one direction and worth stating plainly: for pure highlight-and-summarise volume, MaxAI at $9.99 flat will be cheaper than Prophet\'s per-message credits once you pass roughly 60-80 actions a day, because Prophet charges for every one and MaxAI does not.',
+        'MaxAI runs a heavily restricted free tier, Pro at $9.99/month and Elite at $19.99/month. What you are buying at $9.99 is quota for text actions — the capability set does not meaningfully change between tiers, only how often you can use it. That is reasonable value if you read a lot and use the highlight menu dozens of times a day. It is poor value if you use it twice a week, because the fee is identical. Prophet\'s free $0.07 to try it and pay-per-use billing mean sporadic use costs sporadic money. The comparison is slightly unfair in one direction and worth stating plainly: for pure highlight-and-summarise volume, MaxAI at $9.99 flat will be cheaper than Prophet\'s per-message credits once you pass roughly 60-80 actions a day, because Prophet charges for every one and MaxAI does not.',
     },
     switchingNotes:
       'There is no data to migrate — MaxAI keeps almost no persistent state beyond settings and any saved prompts. The honest recommendation is that this is not a switch most people should make as a replacement. MaxAI and Prophet occupy different moments: MaxAI while reading, Prophet while working. Running both costs nothing extra given Prophet\'s free tier, and the two do not conflict since MaxAI is a context menu and Prophet is a side panel. If you do move entirely, expect the first week to feel slower, because instruction-first prompting genuinely takes longer than a two-click menu for trivial tasks.',
@@ -293,9 +293,9 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Page Understanding', prophet: 'Accessibility tree snapshots', competitor: 'Page text extraction' },
       { feature: 'Speed', prophet: 'Fast - structured data parsing', competitor: 'Moderate - depends on OpenAI API latency' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Free tier + ChatGPT Plus subscription' },
-      { feature: 'Starting Price', prophet: 'Free ($0.20 credits included)', competitor: 'Free with limits, Plus $20/month' },
+      { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with limits, Plus $20/month' },
       { feature: 'Browser Automation', prophet: '18 tools via Chrome DevTools Protocol', competitor: 'Text summarization and Q&A; no element interaction' },
-      { feature: 'Models Available', prophet: 'Claude Haiku 4.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4o, GPT-4, GPT-3.5' },
+      { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4o, GPT-4, GPT-3.5' },
       { feature: 'Data Privacy', prophet: 'Page content stays on your machine', competitor: 'Page content sent to OpenAI servers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
@@ -314,7 +314,7 @@ export const comparisons: ComparisonEntry[] = [
     pricingReality: {
       heading: 'Two subscriptions, or none',
       body:
-        'The hidden cost of ChatGPT sidebars is that there are usually two bills. Most wrappers run a limited free tier and then charge $8-15/month for their own subscription, and the ones that use your ChatGPT account rather than their own API key need ChatGPT Plus at $20/month to be usable. It is common to end up paying both — roughly $30/month for GPT in a sidebar. Prophet requires no OpenAI or Anthropic subscription at all: it bills credits at API cost plus a 20% margin, starting from $0.20 free with no card. For a user sending 20-30 messages a day, that is a difference between roughly $12-18/month and $20-30/month, and the gap widens sharply below that volume. The counterpoint is real though: if you already pay for ChatGPT Plus for other reasons and would not cancel it, the marginal cost of adding a free-tier sidebar to it is close to zero.',
+        'The hidden cost of ChatGPT sidebars is that there are usually two bills. Most wrappers run a limited free tier and then charge $8-15/month for their own subscription, and the ones that use your ChatGPT account rather than their own API key need ChatGPT Plus at $20/month to be usable. It is common to end up paying both — roughly $30/month for GPT in a sidebar. Prophet requires no OpenAI or Anthropic subscription at all: it bills pay-per-use credits for the tokens you use, starting from $0.07 free with no card. For a user sending 20-30 messages a day, that is a difference between roughly $12-18/month and $20-30/month, and the gap widens sharply below that volume. The counterpoint is real though: if you already pay for ChatGPT Plus for other reasons and would not cancel it, the marginal cost of adding a free-tier sidebar to it is close to zero.',
     },
     switchingNotes:
       'Nothing transfers — ChatGPT sidebar wrappers store conversations either in their own accounts or in your ChatGPT history, and neither exports into Prophet. The adjustment that catches people is prompt length. GPT tolerates and often rewards terse prompts; Claude rewards specificity, particularly when browser tools are involved, because a vague instruction gives the tool-selection step less to work with. Users moving from a ChatGPT sidebar typically write prompts that are too short for the first few days and conclude the automation is unreliable, when the fix is simply naming the target element or the desired end state.',
@@ -349,9 +349,9 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Page Understanding', prophet: 'Accessibility tree (semantic elements)', competitor: 'Page text extraction and summarization' },
       { feature: 'Speed', prophet: 'Fast - direct DOM interaction via UIDs', competitor: 'Fast for chat and summaries' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Daily free queries + subscription plans' },
-      { feature: 'Starting Price', prophet: 'Free ($0.20 credits included)', competitor: 'Free with daily query limits, Pro from $14.25/month' },
+      { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with daily query limits, Pro from $14.25/month' },
       { feature: 'Browser Automation', prophet: '18 tools (click, type, navigate, scroll, tab management)', competitor: 'Text actions (summarize, reply, rewrite); no form/button automation' },
-      { feature: 'Models Available', prophet: 'Claude Haiku 4.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, Llama, Mistral' },
+      { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, Llama, Mistral' },
       { feature: 'Data Privacy', prophet: 'Page data stays local; messages only to Anthropic API', competitor: 'Page content processed by multiple third-party AI services' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
@@ -405,9 +405,9 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Page Understanding', prophet: 'Accessibility tree snapshots', competitor: 'Page text extraction + CSS selectors' },
       { feature: 'Speed', prophet: 'Fast - structured semantic data', competitor: 'Fast for macros; slower for AI-driven tasks' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Free with BYOK, Pro subscription for premium features' },
-      { feature: 'Starting Price', prophet: 'Free ($0.20 credits included)', competitor: 'Free (bring your own API key), Pro from $15/month' },
+      { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free (bring your own API key), Pro from $15/month' },
       { feature: 'Browser Automation', prophet: '18 AI-driven tools via Chrome DevTools Protocol', competitor: 'Macro recorder, page monitoring, web scraping' },
-      { feature: 'Models Available', prophet: 'Claude Haiku 4.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini (via own API keys)' },
+      { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini (via own API keys)' },
       { feature: 'Data Privacy', prophet: 'Page content processed locally; only chat messages leave browser', competitor: 'BYOK option keeps data between you and the provider directly' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
@@ -426,7 +426,7 @@ export const comparisons: ComparisonEntry[] = [
     pricingReality: {
       heading: 'BYOK versus managed billing',
       body:
-        'HARPA\'s bring-your-own-key model is, on raw token cost, unbeatable: you pay Anthropic or OpenAI directly at list price with zero markup, and HARPA\'s free tier costs nothing on top. Prophet cannot beat that on arithmetic, and it would be dishonest to claim otherwise — Prophet bills credits at API cost plus a 20% margin, so it cannot match BYOK on raw price, and HARPA Pro at $15/month buys features rather than tokens. What BYOK actually costs you is operational: obtaining an Anthropic API key, funding it, rotating it, monitoring spend across providers, and handling the fact that a leaked key in a browser extension is your liability. Prophet handles authentication, billing and rate limiting centrally, and never exposes a key to the client. So the honest framing is that HARPA is cheaper for people who want to run their own key infrastructure, and Prophet is cheaper in total effort for people who do not.',
+        'HARPA\'s bring-your-own-key model is, on raw token cost, unbeatable: you pay Anthropic or OpenAI directly at list price with zero markup, and HARPA\'s free tier costs nothing on top. Prophet cannot beat that on arithmetic, and it would be dishonest to claim otherwise — Prophet bills credits at API cost plus a margin, so it cannot match BYOK on raw price, and HARPA Pro at $15/month buys features rather than tokens. What BYOK actually costs you is operational: obtaining an Anthropic API key, funding it, rotating it, monitoring spend across providers, and handling the fact that a leaked key in a browser extension is your liability. Prophet handles authentication, billing and rate limiting centrally, and never exposes a key to the client. So the honest framing is that HARPA is cheaper for people who want to run their own key infrastructure, and Prophet is cheaper in total effort for people who do not.',
     },
     switchingNotes:
       'HARPA macros do not translate — there is nothing to import them into, because Prophet has no macro concept. The upside is that most macros become a single sentence: a twelve-step HARPA workflow for extracting a table and pasting it into a form is usually one Prophet instruction. The genuine losses are HARPA\'s scheduled monitoring and change detection, which Prophet does not replicate; if you use HARPA to watch prices or track page changes on a schedule, keep it installed for that. Users switching should also expect to give up determinism: a HARPA macro does exactly the same thing every run, whereas Prophet reasons afresh each time, which is more adaptable and less predictable.',
@@ -436,7 +436,7 @@ export const comparisons: ComparisonEntry[] = [
       {
         question: 'Is HARPA AI cheaper than Prophet?',
         answer:
-          'On raw token cost, yes — BYOK means you pay the model provider directly with no markup. Prophet bills at actual API cost plus a 20% margin, so BYOK is genuinely cheaper per token. The trade is that BYOK requires you to obtain, fund, rotate and monitor your own API keys, while Prophet handles all of that centrally.',
+          'On raw token cost, yes — BYOK means you pay the model provider directly with no markup. Prophet bills at API cost plus a margin, so BYOK is genuinely cheaper per token. The trade is that BYOK requires you to obtain, fund, rotate and monitor your own API keys, while Prophet handles all of that centrally.',
       },
       {
         question: 'What is the difference between HARPA macros and Prophet automation?',
@@ -466,9 +466,9 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Page Understanding', prophet: 'Accessibility tree (structured element data)', competitor: 'Page text extraction and Bing search integration' },
       { feature: 'Speed', prophet: 'Fast - direct element targeting', competitor: 'Moderate - cloud processing through Microsoft infrastructure' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Free tier + Copilot Pro subscription' },
-      { feature: 'Starting Price', prophet: 'Free ($0.20 credits included)', competitor: 'Free with limits, Pro $20/month' },
+      { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with limits, Pro $20/month' },
       { feature: 'Browser Automation', prophet: '18 tools (click, fill, navigate, scroll, tab management)', competitor: 'No direct browser automation; text-based assistance only' },
-      { feature: 'Models Available', prophet: 'Claude Haiku 4.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, GPT-4o (Microsoft-hosted)' },
+      { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, GPT-4o (Microsoft-hosted)' },
       { feature: 'Data Privacy', prophet: 'Page data stays local; open source for full transparency', competitor: 'Data processed through Microsoft cloud services' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
@@ -487,7 +487,7 @@ export const comparisons: ComparisonEntry[] = [
     pricingReality: {
       heading: 'Seat licensing versus per-message credits',
       body:
-        'Copilot has a usable free tier for consumer chat, with Copilot Pro at $20/month for individuals, and the Microsoft 365 Copilot licence for organisations priced per seat on top of an existing 365 subscription. That enterprise seat cost is the number that matters in most real evaluations, and it is only justifiable if the Microsoft 365 integration is being used — paying it for browser chat alone would be poor value. Prophet is $0 to start with $0.20 of credits and no card, then credits at Anthropic API cost plus a 20% margin, typically $12-18/month at 20-30 Sonnet messages a day and a couple of dollars at light use. The two are not substitutes at the billing level either: Copilot is usually a line item someone else approves, while Prophet is a self-serve purchase. If your organisation already pays for Microsoft 365 Copilot, the marginal cost of using it in the browser is zero, and that is hard to argue against for chat.',
+        'Copilot has a usable free tier for consumer chat, with Copilot Pro at $20/month for individuals, and the Microsoft 365 Copilot licence for organisations priced per seat on top of an existing 365 subscription. That enterprise seat cost is the number that matters in most real evaluations, and it is only justifiable if the Microsoft 365 integration is being used — paying it for browser chat alone would be poor value. Prophet is $0 to start with a one-time $0.07 of credits and no card, then pay-per-use credits, typically $12-18/month at 20-30 Sonnet messages a day and a couple of dollars at light use. The two are not substitutes at the billing level either: Copilot is usually a line item someone else approves, while Prophet is a self-serve purchase. If your organisation already pays for Microsoft 365 Copilot, the marginal cost of using it in the browser is zero, and that is hard to argue against for chat.',
     },
     switchingNotes:
       'This is rarely a switch and usually an addition. Nothing migrates between the two, and there is no reason to remove Copilot if your organisation provides it — Prophet installs alongside it without conflict, and the two address different halves of a workday. The realistic pattern for people who adopt both is Copilot for anything touching Office documents and organisational data, Prophet for anything that requires acting on a web page: filling internal tools, extracting data from dashboards, driving admin interfaces that have no API. Users should be aware that Prophet\'s DevTools permissions may require IT approval in managed Chrome environments, which is a genuine friction Copilot does not have inside a Microsoft shop.',
@@ -536,14 +536,14 @@ export const alternatives: AlternativeEntry[] = [
     competitor: 'Monica AI',
     h1: 'Looking for a Monica AI Alternative? Try Prophet',
     title: 'Monica AI Alternative: Prophet Compared (2026)',
-    description: 'Want Monica without the flat subscription? Prophet bills per message at Anthropic API cost and adds real browser automation. Compared here.',
+    description: 'Want Monica without the flat subscription? Prophet bills pay-per-use credits and adds real browser automation. Compared here.',
     painPoints: [
       'Monica\'s daily query limits on the free tier force you into a subscription before you can properly evaluate the tool',
       'No real browser automation - Monica summarizes and rewrites text but cannot interact with page elements',
       'Data passes through multiple third-party AI providers with limited visibility into how it is processed',
     ],
     solutions: [
-      'Prophet gives you $0.20 in free credits with no daily limits - use them whenever and however you want',
+      'Prophet gives you $0.07 in free credits with no daily limits - use them whenever you want',
       'Prophet\'s 18 automation tools let the AI click buttons, fill forms, navigate pages, and manage tabs on your behalf',
       'Prophet is open source and routes data only through your chosen Claude model via Anthropic\'s API - nothing hidden',
     ],
@@ -560,7 +560,7 @@ export const alternatives: AlternativeEntry[] = [
       'Coordinate-based clicking is probabilistic and can miss targets, especially on dynamic or responsive pages',
     ],
     solutions: [
-      'Prophet starts free with $0.20 in credits and uses pay-per-use pricing - no subscription commitment needed',
+      'Prophet starts free with $0.07 in credits and uses pay-per-use pricing - no subscription commitment needed',
       'Prophet reads the accessibility tree instead of screenshots, using fewer tokens and delivering results faster',
       'Prophet uses deterministic UID-based element targeting that reliably hits the correct button, link, or input every time',
     ],
@@ -604,7 +604,7 @@ export const alternatives: AlternativeEntry[] = [
     competitor: 'HARPA AI',
     h1: 'Looking for a HARPA AI Alternative? Try Prophet',
     title: 'HARPA AI Alternative: Prophet Compared (2026)',
-    description: 'HARPA needs your own API key and setup. Prophet works out of the box with all three Claude models and $0.20 free credits. Compared here.',
+    description: 'HARPA needs your own API key and setup. Prophet works out of the box with all three Claude models and $0.07 free credits. Compared here.',
     painPoints: [
       'HARPA\'s macro-based automation requires manual setup of each workflow step, which is time-consuming for new tasks',
       'Bring-your-own-key model means managing API keys, monitoring usage across providers, and handling billing separately',

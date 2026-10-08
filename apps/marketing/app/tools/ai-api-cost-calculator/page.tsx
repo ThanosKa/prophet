@@ -24,19 +24,26 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import Link from 'next/link'
+import { MODEL_PRICING, calculateCostInCredits, type ModelName } from '@/lib/pricing'
 
+type CalculatorModel = { name: string; provider: string; input: number; output: number; prophetModel?: ModelName }
+
+function claudeModel(name: string, prophetModel: ModelName): CalculatorModel {
+  const { input, output } = MODEL_PRICING[prophetModel]
+  return { name, provider: 'Anthropic', input, output, prophetModel }
+}
+
+// Prophet runs Claude only; the other models are here to compare raw API prices.
 const MODELS = {
-  'claude-haiku': { name: 'Claude Haiku 4.5', provider: 'Anthropic', input: 1, output: 5 },
-  'claude-sonnet': { name: 'Claude Sonnet 5.5', provider: 'Anthropic', input: 2, output: 10 },
-  'claude-opus': { name: 'Claude Opus 5.5', provider: 'Anthropic', input: 4, output: 20 },
+  'claude-haiku': claudeModel('Claude Haiku 5.5', 'claude-haiku-5-5'),
+  'claude-sonnet': claudeModel('Claude Sonnet 5.5', 'claude-sonnet-5-5'),
+  'claude-opus': claudeModel('Claude Opus 5.5', 'claude-opus-5-5'),
   'gpt-4o': { name: 'GPT-4o', provider: 'OpenAI', input: 2.5, output: 10 },
   'gpt-4.5': { name: 'GPT-4.5', provider: 'OpenAI', input: 75, output: 150 },
   'gemini-2.5-pro': { name: 'Gemini 2.5 Pro', provider: 'Google', input: 1.25, output: 10 },
-} as const
+} satisfies Record<string, CalculatorModel>
 
 type ModelKey = keyof typeof MODELS
-
-const PROPHET_MARKUP = 1.20
 
 const AVG_TOKENS_MAP = {
   short: { input: 200, output: 300 },
@@ -61,7 +68,7 @@ export default function AiApiCostCalculatorPage() {
     return { input: avg.input, output: avg.output }
   }, [inputMode, inputTokens, outputTokens, avgLength])
 
-  const pricing = MODELS[model]
+  const pricing: CalculatorModel = MODELS[model]
 
   const rawCostPerRequest = useMemo(() => {
     const inputCost = (effectiveTokens.input / 1_000_000) * pricing.input
@@ -69,12 +76,16 @@ export default function AiApiCostCalculatorPage() {
     return inputCost + outputCost
   }, [effectiveTokens, pricing])
 
-  const prophetCostPerRequest = rawCostPerRequest * PROPHET_MARKUP
+  // What Prophet charges per request, in dollars: rounded up to whole Credits, never below the Minimum charge.
+  const prophetModel = pricing.prophetModel
+  const prophetCostPerRequest = prophetModel
+    ? calculateCostInCredits(prophetModel, effectiveTokens.input, effectiveTokens.output) / 100
+    : null
 
   const effectiveRequestsPerDay = inputMode === 'messages' ? messageCount : requestsPerDay
 
   const rawMonthlyCost = rawCostPerRequest * effectiveRequestsPerDay * 30
-  const prophetMonthlyCost = prophetCostPerRequest * effectiveRequestsPerDay * 30
+  const prophetMonthlyCost = prophetCostPerRequest === null ? null : prophetCostPerRequest * effectiveRequestsPerDay * 30
 
   const formatUSD = (val: number) => {
     if (val < 0.001) return `$${val.toFixed(6)}`
@@ -228,19 +239,19 @@ export default function AiApiCostCalculatorPage() {
                     <TableRow>
                       <TableHead></TableHead>
                       <TableHead className="text-right">Raw API</TableHead>
-                      <TableHead className="text-right">With Prophet (20%)</TableHead>
+                      <TableHead className="text-right">With Prophet</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     <TableRow>
                       <TableCell className="font-medium">Per request</TableCell>
                       <TableCell className="text-right font-mono">{formatUSD(rawCostPerRequest)}</TableCell>
-                      <TableCell className="text-right font-mono">{formatUSD(prophetCostPerRequest)}</TableCell>
+                      <TableCell className="text-right font-mono">{prophetCostPerRequest === null ? 'Claude only' : formatUSD(prophetCostPerRequest)}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell className="font-medium">Monthly ({effectiveRequestsPerDay}/day)</TableCell>
                       <TableCell className="text-right font-mono">{formatUSD(rawMonthlyCost)}</TableCell>
-                      <TableCell className="text-right font-mono">{formatUSD(prophetMonthlyCost)}</TableCell>
+                      <TableCell className="text-right font-mono">{prophetMonthlyCost === null ? 'Claude only' : formatUSD(prophetMonthlyCost)}</TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
@@ -248,34 +259,36 @@ export default function AiApiCostCalculatorPage() {
             </Card>
           </div>
 
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="text-base">Prophet vs Claude Pro Subscription</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="p-4 rounded-lg border">
-                  <p className="text-sm text-muted-foreground mb-1">With Prophet</p>
-                  <p className="text-2xl font-bold">{formatUSD(prophetMonthlyCost)}<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
-                  <p className="text-xs text-muted-foreground mt-1">Pay only for what you use</p>
+          {prophetMonthlyCost !== null && (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="text-base">Prophet vs Claude Pro Subscription</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="p-4 rounded-lg border">
+                    <p className="text-sm text-muted-foreground mb-1">With Prophet</p>
+                    <p className="text-2xl font-bold">{formatUSD(prophetMonthlyCost)}<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
+                    <p className="text-xs text-muted-foreground mt-1">Pay only for what you use</p>
+                  </div>
+                  <div className="p-4 rounded-lg border">
+                    <p className="text-sm text-muted-foreground mb-1">Claude Pro Subscription</p>
+                    <p className="text-2xl font-bold">$20.00<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
+                    <p className="text-xs text-muted-foreground mt-1">Fixed monthly fee with usage limits</p>
+                  </div>
                 </div>
-                <div className="p-4 rounded-lg border">
-                  <p className="text-sm text-muted-foreground mb-1">Claude Pro Subscription</p>
-                  <p className="text-2xl font-bold">$20.00<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
-                  <p className="text-xs text-muted-foreground mt-1">Fixed monthly fee with usage limits</p>
-                </div>
-              </div>
-              {prophetMonthlyCost < 20 ? (
-                <p className="text-sm text-muted-foreground mt-4">
-                  At your current usage, Prophet saves you <strong className="text-foreground">{formatUSD(20 - prophetMonthlyCost)}/mo</strong> compared to a Claude Pro subscription.
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground mt-4">
-                  At this usage level, a Claude Pro subscription may be more cost-effective. Prophet is best for light to moderate use.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                {prophetMonthlyCost < 20 ? (
+                  <p className="text-sm text-muted-foreground mt-4">
+                    At your current usage, Prophet saves you <strong className="text-foreground">{formatUSD(20 - prophetMonthlyCost)}/mo</strong> compared to a Claude Pro subscription.
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-4">
+                    At this usage level, a Claude Pro subscription may be more cost-effective. Prophet is best for light to moderate use.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="mb-8">
             <CardHeader>
@@ -296,14 +309,14 @@ export default function AiApiCostCalculatorPage() {
                 <TableBody>
                   {Object.entries(MODELS).map(([key, m]) => {
                     const reqCost = (effectiveTokens.input / 1_000_000) * m.input + (effectiveTokens.output / 1_000_000) * m.output
-                    const monthly = reqCost * PROPHET_MARKUP * effectiveRequestsPerDay * 30
+                    const monthly = reqCost * effectiveRequestsPerDay * 30
                     return (
                       <TableRow key={key}>
                         <TableCell className="font-medium">{m.name}</TableCell>
                         <TableCell className="text-muted-foreground">{m.provider}</TableCell>
                         <TableCell className="text-right font-mono">${m.input}</TableCell>
                         <TableCell className="text-right font-mono">${m.output}</TableCell>
-                        <TableCell className="text-right font-mono">{formatUSD(reqCost * PROPHET_MARKUP)}</TableCell>
+                        <TableCell className="text-right font-mono">{formatUSD(reqCost)}</TableCell>
                         <TableCell className="text-right font-mono">{formatUSD(monthly)}</TableCell>
                       </TableRow>
                     )
@@ -311,7 +324,7 @@ export default function AiApiCostCalculatorPage() {
                 </TableBody>
               </Table>
               <p className="text-xs text-muted-foreground mt-3">
-                Costs include Prophet&apos;s 20% platform fee. Based on {effectiveTokens.input.toLocaleString()} input + {effectiveTokens.output.toLocaleString()} output tokens per request, {effectiveRequestsPerDay} requests/day.
+                Raw API list prices, before any Prophet charge. Based on {effectiveTokens.input.toLocaleString()} input + {effectiveTokens.output.toLocaleString()} output tokens per request, {effectiveRequestsPerDay} requests/day. Claude Haiku 5.5 rates apply to prompts up to 100K tokens; longer prompts bill at $0.50 / $2.50 per MTok.
               </p>
             </CardContent>
           </Card>

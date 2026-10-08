@@ -66,13 +66,13 @@ describe('ChatBanner', () => {
     const onDismissError = vi.fn()
     await render({
       error: 'Not enough credits for Opus.',
-      errorInfo: { code: 'INSUFFICIENT_BALANCE', suggestedModel: 'claude-haiku-4-5' },
+      errorInfo: { code: 'INSUFFICIENT_BALANCE', suggestedModel: 'claude-haiku-5-5' },
       onDismissError,
     })
 
-    await act(async () => buttonNamed('Switch to Haiku 4.5')?.click())
+    await act(async () => buttonNamed('Switch to Haiku 5.5')?.click())
 
-    expect(useUIStore.getState().selectedModel).toBe('claude-haiku-4-5')
+    expect(useUIStore.getState().selectedModel).toBe('claude-haiku-5-5')
     expect(onDismissError).toHaveBeenCalled()
   })
 
@@ -102,7 +102,7 @@ describe('ChatBanner', () => {
 
     expect(buttonNamed('Buy Extra Credits')).toBeDefined()
     expect(buttonNamed('Upgrade your plan')).toBeDefined()
-    expect(buttonNamed('Switch to Haiku 4.5')).toBeUndefined()
+    expect(buttonNamed('Switch to Haiku 5.5')).toBeUndefined()
     expect(buttonNamed('Turn off Thinking')).toBeUndefined()
   })
 })

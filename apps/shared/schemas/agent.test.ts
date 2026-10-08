@@ -539,7 +539,7 @@ describe('toolUseSchema', () => {
 
 describe('Model constants and legacy aliases', () => {
   it('exposes the current Claude model ids', () => {
-    expect(CLAUDE_MODELS.HAIKU).toBe('claude-haiku-4-5')
+    expect(CLAUDE_MODELS.HAIKU).toBe('claude-haiku-5-5')
     expect(CLAUDE_MODELS.SONNET).toBe('claude-sonnet-5-5')
     expect(CLAUDE_MODELS.OPUS).toBe('claude-opus-5-5')
   })
@@ -576,6 +576,7 @@ describe('Model constants and legacy aliases', () => {
   it('resolves legacy ids to their current replacement', () => {
     expect(resolveAgentModel('claude-opus-4-6')).toBe(CLAUDE_MODELS.OPUS)
     expect(resolveAgentModel('claude-sonnet-4-6')).toBe(CLAUDE_MODELS.SONNET)
+    expect(resolveAgentModel('claude-haiku-4-5')).toBe(CLAUDE_MODELS.HAIKU)
   })
 
   it('leaves current ids untouched', () => {
