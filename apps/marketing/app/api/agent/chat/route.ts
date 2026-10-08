@@ -31,10 +31,12 @@ import {
   AGENT_SIZE_LIMITS,
   agentChatRequestSchema,
   DEFAULT_AGENT_MODEL,
+  errorMessage,
   getModelContextWindow,
   resolveAgentModel,
   RUN_SUPERSEDED_MESSAGE,
   sanitizeForLog,
+  type StoredToolCall,
 } from "@prophet/shared";
 import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
 import { totalCredits } from "@/lib/credit-balance";
@@ -58,7 +60,7 @@ import {
   type TokenUsage,
 } from "@/lib/pricing";
 import { devLogger } from "@/lib/dev-logger";
-import type { ContentBlock } from "@anthropic-ai/sdk/resources/messages";
+import type { ContentBlock, MessageParam } from "@anthropic-ai/sdk/resources/messages";
 
 function extractCitations(blocks: ContentBlock[]) {
   const seen = new Set<string>();
@@ -266,22 +268,16 @@ export async function POST(req: Request) {
       runTurns,
     });
     const tools = buildAgentTools(AGENT_TOOLS, webSearchEnabled);
-    const estimatedPromptTokens = estimateInputTokens({
-      system: AGENT_SYSTEM_PROMPT,
-      tools,
-      messages: estimatedMessages,
-    });
+    const estimatePrompt = (promptMessages: MessageParam[]) =>
+      estimateInputTokens({ system: AGENT_SYSTEM_PROMPT, tools, messages: promptMessages });
+    const estimatedPromptTokens = estimatePrompt(estimatedMessages);
     const runEnd = lastTurnReason({
       runTurns,
       hasRunId: runId !== undefined,
       estimatedPromptTokens,
     });
     const estimatedInputTokens = runEnd
-      ? estimateInputTokens({
-          system: AGENT_SYSTEM_PROMPT,
-          tools,
-          messages: withLastTurnNotice(estimatedMessages),
-        })
+      ? estimatePrompt(withLastTurnNotice(estimatedMessages))
       : estimatedPromptTokens;
     // The Hold expects the cache: a `previousTurns` continuation's previous Turn already
     // sent (and cached) this prompt minus its newest Turn, so that prefix is priced as a
@@ -289,16 +285,14 @@ export async function POST(req: Request) {
     // Turns and the legacy form write their whole prompt. A miss settles as overage.
     const cachedPrefixTokens =
       isContinuationTurn && previousTurns
-        ? estimateInputTokens({
-            system: AGENT_SYSTEM_PROMPT,
-            tools,
-            messages: buildAgentMessages({
+        ? estimatePrompt(
+            buildAgentMessages({
               history: runHistory,
               userMessage,
               image,
               runTurns: runTurns.slice(0, -1),
-            }),
-          })
+            })
+          )
         : 0;
     const restTokens = Math.max(0, estimatedInputTokens - cachedPrefixTokens);
     const balanceCents = totalCredits(user);
@@ -372,12 +366,12 @@ export async function POST(req: Request) {
         runRequest = { type: "first", opening: started.opening };
       } catch (startError) {
         logger.error(
-          { userId, chatId, error: startError instanceof Error ? startError.message : String(startError) },
+          { userId, chatId, error: errorMessage(startError) },
           "Failed to start the Run; returning its hold"
         );
         await settleCredits({ db, userId, hold, actualCents: 0 }).catch((settleError: unknown) => {
           logger.error(
-            { userId, chatId, reserveCents, error: settleError instanceof Error ? settleError.message : String(settleError) },
+            { userId, chatId, reserveCents, error: errorMessage(settleError) },
             "Failed to return the hold of a Run that never started"
           );
         });
@@ -497,7 +491,7 @@ export async function POST(req: Request) {
                 chatId,
                 reserveCents,
                 actualCents,
-                error: settleError instanceof Error ? settleError.message : String(settleError),
+                error: errorMessage(settleError),
               },
               "Failed to settle credit reservation; hold kept"
             );
@@ -537,12 +531,7 @@ export async function POST(req: Request) {
           } | null = null;
           // Held back until the Turn ends cleanly with `tool_use`: a call released
           // mid-stream would run even when the Turn is then cut off or refused.
-          const clientToolCalls: Array<{
-            type: "tool_use";
-            id: string;
-            name: string;
-            input: unknown;
-          }> = [];
+          const clientToolCalls: StoredToolCall[] = [];
 
           // Send session_created at the start
           const sessionData = JSON.stringify({
@@ -634,7 +623,7 @@ export async function POST(req: Request) {
                     {
                       toolUseId: currentToolUse.id,
                       input: currentToolUse.input,
-                      error: e instanceof Error ? e.message : String(e),
+                      error: errorMessage(e),
                     },
                     "Failed to parse tool input, using empty object"
                   );
@@ -654,7 +643,7 @@ export async function POST(req: Request) {
                     type: "tool_use",
                     id: currentToolUse.id,
                     name: currentToolUse.name,
-                    input: parsedInput,
+                    input: isToolInput(parsedInput) ? parsedInput : {},
                   });
                 }
                 currentToolUse = null;
@@ -715,14 +704,7 @@ export async function POST(req: Request) {
               : {
                   type: "reply",
                   text: fullTextResponse,
-                  releasedToolCalls: releasesToolCalls
-                    ? clientToolCalls.map((call) => ({
-                        type: call.type,
-                        id: call.id,
-                        name: call.name,
-                        input: isToolInput(call.input) ? call.input : {},
-                      }))
-                    : [],
+                  releasedToolCalls: releasesToolCalls ? clientToolCalls : [],
                 };
 
           const maxContextTokens = getModelContextWindow(model);
@@ -862,7 +844,7 @@ export async function POST(req: Request) {
         } catch (err) {
           logger.error(
             {
-              error: err instanceof Error ? err.message : String(err),
+              error: errorMessage(err),
               userId,
               chatId,
             },
@@ -937,7 +919,7 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     logger.error(
-      { error: err instanceof Error ? err.message : String(err) },
+      { error: errorMessage(err) },
       "Agent chat endpoint error"
     );
     return NextResponse.json(

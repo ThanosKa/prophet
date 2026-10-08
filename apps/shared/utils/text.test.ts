@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { keepChars } from './text'
+import { errorMessage, keepChars } from './text'
 
 describe('keepChars', () => {
   it('returns text within the count unchanged', () => {
@@ -21,5 +21,13 @@ describe('keepChars', () => {
 
   it('keeps nothing for a count of zero', () => {
     expect(keepChars({ text: 'abc', count: 0, from: 'end' })).toBe('')
+  })
+})
+
+describe('errorMessage', () => {
+  it("returns an Error's message, or anything else as text", () => {
+    expect(errorMessage(new Error('socket hang up'))).toBe('socket hang up')
+    expect(errorMessage('timeout')).toBe('timeout')
+    expect(errorMessage(429)).toBe('429')
   })
 })
