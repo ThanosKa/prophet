@@ -1,54 +1,33 @@
-import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
-import { generateDrizzleJson, generateMigration } from 'drizzle-kit/api'
-import { eq, sql } from 'drizzle-orm'
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
+import { eq } from 'drizzle-orm'
 import * as schema from '@/lib/db/schema'
-import { POST } from './route'
-
-vi.mock('@/lib/db', async () => {
-  const { PGlite } = await import('@electric-sql/pglite')
-  const { drizzle } = await import('drizzle-orm/pglite')
-  const dbSchema = await import('@/lib/db/schema')
-  return { db: drizzle(new PGlite(), { schema: dbSchema }) }
-})
-
-vi.mock('@clerk/nextjs/server', () => ({ auth: vi.fn() }))
-vi.mock('@/lib/ratelimit', () => ({ checkRateLimit: vi.fn() }))
-const { streamMock } = vi.hoisted(() => ({ streamMock: vi.fn() }))
-vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { stream: streamMock } } }))
-vi.mock('@/lib/logger', () => ({
-  logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-}))
-vi.mock('@/lib/dev-logger', () => ({
-  devLogger: { logRequest: vi.fn(), logResponse: vi.fn() },
-}))
-
-const { db } = await import('@/lib/db')
-const { auth } = await import('@clerk/nextjs/server')
-const { checkRateLimit } = await import('@/lib/ratelimit')
-const { logger } = await import('@/lib/logger')
+import {
+  anthropicTurn,
+  balance as balanceOf,
+  createTables,
+  db,
+  loggerMock,
+  postAgentChat,
+  resetAs,
+  seedUserWithChat,
+  streamMock,
+  text,
+  type Usage,
+} from './route-test-harness'
 
 const USER_ID = 'user_cache_hold'
 const CHAT_ID = '5b2e8f1a-3c4d-4e6f-8a7b-9c0d1e2f3a4b'
 const OPENING_ID = '6d1c9e2b-4f3a-4b5c-8d7e-0f1a2b3c4d5e'
 
-beforeAll(async () => {
-  const statements = await generateMigration(generateDrizzleJson({}), generateDrizzleJson(schema))
-  for (const statement of statements) {
-    await db.execute(sql.raw(statement))
-  }
-})
+beforeAll(createTables)
 
 beforeEach(async () => {
-  vi.clearAllMocks()
-  await db.delete(schema.users)
-  vi.mocked(auth).mockResolvedValue({ userId: USER_ID } as never)
-  vi.mocked(checkRateLimit).mockResolvedValue({ success: true, limit: 60, remaining: 59, reset: 60 })
+  await resetAs(USER_ID)
 })
 
 /** A paid user mid-Run: the chat and the Run's opening user row, as Turn 1 saved it. */
 async function seedRun({ credits, opening = 'Tidy my inbox' }: { credits: number; opening?: string }) {
-  await db.insert(schema.users).values({ id: USER_ID, email: 'cache-hold@example.com', creditsRemaining: credits, tier: 'pro' })
-  await db.insert(schema.chats).values({ id: CHAT_ID, userId: USER_ID, title: 'Chat' })
+  await seedUserWithChat({ userId: USER_ID, chatId: CHAT_ID, credits, tier: 'pro' })
   await db.insert(schema.messages).values({
     id: OPENING_ID,
     chatId: CHAT_ID,
@@ -58,19 +37,10 @@ async function seedRun({ credits, opening = 'Tidy my inbox' }: { credits: number
   })
 }
 
-async function balance(): Promise<number | undefined> {
-  const row = await db.query.users.findFirst({ where: eq(schema.users.id, USER_ID) })
-  return row?.creditsRemaining
-}
+const balance = () => balanceOf(USER_ID)
 
 function post(body: Record<string, unknown>) {
-  return POST(
-    new Request('http://localhost:3000/api/agent/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId: CHAT_ID, ...body }),
-    })
-  )
+  return postAgentChat({ chatId: CHAT_ID, ...body })
 }
 
 /** 120,000 ASCII characters of snapshot text: 60,000 estimated tokens. */
@@ -105,18 +75,8 @@ function continuationWithLargeCachedPrefix() {
   }
 }
 
-function finishedTurn(usage: Record<string, number>) {
-  return {
-    [Symbol.asyncIterator]: async function* () {
-      yield { type: 'message_start', message: { usage: { ...usage, output_tokens: 1 } } }
-      yield { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }
-      yield { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Done.' } }
-      yield { type: 'content_block_stop', index: 0 }
-      yield { type: 'message_delta', delta: { stop_reason: 'end_turn' }, usage: { output_tokens: usage.output_tokens } }
-    },
-    finalMessage: () =>
-      Promise.resolve({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'Done.' }], usage }),
-  }
+function finishedTurn(usage: Usage) {
+  return anthropicTurn({ content: [text('Done.')], stopReason: 'end_turn', usage })
 }
 
 describe('cache-aware Hold in POST /api/agent/chat', () => {
@@ -189,7 +149,7 @@ describe('cache-aware Hold in POST /api/agent/chat', () => {
     expect(await balance()).toBe(-16)
     const [record] = await db.select().from(schema.usageRecords).where(eq(schema.usageRecords.userId, USER_ID))
     expect(record?.costCents).toBe(23)
-    expect(logger.warn).toHaveBeenCalledWith(
+    expect(loggerMock.warn).toHaveBeenCalledWith(
       expect.objectContaining({ reserveCents: CACHED_HOLD_FLOOR, costCents: 23 }),
       expect.stringContaining('Turn cost exceeded its Hold')
     )

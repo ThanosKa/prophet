@@ -1,108 +1,39 @@
-import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
-import { generateDrizzleJson, generateMigration } from 'drizzle-kit/api'
-import { sql } from 'drizzle-orm'
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import * as schema from '@/lib/db/schema'
-import { POST } from './route'
-
-vi.mock('@/lib/db', async () => {
-  const { PGlite } = await import('@electric-sql/pglite')
-  const { drizzle } = await import('drizzle-orm/pglite')
-  const dbSchema = await import('@/lib/db/schema')
-  return { db: drizzle(new PGlite(), { schema: dbSchema }) }
-})
-
-vi.mock('@clerk/nextjs/server', () => ({ auth: vi.fn() }))
-vi.mock('@/lib/ratelimit', () => ({ checkRateLimit: vi.fn() }))
-// A plain vi.fn, so tests can hand it stub streams without casting to MessageStream.
-const { streamMock } = vi.hoisted(() => ({ streamMock: vi.fn() }))
-
-vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { stream: streamMock } } }))
-vi.mock('@/lib/logger', () => ({
-  logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-}))
-vi.mock('@/lib/dev-logger', () => ({
-  devLogger: { logRequest: vi.fn(), logResponse: vi.fn() },
-}))
-
-const { db } = await import('@/lib/db')
-const { auth } = await import('@clerk/nextjs/server')
-const { checkRateLimit } = await import('@/lib/ratelimit')
-const { anthropic } = await import('@/lib/anthropic')
+import {
+  anthropicTurn as harnessTurn,
+  createTables,
+  db,
+  postAgentChat,
+  resetAs,
+  seedUserWithChat,
+  sentParams,
+  streamMock,
+  type ApiBlock,
+} from './route-test-harness'
 
 const USER_ID = 'user_cache'
 const CHAT_ID = '6f1c2a5e-8b4d-4c7a-9e21-3d5f7a9b1c2e'
 
-beforeAll(async () => {
-  const statements = await generateMigration(generateDrizzleJson({}), generateDrizzleJson(schema))
-  for (const statement of statements) {
-    await db.execute(sql.raw(statement))
-  }
-})
+beforeAll(createTables)
 
 beforeEach(async () => {
-  vi.clearAllMocks()
-  await db.delete(schema.users)
-  vi.mocked(auth).mockResolvedValue({ userId: USER_ID } as never)
-  vi.mocked(checkRateLimit).mockResolvedValue({ success: true, limit: 60, remaining: 59, reset: 60 })
-  await db.insert(schema.users).values({ id: USER_ID, email: 'cache@example.com', creditsRemaining: 10_000 })
-  await db.insert(schema.chats).values({ id: CHAT_ID, userId: USER_ID, title: 'Chat' })
+  await resetAs(USER_ID)
+  await seedUserWithChat({ userId: USER_ID, chatId: CHAT_ID, credits: 10_000 })
 })
-
-type ApiBlock = Record<string, unknown>
 
 /** One Anthropic response: streams `content`, then reports it from finalMessage(). */
 function anthropicTurn(content: ApiBlock[], stopReason: 'tool_use' | 'end_turn') {
-  return {
-    [Symbol.asyncIterator]: async function* () {
-      yield { type: 'message_start', message: { usage: { input_tokens: 100, output_tokens: 1 } } }
-      for (const [index, block] of content.entries()) {
-        if (block.type === 'tool_use') {
-          yield { type: 'content_block_start', index, content_block: { ...block, input: {} } }
-          yield {
-            type: 'content_block_delta',
-            index,
-            delta: { type: 'input_json_delta', partial_json: JSON.stringify(block.input) },
-          }
-        } else if (block.type === 'text') {
-          yield { type: 'content_block_start', index, content_block: { type: 'text', text: '' } }
-          yield { type: 'content_block_delta', index, delta: { type: 'text_delta', text: block.text } }
-        } else {
-          yield { type: 'content_block_start', index, content_block: block }
-        }
-        yield { type: 'content_block_stop', index }
-      }
-      yield { type: 'message_delta', delta: { stop_reason: stopReason }, usage: { output_tokens: 50 } }
-    },
-    finalMessage: () =>
-      Promise.resolve({
-        stop_reason: stopReason,
-        content,
-        usage: { input_tokens: 100, output_tokens: 50 },
-      }),
-  }
+  return harnessTurn({ content, stopReason, usage: { input_tokens: 100, output_tokens: 50 } })
 }
 
 function post(body: Record<string, unknown>) {
-  return POST(
-    new Request('http://localhost:3000/api/agent/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId: CHAT_ID, ...body }),
-    })
-  )
-}
-
-function sentParams(call = 0) {
-  const params = vi.mocked(anthropic.messages.stream).mock.calls[call]?.[0]
-  if (!params) throw new Error(`no Anthropic call #${call}`)
-  return params
+  return postAgentChat({ chatId: CHAT_ID, ...body })
 }
 
 describe('prompt caching in POST /api/agent/chat', () => {
   it('caches the static prefix explicitly and the growing conversation automatically', async () => {
-    vi.mocked(anthropic.messages.stream).mockReturnValue(
-      anthropicTurn([{ type: 'text', text: 'Hi' }], 'end_turn') as never
-    )
+    streamMock.mockReturnValue(anthropicTurn([{ type: 'text', text: 'Hi' }], 'end_turn'))
 
     const response = await post({ userMessage: 'Hello', model: 'claude-sonnet-5-5' })
     await response.text()
@@ -137,10 +68,10 @@ async function seedEarlierExchange() {
 
 /** Drives three requests of one agent run the way the extension sends them. */
 async function runThreeTurns(extra: Record<string, unknown> = {}) {
-  vi.mocked(anthropic.messages.stream)
-    .mockReturnValueOnce(anthropicTurn(NAVIGATE_TURN.content, 'tool_use') as never)
-    .mockReturnValueOnce(anthropicTurn(SNAPSHOT_TURN.content, 'tool_use') as never)
-    .mockReturnValueOnce(anthropicTurn([{ type: 'text', text: 'Found it.' }], 'end_turn') as never)
+  streamMock
+    .mockReturnValueOnce(anthropicTurn(NAVIGATE_TURN.content, 'tool_use'))
+    .mockReturnValueOnce(anthropicTurn(SNAPSHOT_TURN.content, 'tool_use'))
+    .mockReturnValueOnce(anthropicTurn([{ type: 'text', text: 'Found it.' }], 'end_turn'))
 
   for (const body of [
     { userMessage: 'Open my inbox', ...extra },
@@ -189,9 +120,9 @@ describe('append-only agent runs in POST /api/agent/chat', () => {
     const thinking = { type: 'thinking', thinking: 'The inbox link is uid=4.', signature: 'sig-abc' }
     const redacted = { type: 'redacted_thinking', data: 'opaque-xyz' }
     const toolUse = { type: 'tool_use', id: 'toolu_9', name: 'click_element_by_uid', input: { uid: '4' } }
-    vi.mocked(anthropic.messages.stream)
-      .mockReturnValueOnce(anthropicTurn([thinking, redacted, toolUse], 'tool_use') as never)
-      .mockReturnValueOnce(anthropicTurn([{ type: 'text', text: 'Done.' }], 'end_turn') as never)
+    streamMock
+      .mockReturnValueOnce(anthropicTurn([thinking, redacted, toolUse], 'tool_use'))
+      .mockReturnValueOnce(anthropicTurn([{ type: 'text', text: 'Done.' }], 'end_turn'))
 
     const first = await post({ userMessage: 'Open my inbox', model: 'claude-opus-5-5', enableThinking: true })
     const done = (await first.text())
@@ -230,7 +161,7 @@ describe('append-only agent runs in POST /api/agent/chat', () => {
     })
 
     expect(response.status).toBe(400)
-    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    expect(streamMock).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -248,7 +179,7 @@ describe('append-only agent runs in POST /api/agent/chat', () => {
     await response.text()
 
     expect(response.status).toBe(200)
-    expect(anthropic.messages.stream).toHaveBeenCalledOnce()
+    expect(streamMock).toHaveBeenCalledOnce()
   })
 
   it('rejects a run history longer than an agent run can be', async () => {
@@ -258,7 +189,7 @@ describe('append-only agent runs in POST /api/agent/chat', () => {
     })
 
     expect(response.status).toBe(400)
-    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    expect(streamMock).not.toHaveBeenCalled()
   })
 
   it('keeps model, tools, system, thinking and effort identical on every turn of a run', async () => {

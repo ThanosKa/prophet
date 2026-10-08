@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET } from './route'
+import type { Message } from '@/lib/db/schema'
 
 // Mock modules
 vi.mock('@clerk/nextjs/server', () => ({
@@ -35,8 +36,22 @@ const { auth } = await import('@clerk/nextjs/server')
 const { db } = await import('@/lib/db')
 const { checkRateLimit } = await import('@/lib/ratelimit')
 
+const chatId = '550e8400-e29b-41d4-a716-446655440000'
+
+/** An assistant row as the database returns it. */
+function storedMessage(fields: Pick<Message, 'id' | 'content' | 'createdAt' | 'toolCalls'>): Message {
+  return {
+    chatId,
+    role: 'assistant',
+    model: null,
+    inputTokens: null,
+    outputTokens: null,
+    costCents: null,
+    ...fields,
+  }
+}
+
 describe('GET /api/chats/[chatId]/messages', () => {
-  const chatId = '550e8400-e29b-41d4-a716-446655440000'
   const userId = 'user_123'
 
   beforeEach(() => {
@@ -72,10 +87,8 @@ describe('GET /api/chats/[chatId]/messages', () => {
 
   it('returns stored tool calls through the shared schema and drops a column that fails it', async () => {
     vi.mocked(db.query.messages.findMany).mockResolvedValue([
-      {
+      storedMessage({
         id: 'msg_valid',
-        chatId,
-        role: 'assistant',
         content: 'Opened it.',
         createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, 2)),
         toolCalls: JSON.stringify([
@@ -88,16 +101,14 @@ describe('GET /api/chats/[chatId]/messages', () => {
             caller: { type: 'direct' },
           },
         ]),
-      },
-      {
+      }),
+      storedMessage({
         id: 'msg_invalid',
-        chatId,
-        role: 'assistant',
         content: 'Broken.',
         createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, 1)),
         toolCalls: '{not json',
-      },
-    ] as never)
+      }),
+    ])
 
     const request = new Request(`http://localhost:3000/api/chats/${chatId}/messages`)
     const data = await (await GET(request, { params: Promise.resolve({ chatId }) })).json()

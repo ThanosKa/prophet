@@ -1,50 +1,26 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
-import { generateDrizzleJson, generateMigration } from 'drizzle-kit/api'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import * as schema from '@/lib/db/schema'
-import { POST } from './route'
 import { getAgentMinTokens } from '@/lib/agent/web-search'
-
-vi.mock('@/lib/db', async () => {
-  const { PGlite } = await import('@electric-sql/pglite')
-  const { drizzle } = await import('drizzle-orm/pglite')
-  const dbSchema = await import('@/lib/db/schema')
-  return { db: drizzle(new PGlite(), { schema: dbSchema }) }
-})
-
-vi.mock('@clerk/nextjs/server', () => ({ auth: vi.fn() }))
-vi.mock('@/lib/ratelimit', () => ({ checkRateLimit: vi.fn() }))
-// A plain vi.fn, so tests can hand it stub streams without casting to MessageStream.
-const { streamMock } = vi.hoisted(() => ({ streamMock: vi.fn() }))
-
-vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { stream: streamMock } } }))
-vi.mock('@/lib/logger', () => ({
-  logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-}))
-vi.mock('@/lib/dev-logger', () => ({
-  devLogger: { logRequest: vi.fn(), logResponse: vi.fn() },
-}))
-
-const { db } = await import('@/lib/db')
-const { auth } = await import('@clerk/nextjs/server')
-const { checkRateLimit } = await import('@/lib/ratelimit')
-const { anthropic } = await import('@/lib/anthropic')
+import {
+  AGENT_CHAT_URL,
+  balance as balanceOf,
+  createTables,
+  db,
+  postAgentChat,
+  postRaw,
+  resetAs,
+  seedUserWithChat,
+  streamMock,
+} from './route-test-harness'
 
 const USER_ID = 'user_free'
 const CHAT_ID = '550e8400-e29b-41d4-a716-446655440000'
 
-beforeAll(async () => {
-  const statements = await generateMigration(generateDrizzleJson({}), generateDrizzleJson(schema))
-  for (const statement of statements) {
-    await db.execute(sql.raw(statement))
-  }
-})
+beforeAll(createTables)
 
 beforeEach(async () => {
-  vi.clearAllMocks()
-  await db.delete(schema.users)
-  vi.mocked(auth).mockResolvedValue({ userId: USER_ID } as never)
-  vi.mocked(checkRateLimit).mockResolvedValue({ success: true, limit: 60, remaining: 59, reset: 60 })
+  await resetAs(USER_ID)
 })
 
 async function seedUser({
@@ -58,14 +34,7 @@ async function seedUser({
   history?: string[]
   tier?: 'free' | 'pro' | 'premium' | 'ultra'
 }) {
-  await db.insert(schema.users).values({
-    id: USER_ID,
-    email: 'free@example.com',
-    creditsRemaining: credits,
-    purchasedCredits: purchased,
-    tier,
-  })
-  await db.insert(schema.chats).values({ id: CHAT_ID, userId: USER_ID, title: 'Chat' })
+  await seedUserWithChat({ userId: USER_ID, chatId: CHAT_ID, credits, purchased, tier })
   for (const [index, content] of history.entries()) {
     await db.insert(schema.messages).values({
       chatId: CHAT_ID,
@@ -76,10 +45,7 @@ async function seedUser({
   }
 }
 
-async function balance(): Promise<number | undefined> {
-  const row = await db.query.users.findFirst({ where: eq(schema.users.id, USER_ID) })
-  return row?.creditsRemaining
-}
+const balance = () => balanceOf(USER_ID)
 
 async function balances(): Promise<{ subscription: number; purchased: number } | undefined> {
   const row = await db.query.users.findFirst({ where: eq(schema.users.id, USER_ID) })
@@ -87,13 +53,7 @@ async function balances(): Promise<{ subscription: number; purchased: number } |
 }
 
 function post(body: Record<string, unknown>) {
-  return POST(
-    new Request('http://localhost:3000/api/agent/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId: CHAT_ID, ...body }),
-    })
-  )
+  return postAgentChat({ chatId: CHAT_ID, ...body })
 }
 
 function continuationTurn({ model }: { model: string }) {
@@ -157,7 +117,7 @@ function cachedTurn({ outputTokens, stopReason = 'end_turn' }: { outputTokens: n
  */
 function turnThatHangsAfterStreaming(usage: Record<string, number> = { input_tokens: 10_000 }) {
   const upstream: { signal?: AbortSignal } = {}
-  vi.mocked(anthropic.messages.stream).mockImplementation(((_params: unknown, options?: { signal?: AbortSignal }) => {
+  streamMock.mockImplementation((_params: unknown, options?: { signal?: AbortSignal }) => {
     upstream.signal = options?.signal
     return {
       [Symbol.asyncIterator]: async function* () {
@@ -171,7 +131,7 @@ function turnThatHangsAfterStreaming(usage: Record<string, number> = { input_tok
       },
       finalMessage: () => new Promise(() => {}),
     }
-  }) as never)
+  })
   return upstream
 }
 
@@ -198,7 +158,7 @@ function doneEvent(events: string): unknown {
 }
 
 function sentMaxTokens(): number | undefined {
-  return vi.mocked(anthropic.messages.stream).mock.calls[0]?.[0].max_tokens
+  return streamMock.mock.calls[0]?.[0].max_tokens
 }
 
 describe('credit reservation in POST /api/agent/chat', () => {
@@ -221,7 +181,7 @@ describe('credit reservation in POST /api/agent/chat', () => {
     // fresh-chat Haiku 5.5 + Thinking: floor 1 credit, full 16000-token turn 2 credits
     const outcomes: Array<number | 'refused'> = []
     for (let credits = 0; credits <= 2; credits++) {
-      vi.mocked(anthropic.messages.stream).mockClear()
+      streamMock.mockClear()
       await db.delete(schema.users)
       await seedUser({ credits })
       streamMock.mockReturnValue(
@@ -231,7 +191,7 @@ describe('credit reservation in POST /api/agent/chat', () => {
       const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5', enableThinking: true })
       await response.text()
 
-      const call = vi.mocked(anthropic.messages.stream).mock.calls[0]?.[0]
+      const call = streamMock.mock.calls[0]?.[0]
       if (!call) {
         expect(response.status).toBe(402)
         outcomes.push('refused')
@@ -249,9 +209,7 @@ describe('credit reservation in POST /api/agent/chat', () => {
 
   it('20 parallel Opus 5.5 requests cannot push a 20-credit account below zero', async () => {
     await seedUser({ credits: 20 })
-    vi.mocked(anthropic.messages.stream).mockImplementation(
-      (() => completedTurn({ inputTokens: 1000, outputTokens: 500 })) as never
-    )
+    streamMock.mockImplementation(() => completedTurn({ inputTokens: 1000, outputTokens: 500 }))
 
     const responses = await Promise.all(
       Array.from({ length: 20 }, () => post({ userMessage: 'Hello', model: 'claude-opus-5-5' }))
@@ -270,9 +228,7 @@ describe('credit reservation in POST /api/agent/chat', () => {
 
   it('refunds the whole hold when Anthropic fails before reporting any usage', async () => {
     await seedUser({ credits: 20 })
-    vi.mocked(anthropic.messages.stream).mockRejectedValue(
-      new Error('529 {"type":"error","error":{"type":"overloaded_error"}}') as never
-    )
+    streamMock.mockRejectedValue(new Error('529 {"type":"error","error":{"type":"overloaded_error"}}'))
 
     const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
     const events = await response.text()
@@ -301,8 +257,8 @@ describe('credit reservation in POST /api/agent/chat', () => {
     turnThatHangsAfterStreaming()
     const disconnect = new AbortController()
 
-    const response = await POST(
-      new Request('http://localhost:3000/api/agent/chat', {
+    const response = await postRaw(
+      new Request(AGENT_CHAT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chatId: CHAT_ID, userMessage: 'Hello', model: 'claude-opus-5-5' }),
@@ -324,13 +280,13 @@ describe('credit reservation in POST /api/agent/chat', () => {
 
   it('refunds the whole hold when the stream breaks before message_start', async () => {
     await seedUser({ credits: 20 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue({
+    streamMock.mockReturnValue({
       [Symbol.asyncIterator]: async function* () {
         yield* []
         throw new Error('socket hang up')
       },
       finalMessage: () => Promise.reject(new Error('socket hang up')),
-    } as never)
+    })
 
     const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
     await response.text()
@@ -356,7 +312,7 @@ describe('credit reservation in POST /api/agent/chat', () => {
         canUpgrade: true,
       },
     })
-    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    expect(streamMock).not.toHaveBeenCalled()
     expect(await balance()).toBe(20)
   })
 })
@@ -364,7 +320,7 @@ describe('credit reservation in POST /api/agent/chat', () => {
 describe('prompt-cache billing in POST /api/agent/chat', () => {
   it('charges cache writes and cache reads on top of uncached input for Opus 5.5', async () => {
     await seedUser({ credits: 1000 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(cachedTurn({ outputTokens: 500 }) as never)
+    streamMock.mockReturnValue(cachedTurn({ outputTokens: 500 }))
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
     await response.text()
@@ -375,7 +331,7 @@ describe('prompt-cache billing in POST /api/agent/chat', () => {
 
   it('reports the full prompt size, cached tokens included, as the chat context', async () => {
     await seedUser({ credits: 1000 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(cachedTurn({ outputTokens: 500 }) as never)
+    streamMock.mockReturnValue(cachedTurn({ outputTokens: 500 }))
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
     await response.text()
@@ -391,7 +347,7 @@ describe('prompt-cache billing in POST /api/agent/chat', () => {
 
   it('streams the full prompt size and the cache-aware cost to the extension', async () => {
     await seedUser({ credits: 1000 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(cachedTurn({ outputTokens: 500 }) as never)
+    streamMock.mockReturnValue(cachedTurn({ outputTokens: 500 }))
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
     const events = await response.text()
@@ -410,7 +366,7 @@ describe('prompt-cache billing in POST /api/agent/chat', () => {
 
   it('records the cache buckets on the usage row so the charge can be audited', async () => {
     await seedUser({ credits: 1000 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(cachedTurn({ outputTokens: 500 }) as never)
+    streamMock.mockReturnValue(cachedTurn({ outputTokens: 500 }))
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
     await response.text()
@@ -429,7 +385,7 @@ describe('prompt-cache billing in POST /api/agent/chat', () => {
 
   it('bills the final usage when server-tool iterations grew the prompt after message_start', async () => {
     await seedUser({ credits: 1000 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue({
+    streamMock.mockReturnValue({
       [Symbol.asyncIterator]: async function* () {
         yield { type: 'message_start', message: { usage: { ...CACHED_USAGE, output_tokens: 1 } } }
         yield { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }
@@ -448,7 +404,7 @@ describe('prompt-cache billing in POST /api/agent/chat', () => {
             server_tool_use: { web_search_requests: 1 },
           },
         }),
-    } as never)
+    })
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
     await response.text()
@@ -518,7 +474,7 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
         canUpgrade: true,
       },
     })
-    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    expect(streamMock).not.toHaveBeenCalled()
   })
 
   it('mid-agent-loop on Opus 5.5, tells the user to switch to Haiku and send "continue"', async () => {
@@ -616,7 +572,7 @@ describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat',
     await response.text()
 
     expect(response.status).toBe(200)
-    expect(anthropic.messages.stream).toHaveBeenCalledTimes(1)
+    expect(streamMock).toHaveBeenCalledTimes(1)
     expect(await balance()).toBe(6)
   })
 
@@ -632,7 +588,7 @@ describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat',
       code: 'INSUFFICIENT_BALANCE',
       details: { pricingUrl: '/pricing', isContinuation: false, suggestedModel: 'claude-haiku-5-5', canUpgrade: true },
     })
-    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    expect(streamMock).not.toHaveBeenCalled()
     expect(await balance()).toBe(FREE_GRANT)
   })
 
@@ -646,7 +602,7 @@ describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat',
     const events = await response.text()
 
     expect(response.status).toBe(200)
-    expect(anthropic.messages.stream).toHaveBeenCalledTimes(1)
+    expect(streamMock).toHaveBeenCalledTimes(1)
     // The whole grant ($0.056 of API cost) is held. The ~5,775-token estimated prompt is a
     // first Turn's, priced as a cache write ($2.50/MTok, $0.0144), which leaves 4,156
     // output tokens at $10/MTok.
@@ -669,7 +625,7 @@ describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat',
       code: 'INSUFFICIENT_BALANCE',
       details: { pricingUrl: '/pricing', isContinuation: false, suggestedModel: 'claude-haiku-5-5', canUpgrade: true },
     })
-    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    expect(streamMock).not.toHaveBeenCalled()
 
     streamMock.mockReturnValue(
       completedTurn({ inputTokens: 3000, outputTokens: 500 })
@@ -692,7 +648,7 @@ describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat',
       code: 'INSUFFICIENT_BALANCE',
       details: { suggestedModel: 'claude-haiku-5-5', suggestDisableThinking: true, canUpgrade: true },
     })
-    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    expect(streamMock).not.toHaveBeenCalled()
     expect(await balance()).toBe(FREE_GRANT)
   })
 })
@@ -747,7 +703,7 @@ describe('Subscription credits and Purchased credits in POST /api/agent/chat', (
 
     expect(response.status).toBe(402)
     expect(body).toMatchObject({ code: 'INSUFFICIENT_BALANCE', details: { suggestedModel: 'claude-haiku-5-5' } })
-    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    expect(streamMock).not.toHaveBeenCalled()
     expect(await balances()).toEqual({ subscription: 7, purchased: 6 })
   })
 })

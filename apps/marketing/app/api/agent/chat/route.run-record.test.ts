@@ -1,120 +1,41 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
-import { generateDrizzleJson, generateMigration } from 'drizzle-kit/api'
-import { asc, eq, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import * as schema from '@/lib/db/schema'
-import { POST } from './route'
-
-vi.mock('@/lib/db', async () => {
-  const { PGlite } = await import('@electric-sql/pglite')
-  const { drizzle } = await import('drizzle-orm/pglite')
-  const dbSchema = await import('@/lib/db/schema')
-  return { db: drizzle(new PGlite(), { schema: dbSchema }) }
-})
-
-vi.mock('@clerk/nextjs/server', () => ({ auth: vi.fn() }))
-vi.mock('@/lib/ratelimit', () => ({ checkRateLimit: vi.fn() }))
-const { streamMock } = vi.hoisted(() => ({ streamMock: vi.fn() }))
-vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { stream: streamMock } } }))
-vi.mock('@/lib/logger', () => ({
-  logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-}))
-vi.mock('@/lib/dev-logger', () => ({
-  devLogger: { logRequest: vi.fn(), logResponse: vi.fn() },
-}))
-
-const { db } = await import('@/lib/db')
-const { auth } = await import('@clerk/nextjs/server')
-const { checkRateLimit } = await import('@/lib/ratelimit')
+import {
+  DEFAULT_USAGE,
+  anthropicTurn,
+  createTables,
+  db,
+  postAgentChat,
+  readUntil,
+  resetAs,
+  seedUserWithChat,
+  sentParams,
+  storedMessages as storedMessagesOf,
+  streamMock,
+  text,
+  toolUse,
+} from './route-test-harness'
 
 const USER_ID = 'user_run_record'
 const CHAT_ID = '5d2c8e4a-1b3f-4c7d-9e6a-2f1b0c3d4e5f'
 
-beforeAll(async () => {
-  const statements = await generateMigration(generateDrizzleJson({}), generateDrizzleJson(schema))
-  for (const statement of statements) {
-    await db.execute(sql.raw(statement))
-  }
-})
+beforeAll(createTables)
 
 beforeEach(async () => {
-  vi.clearAllMocks()
-  await db.delete(schema.users)
-  vi.mocked(auth).mockResolvedValue({ userId: USER_ID } as never)
-  vi.mocked(checkRateLimit).mockResolvedValue({ success: true, limit: 60, remaining: 59, reset: 60 })
-  await db.insert(schema.users).values({ id: USER_ID, email: 'record@example.com', creditsRemaining: 1000 })
-  await db.insert(schema.chats).values({ id: CHAT_ID, userId: USER_ID, title: 'Chat' })
+  await resetAs(USER_ID)
+  await seedUserWithChat({ userId: USER_ID, chatId: CHAT_ID, credits: 1000 })
 })
 
 function post(body: Record<string, unknown>) {
-  return POST(
-    new Request('http://localhost:3000/api/agent/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId: CHAT_ID, model: 'claude-haiku-5-5', ...body }),
-    })
-  )
+  return postAgentChat({ chatId: CHAT_ID, model: 'claude-haiku-5-5', ...body })
 }
-
-type ApiBlock = { type: string } & Record<string, unknown>
-type Usage = { input_tokens: number; output_tokens: number }
-const USAGE: Usage = { input_tokens: 1000, output_tokens: 50 }
-
-/** The stream events Anthropic sends for one finished content block. */
-function* blockEvents({ index, block }: { index: number; block: ApiBlock }) {
-  if (block.type === 'tool_use') {
-    yield { type: 'content_block_start', index, content_block: { ...block, input: {} } }
-    yield {
-      type: 'content_block_delta',
-      index,
-      delta: { type: 'input_json_delta', partial_json: JSON.stringify(block.input) },
-    }
-  } else if (block.type === 'text') {
-    yield { type: 'content_block_start', index, content_block: { type: 'text', text: '' } }
-    yield { type: 'content_block_delta', index, delta: { type: 'text_delta', text: block.text } }
-  } else {
-    yield { type: 'content_block_start', index, content_block: block }
-  }
-  yield { type: 'content_block_stop', index }
-}
-
-function anthropicTurn({
-  content,
-  stopReason,
-}: {
-  content: ApiBlock[]
-  stopReason: 'tool_use' | 'end_turn' | 'max_tokens' | 'refusal'
-}) {
-  return {
-    [Symbol.asyncIterator]: async function* () {
-      yield { type: 'message_start', message: { usage: { ...USAGE, output_tokens: 1 } } }
-      for (const [index, block] of content.entries()) yield* blockEvents({ index, block })
-      yield { type: 'message_delta', delta: { stop_reason: stopReason }, usage: { output_tokens: USAGE.output_tokens } }
-    },
-    finalMessage: () =>
-      Promise.resolve({
-        stop_reason: stopReason,
-        ...(stopReason === 'refusal' && {
-          stop_details: { type: 'refusal', category: 'cyber', explanation: null },
-        }),
-        content,
-        usage: USAGE,
-      }),
-  }
-}
-
-const text = (value: string): ApiBlock => ({ type: 'text', text: value })
-const toolUse = ({ id, name, input }: { id: string; name: string; input: Record<string, unknown> }): ApiBlock => ({
-  type: 'tool_use',
-  id,
-  name,
-  input,
-})
 
 /** Streams some text, then fails the way `afterText` says. */
 function interruptedTurn({ streamedText, afterText }: { streamedText: string; afterText: 'hang' | 'break' }) {
   streamMock.mockImplementationOnce((_params: unknown, options?: { signal?: AbortSignal }) => ({
     [Symbol.asyncIterator]: async function* () {
-      yield { type: 'message_start', message: { usage: { ...USAGE, output_tokens: 1 } } }
+      yield { type: 'message_start', message: { usage: { ...DEFAULT_USAGE, output_tokens: 1 } } }
       yield { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }
       yield { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: streamedText } }
       if (afterText === 'break') throw new Error('socket hang up')
@@ -130,19 +51,6 @@ function interruptedTurn({ streamedText, afterText }: { streamedText: string; af
   }))
 }
 
-async function readUntil({ response, marker }: { response: Response; marker: string }) {
-  if (!response.body) throw new Error('no response body')
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder()
-  let seen = ''
-  while (!seen.includes(marker)) {
-    const { value, done } = await reader.read()
-    if (done) throw new Error(`stream ended before ${marker}`)
-    seen += decoder.decode(value)
-  }
-  return reader
-}
-
 const OPENING_TURN = [text('Opening a.com.'), toolUse({ id: 'toolu_1', name: 'navigate', input: { url: 'https://a.com' } })]
 const OPENING_TURN_ECHO = {
   content: OPENING_TURN,
@@ -155,22 +63,8 @@ async function openRunWithOneToolCall() {
   await (await post({ userMessage: 'Open a.com' })).text()
 }
 
-function sentParams(call: number) {
-  const params = streamMock.mock.calls[call]?.[0]
-  if (!params) throw new Error(`no Anthropic call #${call}`)
-  return params
-}
-
 async function storedMessages() {
-  const rows = await db.query.messages.findMany({
-    where: eq(schema.messages.chatId, CHAT_ID),
-    orderBy: [asc(schema.messages.createdAt)],
-  })
-  return rows.map(({ role, content, toolCalls }) => ({
-    role,
-    content,
-    toolCalls: toolCalls === null ? null : JSON.parse(toolCalls),
-  }))
+  return storedMessagesOf(CHAT_ID)
 }
 
 describe('the Run progress record in POST /api/agent/chat', () => {
@@ -257,7 +151,7 @@ describe('the Run progress record in POST /api/agent/chat', () => {
 
     // The side panel's Stop cancels the response body.
     const response = await post({ previousTurns: [OPENING_TURN_ECHO] })
-    const reader = await readUntil({ response, marker: 'content_delta' })
+    const { reader } = await readUntil({ response, marker: 'content_delta' })
     await reader.cancel()
 
     await vi.waitFor(async () =>
