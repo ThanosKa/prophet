@@ -322,21 +322,16 @@ await db
 - ❌ Fetching entire tables without WHERE clause
 - ❌ No pagination (memory issues)
 - ❌ Missing indexes on queried columns
-- ❌ Operations outside transactions when atomicity needed
 - ❌ Creating new connection per request
 - ❌ No foreign key constraints
 - ❌ Breaking schema changes without multi-step migration
-- ❌ Manual type definitions (use InferSelectModel)
-- ❌ Hardcoding SQL strings (use Drizzle builders)
 
 ## Quick Checklist
 - [ ] Relations defined in schema
 - [ ] Indexes on frequently queried columns
 - [ ] Foreign key constraints with onDelete
-- [ ] Atomic operations in transactions
 - [ ] Pagination for large datasets
 - [ ] Single connection reused (singleton)
-- [ ] Types inferred from schema
 - [ ] Migrations reviewed before applying
 - [ ] Queries avoid N+1 problem
 - [ ] Batch operations instead of loops

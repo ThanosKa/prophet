@@ -160,18 +160,12 @@ Chrome extension sidepanel has limited width (~400px max).
 
 - Linear animations (feel robotic)
 - Durations > 500ms (feel sluggish)
-- No hover states on interactive elements
-- Missing focus indicators
 - Inconsistent spacing (mixing 5px, 10px, 15px)
 - Layout shift on hover (use transform instead of width/height)
 
 ## Quick Checklist
 
-- [ ] All buttons have hover + active states
-- [ ] All inputs have focus rings
 - [ ] Transitions use ease-out or ease-in-out
 - [ ] Durations are 150-300ms for interactions
 - [ ] Spacing follows 4px scale
-- [ ] Loading states on async buttons
 - [ ] No horizontal scroll in sidepanel
-- [ ] Focus indicators visible for keyboard nav

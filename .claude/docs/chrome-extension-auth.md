@@ -12,8 +12,8 @@ In `apps/sidepanel/src/main.tsx`:
 
 ```typescript
 <ClerkProvider
-  publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
-  syncHost={import.meta.env.VITE_SYNC_HOST}  // Marketing site URL
+  publishableKey={config.clerkPublishableKey}
+  syncHost={config.clerkSyncHost}  // apps/sidepanel/src/lib/config.ts
   appearance={{ baseTheme: dark }}
 >
 ```
@@ -62,7 +62,7 @@ The auto-reload ensures a clean sign-out experience with no stale data or UI inc
 
 ```bash
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
-VITE_SYNC_HOST=http://localhost:3000  # Marketing site for OAuth
+VITE_CLERK_SYNC_HOST=  # empty in dev (falls back to VITE_API_URL); prod: Clerk Frontend API domain
 ```
 
 ## Clerk Dashboard Configuration

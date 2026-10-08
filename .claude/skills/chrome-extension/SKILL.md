@@ -376,9 +376,6 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 - [ ] `side_panel` configured with `default_path`
 - [ ] `permissions: ['sidePanel']` included
 - [ ] `host_permissions` limited to your domain only
-- [ ] No secret API keys in code
-- [ ] VITE_* environment variables for public keys only
-- [ ] Backend validates all requests (don't trust extension)
 - [ ] Token refresh mechanism implemented
 - [ ] Error boundaries for extension failures
 - [ ] Build output tested locally first
@@ -394,9 +391,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 ## Anti-Patterns to Avoid
 
 - ❌ Manifest V2 (deprecated)
-- ❌ Exposing API secrets in extension code
 - ❌ Using `<all_urls>` in host_permissions (use exact domains)
-- ❌ Trusting data from content scripts without backend validation
 - ❌ Storing sensitive tokens in unencrypted storage
 - ❌ Hardcoding API URLs (use environment variables)
 - ❌ Missing error handling for extension APIs
@@ -408,8 +403,6 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 
 - [ ] Manifest V3 with side_panel configuration
 - [ ] CRXJS Vite plugin properly configured
-- [ ] Side panel communicates only with backend API
-- [ ] All secrets in environment variables (VITE_* prefix)
 - [ ] host_permissions limited to specific backend domain
 - [ ] Auth tokens stored securely in chrome.storage.local
 - [ ] Token refresh/expiry handling implemented

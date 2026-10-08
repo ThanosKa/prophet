@@ -269,7 +269,6 @@ Pass all these for 100% score:
 - Missing viewport meta tag
 - Duplicate title/description across pages
 - Generic link text ("click here", "read more")
-- Images without alt text
 - Blocking pages in robots.txt unintentionally
 - Non-descriptive page titles ("Home", "Page 1")
 
@@ -280,7 +279,6 @@ Pass all these for 100% score:
 - [ ] Canonical URLs set
 - [ ] robots.txt allows crawling
 - [ ] sitemap.xml generated
-- [ ] All images have alt text
 - [ ] All links have descriptive text
 - [ ] Structured data for Organization/SoftwareApplication
 - [ ] Font size 16px+ for body text
