@@ -65,9 +65,33 @@ export async function openRun({
 /** Stands in for a refused Turn's text and tool calls in the Run's record. */
 export const DECLINED_NOTE = 'Claude declined to continue this request.'
 
+/**
+ * A continuation that names its Run by `runId` goes on only while that Run is live: its
+ * opening is the chat's newest user row. Its prompt is built from the rows up to and
+ * including the opening, so nothing another Run wrote later can slip in. Returns null
+ * once a newer Run has started (or the id isn't one of the chat's user rows).
+ */
+export function resumeRun<Row extends HistoryRow & RunOpening>({
+  history,
+  runId,
+}: {
+  history: Row[]
+  runId: string
+}): { opening: RunOpening; history: Row[] } | null {
+  const openingIndex = history.reduce((newest, row, index) => (row.role === 'user' ? index : newest), -1)
+  const opening = history[openingIndex]
+  if (!opening || opening.id !== runId) return null
+  return {
+    opening: { id: opening.id, createdAt: opening.createdAt },
+    history: history.slice(0, openingIndex + 1),
+  }
+}
+
 /** Which request of a Run this is, as far as its record is concerned. */
 export type RunRequest =
   | { type: 'first'; opening: RunOpening }
+  /** Names its Run by `runId` and sends every earlier Turn, so the record is recomputed. */
+  | { type: 'run'; opening: RunOpening; turns: AgentTurn[] }
   /** Sends every earlier Turn of the Run (`previousTurns`), so the record is recomputed. */
   | { type: 'continuation'; turns: AgentTurn[] }
   /** Builds older than 1.0.5 send only the latest Turn, so the record is appended to. */
@@ -172,7 +196,12 @@ function applyEnding({ record, ending }: { record: RunRecord; ending: TurnEnding
   }
 }
 
-async function findOpening({
+/**
+ * The live Run is the chat's newest user row. A request that knows its opening (a first
+ * Turn, or a continuation with `runId`) is superseded once that row isn't the newest;
+ * one that doesn't can only take the newest row as its opening.
+ */
+async function findLiveOpening({
   tx,
   chatId,
   request,
@@ -180,21 +209,26 @@ async function findOpening({
   tx: RecordStore
   chatId: string
   request: RunRequest
-}): Promise<RunOpening | null> {
-  if (request.type === 'first') return request.opening
+}): Promise<{ status: 'live'; opening: RunOpening } | { status: 'superseded' } | { status: 'none' }> {
   const [newestUserRow] = await tx
     .select({ id: messages.id, createdAt: messages.createdAt })
     .from(messages)
     .where(and(eq(messages.chatId, chatId), eq(messages.role, 'user')))
     .orderBy(desc(messages.createdAt))
     .limit(1)
-  return newestUserRow ?? null
+  if (request.type === 'first' || request.type === 'run') {
+    return newestUserRow?.id === request.opening.id
+      ? { status: 'live', opening: request.opening }
+      : { status: 'superseded' }
+  }
+  return newestUserRow ? { status: 'live', opening: newestUserRow } : { status: 'none' }
 }
 
 /**
  * Saves a Turn's progress into its Run's single assistant row: the first assistant row
  * after the Run's opening row, inserted by the first Turn with anything to show. Locks
- * the chat row, so call it before anything that locks the user row.
+ * the chat row, so call it before anything that locks the user row. A superseded Run
+ * writes nothing; its caller still settles the Turn's billing.
  */
 export async function writeRunRecord({
   tx,
@@ -210,10 +244,12 @@ export async function writeRunRecord({
   ending: TurnEnding
   model: string
   usage: { inputTokens: number; outputTokens: number; costCents: number }
-}): Promise<'written' | 'skipped'> {
+}): Promise<'written' | 'skipped' | 'superseded'> {
   await lockChat({ tx, chatId })
-  const opening = await findOpening({ tx, chatId, request })
-  if (!opening) return 'skipped'
+  const live = await findLiveOpening({ tx, chatId, request })
+  if (live.status === 'superseded') return 'superseded'
+  if (live.status === 'none') return 'skipped'
+  const { opening } = live
 
   const [row] = await tx
     .select({ id: messages.id, content: messages.content, toolCalls: messages.toolCalls })

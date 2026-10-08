@@ -365,6 +365,8 @@ export const agentChatRequestSchema = z.object({
   // Every earlier turn of the current run, oldest first. Resending them all keeps the
   // conversation append-only, so each request is a prompt-cache hit on the last one.
   previousTurns: z.array(agentTurnSchema).min(1).max(MAX_AGENT_TURNS).optional(),
+  // The Run a continuation belongs to: its opening message's id, from `session_created`.
+  runId: z.string().uuid("Invalid run ID").optional(),
   // Legacy single-turn form, still sent by already-installed extension builds.
   toolResults: z.array(toolResultSchema).max(AGENT_SIZE_LIMITS.toolResultsPerTurn).optional(),
   previousContent: z.array(contentBlockSchema).max(AGENT_SIZE_LIMITS.blocksPerTurn).optional(),

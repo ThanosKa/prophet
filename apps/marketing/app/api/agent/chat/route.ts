@@ -40,6 +40,7 @@ import { buildAgentMessages, resolveRunTurns } from "@/lib/agent/conversation";
 import {
   isToolInput,
   openRun,
+  resumeRun,
   writeRunRecord,
   type HistoryRow,
   type RunRequest,
@@ -182,6 +183,7 @@ export async function POST(req: Request) {
       previousTurns,
       toolResults,
       previousContent,
+      runId,
       image,
       enableThinking,
       enableWebSearch,
@@ -233,8 +235,25 @@ export async function POST(req: Request) {
       where: eq(messages.chatId, chatId),
       orderBy: (messages, { asc }) => [asc(messages.createdAt)],
     });
+    // A continuation that names its Run goes on only while that Run is the live one,
+    // and stops before any Hold once another panel has started a newer Run.
+    const resumed =
+      isContinuationTurn && runId !== undefined
+        ? resumeRun({ history: unlockedHistory, runId })
+        : undefined;
+    if (resumed === null) {
+      logger.info({ userId, chatId, runId }, "Continuation of a superseded Run");
+      return NextResponse.json(
+        error(
+          "This chat continued in another panel, so this task stopped here.",
+          "RUN_SUPERSEDED"
+        ),
+        { status: 409 }
+      );
+    }
+    const runHistory: HistoryRow[] = resumed ? resumed.history : unlockedHistory;
     const estimatedMessages = buildAgentMessages({
-      history: unlockedHistory,
+      history: runHistory,
       userMessage,
       image,
       runTurns,
@@ -301,10 +320,13 @@ export async function POST(req: Request) {
     const { reserveCents, maxTokens } = plan;
     const maxTokensReducedForBalance = maxTokens < AGENT_TURN_MAX_TOKENS;
 
-    let history: HistoryRow[] = unlockedHistory;
-    let runRequest: RunRequest = previousTurns
-      ? { type: "continuation", turns: runTurns }
-      : { type: "legacy", turns: runTurns };
+    let history: HistoryRow[] = runHistory;
+    let runRequest: RunRequest = { type: "legacy", turns: runTurns };
+    if (resumed) {
+      runRequest = { type: "run", opening: resumed.opening, turns: runTurns };
+    } else if (previousTurns) {
+      runRequest = { type: "continuation", turns: runTurns };
+    }
     if (userMessage) {
       try {
         const started = await openRun({ db, chatId, userMessage });
@@ -486,6 +508,10 @@ export async function POST(req: Request) {
           const sessionData = JSON.stringify({
             type: "session_created",
             sessionId: chatId,
+            // The extension names the Run by this id on every continuation.
+            ...((runRequest.type === "first" || runRequest.type === "run") && {
+              runId: runRequest.opening.id,
+            }),
           });
           send(sessionData);
 
