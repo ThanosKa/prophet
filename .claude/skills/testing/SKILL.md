@@ -1,6 +1,9 @@
-# Testing Standards - Prophet Project
+---
+name: testing
+description: Vitest setup and mocking patterns (Drizzle, Clerk, Stripe, Next.js headers). Use when writing, fixing or reviewing tests.
+---
 
-Use this skill when writing or reviewing tests for any part of the Prophet monorepo.
+# Testing Standards - Prophet Project
 
 ## Framework
 

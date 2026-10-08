@@ -27,6 +27,8 @@ VITE_USE_DEV_API=true
 | **Dev API** | `VITE_USE_DEV_API=true` | Real API via `/api/agent/chat/dev`, no credits deducted |
 | **Production** | Not set or any other value | Real API via `/api/agent/chat`, credits deducted |
 
+`pnpm test:agent` (`scripts/test-agent.sh`) curls the same `/api/agent/chat/dev` endpoint, so it needs `pnpm dev:web` running.
+
 ## How Mock Mode Works
 
 When `VITE_USE_DEV_API=mock`, the agent uses the `mockAgentStream()` generator instead of hitting the real API:
@@ -109,33 +111,6 @@ const MOCK_RESPONSES = [
 - `navigate_to`
 
 You can also add custom tool names - they'll work for UI testing even if they don't exist in the real agent.
-
-## Environment Variable Cleanup
-
-We also simplified the environment variables:
-
-### Before
-```bash
-VITE_API_URL=http://localhost:3000
-VITE_SYNC_HOST=http://localhost:3000  # ❌ Redundant
-```
-
-### After
-```bash
-VITE_API_URL=http://localhost:3000
-# syncHost automatically uses apiUrl
-```
-
-The `VITE_SYNC_HOST` was redundant since Clerk's sync host is the same as your API URL (the marketing site).
-
-## Files Modified
-
-- **`apps/sidepanel/.env.example`** - Updated env var documentation
-- **`apps/sidepanel/src/lib/config.ts`** - Added `useMockApi` flag, removed `syncHost`
-- **`apps/sidepanel/src/main.tsx`** - Uses `apiUrl` for Clerk sync
-- **`apps/sidepanel/src/components/ui/user-avatar.tsx`** - Uses `apiUrl` instead of `syncHost`
-- **`apps/sidepanel/src/hooks/useAgentChat.ts`** - Added mock mode support
-- **`apps/sidepanel/src/lib/agent/mock-agent.ts`** - New mock agent generator
 
 ## Comparison Table
 
