@@ -9,6 +9,7 @@ import { CreditCard, CheckCircle2, Zap, Loader2, AlertCircle, Clock, XCircle } f
 import { format } from "date-fns"
 import { useUser } from "@/contexts/UserContext"
 import { SubscriptionAlerts } from "@/components/account/SubscriptionAlerts"
+import { describeBalance } from "@prophet/shared"
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -85,6 +86,7 @@ export default function BillingPage() {
 
   const currentTier = user.tier
   const status = user.subscriptionStatus || 'none'
+  const balance = describeBalance(user)
   const isCanceled = status === 'canceled'
   const isIncomplete = status === 'incomplete'
   const isPastDue = status === 'past_due'
@@ -142,14 +144,14 @@ export default function BillingPage() {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.3, duration: 0.3 }}
                 >
-                  ${(user.creditsRemaining / 100).toFixed(2)}
+                  {balance.total}
                 </motion.div>
-                {user.creditsIncluded > 0 && (
+                {balance.neverExpiresNote && (
+                  <div className="text-sm text-muted-foreground">{balance.neverExpiresNote}</div>
+                )}
+                {currentTier !== 'free' && user.creditsIncluded > 0 && (
                   <div className="text-sm text-muted-foreground">
-                    {user.creditsRemaining > user.creditsIncluded
-                      ? `Includes $${((user.creditsRemaining - user.creditsIncluded) / 100).toFixed(2)} in extra credits`
-                      : `$${(user.creditsIncluded / 100).toFixed(2)}/mo included`
-                    }
+                    ${(user.creditsIncluded / 100).toFixed(2)}/mo included
                   </div>
                 )}
               </div>
