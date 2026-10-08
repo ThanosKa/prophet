@@ -8,6 +8,7 @@ import { anthropic } from '@/lib/anthropic'
 import { CLAUDE_MODELS } from '@prophet/shared'
 import { error, success, INTERNAL_ERROR_MESSAGE } from '@/types'
 import { logger } from '@/lib/logger'
+import { totalCredits } from '@/lib/credit-balance'
 
 const TITLE_GENERATION_PROMPT = `Generate a concise, descriptive title for a chat conversation based on the first user message and assistant response. The title should:
 - Be 2-7 words
@@ -139,10 +140,10 @@ export async function POST(
 
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId),
-      columns: { creditsRemaining: true },
+      columns: { creditsRemaining: true, purchasedCredits: true },
     })
 
-    if (!user || user.creditsRemaining <= 0) {
+    if (!user || totalCredits(user) <= 0) {
       logger.info({ userId, chatId }, 'Skipping auto-title generation: no credits, using fallback title')
       return NextResponse.json(success({ chatId, title: fallback }))
     }

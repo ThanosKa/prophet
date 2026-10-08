@@ -13,7 +13,10 @@ export interface User {
   lastName?: string | null
   profileImageUrl?: string | null
   tier: Tier
+  /** Total balance: Subscription credits plus Purchased credits. */
   creditsRemaining: number
+  /** The part of the total that never expires; absent from older servers. */
+  purchasedCredits?: number
   creditsIncluded: number
   billingPeriodStart?: Date | null
   billingPeriodEnd?: Date | null

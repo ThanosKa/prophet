@@ -29,9 +29,18 @@ export const updateUserSchema = z.object({
   creditsRemaining: z.number().int().min(0).optional(),
 })
 
+// The balance fields of GET /api/auth/user. `creditsRemaining` is the total
+// (Subscription credits plus Purchased credits); `purchasedCredits` is optional so
+// builds that predate it still parse the response.
+export const userBalanceSchema = z.object({
+  creditsRemaining: z.number().int(),
+  purchasedCredits: z.number().int().min(0).optional(),
+})
+
 // Export types inferred from schemas
 export type CreateChatInput = z.infer<typeof createChatSchema>
 export type UpdateChatInput = z.infer<typeof updateChatSchema>
 export type CreateMessageInput = z.infer<typeof createMessageSchema>
 export type StreamMessageInput = z.infer<typeof streamMessageSchema>
 export type UpdateUserInput = z.infer<typeof updateUserSchema>
+export type UserBalance = z.infer<typeof userBalanceSchema>

@@ -147,7 +147,7 @@ describe('POST /api/chats/[chatId]/title/auto', () => {
     vi.clearAllMocks()
     mocks.auth.mockResolvedValue({ userId: mockUserId })
     vi.mocked(checkRateLimit).mockResolvedValue({ success: true, limit: 10, remaining: 9, reset: 60 })
-    mocks.usersFindFirst.mockResolvedValue({ creditsRemaining: 100 })
+    mocks.usersFindFirst.mockResolvedValue({ creditsRemaining: 100, purchasedCredits: 0 })
   })
 
   describe('Authentication & Authorization', () => {
@@ -330,7 +330,7 @@ describe('POST /api/chats/[chatId]/title/auto', () => {
     it('skips Anthropic and stores the fallback title when the user has no credits', async () => {
       const store = useChatStore({ title: DEFAULT_TITLE })
       useMessages({ user: 'Summarize this page', assistant: 'Here is a summary.' })
-      mocks.usersFindFirst.mockResolvedValue({ creditsRemaining: 0 })
+      mocks.usersFindFirst.mockResolvedValue({ creditsRemaining: 0, purchasedCredits: 0 })
       modelReplies('Page Summary')
 
       const response = await callAutoTitle()
@@ -340,6 +340,18 @@ describe('POST /api/chats/[chatId]/title/auto', () => {
       expect(response.status).toBe(200)
       expect(store.title).toBe('Summarize this page')
       expect(responseData.data?.title).toBe('Summarize this page')
+    })
+
+    it('generates a title for a user whose balance is all Purchased credits', async () => {
+      const store = useChatStore({ title: DEFAULT_TITLE })
+      useMessages({ user: 'Summarize this page', assistant: 'Here is a summary.' })
+      mocks.usersFindFirst.mockResolvedValue({ creditsRemaining: 0, purchasedCredits: 50 })
+      modelReplies('Page Summary')
+
+      await callAutoTitle()
+
+      expect(mocks.createMessage).toHaveBeenCalledTimes(1)
+      expect(store.title).toBe('Page Summary')
     })
 
     it('does not call Anthropic when a concurrent request already claimed the chat', async () => {
