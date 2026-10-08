@@ -267,7 +267,7 @@ describe('Legacy model ids from already-installed extensions', () => {
     expect(calledModel()).toBe('claude-sonnet-5-5')
   })
 
-  it('still accepts claude-haiku-4-5, which was not renamed', async () => {
+  it('maps claude-haiku-4-5 from installed extensions to Haiku 5.5', async () => {
     primeRequestContext()
     mockPlainTurn(1000, 500)
 
@@ -275,7 +275,7 @@ describe('Legacy model ids from already-installed extensions', () => {
     expect(response.status).toBe(200)
     await drain(response)
 
-    expect(calledModel()).toBe('claude-haiku-4-5')
+    expect(calledModel()).toBe('claude-haiku-5-5')
   })
 
   it('bills a legacy id at the resolved model rate, not the legacy one', async () => {
@@ -377,9 +377,9 @@ describe('Web search gating and billing', () => {
 
     const events = await drain(await post({ enableWebSearch: true }))
 
-    const expected = calculateCostInCredits('claude-haiku-4-5', 1000, 500, 2)
+    const expected = calculateCostInCredits('claude-haiku-5-5', 1000, 500, 2)
     expect(expected).toBeGreaterThan(
-      calculateCostInCredits('claude-haiku-4-5', 1000, 500, 0)
+      calculateCostInCredits('claude-haiku-5-5', 1000, 500, 0)
     )
 
     const done = events.find((e) => e.type === 'done') as {

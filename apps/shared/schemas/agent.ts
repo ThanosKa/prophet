@@ -45,17 +45,10 @@ export const textContentSchema = z.object({
 
 // Currently released Claude model IDs. These strings carry no date suffix.
 export const CLAUDE_MODELS = {
-  HAIKU: "claude-haiku-4-5",
+  HAIKU: "claude-haiku-5-5",
   SONNET: "claude-sonnet-5-5",
   OPUS: "claude-opus-5-5",
 } as const;
-
-// Models on the Claude 5 generation reject `thinking.budget_tokens` and default
-// thinking to ON, so both on and off must be configured explicitly.
-export const ADAPTIVE_THINKING_MODELS: readonly string[] = [
-  CLAUDE_MODELS.SONNET,
-  CLAUDE_MODELS.OPUS,
-];
 
 export const DEFAULT_AGENT_MODEL = CLAUDE_MODELS.HAIKU;
 
@@ -63,7 +56,7 @@ export const DEFAULT_AGENT_MODEL = CLAUDE_MODELS.HAIKU;
 export const MODEL_CONFIG = [
   {
     id: CLAUDE_MODELS.HAIKU,
-    label: 'Haiku 4.5',
+    label: 'Haiku 5.5',
     description: 'Fast & efficient',
   },
   {
@@ -81,7 +74,7 @@ export const MODEL_CONFIG = [
 export type ModelConfig = typeof MODEL_CONFIG[number];
 
 /**
- * Model IDs baked into Chrome extension builds shipped before the Claude 5
+ * Model IDs baked into Chrome extension builds shipped before each model
  * upgrade. Vite inlines MODEL_CONFIG at build time, so every already-installed
  * extension keeps sending these strings. They must stay valid in the request
  * schema — dropping them would 400 every request from the live user base on a
@@ -90,6 +83,7 @@ export type ModelConfig = typeof MODEL_CONFIG[number];
  * Retire an entry only once telemetry shows no installs still sending it.
  */
 export const LEGACY_MODEL_ALIASES = {
+  "claude-haiku-4-5": CLAUDE_MODELS.HAIKU,
   "claude-sonnet-5": CLAUDE_MODELS.SONNET,
   "claude-opus-5": CLAUDE_MODELS.OPUS,
   "claude-sonnet-4-6": CLAUDE_MODELS.SONNET,
@@ -110,6 +104,7 @@ export const agentModelSchema = z.enum([
   CLAUDE_MODELS.HAIKU,
   CLAUDE_MODELS.SONNET,
   CLAUDE_MODELS.OPUS,
+  "claude-haiku-4-5",
   "claude-sonnet-5",
   "claude-opus-5",
   "claude-sonnet-4-6",

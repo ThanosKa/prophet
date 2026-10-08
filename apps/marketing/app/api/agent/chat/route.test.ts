@@ -392,7 +392,7 @@ describe('POST /api/agent/chat', () => {
       vi.mocked(db.query.users.findFirst).mockResolvedValue({
         id: 'user1',
         email: 'test@example.com',
-        creditsRemaining: 1, // a 4096-token Haiku turn alone costs 3
+        creditsRemaining: 0, // even the cheapest Haiku turn costs 1
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 

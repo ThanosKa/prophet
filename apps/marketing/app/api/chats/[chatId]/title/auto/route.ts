@@ -51,6 +51,8 @@ async function generateTitle({ userMessage, assistantMessage }: { userMessage: s
   const response = await anthropic.messages.create({
     model: CLAUDE_MODELS.HAIKU,
     max_tokens: 50,
+    // Haiku 5.5 thinks by default, which would spend this small budget before the title.
+    thinking: { type: 'disabled' },
     messages: [
       {
         role: 'user',
@@ -59,7 +61,8 @@ async function generateTitle({ userMessage, assistantMessage }: { userMessage: s
     ],
   })
 
-  return response.content[0]?.type === 'text' ? sanitizeTitle(response.content[0].text) : ''
+  const textBlock = response.content.find((block) => block.type === 'text')
+  return textBlock?.type === 'text' ? sanitizeTitle(textBlock.text) : ''
 }
 
 export async function POST(

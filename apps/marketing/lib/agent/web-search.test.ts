@@ -1,5 +1,4 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { CLAUDE_MODELS } from '@prophet/shared'
 import { AGENT_TOOLS } from './tools'
 import { AGENT_MAX_TOKENS } from './system-prompt'
 import {
@@ -9,7 +8,8 @@ import {
   buildAgentTools,
   buildOutputConfig,
   buildThinkingConfig,
-  getAgentMaxTokens,
+  AGENT_TURN_MAX_TOKENS,
+  getAgentMinTokens,
   isWebSearchEnabled,
   shouldUseWebSearch,
 } from './web-search'
@@ -83,67 +83,39 @@ describe('buildAgentTools', () => {
 })
 
 describe('buildThinkingConfig', () => {
-  it('sends adaptive thinking on Claude 5 models', () => {
-    for (const model of [CLAUDE_MODELS.SONNET, CLAUDE_MODELS.OPUS]) {
-      expect(buildThinkingConfig(model, true)).toEqual({
-        type: 'adaptive',
-        display: 'summarized',
-      })
+  it('sends adaptive thinking with summaries when thinking is on', () => {
+    expect(buildThinkingConfig(true)).toEqual({ type: 'adaptive', display: 'summarized' })
+  })
+
+  it('omits thinking when it is off: Opus 5.5 / Sonnet 5.5 reject disabled thinking with a 400', () => {
+    expect(buildThinkingConfig(false)).toBeNull()
+  })
+
+  it('never sends budget_tokens, which every current model rejects', () => {
+    for (const enabled of [true, false]) {
+      expect(buildThinkingConfig(enabled) ?? {}).not.toHaveProperty('budget_tokens')
     }
-  })
-
-  it('never sends disabled thinking to Opus 5.5 / Sonnet 5.5, which reject it with a 400', () => {
-    for (const model of [CLAUDE_MODELS.SONNET, CLAUDE_MODELS.OPUS]) {
-      expect(buildThinkingConfig(model, false)).toBeNull()
-    }
-  })
-
-  it('never sends budget_tokens to a Claude 5 model', () => {
-    for (const model of [CLAUDE_MODELS.SONNET, CLAUDE_MODELS.OPUS]) {
-      for (const enabled of [true, false]) {
-        expect(buildThinkingConfig(model, enabled) ?? {}).not.toHaveProperty('budget_tokens')
-      }
-    }
-  })
-
-  it('keeps the fixed budget on Haiku 4.5', () => {
-    const config = buildThinkingConfig(CLAUDE_MODELS.HAIKU, true)
-    expect(config).toEqual({ type: 'enabled', budget_tokens: 8000 })
-  })
-
-  it('omits the parameter entirely on Haiku 4.5 when thinking is off', () => {
-    expect(buildThinkingConfig(CLAUDE_MODELS.HAIKU, false)).toBeNull()
   })
 })
 
 describe('buildOutputConfig', () => {
-  it('runs Claude 5 models at low effort when thinking is off', () => {
-    for (const model of [CLAUDE_MODELS.SONNET, CLAUDE_MODELS.OPUS]) {
-      expect(buildOutputConfig({ model, enableThinking: false })).toEqual({ effort: 'low' })
-    }
+  it('runs at low effort when thinking is off', () => {
+    expect(buildOutputConfig(false)).toEqual({ effort: 'low' })
   })
 
   it('leaves effort at the model default when thinking is on', () => {
-    for (const model of [CLAUDE_MODELS.SONNET, CLAUDE_MODELS.OPUS]) {
-      expect(buildOutputConfig({ model, enableThinking: true })).toBeNull()
-    }
-  })
-
-  it('never sends effort to Haiku 4.5', () => {
-    for (const enableThinking of [true, false]) {
-      expect(buildOutputConfig({ model: CLAUDE_MODELS.HAIKU, enableThinking })).toBeNull()
-    }
+    expect(buildOutputConfig(true)).toBeNull()
   })
 })
 
-describe('getAgentMaxTokens', () => {
-  it('leaves room for thinking on Claude 5 models even when thinking is off', () => {
-    for (const model of [CLAUDE_MODELS.SONNET, CLAUDE_MODELS.OPUS]) {
-      expect(getAgentMaxTokens({ model, enableThinking: false })).toBe(16000)
-    }
+describe('agent token limits', () => {
+  it('leaves room for the thinking every current model does, even with thinking off', () => {
+    expect(AGENT_TURN_MAX_TOKENS).toBe(16000)
+    expect(AGENT_TURN_MAX_TOKENS).toBeGreaterThan(getAgentMinTokens(true))
   })
 
-  it('keeps the short limit on Haiku 4.5 without thinking', () => {
-    expect(getAgentMaxTokens({ model: CLAUDE_MODELS.HAIKU, enableThinking: false })).toBe(AGENT_MAX_TOKENS)
+  it('keeps thinking headroom in the low-balance floor only when thinking is on', () => {
+    expect(getAgentMinTokens(false)).toBe(AGENT_MAX_TOKENS)
+    expect(getAgentMinTokens(true)).toBeGreaterThan(AGENT_MAX_TOKENS)
   })
 })

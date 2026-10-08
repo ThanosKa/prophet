@@ -84,7 +84,7 @@ function messageRow({ role, content }: { role: MessageRow['role']; content: stri
     chatId: mockChatId,
     role,
     content,
-    model: role === 'assistant' ? 'claude-haiku-4-5' : null,
+    model: role === 'assistant' ? 'claude-haiku-5-5' : null,
     inputTokens: null,
     outputTokens: null,
     costCents: null,
@@ -230,10 +230,26 @@ describe('POST /api/chats/[chatId]/title/auto', () => {
       expect(responseData.data?.title).toBe('Weather Check')
       expect(mocks.createMessage).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: 'claude-haiku-4-5',
+          model: 'claude-haiku-5-5',
           max_tokens: 50,
+          thinking: { type: 'disabled' },
         })
       )
+      expect(store.title).toBe('Weather Check')
+    })
+
+    it('reads the title from the text block even when a thinking block comes first', async () => {
+      const store = useChatStore({ title: DEFAULT_TITLE })
+      useMessages({ user: 'What is the weather like?', assistant: 'The weather is sunny.' })
+      mocks.createMessage.mockResolvedValue({
+        content: [
+          { type: 'thinking', thinking: '', signature: 'sig' },
+          { type: 'text', text: 'Weather Check' },
+        ],
+      })
+
+      await callAutoTitle()
+
       expect(store.title).toBe('Weather Check')
     })
 

@@ -106,9 +106,9 @@ describe('estimateInputTokens', () => {
 
 describe('planCreditReservation', () => {
   it('reserves the full worst case for a small Haiku turn and keeps max_tokens', () => {
-    // (3000 x $1 + 4096 x $5) / 1M = $0.02348 -> x1.2 = 2.82c -> 3 credits
+    // (3000 x $0.10 + 4096 x $0.50) / 1M = $0.002348 -> x1.2 = 0.28c -> 1 credit
     const plan = planCreditReservation({
-      model: 'claude-haiku-4-5',
+      model: 'claude-haiku-5-5',
       balanceCents: 1000,
       estimatedInputTokens: 3000,
       maxTokens: 4096,
@@ -116,7 +116,21 @@ describe('planCreditReservation', () => {
       webSearchMaxUses: 0,
     })
 
-    expect(plan).toEqual({ ok: true, reserveCents: 3, maxTokens: 4096 })
+    expect(plan).toEqual({ ok: true, reserveCents: 1, maxTokens: 4096 })
+  })
+
+  it('reserves a Haiku turn whose estimated prompt passes 100K at the long-prompt rates', () => {
+    // (150000 x $0.50 + 16000 x $2.50) / 1M = $0.115 -> x1.2 = 13.8c -> 14 credits
+    const plan = planCreditReservation({
+      model: 'claude-haiku-5-5',
+      balanceCents: 1000,
+      estimatedInputTokens: 150_000,
+      maxTokens: 16_000,
+      minTokens: 4096,
+      webSearchMaxUses: 0,
+    })
+
+    expect(plan).toEqual({ ok: true, reserveCents: 14, maxTokens: 16_000 })
   })
 
   it('refuses a free account on Opus 5.5 with 30K input tokens: even the floor costs 25 credits', () => {
@@ -180,7 +194,7 @@ describe('planCreditReservation', () => {
 
   it('refuses an account that is already negative', () => {
     const plan = planCreditReservation({
-      model: 'claude-haiku-4-5',
+      model: 'claude-haiku-5-5',
       balanceCents: -31,
       estimatedInputTokens: 10,
       maxTokens: 4096,
@@ -192,9 +206,9 @@ describe('planCreditReservation', () => {
   })
 
   it('reserves every allowed web search on top of tokens', () => {
-    // (1000 x $1 + 4096 x $5) / 1M + 5 searches x $0.01 = $0.07148 -> x1.2 = 8.58c -> 9
+    // (1000 x $0.10 + 4096 x $0.50) / 1M + 5 searches x $0.01 = $0.052148 -> x1.2 = 6.26c -> 7
     const plan = planCreditReservation({
-      model: 'claude-haiku-4-5',
+      model: 'claude-haiku-5-5',
       balanceCents: 1000,
       estimatedInputTokens: 1000,
       maxTokens: 4096,
@@ -202,6 +216,6 @@ describe('planCreditReservation', () => {
       webSearchMaxUses: 5,
     })
 
-    expect(plan).toEqual({ ok: true, reserveCents: 9, maxTokens: 4096 })
+    expect(plan).toEqual({ ok: true, reserveCents: 7, maxTokens: 4096 })
   })
 })

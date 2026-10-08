@@ -79,7 +79,7 @@ describe('Anthropic 400 invalid_request errors in POST /api/agent/chat', () => {
       anthropicBadRequest('prompt is too long: 215000 tokens > 200000 maximum') as never
     )
 
-    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-4-5' })
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
 
     expect(errorEvent(await response.text())).toMatchObject({
       type: 'error',
@@ -93,7 +93,7 @@ describe('Anthropic 400 invalid_request errors in POST /api/agent/chat', () => {
       anthropicBadRequest('messages.0.content.0.image.source.base64: image exceeds 5 MB maximum: 7340032 bytes > 5242880 bytes') as never
     )
 
-    const response = await post({ userMessage: 'What is this?', model: 'claude-haiku-4-5' })
+    const response = await post({ userMessage: 'What is this?', model: 'claude-haiku-5-5' })
 
     expect(errorEvent(await response.text())).toMatchObject({
       type: 'error',
@@ -107,12 +107,46 @@ describe('Anthropic 400 invalid_request errors in POST /api/agent/chat', () => {
       anthropicBadRequest('messages.1: tool_use ids were found without tool_result blocks immediately after') as never
     )
 
-    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-4-5' })
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
 
     expect(errorEvent(await response.text())).toMatchObject({
       type: 'error',
       error: "Claude couldn't process this request. Start a new chat and try again.",
       code: 'ANTHROPIC_INVALID_REQUEST',
     })
+  })
+})
+
+describe('safety-classifier refusals in POST /api/agent/chat', () => {
+  function refusedTurn() {
+    return {
+      [Symbol.asyncIterator]: async function* () {
+        yield { type: 'message_start', message: { usage: { input_tokens: 1000, output_tokens: 1 } } }
+        yield { type: 'message_delta', delta: { stop_reason: 'refusal' }, usage: { output_tokens: 5 } }
+      },
+      finalMessage: () =>
+        Promise.resolve({
+          stop_reason: 'refusal',
+          stop_details: { type: 'refusal', category: 'cyber', explanation: null },
+          content: [],
+          usage: { input_tokens: 1000, output_tokens: 5 },
+        }),
+    }
+  }
+
+  it('ends the run with an error instead of a blank reply, and still bills the tokens', async () => {
+    vi.mocked(anthropic.messages.stream).mockReturnValue(refusedTurn() as never)
+    const [before] = await db.select().from(schema.users)
+
+    const events = await (await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })).text()
+
+    expect(errorEvent(events)).toEqual({
+      type: 'error',
+      error: 'Claude declined this request. Try rephrasing it or start a new chat.',
+      code: 'MODEL_REFUSED',
+    })
+    expect(events).not.toContain('"type":"done"')
+    const [after] = await db.select().from(schema.users)
+    expect(after.creditsRemaining).toBe(before.creditsRemaining - 1)
   })
 })

@@ -44,7 +44,7 @@ describe('Profitability Guarantee', () => {
       const tokens = 10000
 
       const rawCostUSD = (tokens / 1_000_000) * pricing.input + (tokens / 1_000_000) * pricing.output
-      const rawCostCents = Math.ceil(rawCostUSD * 100)
+      const rawCostCents = rawCostUSD * 100
 
       const chargedCredits = calculateCostInCredits(model, tokens, tokens)
 
@@ -207,8 +207,14 @@ describe('calculateCostInCents (legacy alias)', () => {
 
 describe('Model Pricing Table', () => {
   it('prices the current Claude models at published rates', () => {
-    expect(MODEL_PRICING['claude-haiku-4-5']).toEqual({ input: 1.0, output: 5.0, cacheWrite: 1.25, cacheRead: 0.1 })
-    expect(MODEL_PRICING['claude-sonnet-5-5']).toEqual({ input: 2.0, output: 10.0, cacheWrite: 2.5, cacheRead: 0.2 })
+    expect(MODEL_PRICING['claude-haiku-5-5']).toEqual({
+      input: 0.1,
+      output: 0.5,
+      cacheWrite: 0.125,
+      cacheRead: 0.01,
+      longPrompt: { thresholdTokens: 100_000, input: 0.5, output: 2.5, cacheWrite: 0.625, cacheRead: 0.05 },
+    })
+    expect(MODEL_PRICING['claude-sonnet-5-5']).toEqual({ input: 2.0, output: 10.0, cacheWrite: 2.5, cacheRead: 0.1 })
     expect(MODEL_PRICING['claude-opus-5-5']).toEqual({ input: 4.0, output: 20.0, cacheWrite: 5.0, cacheRead: 0.2 })
   })
 
@@ -326,22 +332,15 @@ describe('calculateUsageCostInCredits (prompt-cache-aware billing)', () => {
     ).toBe(24)
   })
 
-  it('charges Sonnet 5.5 cache reads at $0.20/MTok (0.1x input)', () => {
-    expect(
-      calculateUsageCostInCredits('claude-sonnet-5-5', { ...noUsage, cacheReadInputTokens: 1_000_000 })
-    ).toBe(24)
-  })
-
-  it('charges Haiku 4.5 cache reads at $0.10/MTok (0.1x input)', () => {
+  it('charges Sonnet 5.5 cache reads at $0.10/MTok (0.05x input)', () => {
     // 1M x $0.10 = $0.10 -> x1.2 = 12 credits
     expect(
-      calculateUsageCostInCredits('claude-haiku-4-5', { ...noUsage, cacheReadInputTokens: 1_000_000 })
+      calculateUsageCostInCredits('claude-sonnet-5-5', { ...noUsage, cacheReadInputTokens: 1_000_000 })
     ).toBe(12)
   })
 
-  it('charges 5-minute cache writes at 1.25x input: Haiku $1.25, Sonnet $2.50, Opus $5.00 per MTok', () => {
+  it('charges 5-minute cache writes at 1.25x input: Sonnet $2.50, Opus $5.00 per MTok', () => {
     const write = { ...noUsage, cacheCreationInputTokens: 1_000_000 }
-    expect(calculateUsageCostInCredits('claude-haiku-4-5', write)).toBe(150)
     expect(calculateUsageCostInCredits('claude-sonnet-5-5', write)).toBe(300)
     expect(calculateUsageCostInCredits('claude-opus-5-5', write)).toBe(600)
   })
@@ -354,8 +353,8 @@ describe('calculateUsageCostInCredits (prompt-cache-aware billing)', () => {
   }
 
   it('bills every input bucket plus output on Sonnet 5.5', () => {
-    // $0.002 input + $0.005 write + $0.02 read + $0.005 output = $0.032 -> x1.2 = 3.84 -> 4
-    expect(calculateUsageCostInCredits('claude-sonnet-5-5', cachedAgentTurn)).toBe(4)
+    // $0.002 input + $0.005 write + $0.01 read + $0.005 output = $0.022 -> x1.2 = 2.64 -> 3
+    expect(calculateUsageCostInCredits('claude-sonnet-5-5', cachedAgentTurn)).toBe(3)
   })
 
   it('bills every input bucket plus output on Opus 5.5', () => {
@@ -368,5 +367,44 @@ describe('calculateUsageCostInCredits (prompt-cache-aware billing)', () => {
     expect(
       calculateUsageCostInCredits('claude-opus-5-5', { ...cachedAgentTurn, webSearchRequests: 2 })
     ).toBe(8)
+  })
+})
+
+describe('Haiku 5.5 prompt-length rate cards', () => {
+  const usage = (promptTokens: number, outputTokens: number) => ({
+    inputTokens: promptTokens,
+    cacheCreationInputTokens: 0,
+    cacheReadInputTokens: 0,
+    outputTokens,
+  })
+
+  it('bills a prompt of up to 100K tokens at $0.10 / $0.50', () => {
+    // 100K x $0.10 + 100K x $0.50 = $0.06 -> x1.2 = 7.2 -> 8
+    expect(calculateUsageCostInCredits('claude-haiku-5-5', usage(100_000, 100_000))).toBe(8)
+  })
+
+  it('bills the whole request, output included, at $0.50 / $2.50 once the prompt passes 100K', () => {
+    // 200K x $0.50 + 100K x $2.50 = $0.35 -> x1.2 = 42
+    expect(calculateUsageCostInCredits('claude-haiku-5-5', usage(200_000, 100_000))).toBe(42)
+  })
+
+  it('counts cached tokens toward the 100K threshold', () => {
+    const cachedLongPrompt = {
+      inputTokens: 1_000,
+      cacheCreationInputTokens: 0,
+      cacheReadInputTokens: 1_000_000,
+      outputTokens: 0,
+    }
+    // $0.0005 input + 1M x $0.05 read = $0.0505 -> x1.2 = 6.06 -> 7 (short card would be 2)
+    expect(calculateUsageCostInCredits('claude-haiku-5-5', cachedLongPrompt)).toBe(7)
+  })
+
+  it('a typical cached agent turn costs the 1-credit minimum', () => {
+    expect(calculateUsageCostInCredits('claude-haiku-5-5', {
+      inputTokens: 1_000,
+      cacheCreationInputTokens: 2_000,
+      cacheReadInputTokens: 20_000,
+      outputTokens: 500,
+    })).toBe(1)
   })
 })

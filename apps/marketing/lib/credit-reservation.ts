@@ -18,7 +18,7 @@ const ASCII_BYTES_PER_TOKEN = 2
 const TOKENS_PER_NON_ASCII_CHAR = 2
 // Tool-use system prompt Anthropic injects (346 tokens on Claude 4) x1.35, rounded up.
 const REQUEST_OVERHEAD_TOKENS = 500
-// High-res vision caps an image at ~4784 tokens on Claude 5 models (Haiku 4.5: ~1600).
+// High-res vision caps an image at ~4784 tokens on Claude 5 models.
 const IMAGE_TOKEN_ALLOWANCE = 4800
 
 function isImageBlock(value: unknown): boolean {

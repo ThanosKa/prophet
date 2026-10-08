@@ -3,6 +3,7 @@ import { generateDrizzleJson, generateMigration } from 'drizzle-kit/api'
 import { eq, sql } from 'drizzle-orm'
 import * as schema from '@/lib/db/schema'
 import { POST } from './route'
+import { getAgentMinTokens } from '@/lib/agent/web-search'
 
 vi.mock('@/lib/db', async () => {
   const { PGlite } = await import('@electric-sql/pglite')
@@ -200,9 +201,10 @@ describe('credit reservation in POST /api/agent/chat', () => {
     expect(await balance()).toBe(18)
   })
 
-  it('never shrinks Haiku with thinking to a max_tokens at or below its thinking budget', async () => {
+  it('shrinks a Haiku thinking turn to what the balance affords, never below the thinking floor', async () => {
+    // fresh-chat Haiku 5.5 + Thinking: floor 1 credit, full 16000-token turn 2 credits
     const outcomes: Array<number | 'refused'> = []
-    for (let credits = 1; credits <= 12; credits++) {
+    for (let credits = 0; credits <= 2; credits++) {
       vi.mocked(anthropic.messages.stream).mockClear()
       await db.delete(schema.users)
       await seedUser({ credits })
@@ -210,7 +212,7 @@ describe('credit reservation in POST /api/agent/chat', () => {
         completedTurn({ inputTokens: 100, outputTokens: 100 }) as never
       )
 
-      const response = await post({ userMessage: 'Hello', model: 'claude-haiku-4-5', enableThinking: true })
+      const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5', enableThinking: true })
       await response.text()
 
       const call = vi.mocked(anthropic.messages.stream).mock.calls[0]?.[0]
@@ -219,14 +221,14 @@ describe('credit reservation in POST /api/agent/chat', () => {
         outcomes.push('refused')
         continue
       }
-      const thinking = call.thinking
-      expect(thinking?.type).toBe('enabled')
-      if (thinking?.type === 'enabled') expect(call.max_tokens).toBeGreaterThan(thinking.budget_tokens)
+      expect(call.thinking).toEqual({ type: 'adaptive', display: 'summarized' })
+      expect(call.max_tokens).toBeGreaterThanOrEqual(getAgentMinTokens(true))
       outcomes.push(call.max_tokens)
     }
 
-    expect(outcomes).toContain('refused')
-    expect(outcomes.some((maxTokens) => typeof maxTokens === 'number' && maxTokens < 16_000)).toBe(true)
+    expect(outcomes[0]).toBe('refused')
+    expect(outcomes[1]).toBeLessThan(16_000)
+    expect(outcomes[2]).toBe(16_000)
   })
 
   it('20 parallel Opus 5.5 requests cannot push a 20-credit account below zero', async () => {
@@ -256,7 +258,7 @@ describe('credit reservation in POST /api/agent/chat', () => {
       new Error('529 {"type":"error","error":{"type":"overloaded_error"}}') as never
     )
 
-    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-4-5' })
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
     const events = await response.text()
 
     expect(events).toContain('ANTHROPIC_OVERLOADED')
@@ -314,7 +316,7 @@ describe('credit reservation in POST /api/agent/chat', () => {
       finalMessage: () => Promise.reject(new Error('socket hang up')),
     } as never)
 
-    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-4-5' })
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
     await response.text()
 
     expect(await balance()).toBe(20)
@@ -329,12 +331,12 @@ describe('credit reservation in POST /api/agent/chat', () => {
 
     expect(response.status).toBe(402)
     expect(body).toEqual({
-      error: 'Not enough credits left for Opus 5.5. Switch to Haiku 4.5 or buy more credits.',
+      error: 'Not enough credits left for Opus 5.5. Switch to Haiku 5.5 or buy more credits.',
       code: 'INSUFFICIENT_BALANCE',
       details: {
         pricingUrl: '/pricing',
         isContinuation: false,
-        suggestedModel: 'claude-haiku-4-5',
+        suggestedModel: 'claude-haiku-5-5',
         canUpgrade: true,
       },
     })
@@ -490,12 +492,12 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
     expect(response.status).toBe(402)
     expect(body).toEqual({
       error:
-        'Not enough credits left for Opus 5.5 with Thinking. Turn off Thinking, switch to Haiku 4.5, or buy more credits.',
+        'Not enough credits left for Opus 5.5 with Thinking. Turn off Thinking, switch to Haiku 5.5, or buy more credits.',
       code: 'INSUFFICIENT_BALANCE',
       details: {
         pricingUrl: '/pricing',
         isContinuation: false,
-        suggestedModel: 'claude-haiku-4-5',
+        suggestedModel: 'claude-haiku-5-5',
         suggestDisableThinking: true,
         canUpgrade: true,
       },
@@ -504,7 +506,7 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
   })
 
   it('mid-agent-loop on Opus 5.5, tells the user to switch to Haiku and send "continue"', async () => {
-    // fresh-chat floors: Haiku 4 credits, Opus 13
+    // fresh-chat floors: Haiku 1 credit, Opus 13
     await seedUser({ credits: 8, history: ['Open my inbox'] })
 
     const response = await post(continuationTurn({ model: 'claude-opus-5-5' }))
@@ -513,19 +515,19 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
     expect(response.status).toBe(402)
     expect(body).toEqual({
       error:
-        'Stopped partway: not enough credits left to finish this task. Switch to Haiku 4.5 and send "continue", or buy more credits.',
+        'Stopped partway: not enough credits left to finish this task. Switch to Haiku 5.5 and send "continue", or buy more credits.',
       code: 'INSUFFICIENT_BALANCE',
       details: {
         pricingUrl: '/pricing',
         isContinuation: true,
-        suggestedModel: 'claude-haiku-4-5',
+        suggestedModel: 'claude-haiku-5-5',
         canUpgrade: true,
       },
     })
   })
 
   it('mid-agent-loop with not even Haiku affordable, says the task stopped and to buy credits then "continue"', async () => {
-    await seedUser({ credits: 2, history: ['Open my inbox'] })
+    await seedUser({ credits: 0, history: ['Open my inbox'] })
 
     const response = await post(continuationTurn({ model: 'claude-opus-5-5' }))
     const body = await response.json()
@@ -539,9 +541,9 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
   })
 
   it('first turn with not even Haiku affordable, tells a free user to buy credits or upgrade', async () => {
-    await seedUser({ credits: 2 })
+    await seedUser({ credits: 0 })
 
-    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-4-5' })
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
     const body = await response.json()
 
     expect(response.status).toBe(402)
@@ -553,7 +555,7 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
   })
 
   it('first turn with nothing affordable on the top plan, only offers extra credits', async () => {
-    await seedUser({ credits: 2, tier: 'ultra' })
+    await seedUser({ credits: 0, tier: 'ultra' })
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
     const body = await response.json()
@@ -566,16 +568,17 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
     })
   })
 
-  it('on Haiku 4.5 + Thinking, only suggests turning Thinking off (there is no cheaper model)', async () => {
-    // fresh-chat Haiku floors: 4 credits without Thinking, 8 with it
-    await seedUser({ credits: 5 })
+  it('on Haiku 5.5 + Thinking, only suggests turning Thinking off (there is no cheaper model)', async () => {
+    // ~120K tokens of history puts Haiku on its over-100K rate card:
+    // floors 9 credits without Thinking, 12 with it
+    await seedUser({ credits: 10, history: ['x'.repeat(240_000)] })
 
-    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-4-5', enableThinking: true })
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5', enableThinking: true })
     const body = await response.json()
 
     expect(response.status).toBe(402)
     expect(body).toEqual({
-      error: 'Not enough credits left for Haiku 4.5 with Thinking. Turn off Thinking or buy more credits.',
+      error: 'Not enough credits left for Haiku 5.5 with Thinking. Turn off Thinking or buy more credits.',
       code: 'INSUFFICIENT_BALANCE',
       details: { pricingUrl: '/pricing', isContinuation: false, suggestDisableThinking: true, canUpgrade: true },
     })

@@ -1,17 +1,36 @@
 // Anthropic API pricing (per 1M tokens in USD)
-// Source: https://claude.com/pricing (cache rates: https://platform.claude.com/docs/en/build-with-claude/prompt-caching)
+// Source: https://platform.claude.com/docs/en/about-claude/pricing
+type ModelRates = {
+  input: number;
+  output: number;
+  cacheWrite: number;
+  cacheRead: number;
+};
+
+type ModelPricing = ModelRates & {
+  // Above `thresholdTokens` of prompt, every token of the request bills at these rates.
+  longPrompt?: ModelRates & { thresholdTokens: number };
+};
+
 export const MODEL_PRICING = {
-  "claude-haiku-4-5": {
-    input: 1.0,   // $1 per MTok
-    output: 5.0,  // $5 per MTok
-    cacheWrite: 1.25, // $1.25 per MTok (5-minute TTL, 1.25x input)
-    cacheRead: 0.1,  // $0.10 per MTok (0.1x input)
+  "claude-haiku-5-5": {
+    input: 0.1,   // $0.10 per MTok
+    output: 0.5,  // $0.50 per MTok
+    cacheWrite: 0.125, // $0.125 per MTok (5-minute TTL, 1.25x input)
+    cacheRead: 0.01,  // $0.01 per MTok (0.1x input)
+    longPrompt: {
+      thresholdTokens: 100_000,
+      input: 0.5,
+      output: 2.5,
+      cacheWrite: 0.625,
+      cacheRead: 0.05,
+    },
   },
   "claude-sonnet-5-5": {
     input: 2.0,   // $2 per MTok
     output: 10.0, // $10 per MTok
     cacheWrite: 2.5, // $2.50 per MTok (5-minute TTL, 1.25x input)
-    cacheRead: 0.2,  // $0.20 per MTok (0.1x input)
+    cacheRead: 0.1,  // $0.10 per MTok (0.05x input)
   },
   "claude-opus-5-5": {
     input: 4.0,   // $4 per MTok
@@ -19,7 +38,7 @@ export const MODEL_PRICING = {
     cacheWrite: 5.0, // $5 per MTok (5-minute TTL, 1.25x input)
     cacheRead: 0.2,  // $0.20 per MTok (0.05x input)
   },
-} as const;
+} as const satisfies Record<string, ModelPricing>;
 
 export const MARKUP = 1.20;
 
@@ -27,7 +46,7 @@ export const MARKUP = 1.20;
 export const WEB_SEARCH_PRICE_PER_1K_USD = 10.0;
 export const WEB_SEARCH_PRICE_PER_SEARCH_USD = WEB_SEARCH_PRICE_PER_1K_USD / 1000;
 
-export const ALL_MODELS = ['claude-haiku-4-5', 'claude-sonnet-5-5', 'claude-opus-5-5'] as const;
+export const ALL_MODELS = ['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5'] as const;
 
 // Stripe Price IDs (not secret - safe to hardcode as fallback)
 const STRIPE_PRICE_IDS = {
@@ -92,11 +111,18 @@ export type TokenUsage = {
  * 5-minute TTL rate; nothing here requests the 1-hour TTL.
  */
 export function calculateUsageCostInCredits(model: ModelName, usage: TokenUsage): number {
-  const pricing = MODEL_PRICING[model];
+  const modelPricing: ModelPricing | undefined = MODEL_PRICING[model];
 
-  if (!pricing) {
+  if (!modelPricing) {
     throw new Error(`Unknown model: ${model}`);
   }
+
+  const promptTokens =
+    usage.inputTokens + usage.cacheCreationInputTokens + usage.cacheReadInputTokens;
+  const pricing =
+    modelPricing.longPrompt && promptTokens > modelPricing.longPrompt.thresholdTokens
+      ? modelPricing.longPrompt
+      : modelPricing;
 
   const perToken = (tokens: number, usdPerMTok: number) => (tokens / 1_000_000) * usdPerMTok;
   const totalCostUSD =
