@@ -224,7 +224,7 @@ describe('releasing client tool calls in POST /api/agent/chat', () => {
     ])
   })
 
-  it('on a refusal after a tool_use block sends no tool_use event, stores no reply and bills the real cost', async () => {
+  it('on a refusal after a tool_use block sends no tool_use event, stores only the declined note and bills the real cost', async () => {
     // Haiku 5.5: 90,000 input x $0.10/MTok + 10,000 output x $0.50/MTok = 1.4 cents,
     // x1.25 Margin = 1.75, rounded up to 2 Credits.
     const usage = { input_tokens: 90_000, output_tokens: 10_000 }
@@ -255,7 +255,11 @@ describe('releasing client tool calls in POST /api/agent/chat', () => {
     ])
     expect(framesOfType(events, 'done')).toEqual([])
     const stored = await storedMessages()
-    expect(stored.filter((message) => message.role === 'assistant')).toEqual([])
+    expect(
+      stored
+        .filter((message) => message.role === 'assistant')
+        .map(({ content, toolCalls }) => ({ content, toolCalls }))
+    ).toEqual([{ content: 'Claude declined to continue this request.', toolCalls: null }])
     expect(await balance()).toBe(STARTING_CREDITS - 2)
   })
 })

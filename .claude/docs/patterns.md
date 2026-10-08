@@ -89,6 +89,7 @@ return new Response(stream.toReadableStream(), {
 - Use `anthropic.messages.stream()` for streaming responses
 - Await `finalMessage()` for authoritative usage, including `server_tool_use.web_search_requests`
 - Release client tool calls only after a `tool_use` stop: collect them while streaming and send the `tool_use` events after `finalMessage()`, before `citations`, `execution_complete` and `done` (extension 1.0.5 takes `execution_complete` without a prior tool call as the final answer). On `max_tokens`, `refusal`, Stop or an error, send none and store none; on `max_tokens`, `done.contentBlocks` drops the cut-off call
+- Each Run keeps one assistant row, updated after every Turn (`writeRunRecord` in `lib/agent/run-record.ts`): in the billing transaction on a normal end, and in the unfinished-Turn settlement on Stop, disconnect or error. The Run's user row is saved under the chat lock before the first Turn (`openRun`), so it survives a failed Turn. Lock the chat row before the user row in every transaction that writes the record. A new Run's prompt renders an earlier assistant row as its text plus an "Actions taken" list
 - Resolve legacy model IDs before the call and bill from the model actually invoked
 - Bill all three input buckets with `calculateUsageCostInCredits`; the prompt's size is `input_tokens + cache_creation_input_tokens + cache_read_input_tokens`, which is what context displays must show
 - Deduct credits in a database transaction

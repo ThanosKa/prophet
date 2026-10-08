@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { APIError, BadRequestError } from "@anthropic-ai/sdk";
 import { db } from "@/lib/db";
 import { users, chats, messages, usageRecords } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { anthropic } from "@/lib/anthropic";
 import { AGENT_TOOLS } from "@/lib/agent/tools";
@@ -37,6 +37,14 @@ import {
 import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
 import { totalCredits } from "@/lib/credit-balance";
 import { buildAgentMessages, resolveRunTurns } from "@/lib/agent/conversation";
+import {
+  isToolInput,
+  openRun,
+  writeRunRecord,
+  type HistoryRow,
+  type RunRequest,
+  type TurnEnding,
+} from "@/lib/agent/run-record";
 import { error, INTERNAL_ERROR_MESSAGE, SESSION_EXPIRED_MESSAGE } from "@/types";
 import { logger } from "@/lib/logger";
 import {
@@ -187,7 +195,7 @@ export async function POST(req: Request) {
 
     const [chat, user] = await Promise.all([
       db.query.chats.findFirst({
-        where: eq(chats.id, chatId),
+        where: and(eq(chats.id, chatId), eq(chats.userId, userId)),
       }),
       db.query.users.findFirst({
         where: eq(users.id, userId),
@@ -197,12 +205,6 @@ export async function POST(req: Request) {
     if (!chat) {
       return NextResponse.json(error("Chat not found", "CHAT_NOT_FOUND"), {
         status: 404,
-      });
-    }
-
-    if (chat.userId !== userId) {
-      return NextResponse.json(error("Forbidden", "FORBIDDEN"), {
-        status: 403,
       });
     }
 
@@ -225,36 +227,23 @@ export async function POST(req: Request) {
       );
     }
 
-    // The client owns the run's intermediate turns; the DB holds the chat up to and
-    // including the run's opening message (assistant replies are saved only when a run ends).
-    const history = await db.query.messages.findMany({
+    // Read without a lock to size the Hold; a first Turn rebuilds its prompt from the
+    // read it takes under the chat lock once the Hold is in place.
+    const unlockedHistory = await db.query.messages.findMany({
       where: eq(messages.chatId, chatId),
       orderBy: (messages, { asc }) => [asc(messages.createdAt)],
     });
-    const anthropicMessages = buildAgentMessages({ history, userMessage, image, runTurns });
-
-    logger.debug(
-      {
-        userId,
-        chatId,
-        model,
-        requestedModel,
-        modelAliased: requestedModel !== model,
-        webSearchEnabled,
-        messageCount: anthropicMessages.length,
-        runTurns: runTurns.length,
-      },
-      "Starting agent stream"
-    );
-
-    // DEV LOGGING: Log request to LLM
-    await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking });
-
+    const estimatedMessages = buildAgentMessages({
+      history: unlockedHistory,
+      userMessage,
+      image,
+      runTurns,
+    });
     const tools = buildAgentTools(AGENT_TOOLS, webSearchEnabled);
     const estimatedInputTokens = estimateInputTokens({
       system: AGENT_SYSTEM_PROMPT,
       tools,
-      messages: anthropicMessages,
+      messages: estimatedMessages,
     });
     const balanceCents = totalCredits(user);
     const planFor = (option: { model: ModelName; enableThinking: boolean }) =>
@@ -311,6 +300,48 @@ export async function POST(req: Request) {
     }
     const { reserveCents, maxTokens } = plan;
     const maxTokensReducedForBalance = maxTokens < AGENT_TURN_MAX_TOKENS;
+
+    let history: HistoryRow[] = unlockedHistory;
+    let runRequest: RunRequest = previousTurns
+      ? { type: "continuation", turns: runTurns }
+      : { type: "legacy", turns: runTurns };
+    if (userMessage) {
+      try {
+        const started = await openRun({ db, chatId, userMessage });
+        history = started.history;
+        runRequest = { type: "first", opening: started.opening };
+      } catch (startError) {
+        logger.error(
+          { userId, chatId, error: startError instanceof Error ? startError.message : String(startError) },
+          "Failed to start the Run; returning its hold"
+        );
+        await settleCredits({ db, userId, hold, actualCents: 0 }).catch((settleError: unknown) => {
+          logger.error(
+            { userId, chatId, reserveCents, error: settleError instanceof Error ? settleError.message : String(settleError) },
+            "Failed to return the hold of a Run that never started"
+          );
+        });
+        return NextResponse.json(error(INTERNAL_ERROR_MESSAGE, "INTERNAL_ERROR"), { status: 500 });
+      }
+    }
+    const anthropicMessages = buildAgentMessages({ history, userMessage, image, runTurns });
+
+    logger.debug(
+      {
+        userId,
+        chatId,
+        model,
+        requestedModel,
+        modelAliased: requestedModel !== model,
+        webSearchEnabled,
+        messageCount: anthropicMessages.length,
+        runTurns: runTurns.length,
+      },
+      "Starting agent stream"
+    );
+
+    // DEV LOGGING: Log request to LLM
+    await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking });
 
     const encoder = new TextEncoder();
     const upstream = new AbortController();
@@ -375,6 +406,15 @@ export async function POST(req: Request) {
             : 0;
           try {
             await db.transaction(async (tx) => {
+              // Stop, disconnect or error released no tool calls: only the text so far.
+              await writeRunRecord({
+                tx,
+                chatId,
+                request: runRequest,
+                ending: { type: "reply", text: fullTextResponse, releasedToolCalls: [] },
+                model,
+                usage: { inputTokens, outputTokens, costCents: actualCents },
+              });
               await settleCredits({ db: tx, userId, hold, actualCents });
               if (actualCents > 0) {
                 await tx.insert(usageRecords).values({
@@ -600,44 +640,35 @@ export async function POST(req: Request) {
           const isFinalTurn =
             stopReason !== "tool_use" && stopReason !== "pause_turn";
 
-          // Save messages to DB only on appropriate turns:
-          // - User message: Save on first turn only
-          // - Assistant message: Save on FINAL turn only (prevents duplicate assistant messages)
-          // - Credits/usage: Always track (for billing accuracy)
-          if (isFirstTurn && userMessage) {
-            await db.insert(messages).values({
-              chatId,
-              role: "user",
-              content: userMessage,
-              model: null,
-              inputTokens: 0,
-              outputTokens: 0,
-              costCents: 0,
-            });
-          }
-
-          const assistantToolCalls = releasesToolCalls
-            ? contentBlocks.filter((block) => block.type === "tool_use")
-            : [];
-          const hasContent = fullTextResponse.trim().length > 0 || assistantToolCalls.length > 0;
+          // A refused Turn's text isn't a reply the user should see again, and the
+          // tool calls it held were never released.
+          const ending: TurnEnding =
+            stopReason === "refusal"
+              ? { type: "refused" }
+              : {
+                  type: "reply",
+                  text: fullTextResponse,
+                  releasedToolCalls: releasesToolCalls
+                    ? clientToolCalls.map((call) => ({
+                        type: call.type,
+                        id: call.id,
+                        name: call.name,
+                        input: isToolInput(call.input) ? call.input : {},
+                      }))
+                    : [],
+                };
 
           const maxContextTokens = getModelContextWindow(model);
           await db.transaction(async (tx) => {
-            // Only save assistant message on FINAL turn to prevent duplicate messages
-            // During intermediate turns, the client manages conversation state
-            // A refused Turn's text isn't a reply the user should see again.
-            if (isFinalTurn && hasContent && stopReason !== "refusal") {
-              await tx.insert(messages).values({
-                chatId,
-                role: "assistant",
-                content: fullTextResponse,
-                model,
-                inputTokens,
-                outputTokens,
-                costCents,
-                toolCalls: assistantToolCalls.length > 0 ? JSON.stringify(assistantToolCalls) : null,
-              });
-            }
+            // Locks the chat row, so it goes before settlement locks the user row.
+            await writeRunRecord({
+              tx,
+              chatId,
+              request: runRequest,
+              ending,
+              model,
+              usage: { inputTokens, outputTokens, costCents },
+            });
 
             await settleCredits({ db: tx, userId, hold, actualCents: costCents });
 

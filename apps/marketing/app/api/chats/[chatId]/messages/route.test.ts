@@ -70,6 +70,47 @@ describe('GET /api/chats/[chatId]/messages', () => {
     expect(data.data.messages[4].id).toBe('msg_0')
   })
 
+  it('returns stored tool calls through the shared schema and drops a column that fails it', async () => {
+    vi.mocked(db.query.messages.findMany).mockResolvedValue([
+      {
+        id: 'msg_valid',
+        chatId,
+        role: 'assistant',
+        content: 'Opened it.',
+        createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, 2)),
+        toolCalls: JSON.stringify([
+          {
+            type: 'tool_use',
+            id: 'toolu_1',
+            name: 'navigate',
+            input: { url: 'https://a.com' },
+            isError: true,
+            caller: { type: 'direct' },
+          },
+        ]),
+      },
+      {
+        id: 'msg_invalid',
+        chatId,
+        role: 'assistant',
+        content: 'Broken.',
+        createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, 1)),
+        toolCalls: '{not json',
+      },
+    ] as never)
+
+    const request = new Request(`http://localhost:3000/api/chats/${chatId}/messages`)
+    const data = await (await GET(request, { params: Promise.resolve({ chatId }) })).json()
+
+    expect(data.data.messages.map((message: { id: string; toolCalls: unknown }) => [message.id, message.toolCalls])).toEqual([
+      ['msg_invalid', null],
+      [
+        'msg_valid',
+        [{ type: 'tool_use', id: 'toolu_1', name: 'navigate', input: { url: 'https://a.com' }, isError: true }],
+      ],
+    ])
+  })
+
   it('respects the limit parameter', async () => {
     const limit = 2
     const mockMessages = Array.from({ length: limit + 1 }, (_, i) => ({

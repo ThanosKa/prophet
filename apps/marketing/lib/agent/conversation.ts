@@ -1,7 +1,41 @@
 import type { ContentBlockParam, MessageParam } from '@anthropic-ai/sdk/resources/messages'
-import type { AgentChatRequest, AgentTurn, ImageData } from '@prophet/shared'
+import { parseStoredToolCalls, type AgentChatRequest, type AgentTurn, type ImageData } from '@prophet/shared'
+import type { HistoryRow } from '@/lib/agent/run-record'
 
-type StoredMessage = { role: string; content: string }
+const ACTION_INPUT_MAX_CHARS = 300
+const RECORD_TEXT_MAX_CHARS = 8000
+
+/** Cuts by code point, so a surrogate pair is never split. */
+function capText(text: string): string {
+  const chars = Array.from(text)
+  if (chars.length <= RECORD_TEXT_MAX_CHARS) return text
+  const keep = RECORD_TEXT_MAX_CHARS / 2
+  const head = chars.slice(0, keep).join('')
+  const tail = chars.slice(-keep).join('')
+  return `${head}\n[… ${chars.length - RECORD_TEXT_MAX_CHARS} characters left out …]\n${tail}`
+}
+
+function capActionInput(input: Record<string, unknown>): string {
+  const chars = Array.from(JSON.stringify(input))
+  if (chars.length <= ACTION_INPUT_MAX_CHARS) return chars.join('')
+  return `${chars.slice(0, ACTION_INPUT_MAX_CHARS).join('')}…`
+}
+
+/**
+ * An earlier Run's record as Claude reads it: its text plus a compact list of the
+ * actions it took, which is how "continue" remembers them. Must stay deterministic:
+ * every Turn of the next Run sends the same bytes for it, or the prompt cache misses.
+ */
+function renderStoredMessage(row: HistoryRow): string {
+  if (row.role === 'user') return row.content
+  const actions = parseStoredToolCalls(row.toolCalls).map(
+    (call) => `- ${call.name} ${capActionInput(call.input)}${call.isError ? ' (failed)' : ''}`
+  )
+  const text = capText(row.content)
+  if (actions.length === 0) return text
+  const list = `Actions taken:\n${actions.join('\n')}`
+  return text === '' ? list : `${text}\n\n${list}`
+}
 
 function userContent(text: string, image: ImageData | undefined): MessageParam['content'] {
   if (!image) return text
@@ -36,8 +70,9 @@ export function resolveRunTurns({
  * start with the previous request's messages unchanged, or the prompt cache misses
  * and replayed thinking blocks no longer match their history.
  *
- * The run's opening user message is saved after its first turn, so continuation
- * turns find it at the end of the stored history.
+ * The run's opening user message is saved before its first turn, and its record is
+ * the assistant row after it, so a continuation drops that trailing row and finds
+ * the opening message at the end of the stored history.
  */
 export function buildAgentMessages({
   history,
@@ -45,14 +80,14 @@ export function buildAgentMessages({
   image,
   runTurns,
 }: {
-  history: StoredMessage[]
+  history: HistoryRow[]
   userMessage: string | undefined
   image: ImageData | undefined
   runTurns: AgentTurn[]
 }): MessageParam[] {
-  const messages: MessageParam[] = history.map((msg) => ({
-    role: msg.role as 'user' | 'assistant',
-    content: msg.content,
+  const messages: MessageParam[] = history.map((row) => ({
+    role: row.role,
+    content: renderStoredMessage(row),
   }))
 
   if (userMessage) {

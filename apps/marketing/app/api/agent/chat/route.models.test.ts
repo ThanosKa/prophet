@@ -28,6 +28,17 @@ vi.mock('@/lib/ratelimit', () => ({
   checkRateLimit: vi.fn(),
 }))
 
+// The Run record has its own PGlite tests (route.run-record.test.ts); here the route
+// only needs a started Run.
+vi.mock('@/lib/agent/run-record', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/agent/run-record')>()
+  return {
+    ...actual,
+    openRun: vi.fn(async () => ({ history: [], opening: { id: 'opening', createdAt: new Date() } })),
+    writeRunRecord: vi.fn(async () => 'written'),
+  }
+})
+
 // The reserve/settle SQL has its own PGlite tests; here the route only needs a hold.
 vi.mock('@/lib/credit-reservation', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/credit-reservation')>()
@@ -54,6 +65,7 @@ const { db } = await import('@/lib/db')
 const { checkRateLimit } = await import('@/lib/ratelimit')
 const { anthropic } = await import('@/lib/anthropic')
 const { settleCredits } = await import('@/lib/credit-reservation')
+const { writeRunRecord } = await import('@/lib/agent/run-record')
 
 const CHAT_ID = '550e8400-e29b-41d4-a716-446655440000'
 
@@ -310,8 +322,9 @@ describe('Legacy model ids from already-installed extensions', () => {
       costCents: expected,
     })
 
-    const assistantRow = captured.inserts.find((row) => row.role === 'assistant')
-    expect(assistantRow).toMatchObject({ model: 'claude-opus-5-5', costCents: expected })
+    expect(writeRunRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ model: 'claude-opus-5-5', usage: expect.objectContaining({ costCents: expected }) })
+    )
   })
 
   it('records the resolved model and cost for every legacy alias', async () => {
