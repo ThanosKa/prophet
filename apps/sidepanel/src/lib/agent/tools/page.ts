@@ -135,7 +135,7 @@ export async function getPageContent(): Promise<ToolExecutionResult> {
       }
     }
 
-    // Capped at the shared page-content limit to prevent token explosion (~50k chars = ~12-15k tokens)
+    // Capped at the shared page-content limit, so one page can't swell every later Turn's prompt
     // Also filter out obvious JavaScript/CSS noise
     const result = await cdpCommander.sendCommand<EvaluateResult>(
       tab.id,
