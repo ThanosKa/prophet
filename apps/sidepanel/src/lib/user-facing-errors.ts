@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { currentAgentModelSchema } from '@prophet/shared'
+import { MAX_AGENT_TURNS, currentAgentModelSchema } from '@prophet/shared'
 
 export const USER_FACING_TEXT = {
   imageTooLarge: 'That image is too large to send. Try a smaller one.',
@@ -8,8 +8,8 @@ export const USER_FACING_TEXT = {
   streamCut: 'The response stopped unexpectedly. Please try again.',
   truncated: 'This answer hit the length limit and was cut short. Send "continue" for the rest.',
   truncatedLowBalance:
-    'This answer was cut short because your balance is low. Buy credits or switch to Haiku 4.5 for full-length answers.',
-  turnLimit: 'Prophet paused after 10 steps. Send "continue" to keep going.',
+    'This answer was cut short because your balance is low. Buy credits or switch to Haiku 5.5 for full-length answers.',
+  turnLimit: `Prophet paused after ${MAX_AGENT_TURNS} turns. Send "continue" to keep going.`,
   network: "Can't reach Prophet. Check your connection and try again.",
   browserConnection: 'Prophet lost its connection to the browser. Reopen the side panel and try again.',
 } as const

@@ -1,10 +1,11 @@
 import type { MessageParam, ToolUnion } from '@anthropic-ai/sdk/resources/messages'
 import { and, eq, gte, sql } from 'drizzle-orm'
-import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core'
+import type { AnyPgColumn, PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core'
 import { users } from '@/lib/db/schema'
 import { calculateCostInCredits, type ModelName } from '@/lib/pricing'
 
 type CreditStore = Pick<PgDatabase<PgQueryResultHKT>, 'update'>
+type CreditReserveStore = Pick<PgDatabase<PgQueryResultHKT>, '$with' | 'with' | 'select'>
 
 /**
  * Deliberately pessimistic: 2 ASCII bytes per token covers English (~3.5 bytes/token),
@@ -18,7 +19,7 @@ const ASCII_BYTES_PER_TOKEN = 2
 const TOKENS_PER_NON_ASCII_CHAR = 2
 // Tool-use system prompt Anthropic injects (346 tokens on Claude 4) x1.35, rounded up.
 const REQUEST_OVERHEAD_TOKENS = 500
-// High-res vision caps an image at ~4784 tokens on Claude 5 models (Haiku 4.5: ~1600).
+// High-res vision caps an image at ~4784 tokens on Claude 5 models.
 const IMAGE_TOKEN_ALLOWANCE = 4800
 
 function isImageBlock(value: unknown): boolean {
@@ -108,46 +109,89 @@ export function planCreditReservation({
   return { ok: true, reserveCents: costWith(affordable), maxTokens: affordable }
 }
 
+/** How much of a Turn's hold came out of each balance, so settlement can return it. */
+export type CreditHold = { subscriptionCents: number; purchasedCents: number }
+
 /**
- * Takes the hold in one statement: Postgres re-checks the WHERE guard after waiting
- * on a concurrent writer's row lock, so parallel requests can never jointly reserve
- * more than the balance.
+ * Takes the hold Subscription credits first, then Purchased credits, checked against
+ * their combined balance, in one UPDATE so parallel requests can never jointly
+ * reserve more than the balance. The CTE locks the row and keeps its Subscription
+ * credits as they were, so RETURNING can report how the hold was split.
+ * Returns null when the balance can't cover the hold or the user doesn't exist.
  */
 export async function reserveCredits({
   db,
   userId,
   reserveCents,
 }: {
-  db: CreditStore
+  db: CreditReserveStore
   userId: string
   reserveCents: number
-}): Promise<boolean> {
-  const rows = await db
+}): Promise<CreditHold | null> {
+  const before = db.$with('balance_before_hold').as(
+    db
+      .select({ subscription: users.creditsRemaining })
+      .from(users)
+      .where(eq(users.id, userId))
+      .for('update')
+  )
+  // Subscription credits can be negative after an overage; they then give nothing.
+  const fromSubscription = (subscription: AnyPgColumn) =>
+    sql`LEAST(GREATEST(${subscription}, 0), ${reserveCents}::integer)`
+
+  const [row] = await db
+    .with(before)
     .update(users)
     .set({
-      creditsRemaining: sql`${users.creditsRemaining} - ${reserveCents}`,
+      creditsRemaining: sql`${users.creditsRemaining} - ${fromSubscription(users.creditsRemaining)}`,
+      purchasedCredits: sql`${users.purchasedCredits} - (${reserveCents}::integer - ${fromSubscription(users.creditsRemaining)})`,
       updatedAt: new Date(),
     })
-    .where(and(eq(users.id, userId), gte(users.creditsRemaining, reserveCents)))
-    .returning({ creditsRemaining: users.creditsRemaining })
-  return rows.length > 0
+    .from(before)
+    .where(
+      and(
+        eq(users.id, userId),
+        gte(sql`${users.creditsRemaining} + ${users.purchasedCredits}`, reserveCents),
+        gte(users.purchasedCredits, sql`${reserveCents}::integer - ${fromSubscription(users.creditsRemaining)}`)
+      )
+    )
+    .returning({ subscriptionCents: fromSubscription(before.subscription).mapWith(Number) })
+
+  if (!row) return null
+  return { subscriptionCents: row.subscriptionCents, purchasedCents: reserveCents - row.subscriptionCents }
 }
 
+/**
+ * Returns the unused part of the hold Purchased credits first, so the Credits that
+ * never expire last longest. A Turn that cost more than its hold takes the overage
+ * from Subscription credits down to 0, then Purchased credits down to 0; only what
+ * both can't cover pushes Subscription credits negative.
+ */
 export async function settleCredits({
   db,
   userId,
-  reserveCents,
+  hold,
   actualCents,
 }: {
   db: CreditStore
   userId: string
-  reserveCents: number
+  hold: CreditHold
   actualCents: number
 }): Promise<void> {
+  const unusedCents = hold.subscriptionCents + hold.purchasedCents - actualCents
+  const refundToPurchased = Math.min(Math.max(unusedCents, 0), hold.purchasedCents)
+  const refundToSubscription = Math.max(unusedCents, 0) - refundToPurchased
+  const overageCents = Math.max(-unusedCents, 0)
+
+  // Both SET expressions read the row as it was before this UPDATE.
+  const overageFromSubscription = sql`LEAST(GREATEST(${users.creditsRemaining}, 0), ${overageCents}::integer)`
+  const overageFromPurchased = sql`LEAST(${users.purchasedCredits}, ${overageCents}::integer - ${overageFromSubscription})`
+
   await db
     .update(users)
     .set({
-      creditsRemaining: sql`${users.creditsRemaining} + ${reserveCents - actualCents}`,
+      creditsRemaining: sql`${users.creditsRemaining} + ${refundToSubscription}::integer - (${overageCents}::integer - ${overageFromPurchased})`,
+      purchasedCredits: sql`${users.purchasedCredits} + ${refundToPurchased}::integer - ${overageFromPurchased}`,
       updatedAt: new Date(),
     })
     .where(eq(users.id, userId))

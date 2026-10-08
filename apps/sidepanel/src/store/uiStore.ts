@@ -1,11 +1,21 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { DEFAULT_AGENT_MODEL, CLAUDE_MODELS } from '@prophet/shared'
+import { z } from 'zod'
+import { DEFAULT_AGENT_MODEL, CLAUDE_MODELS, agentModelSchema, resolveAgentModel } from '@prophet/shared'
 import type { AgentModel } from '@prophet/shared'
 
 const MAX_CONTEXT_TOKENS = 200000
 
 type Theme = 'light' | 'dark'
+
+// Each field degrades to undefined on its own, so one bad value never resets the rest.
+const persistedUIStateSchema = z
+  .object({
+    selectedModel: agentModelSchema.optional().catch(undefined),
+    theme: z.enum(['light', 'dark']).optional().catch(undefined),
+    enableThinking: z.boolean().optional().catch(undefined),
+  })
+  .catch({})
 
 interface UIState {
   drawerOpen: boolean
@@ -119,6 +129,17 @@ export const useUIStore = create<UIState>()(
         theme: state.theme,
         enableThinking: state.enableThinking,
       }),
+      // Earlier builds saved the model IDs they shipped with (e.g. claude-haiku-4-5);
+      // map those onto the current model so the picker still shows a label.
+      merge: (persisted, current) => {
+        const saved = persistedUIStateSchema.parse(persisted)
+        return {
+          ...current,
+          ...(saved.theme && { theme: saved.theme }),
+          ...(saved.enableThinking !== undefined && { enableThinking: saved.enableThinking }),
+          ...(saved.selectedModel && { selectedModel: resolveAgentModel(saved.selectedModel) }),
+        }
+      },
     }
   )
 )

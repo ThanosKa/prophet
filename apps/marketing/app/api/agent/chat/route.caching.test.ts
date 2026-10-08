@@ -13,7 +13,10 @@ vi.mock('@/lib/db', async () => {
 
 vi.mock('@clerk/nextjs/server', () => ({ auth: vi.fn() }))
 vi.mock('@/lib/ratelimit', () => ({ checkRateLimit: vi.fn() }))
-vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { stream: vi.fn() } } }))
+// A plain vi.fn, so tests can hand it stub streams without casting to MessageStream.
+const { streamMock } = vi.hoisted(() => ({ streamMock: vi.fn() }))
+
+vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { stream: streamMock } } }))
 vi.mock('@/lib/logger', () => ({
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
@@ -230,10 +233,28 @@ describe('append-only agent runs in POST /api/agent/chat', () => {
     expect(anthropic.messages.stream).not.toHaveBeenCalled()
   })
 
+  it.each([
+    [10, 'an older build that pauses at 10 Turns'],
+    [19, 'the last request of a 20-Turn run'],
+  ])('accepts a run history of %i earlier Turns (%s)', async (earlierTurns) => {
+    streamMock.mockReturnValue(
+      anthropicTurn([{ type: 'text', text: 'Done.' }], 'end_turn')
+    )
+
+    const response = await post({
+      model: 'claude-sonnet-5-5',
+      previousTurns: Array.from({ length: earlierTurns }, () => NAVIGATE_TURN),
+    })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(anthropic.messages.stream).toHaveBeenCalledOnce()
+  })
+
   it('rejects a run history longer than an agent run can be', async () => {
     const response = await post({
       model: 'claude-sonnet-5-5',
-      previousTurns: Array.from({ length: 11 }, () => NAVIGATE_TURN),
+      previousTurns: Array.from({ length: 21 }, () => NAVIGATE_TURN),
     })
 
     expect(response.status).toBe(400)

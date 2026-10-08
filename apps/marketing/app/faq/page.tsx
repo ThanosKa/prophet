@@ -8,7 +8,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: { absolute: 'Prophet FAQ: Credits, Privacy, Claude Models & Setup' },
   description:
-    'How credits track Anthropic API cost, what happens to your page data, which Claude models you get on free, and how to install in under a minute.',
+    'How credits work and when they expire, what happens to your page data, which Claude models you get on free, and how to install in under a minute.',
   alternates: { canonical: '/faq' },
 }
 

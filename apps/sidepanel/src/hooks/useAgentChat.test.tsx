@@ -175,7 +175,7 @@ describe('useAgentChat run isolation', () => {
     await act(async () => runs[0].release())
 
     expect(current().notice).toBe(
-      'This answer was cut short because your balance is low. Buy credits or switch to Haiku 4.5 for full-length answers.'
+      'This answer was cut short because your balance is low. Buy credits or switch to Haiku 5.5 for full-length answers.'
     )
   })
 
@@ -210,15 +210,16 @@ describe('useAgentChat run isolation', () => {
     })
   })
 
-  it('shows a neutral notice when the run pauses at the step cap', async () => {
-    const runs = scriptRuns([{ before: [], after: [{ type: 'turn_limit_reached' }] }])
+  it('shows a neutral notice when the run pauses at the Turn limit', async () => {
+    const pause = 'Prophet paused after 20 turns. Send "continue" to keep going.'
+    const runs = scriptRuns([{ before: [], after: [{ type: 'turn_limit_reached', message: pause }] }])
 
     await act(async () => {
       void current().sendMessage('chat-1', 'hi')
     })
     await act(async () => runs[0].release())
 
-    expect(current().notice).toBe('Prophet paused after 10 steps. Send "continue" to keep going.')
+    expect(current().notice).toBe(pause)
     expect(current().error).toBeNull()
   })
 
@@ -270,7 +271,7 @@ describe('useAgentChat run isolation', () => {
             details: {
               pricingUrl: '/pricing',
               isContinuation: false,
-              suggestedModel: 'claude-haiku-4-5',
+              suggestedModel: 'claude-haiku-5-5',
               suggestDisableThinking: true,
               canUpgrade: false,
             },
@@ -289,7 +290,7 @@ describe('useAgentChat run isolation', () => {
     expect(current().errorInfo).toEqual({
       code: 'INSUFFICIENT_BALANCE',
       pricingUrl: '/pricing',
-      suggestedModel: 'claude-haiku-4-5',
+      suggestedModel: 'claude-haiku-5-5',
       suggestDisableThinking: true,
       canUpgrade: false,
     })

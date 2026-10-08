@@ -34,7 +34,7 @@ export type AgentRunEvent =
   | Exclude<AgentLoopEvent, { type: "error" }>
   | AgentRunErrorEvent
   | { type: "output_truncated"; reducedForBalance: boolean }
-  | { type: "turn_limit_reached" };
+  | { type: "turn_limit_reached"; message: string };
 
 // Older servers omit the flag; only an explicit true means max_tokens was lowered to fit the balance.
 const reducedForBalanceSchema = z.object({ maxTokensReducedForBalance: z.literal(true) });
@@ -473,5 +473,5 @@ export async function* runAgentLoop(
     previousTurns.push({ content: serverContent ?? assistantContent, toolResults });
   }
 
-  yield { type: "turn_limit_reached" };
+  yield { type: "turn_limit_reached", message: USER_FACING_TEXT.turnLimit };
 }

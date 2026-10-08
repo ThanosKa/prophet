@@ -227,7 +227,7 @@ describe('runAgentLoop', () => {
       ])
     })
 
-    it('announces the pause when the run hits the 10-turn cap', async () => {
+    it('pauses after exactly 20 Turns and says so', async () => {
       const fetchMock = vi.fn(() =>
         Promise.resolve(
           new Response(
@@ -244,8 +244,11 @@ describe('runAgentLoop', () => {
       const events = []
       for await (const event of runAgentLoop(API, 'chat-1', 'Hi')) events.push(event)
 
-      expect(fetchMock).toHaveBeenCalledTimes(10)
-      expect(events.at(-1)).toEqual({ type: 'turn_limit_reached' })
+      expect(fetchMock).toHaveBeenCalledTimes(20)
+      expect(events.at(-1)).toEqual({
+        type: 'turn_limit_reached',
+        message: 'Prophet paused after 20 turns. Send "continue" to keep going.',
+      })
     })
 
     it('reports a stream that ends without done or error as an unexpected stop', async () => {
@@ -511,7 +514,7 @@ describe('runAgentLoop', () => {
       const details = {
         pricingUrl: '/pricing',
         isContinuation: true,
-        suggestedModel: 'claude-haiku-4-5',
+        suggestedModel: 'claude-haiku-5-5',
         suggestDisableThinking: true,
         canUpgrade: false,
       }

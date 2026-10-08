@@ -28,8 +28,8 @@ const freeOptions = [
   {
     name: 'Prophet free tier',
     cost: '$0 (no card)',
-    models: 'Haiku 4.5, Sonnet 5.5, Opus 5.5',
-    limits: '$0.20 in credits — roughly 20 Haiku messages, 10 Sonnet or 4 Opus.',
+    models: 'Haiku 5.5, Sonnet 5.5, Opus 5.5',
+    limits: 'A one-time $0.07 in credits, enough to try Haiku.',
     catch: 'Credits are finite. When they run out you either stop or buy more.',
   },
   {
@@ -57,7 +57,7 @@ const faqItems = [
   {
     question: 'Is Claude Sonnet 5.5 free?',
     answer:
-      'Claude Sonnet 5.5 is available on the claude.ai free plan, but with a message cap rather than unlimited use. You get a set number of messages in a rolling window; once you hit it, you wait for the window to reset or upgrade. Sonnet 5.5 through the Anthropic API is never free — it is billed per token. Prophet gives you Sonnet 5.5 on its free tier through $0.20 of included credits, with no card required.',
+      'Claude Sonnet 5.5 is available on the claude.ai free plan, but with a message cap rather than unlimited use. You get a set number of messages in a rolling window; once you hit it, you wait for the window to reset or upgrade. Sonnet 5.5 through the Anthropic API is never free — it is billed per token. Prophet lets you pick Sonnet 5.5 on any plan and bills it per use; its free $0.07 of credits is meant for trying Haiku, with no card required.',
   },
   {
     question: 'Is there a way to get Claude Sonnet 5.5 free and unlimited?',
@@ -67,7 +67,7 @@ const faqItems = [
   {
     question: 'Is Claude Opus 5.5 free?',
     answer:
-      'Not on claude.ai. Opus 5.5 is Anthropic\'s most expensive model and is reserved for paid claude.ai plans. The only way to use Opus without a monthly subscription is through the API on a pay-per-token basis, or through a pay-per-use client that resells API access. Prophet includes Opus 5.5 on its free tier, though Opus burns through the $0.20 of free credits fast — expect about four messages rather than dozens.',
+      'Not on claude.ai. Opus 5.5 is Anthropic\'s most expensive model and is reserved for paid claude.ai plans. The only way to use Opus without a monthly subscription is through the API on a pay-per-token basis, or through a pay-per-use client that resells API access. Prophet lets you pick Opus 5.5 on any plan and bills it per use, though its free $0.07 of credits is meant for trying Haiku; Opus needs credits from a plan or a one-time purchase.',
   },
   {
     question: 'What are the Claude free tier limits in 2026?',
@@ -77,7 +77,7 @@ const faqItems = [
   {
     question: 'How can I use Claude without paying $20 a month?',
     answer:
-      'Three realistic routes. First, stay on the claude.ai free plan and live with the message cap. Second, use the Anthropic API directly and pay per token — cheap for light use, but you need to write code or configure a client. Third, use a pay-per-use extension like Prophet, which bills credits at the underlying Anthropic API cost plus a 20% platform margin. A light user sending a handful of Sonnet messages a day typically spends a couple of dollars a month, versus $20 flat for Claude Pro.',
+      'Three realistic routes. First, stay on the claude.ai free plan and live with the message cap. Second, use the Anthropic API directly and pay per token — cheap for light use, but you need to write code or configure a client. Third, use a pay-per-use extension like Prophet, which bills pay-per-use credits for the tokens you actually use. A light user sending a handful of Sonnet messages a day typically spends a couple of dollars a month, versus $20 flat for Claude Pro.',
   },
   {
     question: 'Does the Claude free tier let me use Claude on the web page I am reading?',
@@ -265,22 +265,22 @@ export default function FreeClaudeAIPage() {
               to us as to everyone else. Here is the honest accounting.
             </p>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              <strong className="text-foreground">What is free:</strong> $0.20 in credits when you
-              sign up, no credit card. All three models — Haiku 4.5, Sonnet 5.5 and Opus 5.5 — are
-              unlocked on the free tier, which is unusual; most extensions reserve the strong models
-              for paid plans. All 18 browser automation tools work on the free tier. In practice
-              $0.20 is roughly 20 Haiku messages, 10 Sonnet messages, or four Opus messages at
-              typical message length.
+              <strong className="text-foreground">What is free:</strong> a one-time $0.07 in credits
+              when you sign up, no credit card. That is enough to try Prophet on Haiku 5.5, the
+              fastest and cheapest model. No model is locked behind a plan, and all 18 browser
+              automation tools work on the free tier, but Sonnet 5.5 and Opus 5.5 cost more per
+              message than the free credits are meant to cover.
             </p>
             <p className="text-muted-foreground leading-relaxed mb-4">
               <strong className="text-foreground">What is not free:</strong> everything after that.
               Credits do not refill on a timer. There is no perpetual free allowance, because each
-              message costs us real API spend. When the $0.20 runs out you buy more.
+              message costs us real API spend. When the $0.07 runs out you buy more.
             </p>
             <p className="text-muted-foreground leading-relaxed">
               What makes that palatable is that you are buying credits, not a subscription. 1 credit =
-              1 cent of Anthropic API cost plus a 20% margin, and nothing else — no seat fee, no
-              minimum. A quiet month costs you nothing. Compare that with a $20/month plan you use four times — the
+              1 cent, charged by the tokens each Turn uses with a minimum of 1 credit per Turn, and
+              nothing else — no seat fee, no minimum spend. Credits you buy once never expire, so a
+              quiet month costs you nothing. Compare that with a $20/month plan you use four times — the
               full breakdown is in{' '}
               <Link href="/blog/pay-per-use-ai-vs-subscription" className="text-primary hover:underline">
                 pay-per-use AI vs subscription pricing
@@ -366,7 +366,7 @@ export default function FreeClaudeAIPage() {
 
       <InstallCta
         title="Try Claude free in your browser"
-        description="$0.20 in credits, no card required, and Haiku 4.5, Sonnet 5.5 and Opus 5.5 all unlocked from the start."
+        description="A one-time $0.07 in credits to try Haiku 5.5, no card required, with all 18 browser tools on the free tier."
         secondary={{ href: '/pricing', label: 'See credit pricing' }}
       >
         <p className="text-sm text-muted-foreground mb-6">

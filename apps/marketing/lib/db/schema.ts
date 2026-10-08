@@ -1,5 +1,5 @@
-import { relations } from 'drizzle-orm'
-import { pgTable, uuid, text, integer, timestamp, pgEnum, index, boolean } from 'drizzle-orm/pg-core'
+import { relations, sql } from 'drizzle-orm'
+import { pgTable, uuid, text, integer, timestamp, pgEnum, index, boolean, check } from 'drizzle-orm/pg-core'
 
 // Enums
 export const userTierEnum = pgEnum('user_tier', ['free', 'pro', 'premium', 'ultra'])
@@ -22,7 +22,9 @@ export const users = pgTable(
     profileImageUrl: text('profile_image_url'),
 
     tier: userTierEnum('tier').notNull().default('free'),
+    // Subscription credits plus the Free grant; may go negative when a Turn costs more than its hold.
     creditsRemaining: integer('credits_remaining').notNull().default(0),
+    purchasedCredits: integer('purchased_credits').notNull().default(0),
     creditsIncluded: integer('credits_included').notNull().default(0),
     billingPeriodStart: timestamp('billing_period_start', { withTimezone: true }),
     billingPeriodEnd: timestamp('billing_period_end', { withTimezone: true }),
@@ -40,6 +42,7 @@ export const users = pgTable(
     index('users_email_idx').on(table.email),
     index('users_tier_idx').on(table.tier),
     index('users_stripe_customer_id_idx').on(table.stripeCustomerId),
+    check('users_purchased_credits_non_negative', sql`${table.purchasedCredits} >= 0`),
   ]
 )
 
@@ -109,6 +112,20 @@ export const usageRecords = pgTable(
     index('usage_records_user_id_idx').on(table.userId),
     index('usage_records_created_at_idx').on(table.createdAt),
   ]
+)
+
+// One row per paid extra-credits checkout; the session id makes webhook redelivery a no-op.
+export const creditPurchases = pgTable(
+  'credit_purchases',
+  {
+    stripeCheckoutSessionId: text('stripe_checkout_session_id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    credits: integer('credits').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('credit_purchases_user_id_idx').on(table.userId)]
 )
 
 // Relations (for Drizzle ORM query builder)

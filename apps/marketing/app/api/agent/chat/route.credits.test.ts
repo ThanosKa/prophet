@@ -3,6 +3,7 @@ import { generateDrizzleJson, generateMigration } from 'drizzle-kit/api'
 import { eq, sql } from 'drizzle-orm'
 import * as schema from '@/lib/db/schema'
 import { POST } from './route'
+import { getAgentMinTokens } from '@/lib/agent/web-search'
 
 vi.mock('@/lib/db', async () => {
   const { PGlite } = await import('@electric-sql/pglite')
@@ -13,7 +14,10 @@ vi.mock('@/lib/db', async () => {
 
 vi.mock('@clerk/nextjs/server', () => ({ auth: vi.fn() }))
 vi.mock('@/lib/ratelimit', () => ({ checkRateLimit: vi.fn() }))
-vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { stream: vi.fn() } } }))
+// A plain vi.fn, so tests can hand it stub streams without casting to MessageStream.
+const { streamMock } = vi.hoisted(() => ({ streamMock: vi.fn() }))
+
+vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { stream: streamMock } } }))
 vi.mock('@/lib/logger', () => ({
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
@@ -45,14 +49,22 @@ beforeEach(async () => {
 
 async function seedUser({
   credits,
+  purchased = 0,
   history = [],
   tier = 'free',
 }: {
   credits: number
+  purchased?: number
   history?: string[]
   tier?: 'free' | 'pro' | 'premium' | 'ultra'
 }) {
-  await db.insert(schema.users).values({ id: USER_ID, email: 'free@example.com', creditsRemaining: credits, tier })
+  await db.insert(schema.users).values({
+    id: USER_ID,
+    email: 'free@example.com',
+    creditsRemaining: credits,
+    purchasedCredits: purchased,
+    tier,
+  })
   await db.insert(schema.chats).values({ id: CHAT_ID, userId: USER_ID, title: 'Chat' })
   for (const [index, content] of history.entries()) {
     await db.insert(schema.messages).values({
@@ -67,6 +79,11 @@ async function seedUser({
 async function balance(): Promise<number | undefined> {
   const row = await db.query.users.findFirst({ where: eq(schema.users.id, USER_ID) })
   return row?.creditsRemaining
+}
+
+async function balances(): Promise<{ subscription: number; purchased: number } | undefined> {
+  const row = await db.query.users.findFirst({ where: eq(schema.users.id, USER_ID) })
+  return row && { subscription: row.creditsRemaining, purchased: row.purchasedCredits }
 }
 
 function post(body: Record<string, unknown>) {
@@ -187,8 +204,8 @@ function sentMaxTokens(): number | undefined {
 describe('credit reservation in POST /api/agent/chat', () => {
   it('shrinks Opus 5.5 max_tokens to what 20 credits afford and charges only the actual cost', async () => {
     await seedUser({ credits: 20 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(
-      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
     )
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
@@ -196,21 +213,22 @@ describe('credit reservation in POST /api/agent/chat', () => {
 
     expect(sentMaxTokens()).toBeGreaterThanOrEqual(4096)
     expect(sentMaxTokens()).toBeLessThan(16_000)
-    // (1000 x $4 + 500 x $20) / 1M = $0.014 -> x1.2 = 1.68c -> 2 credits
+    // (1000 x $4 + 500 x $20) / 1M = $0.014 -> x1.25 = 1.75c -> 2 credits
     expect(await balance()).toBe(18)
   })
 
-  it('never shrinks Haiku with thinking to a max_tokens at or below its thinking budget', async () => {
+  it('shrinks a Haiku thinking turn to what the balance affords, never below the thinking floor', async () => {
+    // fresh-chat Haiku 5.5 + Thinking: floor 1 credit, full 16000-token turn 2 credits
     const outcomes: Array<number | 'refused'> = []
-    for (let credits = 1; credits <= 12; credits++) {
+    for (let credits = 0; credits <= 2; credits++) {
       vi.mocked(anthropic.messages.stream).mockClear()
       await db.delete(schema.users)
       await seedUser({ credits })
-      vi.mocked(anthropic.messages.stream).mockReturnValue(
-        completedTurn({ inputTokens: 100, outputTokens: 100 }) as never
+      streamMock.mockReturnValue(
+        completedTurn({ inputTokens: 100, outputTokens: 100 })
       )
 
-      const response = await post({ userMessage: 'Hello', model: 'claude-haiku-4-5', enableThinking: true })
+      const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5', enableThinking: true })
       await response.text()
 
       const call = vi.mocked(anthropic.messages.stream).mock.calls[0]?.[0]
@@ -219,14 +237,14 @@ describe('credit reservation in POST /api/agent/chat', () => {
         outcomes.push('refused')
         continue
       }
-      const thinking = call.thinking
-      expect(thinking?.type).toBe('enabled')
-      if (thinking?.type === 'enabled') expect(call.max_tokens).toBeGreaterThan(thinking.budget_tokens)
+      expect(call.thinking).toEqual({ type: 'adaptive', display: 'summarized' })
+      expect(call.max_tokens).toBeGreaterThanOrEqual(getAgentMinTokens(true))
       outcomes.push(call.max_tokens)
     }
 
-    expect(outcomes).toContain('refused')
-    expect(outcomes.some((maxTokens) => typeof maxTokens === 'number' && maxTokens < 16_000)).toBe(true)
+    expect(outcomes[0]).toBe('refused')
+    expect(outcomes[1]).toBeLessThan(16_000)
+    expect(outcomes[2]).toBe(16_000)
   })
 
   it('20 parallel Opus 5.5 requests cannot push a 20-credit account below zero', async () => {
@@ -256,7 +274,7 @@ describe('credit reservation in POST /api/agent/chat', () => {
       new Error('529 {"type":"error","error":{"type":"overloaded_error"}}') as never
     )
 
-    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-4-5' })
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
     const events = await response.text()
 
     expect(events).toContain('ANTHROPIC_OVERLOADED')
@@ -273,7 +291,7 @@ describe('credit reservation in POST /api/agent/chat', () => {
     await reader.cancel()
 
     // 10,000 input + 4,000 streamed bytes ~ 2,000 output tokens on Opus 5.5:
-    // ($0.04 + $0.04) x1.2 = 9.6c -> 10 credits
+    // ($0.04 + $0.04) x1.25 = 10 credits
     await vi.waitFor(async () => expect(await balance()).toBe(990))
     expect(upstream.signal?.aborted).toBe(true)
   })
@@ -314,7 +332,7 @@ describe('credit reservation in POST /api/agent/chat', () => {
       finalMessage: () => Promise.reject(new Error('socket hang up')),
     } as never)
 
-    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-4-5' })
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
     await response.text()
 
     expect(await balance()).toBe(20)
@@ -329,12 +347,12 @@ describe('credit reservation in POST /api/agent/chat', () => {
 
     expect(response.status).toBe(402)
     expect(body).toEqual({
-      error: 'Not enough credits left for Opus 5.5. Switch to Haiku 4.5 or buy more credits.',
+      error: 'Not enough credits left for Opus 5.5. Switch to Haiku 5.5 or buy more credits.',
       code: 'INSUFFICIENT_BALANCE',
       details: {
         pricingUrl: '/pricing',
         isContinuation: false,
-        suggestedModel: 'claude-haiku-4-5',
+        suggestedModel: 'claude-haiku-5-5',
         canUpgrade: true,
       },
     })
@@ -351,7 +369,7 @@ describe('prompt-cache billing in POST /api/agent/chat', () => {
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
     await response.text()
 
-    // 1,000 x $4 + 2,000 x $5 + 100,000 x $0.20 + 500 x $20 = $0.044 -> x1.2 = 5.28 -> 6 credits
+    // 1,000 x $4 + 2,000 x $5 + 100,000 x $0.20 + 500 x $20 = $0.044 -> x1.25 = 5.5 -> 6 credits
     expect(await balance()).toBe(994)
   })
 
@@ -436,8 +454,8 @@ describe('prompt-cache billing in POST /api/agent/chat', () => {
     await response.text()
 
     // 6,000 x $4 + 2,000 x $5 + 100,000 x $0.20 + 500 x $20 + 1 search x $0.01
-    // = $0.074 -> x1.2 = 8.88 -> 9 credits
-    expect(await balance()).toBe(991)
+    // = $0.074 -> x1.25 = 9.25 -> 10 credits
+    expect(await balance()).toBe(990)
   })
 
   it('a disconnect mid-stream still bills the cache writes and reads already reported', async () => {
@@ -450,16 +468,16 @@ describe('prompt-cache billing in POST /api/agent/chat', () => {
     await reader.cancel()
 
     // $0.004 input + $0.01 write + $0.02 read + ~2,000 streamed output tokens x $20 ($0.04)
-    // = $0.074 -> x1.2 = 8.88 -> 9 credits
-    await vi.waitFor(async () => expect(await balance()).toBe(991))
+    // = $0.074 -> x1.25 = 9.25 -> 10 credits
+    await vi.waitFor(async () => expect(await balance()).toBe(990))
   })
 })
 
 describe('done event in POST /api/agent/chat', () => {
   it('flags maxTokensReducedForBalance when a low balance shrank the turn', async () => {
     await seedUser({ credits: 20 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(
-      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
     )
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
@@ -469,8 +487,8 @@ describe('done event in POST /api/agent/chat', () => {
 
   it('does not flag maxTokensReducedForBalance when the balance covers the full turn', async () => {
     await seedUser({ credits: 1000 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(
-      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
     )
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
@@ -490,12 +508,12 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
     expect(response.status).toBe(402)
     expect(body).toEqual({
       error:
-        'Not enough credits left for Opus 5.5 with Thinking. Turn off Thinking, switch to Haiku 4.5, or buy more credits.',
+        'Not enough credits left for Opus 5.5 with Thinking. Turn off Thinking, switch to Haiku 5.5, or buy more credits.',
       code: 'INSUFFICIENT_BALANCE',
       details: {
         pricingUrl: '/pricing',
         isContinuation: false,
-        suggestedModel: 'claude-haiku-4-5',
+        suggestedModel: 'claude-haiku-5-5',
         suggestDisableThinking: true,
         canUpgrade: true,
       },
@@ -504,7 +522,7 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
   })
 
   it('mid-agent-loop on Opus 5.5, tells the user to switch to Haiku and send "continue"', async () => {
-    // fresh-chat floors: Haiku 4 credits, Opus 13
+    // fresh-chat floors: Haiku 1 credit, Opus 14
     await seedUser({ credits: 8, history: ['Open my inbox'] })
 
     const response = await post(continuationTurn({ model: 'claude-opus-5-5' }))
@@ -513,19 +531,19 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
     expect(response.status).toBe(402)
     expect(body).toEqual({
       error:
-        'Stopped partway: not enough credits left to finish this task. Switch to Haiku 4.5 and send "continue", or buy more credits.',
+        'Stopped partway: not enough credits left to finish this task. Switch to Haiku 5.5 and send "continue", or buy more credits.',
       code: 'INSUFFICIENT_BALANCE',
       details: {
         pricingUrl: '/pricing',
         isContinuation: true,
-        suggestedModel: 'claude-haiku-4-5',
+        suggestedModel: 'claude-haiku-5-5',
         canUpgrade: true,
       },
     })
   })
 
   it('mid-agent-loop with not even Haiku affordable, says the task stopped and to buy credits then "continue"', async () => {
-    await seedUser({ credits: 2, history: ['Open my inbox'] })
+    await seedUser({ credits: 0, history: ['Open my inbox'] })
 
     const response = await post(continuationTurn({ model: 'claude-opus-5-5' }))
     const body = await response.json()
@@ -539,9 +557,9 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
   })
 
   it('first turn with not even Haiku affordable, tells a free user to buy credits or upgrade', async () => {
-    await seedUser({ credits: 2 })
+    await seedUser({ credits: 0 })
 
-    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-4-5' })
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
     const body = await response.json()
 
     expect(response.status).toBe(402)
@@ -553,7 +571,7 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
   })
 
   it('first turn with nothing affordable on the top plan, only offers extra credits', async () => {
-    await seedUser({ credits: 2, tier: 'ultra' })
+    await seedUser({ credits: 0, tier: 'ultra' })
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
     const body = await response.json()
@@ -566,18 +584,167 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
     })
   })
 
-  it('on Haiku 4.5 + Thinking, only suggests turning Thinking off (there is no cheaper model)', async () => {
-    // fresh-chat Haiku floors: 4 credits without Thinking, 8 with it
-    await seedUser({ credits: 5 })
+  it('on Haiku 5.5 + Thinking, only suggests turning Thinking off (there is no cheaper model)', async () => {
+    // ~120K tokens of history puts Haiku on its over-100K rate card:
+    // floors 10 credits without Thinking, 12 with it
+    await seedUser({ credits: 10, history: ['x'.repeat(240_000)] })
 
-    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-4-5', enableThinking: true })
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5', enableThinking: true })
     const body = await response.json()
 
     expect(response.status).toBe(402)
     expect(body).toEqual({
-      error: 'Not enough credits left for Haiku 4.5 with Thinking. Turn off Thinking or buy more credits.',
+      error: 'Not enough credits left for Haiku 5.5 with Thinking. Turn off Thinking or buy more credits.',
       code: 'INSUFFICIENT_BALANCE',
       details: { pricingUrl: '/pricing', isContinuation: false, suggestDisableThinking: true, canUpgrade: true },
     })
+  })
+})
+
+describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat', () => {
+  // Fresh-chat floors at the 25% Margin: Haiku 1 credit, Sonnet 7, Sonnet + Thinking 17, Opus 14.
+  const FREE_GRANT = 7
+
+  it('runs a Haiku Turn and charges the 1-Credit Minimum charge', async () => {
+    await seedUser({ credits: FREE_GRANT })
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
+    )
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(anthropic.messages.stream).toHaveBeenCalledTimes(1)
+    expect(await balance()).toBe(6)
+  })
+
+  it('refuses an Opus 5.5 Turn the balance cannot cover and points to Haiku', async () => {
+    await seedUser({ credits: FREE_GRANT })
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    const body = await response.json()
+
+    expect(response.status).toBe(402)
+    expect(body).toEqual({
+      error: 'Not enough credits left for Opus 5.5. Switch to Haiku 5.5 or buy more credits.',
+      code: 'INSUFFICIENT_BALANCE',
+      details: { pricingUrl: '/pricing', isContinuation: false, suggestedModel: 'claude-haiku-5-5', canUpgrade: true },
+    })
+    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    expect(await balance()).toBe(FREE_GRANT)
+  })
+
+  it('runs a Sonnet 5.5 Turn on a fresh chat, whose floor is exactly the 7-Credit grant, with max_tokens cut to fit', async () => {
+    await seedUser({ credits: FREE_GRANT })
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
+    )
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-sonnet-5-5' })
+    const events = await response.text()
+
+    expect(response.status).toBe(200)
+    expect(anthropic.messages.stream).toHaveBeenCalledTimes(1)
+    // The whole grant is held, which affords 4,445 output tokens on top of the estimated input.
+    expect(sentMaxTokens()).toBe(4445)
+    expect(doneEvent(events)).toMatchObject({ maxTokensReducedForBalance: true })
+    // (1000 x $2 + 500 x $10) / 1M = $0.007 -> x1.25 = 0.875c -> 1 credit
+    expect(await balance()).toBe(6)
+  })
+
+  it('refuses a Sonnet 5.5 Turn with some chat history the balance cannot cover, and Haiku still runs', async () => {
+    // ~2,000 tokens of history lift the Sonnet floor to 8 credits
+    await seedUser({ credits: FREE_GRANT, history: ['a'.repeat(4_000)] })
+
+    const sonnet = await post({ userMessage: 'Hello', model: 'claude-sonnet-5-5' })
+    const body = await sonnet.json()
+
+    expect(sonnet.status).toBe(402)
+    expect(body).toEqual({
+      error: 'Not enough credits left for Sonnet 5.5. Switch to Haiku 5.5 or buy more credits.',
+      code: 'INSUFFICIENT_BALANCE',
+      details: { pricingUrl: '/pricing', isContinuation: false, suggestedModel: 'claude-haiku-5-5', canUpgrade: true },
+    })
+    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 3000, outputTokens: 500 })
+    )
+    const haiku = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
+    await haiku.text()
+
+    expect(haiku.status).toBe(200)
+    expect(await balance()).toBe(6)
+  })
+
+  it('refuses a Sonnet 5.5 + Thinking Turn and offers turning Thinking off or Haiku', async () => {
+    await seedUser({ credits: FREE_GRANT })
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-sonnet-5-5', enableThinking: true })
+    const body = await response.json()
+
+    expect(response.status).toBe(402)
+    expect(body).toMatchObject({
+      code: 'INSUFFICIENT_BALANCE',
+      details: { suggestedModel: 'claude-haiku-5-5', suggestDisableThinking: true, canUpgrade: true },
+    })
+    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    expect(await balance()).toBe(FREE_GRANT)
+  })
+})
+
+describe('Subscription credits and Purchased credits in POST /api/agent/chat', () => {
+  // Fresh-chat Opus 5.5 floor at the 25% Margin: 14 credits.
+  it('spends the Free grant before Purchased credits', async () => {
+    await seedUser({ credits: 7, purchased: 100 })
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
+    )
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(await balances()).toEqual({ subscription: 6, purchased: 100 })
+  })
+
+  it('runs a Turn the combined balance covers when Subscription credits alone fall short', async () => {
+    await seedUser({ credits: 7, purchased: 10 })
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
+    )
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    // The 2-credit Turn comes out of Subscription credits; the unused hold goes back Purchased-first.
+    expect(await balances()).toEqual({ subscription: 5, purchased: 10 })
+  })
+
+  it('runs a Turn on Purchased credits alone', async () => {
+    await seedUser({ credits: 0, purchased: 20 })
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
+    )
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(await balances()).toEqual({ subscription: 0, purchased: 18 })
+  })
+
+  it('answers 402 INSUFFICIENT_BALANCE when the combined balance cannot cover the hold', async () => {
+    await seedUser({ credits: 7, purchased: 6 })
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    const body = await response.json()
+
+    expect(response.status).toBe(402)
+    expect(body).toMatchObject({ code: 'INSUFFICIENT_BALANCE', details: { suggestedModel: 'claude-haiku-5-5' } })
+    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    expect(await balances()).toEqual({ subscription: 7, purchased: 6 })
   })
 })

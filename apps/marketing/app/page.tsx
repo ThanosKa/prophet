@@ -28,9 +28,9 @@ export default function Home() {
           <h2 className="text-3xl font-bold mb-6 text-center">What is Prophet?</h2>
           <p className="text-lg text-muted-foreground leading-relaxed text-center max-w-3xl mx-auto">
             Prophet is an open-source, AI-powered Chrome extension that integrates Anthropic&apos;s Claude
-            AI models directly into your browser&apos;s side panel. It supports Claude Haiku 4.5,
+            AI models directly into your browser&apos;s side panel. It supports Claude Haiku 5.5,
             Sonnet 5.5, and Opus 5.5 with real-time streaming responses, browser automation via
-            18 built-in tools, and pay-per-use pricing starting from a <a href="/blog/is-claude-ai-free" className="text-primary hover:underline">free tier with all 3 Claude models</a>. Unlike
+            18 built-in tools, and pay-per-use pricing starting from a <a href="/blog/is-claude-ai-free" className="text-primary hover:underline">free tier to try Claude Haiku</a>. Unlike
             screenshot-based browser AI tools, Prophet uses the accessibility tree for faster,
             more deterministic interactions with web pages. The full source code is available
             on{' '}<a href="https://github.com/ThanosKa/prophet" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">GitHub</a>.

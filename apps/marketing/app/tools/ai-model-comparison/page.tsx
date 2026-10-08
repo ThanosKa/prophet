@@ -31,20 +31,20 @@ interface Model {
 
 const MODELS: Model[] = [
   {
-    name: 'Claude Haiku 4.5',
+    name: 'Claude Haiku 5.5',
     provider: 'Anthropic',
-    inputPrice: 1,
-    outputPrice: 5,
-    contextWindow: '200K',
-    contextWindowNum: 200000,
+    inputPrice: 0.1,
+    outputPrice: 0.5,
+    contextWindow: '1M',
+    contextWindowNum: 1000000,
     speed: 'Fast',
     bestFor: 'Quick tasks, summarization, simple Q&A',
   },
   {
     name: 'Claude Sonnet 5.5',
     provider: 'Anthropic',
-    inputPrice: 3,
-    outputPrice: 15,
+    inputPrice: 2,
+    outputPrice: 10,
     contextWindow: '1M',
     contextWindowNum: 1000000,
     speed: 'Medium',
@@ -53,8 +53,8 @@ const MODELS: Model[] = [
   {
     name: 'Claude Opus 5.5',
     provider: 'Anthropic',
-    inputPrice: 5,
-    outputPrice: 25,
+    inputPrice: 4,
+    outputPrice: 20,
     contextWindow: '1M',
     contextWindowNum: 1000000,
     speed: 'Slow',
@@ -199,7 +199,7 @@ export default function AiModelComparisonPage() {
           </div>
 
           <p className="text-xs text-muted-foreground mt-4">
-            Prices reflect published API rates as of March 2026. Actual costs may vary based on caching, batching, and provider-specific discounts.
+            Prices reflect published API rates as of March 2026. Claude Haiku 5.5 rates apply to prompts up to 100K tokens; longer prompts bill at $0.50 / $2.50. Actual costs may vary based on caching, batching, and provider-specific discounts.
           </p>
         </div>
       </div>

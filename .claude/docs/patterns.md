@@ -53,7 +53,8 @@ const finalMessage = await stream.finalMessage()
 const { usage } = finalMessage
 
 // `input_tokens` is only the uncached remainder; cache writes and reads are billed
-// separately (writes 1.25x input, reads 0.1x, 0.05x on Opus 5.5).
+// separately (writes 1.25x input, reads 0.1x, 0.05x on Opus 5.5 and Sonnet 5.5).
+// Haiku 5.5 bills the whole request at a higher rate card once the prompt passes 100K tokens.
 const costCents = calculateUsageCostInCredits(model, {
   inputTokens: usage.input_tokens,
   cacheCreationInputTokens: usage.cache_creation_input_tokens ?? 0,
@@ -100,7 +101,7 @@ invalidates everything after it. The agent route uses two of the four breakpoint
 
 | Breakpoint | Covers | Why |
 | --- | --- | --- |
-| `cache_control` on the system block | 18 tools + system prompt (~3k tokens) | Identical for every user and chat, so it is a guaranteed read point that survives anything later in `messages` |
+| `cache_control` on the system block | 18 tools + system prompt (~4.4k tokens) | Identical for every user and chat, so it is a guaranteed read point that survives anything later in `messages` |
 | Top-level `cache_control` (automatic) | The whole conversation so far | Moves to the newest block each request, so turn N+1 reads what turn N wrote |
 
 Rules that keep it hitting:
@@ -109,14 +110,13 @@ Rules that keep it hitting:
   `previousTurns` (the server's `contentBlocks` from each `done` event, unchanged),
   plus the run's image. Never trim, reorder or rewrite an earlier turn.
 - **Replay thinking blocks.** They are part of the prefix and are signature-checked by
-  the API; dropping or editing them breaks the cache and, on Sonnet 5.5 / Opus 5.5,
+  the API; dropping or editing them breaks the cache and, on every current model,
   the preserved-thinking check.
 - **Same settings for the whole run.** The same `enableThinking` on every request, so
   `thinking` and `output_config.effort` never change mid-run. Tool order is a fixed
   array; web search is a server-wide flag. No timestamps or IDs in the system prompt.
-- **Minimums.** Opus 5.5 and Sonnet 5.5 cache prefixes from 512 tokens; Haiku 4.5
-  needs 4,096, so on Haiku the tools + system breakpoint alone never caches and
-  savings start once the conversation passes that size. Don't pad the prompt.
+- **Minimums.** Haiku 5.5, Sonnet 5.5 and Opus 5.5 all cache prefixes from 512 tokens,
+  so the tools + system breakpoint (~4.4k tokens) caches on every model. Don't pad the prompt.
 - **Verify** with `usage.cache_read_input_tokens` (persisted on `usage_records`); in a
   healthy run it grows every turn while `cache_creation_input_tokens` stays near the
   size of the last turn.
@@ -138,7 +138,7 @@ resolved value, never the raw request field.
 | `claude-opus-4-6` | `claude-opus-5-5` |
 | `claude-sonnet-5` | `claude-sonnet-5-5` |
 | `claude-sonnet-4-6` | `claude-sonnet-5-5` |
-| `claude-haiku-4-5` | `claude-haiku-4-5` (unchanged) |
+| `claude-haiku-4-5` | `claude-haiku-5-5` |
 
 ### Server-Side Web Search
 

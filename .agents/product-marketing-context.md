@@ -4,15 +4,16 @@
 
 ## Product Overview
 **One-liner:** The AI Chrome extension that automates your browser, powered by Claude.
-**What it does:** Prophet is an open-source Chrome side-panel extension that brings Anthropic's Claude AI (Haiku 4.5, Sonnet 4.6, Opus 4.6) into the browser with real-time streaming chat and 18 built-in browser-automation tools (click, fill, navigate, extract). Unlike screenshot-based browser AI, Prophet reads the **accessibility tree** for faster, deterministic, cheaper interactions.
+**What it does:** Prophet is an open-source Chrome side-panel extension that brings Anthropic's Claude AI (Haiku 5.5, Sonnet 5.5, Opus 5.5) into the browser with real-time streaming chat and 18 built-in browser-automation tools (click, fill, navigate, extract). Unlike screenshot-based browser AI, Prophet reads the **accessibility tree** for faster, deterministic, cheaper interactions.
 **Product category:** AI Chrome extension / AI browser sidebar / browser automation agent.
 **Product type:** SaaS — Chrome extension + Next.js web app + API backend.
 **Business model:** Pay-per-use credits + monthly subscription tiers.
-- Free: $0.20 in credits (no card)
-- Pro: $9.99/mo → $11 in credits (+10% bonus)
-- Premium: $29.99/mo → $35 in credits (+17%)
-- Ultra: $59.99/mo → $70 in credits (+17%)
-1 credit = 1 cent of actual API cost. All sales final, no refunds.
+- Free: a one-time $0.07 in credits (no card), enough to try Haiku
+- Pro: $9.99/mo → $10 in credits
+- Premium: $29.99/mo → $30 in credits
+- Ultra: $59.99/mo → $60 in credits
+- Extra credits: $10 one-time → $10 in credits that never expire
+1 credit = 1 cent, pay-per-use, at least 1 credit per Turn. Never state the margin percentage or advertise a bonus. All sales final, no refunds.
 
 ## Target Audience
 **Target companies:** Solo professionals, indie devs, SMB knowledge workers; not enterprise-first.
@@ -29,7 +30,7 @@
 |---|---|---|---|
 | Indie dev / power user | Cost control, model choice, openness | Locked into $20/mo Claude Pro for occasional use | All 3 Claude models, pay-per-use, open source |
 | Researcher / analyst | Pulling structured data off the web | Manual copy/paste between tabs | Side panel + accessibility-tree extraction |
-| Cost-conscious AI user | Predictable spend per task | Subscriptions waste money in light months | Credits map 1:1 to API cost |
+| Cost-conscious AI user | Predictable spend per task | Subscriptions waste money in light months | Pay-per-use credits, charged by the tokens used |
 
 ## Problems & Pain Points
 **Core problem:** Existing AI browser extensions are either (a) pure chat wrappers that can't act on the page, or (b) screenshot-based agents that are slow and expensive. Claude.ai itself can't see your current tab.
@@ -53,7 +54,7 @@
 - Only sidebar with all 3 Claude tiers (Haiku/Sonnet/Opus) on the free tier
 - Accessibility-tree perception (faster, cheaper, more reliable than screenshots)
 - 18 real browser tools, not just page reading
-- Pay-per-use credits at 1:1 with API cost
+- Pay-per-use credits charged by the tokens used
 - Fully open source (github.com/ThanosKa/prophet)
 **Why customers choose us:** Cost transparency + actual automation + Claude-first focus. No other product combines these three.
 
@@ -62,7 +63,7 @@
 |---|---|
 | "Why not just use Claude Pro for $20?" | Pro plan is $9.99 + you get all 3 models + browser automation. Light users save 50%+. |
 | "Is browser automation safe?" | Open source, all requests proxied server-side, no training on your data, requires explicit DevTools permission. |
-| "Will my credits expire / can I refund?" | All sales final per terms — but free tier lets you fully evaluate before paying. |
+| "Will my credits expire / can I refund?" | Purchased credits never expire; plan credits renew monthly and don't roll over. All sales final per terms — but the free tier lets you try it before paying. |
 | "Claude-only is limiting" | True — but we go deep on Claude rather than shallow on five models. |
 
 **Anti-persona:** Enterprise buyers needing SSO/SOC2/team admin (not built yet); users who need GPT/Gemini in the same tool.
@@ -92,7 +93,7 @@
 ## Proof Points
 **Metrics to cite:** 18 browser tools; 3 Claude models on free tier; 2-4× faster than screenshot agents; ~50% cheaper per perception step.
 **Open source:** github.com/ThanosKa/prophet (verifiable claim).
-**Tech credibility:** Anthropic Claude (Haiku 4.5/Sonnet 4.6/Opus 4.6), Chrome DevTools Protocol.
+**Tech credibility:** Anthropic Claude (Haiku 5.5/Sonnet 5.5/Opus 5.5), Chrome DevTools Protocol.
 
 ## Goals
 **Business goal:** Drive Chrome Web Store installs → free signup → upgrade to Pro/Premium.

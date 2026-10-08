@@ -42,6 +42,19 @@ vi.mock('@/lib/db', () => ({
   },
 }))
 
+// The reserve/settle SQL has its own PGlite tests; here the route only needs a hold.
+vi.mock('@/lib/credit-reservation', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/credit-reservation')>()
+  return {
+    ...actual,
+    reserveCredits: vi.fn(async ({ reserveCents }: { reserveCents: number }) => ({
+      subscriptionCents: reserveCents,
+      purchasedCents: 0,
+    })),
+    settleCredits: vi.fn(async () => {}),
+  }
+})
+
 vi.mock('@/lib/ratelimit', () => ({
   checkRateLimit: vi.fn(),
 }))
@@ -68,6 +81,7 @@ const { auth } = await import('@clerk/nextjs/server')
 const { db } = await import('@/lib/db')
 const { checkRateLimit } = await import('@/lib/ratelimit')
 const { anthropic } = await import('@/lib/anthropic')
+const { reserveCredits } = await import('@/lib/credit-reservation')
 
 describe('POST /api/agent/chat', () => {
   beforeEach(() => {
@@ -197,6 +211,7 @@ describe('POST /api/agent/chat', () => {
         id: 'user1',
         email: 'test@example.com',
         creditsRemaining: 1000,
+        purchasedCredits: 0,
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 
@@ -247,6 +262,7 @@ describe('POST /api/agent/chat', () => {
         id: 'user1',
         email: 'test@example.com',
         creditsRemaining: 1000,
+        purchasedCredits: 0,
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 
@@ -304,6 +320,7 @@ describe('POST /api/agent/chat', () => {
         id: 'user1',
         email: 'test@example.com',
         creditsRemaining: 1000,
+        purchasedCredits: 0,
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 
@@ -343,14 +360,11 @@ describe('POST /api/agent/chat', () => {
       vi.mocked(db.query.users.findFirst).mockResolvedValue({
         id: 'user1',
         email: 'test@example.com',
-        creditsRemaining: 1000, // read before a parallel request drained it
+        creditsRemaining: 1000,
+        purchasedCredits: 0, // read before a parallel request drained it
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
-      vi.mocked(db.update).mockReturnValueOnce({
-        set: vi.fn(() => ({
-          where: vi.fn(() => ({ returning: vi.fn(() => Promise.resolve([])) })),
-        })),
-      } as any)
+      vi.mocked(reserveCredits).mockResolvedValueOnce(null)
 
       const request = new Request('http://localhost:3000/api/agent/chat', {
         method: 'POST',
@@ -392,7 +406,8 @@ describe('POST /api/agent/chat', () => {
       vi.mocked(db.query.users.findFirst).mockResolvedValue({
         id: 'user1',
         email: 'test@example.com',
-        creditsRemaining: 1, // a 4096-token Haiku turn alone costs 3
+        creditsRemaining: 0,
+        purchasedCredits: 0, // even the cheapest Haiku turn costs 1
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 
@@ -431,7 +446,8 @@ describe('POST /api/agent/chat', () => {
       vi.mocked(db.query.users.findFirst).mockResolvedValue({
         id: 'user1',
         email: 'test@example.com',
-        creditsRemaining: 10, // Exactly 10
+        creditsRemaining: 10,
+        purchasedCredits: 0, // Exactly 10
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 
@@ -537,6 +553,7 @@ describe('POST /api/agent/chat', () => {
         id: 'user1',
         email: 'test@example.com',
         creditsRemaining: 1000,
+        purchasedCredits: 0,
       } as any)
 
       // Simulate DB having user message + assistant message from previous turn
@@ -625,6 +642,7 @@ describe('POST /api/agent/chat', () => {
         id: 'user1',
         email: 'test@example.com',
         creditsRemaining: 1000,
+        purchasedCredits: 0,
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([
         {

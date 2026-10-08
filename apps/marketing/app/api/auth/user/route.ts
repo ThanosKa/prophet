@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { error, success, INTERNAL_ERROR_MESSAGE } from '@/types'
 import { logger } from '@/lib/logger'
+import { withTotalBalance } from '@/lib/credit-balance'
 
 export async function GET() {
   let userId: string | null = null
@@ -40,7 +41,7 @@ export async function GET() {
     }
 
     logger.info({ userId }, 'User profile fetched')
-    return NextResponse.json(success(user))
+    return NextResponse.json(success(withTotalBalance(user)))
   } catch (err) {
     logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to fetch user profile')
     return NextResponse.json(

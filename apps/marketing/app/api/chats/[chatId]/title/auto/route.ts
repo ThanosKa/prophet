@@ -8,6 +8,7 @@ import { anthropic } from '@/lib/anthropic'
 import { CLAUDE_MODELS } from '@prophet/shared'
 import { error, success, INTERNAL_ERROR_MESSAGE } from '@/types'
 import { logger } from '@/lib/logger'
+import { totalCredits } from '@/lib/credit-balance'
 
 const TITLE_GENERATION_PROMPT = `Generate a concise, descriptive title for a chat conversation based on the first user message and assistant response. The title should:
 - Be 2-7 words
@@ -51,6 +52,8 @@ async function generateTitle({ userMessage, assistantMessage }: { userMessage: s
   const response = await anthropic.messages.create({
     model: CLAUDE_MODELS.HAIKU,
     max_tokens: 50,
+    // Haiku 5.5 thinks by default, which would spend this small budget before the title.
+    thinking: { type: 'disabled' },
     messages: [
       {
         role: 'user',
@@ -59,7 +62,8 @@ async function generateTitle({ userMessage, assistantMessage }: { userMessage: s
     ],
   })
 
-  return response.content[0]?.type === 'text' ? sanitizeTitle(response.content[0].text) : ''
+  const textBlock = response.content.find((block) => block.type === 'text')
+  return textBlock?.type === 'text' ? sanitizeTitle(textBlock.text) : ''
 }
 
 export async function POST(
@@ -136,10 +140,10 @@ export async function POST(
 
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId),
-      columns: { creditsRemaining: true },
+      columns: { creditsRemaining: true, purchasedCredits: true },
     })
 
-    if (!user || user.creditsRemaining <= 0) {
+    if (!user || totalCredits(user) <= 0) {
       logger.info({ userId, chatId }, 'Skipping auto-title generation: no credits, using fallback title')
       return NextResponse.json(success({ chatId, title: fallback }))
     }
