@@ -25,7 +25,9 @@ import {
   reserveCredits,
   settleCredits,
 } from "@/lib/credit-reservation";
+import { readBodyWithinLimit } from "@/lib/request-body";
 import {
+  AGENT_SIZE_LIMITS,
   agentChatRequestSchema,
   DEFAULT_AGENT_MODEL,
   resolveAgentModel,
@@ -136,7 +138,18 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = await req.json();
+    const bounded = await readBodyWithinLimit({ req, maxBytes: AGENT_SIZE_LIMITS.requestBytes });
+    if (bounded.status === "too_large") {
+      logger.warn({ userId }, "Agent chat request body over the size limit");
+      return NextResponse.json(
+        error(
+          "This request is too large to send. Start a new chat to continue.",
+          "REQUEST_TOO_LARGE"
+        ),
+        { status: 413 }
+      );
+    }
+    const body: unknown = JSON.parse(bounded.text);
     const validation = agentChatRequestSchema.safeParse(body);
 
     if (!validation.success) {

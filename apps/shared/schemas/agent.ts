@@ -281,6 +281,26 @@ export const contentBlockSchema = z.union([
 // The server accepts up to this many earlier Turns, so older builds that stop sooner keep working.
 export const MAX_AGENT_TURNS = 20;
 
+// Every size limit of an agent Run. The extension caps what it sends; the server's caps
+// sit well above them, so only a broken or hostile client ever reaches one.
+export const AGENT_SIZE_LIMITS = {
+  // Extension caps
+  snapshotChars: 20_000,
+  snapshotNodeTextChars: 200,
+  pageContentChars: 15_000,
+  attachedImageChars: 2_000_000,
+  // Server caps
+  toolResultChars: 200_000,
+  textChars: 200_000,
+  toolInputJsonChars: 100_000,
+  idChars: 256,
+  blocksPerTurn: 100,
+  toolResultsPerTurn: 100,
+  imageChars: 3_000_000,
+  // Both: the extension checks before sending, the route answers 413 REQUEST_TOO_LARGE
+  requestBytes: 4_000_000,
+} as const;
+
 // One completed request of an agent run: what the model said, then what the tools returned.
 export const agentTurnSchema = z
   .object({
