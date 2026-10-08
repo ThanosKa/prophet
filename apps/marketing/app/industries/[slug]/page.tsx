@@ -39,7 +39,7 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
     },
     {
       question: `Is Prophet free to try for ${industry.title.toLowerCase()}?`,
-      answer: `Yes. Prophet includes a free tier with a one-time $0.07 in credits to try Haiku, and no credit card required. After that it is pay-per-use, billed by your Claude usage, starting at $9.99/month for $10 in credits — so you only pay for what you use.`,
+      answer: `Yes. Prophet includes a free tier with a one-time $0.07 in credits to try Haiku, and no credit card required. After that it is pay-per-use, billed by your Claude usage, starting at $9.99/month for 1,000 credits — so you only pay for what you use.`,
     },
     {
       question: `Which Claude model is best for this work?`,

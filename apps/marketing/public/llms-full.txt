@@ -115,7 +115,7 @@ Install Prophet from the Chrome Web Store at https://chromewebstore.google.com/d
 - Prophet perceives pages via the accessibility tree, not screenshots.
 - Prophet bills pay-per-use credits; 1 credit = 1 cent, and every Turn costs at least 1 credit.
 - Prophet's free plan is a one-time $0.07 in credits, enough to try Haiku, no credit card required.
-- Prophet Pro is $9.99/month for $10 in credits; Premium $29.99 for $30; Ultra $59.99 for $60.
+- Prophet Pro is $9.99/month for 1,000 credits; Premium $29.99 for 3,000; Ultra $59.99 for 6,000.
 - Prophet's Subscription credits renew monthly and do not roll over; Purchased credits ($10 one-time) never expire.
 - Prophet does not require a Claude Pro or Claude Max subscription.
 - Prophet is open source at https://github.com/ThanosKa/prophet.
