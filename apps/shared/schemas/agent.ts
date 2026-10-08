@@ -276,8 +276,9 @@ export const contentBlockSchema = z.union([
   redactedThinkingBlockSchema,
 ]);
 
-// The extension's agent loop stops after this many requests per run.
-export const MAX_AGENT_TURNS = 10;
+// The Turn limit: the extension's agent loop pauses after this many Turns per Run.
+// The server accepts up to this many earlier Turns, so older builds that stop sooner keep working.
+export const MAX_AGENT_TURNS = 20;
 
 // One completed request of an agent run: what the model said, then what the tools returned.
 export const agentTurnSchema = z
