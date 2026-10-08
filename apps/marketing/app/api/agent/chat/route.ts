@@ -32,6 +32,7 @@ import {
   sanitizeForLog,
 } from "@prophet/shared";
 import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
+import { totalCredits } from "@/lib/credit-balance";
 import { buildAgentMessages, resolveRunTurns } from "@/lib/agent/conversation";
 import { error, INTERNAL_ERROR_MESSAGE, SESSION_EXPIRED_MESSAGE } from "@/types";
 import { logger } from "@/lib/logger";
@@ -241,10 +242,11 @@ export async function POST(req: Request) {
       tools,
       messages: anthropicMessages,
     });
+    const balanceCents = totalCredits(user);
     const planFor = (option: { model: ModelName; enableThinking: boolean }) =>
       planCreditReservation({
         model: option.model,
-        balanceCents: user.creditsRemaining,
+        balanceCents,
         estimatedInputTokens,
         maxTokens: AGENT_TURN_MAX_TOKENS,
         minTokens: getAgentMinTokens(option.enableThinking),
@@ -257,7 +259,7 @@ export async function POST(req: Request) {
         {
           userId,
           model,
-          creditsRemaining: user.creditsRemaining,
+          balanceCents,
           requiredCents: plan.requiredCents,
         },
         "Insufficient balance for agent chat"
@@ -275,9 +277,10 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!(await reserveCredits({ db, userId, reserveCents: plan.reserveCents }))) {
+    const hold = await reserveCredits({ db, userId, reserveCents: plan.reserveCents });
+    if (!hold) {
       logger.warn(
-        { userId, model, creditsRemaining: user.creditsRemaining, requiredCents: plan.reserveCents },
+        { userId, model, balanceCents, requiredCents: plan.reserveCents },
         "Credit reservation lost a race for the balance"
       );
       return NextResponse.json(
@@ -358,7 +361,7 @@ export async function POST(req: Request) {
             : 0;
           try {
             await db.transaction(async (tx) => {
-              await settleCredits({ db: tx, userId, reserveCents, actualCents });
+              await settleCredits({ db: tx, userId, hold, actualCents });
               if (actualCents > 0) {
                 await tx.insert(usageRecords).values({
                   userId,
@@ -607,7 +610,7 @@ export async function POST(req: Request) {
               });
             }
 
-            await settleCredits({ db: tx, userId, reserveCents, actualCents: costCents });
+            await settleCredits({ db: tx, userId, hold, actualCents: costCents });
 
             // Always record usage for billing audit trail
             await tx.insert(usageRecords).values({

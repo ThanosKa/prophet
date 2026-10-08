@@ -30,12 +30,18 @@ vi.mock('@/lib/db', () => ({
       })),
     })),
     transaction: vi.fn((callback) => callback({
+      // The reserve reads the locked balance before taking the hold.
+      select: vi.fn(() => ({
+        from: () => ({ where: () => ({ for: () => Promise.resolve([{ subscription: 1000, purchased: 0 }]) }) }),
+      })),
       insert: vi.fn(() => ({
         values: vi.fn(() => Promise.resolve()),
       })),
       update: vi.fn(() => ({
         set: vi.fn(() => ({
-          where: vi.fn(() => Promise.resolve()),
+          where: vi.fn(() => Object.assign(Promise.resolve(), {
+            returning: () => Promise.resolve([{ id: 'user1' }]),
+          })),
         })),
       })),
     })),
@@ -197,6 +203,7 @@ describe('POST /api/agent/chat', () => {
         id: 'user1',
         email: 'test@example.com',
         creditsRemaining: 1000,
+        purchasedCredits: 0,
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 
@@ -247,6 +254,7 @@ describe('POST /api/agent/chat', () => {
         id: 'user1',
         email: 'test@example.com',
         creditsRemaining: 1000,
+        purchasedCredits: 0,
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 
@@ -304,6 +312,7 @@ describe('POST /api/agent/chat', () => {
         id: 'user1',
         email: 'test@example.com',
         creditsRemaining: 1000,
+        purchasedCredits: 0,
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 
@@ -343,14 +352,15 @@ describe('POST /api/agent/chat', () => {
       vi.mocked(db.query.users.findFirst).mockResolvedValue({
         id: 'user1',
         email: 'test@example.com',
-        creditsRemaining: 1000, // read before a parallel request drained it
+        creditsRemaining: 1000,
+        purchasedCredits: 0, // read before a parallel request drained it
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
-      vi.mocked(db.update).mockReturnValueOnce({
-        set: vi.fn(() => ({
-          where: vi.fn(() => ({ returning: vi.fn(() => Promise.resolve([])) })),
-        })),
-      } as any)
+      vi.mocked(db.transaction).mockImplementationOnce((callback: any) => callback({
+        select: () => ({
+          from: () => ({ where: () => ({ for: () => Promise.resolve([{ subscription: 0, purchased: 0 }]) }) }),
+        }),
+      }))
 
       const request = new Request('http://localhost:3000/api/agent/chat', {
         method: 'POST',
@@ -392,7 +402,8 @@ describe('POST /api/agent/chat', () => {
       vi.mocked(db.query.users.findFirst).mockResolvedValue({
         id: 'user1',
         email: 'test@example.com',
-        creditsRemaining: 0, // even the cheapest Haiku turn costs 1
+        creditsRemaining: 0,
+        purchasedCredits: 0, // even the cheapest Haiku turn costs 1
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 
@@ -431,7 +442,8 @@ describe('POST /api/agent/chat', () => {
       vi.mocked(db.query.users.findFirst).mockResolvedValue({
         id: 'user1',
         email: 'test@example.com',
-        creditsRemaining: 10, // Exactly 10
+        creditsRemaining: 10,
+        purchasedCredits: 0, // Exactly 10
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 
@@ -537,6 +549,7 @@ describe('POST /api/agent/chat', () => {
         id: 'user1',
         email: 'test@example.com',
         creditsRemaining: 1000,
+        purchasedCredits: 0,
       } as any)
 
       // Simulate DB having user message + assistant message from previous turn
@@ -625,6 +638,7 @@ describe('POST /api/agent/chat', () => {
         id: 'user1',
         email: 'test@example.com',
         creditsRemaining: 1000,
+        purchasedCredits: 0,
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([
         {
@@ -639,6 +653,9 @@ describe('POST /api/agent/chat', () => {
       // Track what gets inserted
       const insertedMessages: any[] = []
       const mockTransaction = vi.fn((callback) => callback({
+        select: vi.fn(() => ({
+          from: () => ({ where: () => ({ for: () => Promise.resolve([{ subscription: 1000, purchased: 0 }]) }) }),
+        })),
         insert: vi.fn(() => ({
           values: vi.fn((data: any) => {
             insertedMessages.push(data)
@@ -647,7 +664,9 @@ describe('POST /api/agent/chat', () => {
         })),
         update: vi.fn(() => ({
           set: vi.fn(() => ({
-            where: vi.fn(() => Promise.resolve()),
+            where: vi.fn(() => Object.assign(Promise.resolve(), {
+              returning: () => Promise.resolve([{ id: 'user1' }]),
+            })),
           })),
         })),
       }))

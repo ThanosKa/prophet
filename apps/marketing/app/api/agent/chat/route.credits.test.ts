@@ -46,14 +46,22 @@ beforeEach(async () => {
 
 async function seedUser({
   credits,
+  purchased = 0,
   history = [],
   tier = 'free',
 }: {
   credits: number
+  purchased?: number
   history?: string[]
   tier?: 'free' | 'pro' | 'premium' | 'ultra'
 }) {
-  await db.insert(schema.users).values({ id: USER_ID, email: 'free@example.com', creditsRemaining: credits, tier })
+  await db.insert(schema.users).values({
+    id: USER_ID,
+    email: 'free@example.com',
+    creditsRemaining: credits,
+    purchasedCredits: purchased,
+    tier,
+  })
   await db.insert(schema.chats).values({ id: CHAT_ID, userId: USER_ID, title: 'Chat' })
   for (const [index, content] of history.entries()) {
     await db.insert(schema.messages).values({
@@ -68,6 +76,11 @@ async function seedUser({
 async function balance(): Promise<number | undefined> {
   const row = await db.query.users.findFirst({ where: eq(schema.users.id, USER_ID) })
   return row?.creditsRemaining
+}
+
+async function balances(): Promise<{ subscription: number; purchased: number } | undefined> {
+  const row = await db.query.users.findFirst({ where: eq(schema.users.id, USER_ID) })
+  return row && { subscription: row.creditsRemaining, purchased: row.purchasedCredits }
 }
 
 function post(body: Record<string, unknown>) {
@@ -657,5 +670,60 @@ describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat',
     })
     expect(anthropic.messages.stream).not.toHaveBeenCalled()
     expect(await balance()).toBe(FREE_GRANT)
+  })
+})
+
+describe('Subscription credits and Purchased credits in POST /api/agent/chat', () => {
+  // Fresh-chat Opus 5.5 floor at the 25% Margin: 14 credits.
+  it('spends the Free grant before Purchased credits', async () => {
+    await seedUser({ credits: 7, purchased: 100 })
+    vi.mocked(anthropic.messages.stream).mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    )
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(await balances()).toEqual({ subscription: 6, purchased: 100 })
+  })
+
+  it('runs a Turn the combined balance covers when Subscription credits alone fall short', async () => {
+    await seedUser({ credits: 7, purchased: 10 })
+    vi.mocked(anthropic.messages.stream).mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    )
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    // The 2-credit Turn comes out of Subscription credits; the unused hold goes back Purchased-first.
+    expect(await balances()).toEqual({ subscription: 5, purchased: 10 })
+  })
+
+  it('runs a Turn on Purchased credits alone', async () => {
+    await seedUser({ credits: 0, purchased: 20 })
+    vi.mocked(anthropic.messages.stream).mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    )
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(await balances()).toEqual({ subscription: 0, purchased: 18 })
+  })
+
+  it('answers 402 INSUFFICIENT_BALANCE when the combined balance cannot cover the hold', async () => {
+    await seedUser({ credits: 7, purchased: 6 })
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    const body = await response.json()
+
+    expect(response.status).toBe(402)
+    expect(body).toMatchObject({ code: 'INSUFFICIENT_BALANCE', details: { suggestedModel: 'claude-haiku-5-5' } })
+    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    expect(await balances()).toEqual({ subscription: 7, purchased: 6 })
   })
 })

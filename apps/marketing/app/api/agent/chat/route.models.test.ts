@@ -74,6 +74,7 @@ function primeRequestContext(): Captured {
     id: 'user1',
     email: 'test@example.com',
     creditsRemaining: 1000,
+    purchasedCredits: 0,
   } as never)
   vi.mocked(db.query.messages.findMany).mockResolvedValue([] as never)
 
@@ -88,16 +89,21 @@ function primeRequestContext(): Captured {
       where: () => {
         captured.updates.push(values)
         return Object.assign(Promise.resolve(), {
-          returning: () => Promise.resolve([{ creditsRemaining: 1000 }]),
+          returning: () => Promise.resolve([{ id: 'user1' }]),
         })
       },
     }),
   })
 
+  // The reserve reads the locked balance before taking the hold.
+  const lockedBalance = () => ({
+    from: () => ({ where: () => ({ for: () => Promise.resolve([{ subscription: 1000, purchased: 0 }]) }) }),
+  })
+
   vi.mocked(db.insert).mockImplementation(recordInsert as never)
   vi.mocked(db.update).mockImplementation(recordUpdate as never)
   vi.mocked(db.transaction).mockImplementation((async (cb: (tx: unknown) => unknown) =>
-    cb({ insert: recordInsert, update: recordUpdate })) as never)
+    cb({ insert: recordInsert, update: recordUpdate, select: lockedBalance })) as never)
 
   return captured
 }

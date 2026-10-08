@@ -5,6 +5,9 @@ import { users } from '@/lib/db/schema'
 import { calculateCostInCredits, type ModelName } from '@/lib/pricing'
 
 type CreditStore = Pick<PgDatabase<PgQueryResultHKT>, 'update'>
+type CreditReserveStore = {
+  transaction<T>(run: (tx: Pick<PgDatabase<PgQueryResultHKT>, 'select' | 'update'>) => Promise<T>): Promise<T>
+}
 
 /**
  * Deliberately pessimistic: 2 ASCII bytes per token covers English (~3.5 bytes/token),
@@ -108,46 +111,80 @@ export function planCreditReservation({
   return { ok: true, reserveCents: costWith(affordable), maxTokens: affordable }
 }
 
+/** How much of a Turn's hold came out of each balance, so settlement can return it. */
+export type CreditHold = { subscriptionCents: number; purchasedCents: number }
+
 /**
- * Takes the hold in one statement: Postgres re-checks the WHERE guard after waiting
- * on a concurrent writer's row lock, so parallel requests can never jointly reserve
- * more than the balance.
+ * Takes the hold Subscription credits first, then Purchased credits, checked against
+ * their combined balance. The row lock serialises parallel requests, so they can never
+ * jointly reserve more than the balance; the WHERE guards keep the invariants even so.
+ * Returns null when the balance can't cover the hold or the user doesn't exist.
  */
 export async function reserveCredits({
   db,
   userId,
   reserveCents,
 }: {
-  db: CreditStore
+  db: CreditReserveStore
   userId: string
   reserveCents: number
-}): Promise<boolean> {
-  const rows = await db
-    .update(users)
-    .set({
-      creditsRemaining: sql`${users.creditsRemaining} - ${reserveCents}`,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(users.id, userId), gte(users.creditsRemaining, reserveCents)))
-    .returning({ creditsRemaining: users.creditsRemaining })
-  return rows.length > 0
+}): Promise<CreditHold | null> {
+  return db.transaction(async (tx) => {
+    const [balance] = await tx
+      .select({ subscription: users.creditsRemaining, purchased: users.purchasedCredits })
+      .from(users)
+      .where(eq(users.id, userId))
+      .for('update')
+    if (!balance || balance.subscription + balance.purchased < reserveCents) return null
+
+    // Subscription credits can be negative after an overage; they then give nothing.
+    const subscriptionCents = Math.min(Math.max(balance.subscription, 0), reserveCents)
+    const hold = { subscriptionCents, purchasedCents: reserveCents - subscriptionCents }
+
+    const rows = await tx
+      .update(users)
+      .set({
+        creditsRemaining: sql`${users.creditsRemaining} - ${hold.subscriptionCents}`,
+        purchasedCredits: sql`${users.purchasedCredits} - ${hold.purchasedCents}`,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(users.id, userId),
+          gte(users.purchasedCredits, hold.purchasedCents),
+          gte(sql`${users.creditsRemaining} + ${users.purchasedCredits}`, reserveCents)
+        )
+      )
+      .returning({ id: users.id })
+    return rows.length > 0 ? hold : null
+  })
 }
 
+/**
+ * Returns the unused part of the hold Purchased credits first, so the Credits that
+ * never expire last longest. A Turn that cost more than its hold charges the overage
+ * to Subscription credits, which may go negative.
+ */
 export async function settleCredits({
   db,
   userId,
-  reserveCents,
+  hold,
   actualCents,
 }: {
   db: CreditStore
   userId: string
-  reserveCents: number
+  hold: CreditHold
   actualCents: number
 }): Promise<void> {
+  const unusedCents = hold.subscriptionCents + hold.purchasedCents - actualCents
+  const toPurchased = Math.min(Math.max(unusedCents, 0), hold.purchasedCents)
+  const toSubscription = unusedCents - toPurchased
+
   await db
     .update(users)
     .set({
-      creditsRemaining: sql`${users.creditsRemaining} + ${reserveCents - actualCents}`,
+      creditsRemaining: sql`${users.creditsRemaining} + ${toSubscription}`,
+      purchasedCredits: sql`${users.purchasedCredits} + ${toPurchased}`,
       updatedAt: new Date(),
     })
     .where(eq(users.id, userId))
