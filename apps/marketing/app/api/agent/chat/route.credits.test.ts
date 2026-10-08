@@ -632,6 +632,24 @@ describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat',
     expect(await balance()).toBe(FREE_GRANT)
   })
 
+  it('runs a Sonnet 5.5 Turn on a fresh chat, whose floor is exactly the 7-Credit grant, with max_tokens cut to fit', async () => {
+    await seedUser({ credits: FREE_GRANT })
+    vi.mocked(anthropic.messages.stream).mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    )
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-sonnet-5-5' })
+    const events = await response.text()
+
+    expect(response.status).toBe(200)
+    expect(anthropic.messages.stream).toHaveBeenCalledTimes(1)
+    // The whole grant is held, which affords 4,445 output tokens on top of the estimated input.
+    expect(sentMaxTokens()).toBe(4445)
+    expect(doneEvent(events)).toMatchObject({ maxTokensReducedForBalance: true })
+    // (1000 x $2 + 500 x $10) / 1M = $0.007 -> x1.25 = 0.875c -> 1 credit
+    expect(await balance()).toBe(6)
+  })
+
   it('refuses a Sonnet 5.5 Turn with some chat history the balance cannot cover, and Haiku still runs', async () => {
     // ~2,000 tokens of history lift the Sonnet floor to 8 credits
     await seedUser({ credits: FREE_GRANT, history: ['a'.repeat(4_000)] })
