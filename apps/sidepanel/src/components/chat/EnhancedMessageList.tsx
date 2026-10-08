@@ -17,40 +17,16 @@ import {
   MessageActions,
   MessageResponse,
 } from "@/components/ai-elements/message";
-import { ToolCallCollapsible, type ToolCallView } from "./ToolCallCollapsible";
+import { ToolCallCollapsible } from "./ToolCallCollapsible";
 import { useStickToBottomContext } from "use-stick-to-bottom";
-import {
-  storedToolCallSchema,
-  type Message as MessageType,
-  type StoredToolCall,
-  type ToolCall,
-} from "@prophet/shared";
-import type { MessagePart, ToolPart } from "@/lib/agent/chat-adapter";
+import { readStoredToolCalls, type Message as MessageType, type ToolCall } from "@prophet/shared";
+import { toolPartView, type MessagePart } from "@/lib/agent/chat-adapter";
 
 interface AgentMessage extends MessageType {
   /** From the messages API after a reload, so validated before it is shown. */
   toolCalls?: unknown;
   thinkingContent?: string;
   parts?: MessagePart[];
-}
-
-/** Keeps the stored tool calls that match the shared schema; one bad entry never hides the rest. */
-function readStoredToolCalls(value: unknown): StoredToolCall[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((item: unknown) => {
-    const parsed = storedToolCallSchema.safeParse(item);
-    return parsed.success ? [parsed.data] : [];
-  });
-}
-
-function toolPartView(part: ToolPart): ToolCallView {
-  return {
-    id: part.toolCallId,
-    name: part.toolName,
-    input: part.input ?? {},
-    result: part.output ?? part.error,
-    isError: part.state === "error",
-  };
 }
 
 export interface EnhancedMessageListHandle {

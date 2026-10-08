@@ -17,15 +17,24 @@ export const storedToolCallSchema = z.object({
 
 export type StoredToolCall = z.infer<typeof storedToolCallSchema>
 
-/** Reads the `tool_calls` text column; anything but a valid list reads as no calls. */
+/**
+ * Keeps the entries of a stored tool-call list that match the schema, so one bad entry
+ * never hides the rest; anything but a list reads as no calls.
+ */
+export function readStoredToolCalls(value: unknown): StoredToolCall[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item: unknown) => {
+    const parsed = storedToolCallSchema.safeParse(item)
+    return parsed.success ? [parsed.data] : []
+  })
+}
+
+/** Reads the `tool_calls` text column by the same rule; a column that isn't JSON reads as no calls. */
 export function parseStoredToolCalls(column: string | null): StoredToolCall[] {
   if (column === null) return []
-  let json: unknown
   try {
-    json = JSON.parse(column)
+    return readStoredToolCalls(JSON.parse(column))
   } catch {
     return []
   }
-  const parsed = z.array(storedToolCallSchema).safeParse(json)
-  return parsed.success ? parsed.data : []
 }
