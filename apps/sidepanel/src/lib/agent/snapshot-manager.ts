@@ -1,6 +1,6 @@
 import { cdpCommander, type AXNode, type AXTreeResult, type ResolveNodeResult, type CallFunctionOnResult } from './cdp-commander'
 import { type Snapshot, type SnapshotNode, INTERACTIVE_ROLES, SEMANTIC_ROLES } from './types'
-import { AGENT_SIZE_LIMITS } from '@prophet/shared'
+import { AGENT_SIZE_LIMITS, keepChars } from '@prophet/shared'
 
 const UID_ATTRIBUTE = 'data-prophet-nodeid'
 const UID_LENGTH = 8
@@ -18,10 +18,7 @@ function generateUid(): string {
 export function capNodeText(text: string): string {
   const limit = AGENT_SIZE_LIMITS.snapshotNodeTextChars
   if (text.length <= limit) return text
-  const head = text.slice(0, limit)
-  // Never leave half of a surrogate pair at the end
-  const safeHead = /[\uD800-\uDBFF]$/.test(head) ? head.slice(0, -1) : head
-  return `${safeHead}…`
+  return `${keepChars({ text, count: limit })}…`
 }
 
 class SnapshotManagerClass {

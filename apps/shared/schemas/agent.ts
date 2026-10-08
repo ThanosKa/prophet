@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { keepChars } from "../utils/text";
 
 // The Turn limit: the extension's agent loop pauses after this many Turns per Run.
 // The server accepts up to this many earlier Turns, so older builds that stop sooner keep working.
@@ -27,6 +28,10 @@ export const AGENT_SIZE_LIMITS = {
   blocksPerTurn: 100,
   toolResultsPerTurn: 100,
   imageChars: 3_000_000,
+  // An earlier Run's record as a later Run's prompt shows it: text kept at its head and
+  // tail, and each action's input JSON
+  recordTextChars: 8_000,
+  recordActionInputChars: 300,
   // Both: the extension checks before sending, the route answers 413 REQUEST_TOO_LARGE
   requestBytes: 4_000_000,
 } as const;
@@ -61,10 +66,8 @@ export const toolNameSchema = z.enum([
 export function shortenToolResult(content: string): string {
   const cap = AGENT_SIZE_LIMITS.toolResultChars;
   if (content.length <= cap) return content;
-  // Never split a surrogate pair: half an emoji is not valid text.
-  const lastKept = content.charCodeAt(cap - 1);
-  const kept = lastKept >= 0xd800 && lastKept <= 0xdbff ? cap - 1 : cap;
-  return `${content.slice(0, kept)}\n\n[Shortened by the server: this tool result had ${content.length} characters; only the first ${kept} are shown.]`;
+  const kept = keepChars({ text: content, count: cap });
+  return `${kept}\n\n[Shortened by the server: this tool result had ${content.length} characters; only the first ${kept.length} are shown.]`;
 }
 
 // Server caps from AGENT_SIZE_LIMITS. The extension's own caps are far lower, so only a

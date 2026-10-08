@@ -1,6 +1,8 @@
 import type { ContentBlockParam, MessageParam } from '@anthropic-ai/sdk/resources/messages'
 import {
+  AGENT_SIZE_LIMITS,
   HISTORY_BUDGET_TOKENS,
+  keepChars,
   parseStoredToolCalls,
   type AgentChatRequest,
   type AgentTurn,
@@ -9,23 +11,18 @@ import {
 import type { HistoryRow } from '@/lib/agent/run-record'
 import { estimateTextTokens } from '@/lib/credit-reservation'
 
-const ACTION_INPUT_MAX_CHARS = 300
-const RECORD_TEXT_MAX_CHARS = 8000
-
-/** Cuts by code point, so a surrogate pair is never split. */
 function capText(text: string): string {
-  const chars = Array.from(text)
-  if (chars.length <= RECORD_TEXT_MAX_CHARS) return text
-  const keep = RECORD_TEXT_MAX_CHARS / 2
-  const head = chars.slice(0, keep).join('')
-  const tail = chars.slice(-keep).join('')
-  return `${head}\n[… ${chars.length - RECORD_TEXT_MAX_CHARS} characters left out …]\n${tail}`
+  const max = AGENT_SIZE_LIMITS.recordTextChars
+  if (text.length <= max) return text
+  const head = keepChars({ text, count: max / 2 })
+  const tail = keepChars({ text, count: max / 2, from: 'end' })
+  return `${head}\n[… ${text.length - head.length - tail.length} characters left out …]\n${tail}`
 }
 
 function capActionInput(input: Record<string, unknown>): string {
-  const chars = Array.from(JSON.stringify(input))
-  if (chars.length <= ACTION_INPUT_MAX_CHARS) return chars.join('')
-  return `${chars.slice(0, ACTION_INPUT_MAX_CHARS).join('')}…`
+  const json = JSON.stringify(input)
+  const kept = keepChars({ text: json, count: AGENT_SIZE_LIMITS.recordActionInputChars })
+  return kept === json ? json : `${kept}…`
 }
 
 /**
