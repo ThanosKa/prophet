@@ -3,12 +3,13 @@ import { Pricing } from '@/components/Pricing'
 import { Footer } from '@/components/Footer'
 import { breadcrumbNode, graphJsonLd, softwareApplicationNode } from '@/lib/structured-data'
 import Link from 'next/link'
-import { TIER_CONFIG, formatCreditsAsDollars } from '@/lib/pricing'
+import { TIER_CONFIG } from '@/lib/pricing'
+import { formatDollars } from '@prophet/shared'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: { absolute: `Prophet Pricing: Free ${formatCreditsAsDollars(TIER_CONFIG.free.credits)} Credits, Plans from $9.99` },
-  description: `Pay only for the Claude tokens you use. Free credits to try Haiku, no card. Pro is $9.99/mo for ${formatCreditsAsDollars(TIER_CONFIG.pro.credits)} in credits. Cancel anytime.`,
+  title: { absolute: `Prophet Pricing: Free ${formatDollars(TIER_CONFIG.free.credits)} Credits, Plans from $9.99` },
+  description: `Pay only for the Claude tokens you use. Free credits to try Haiku, no card. Pro is $9.99/mo for ${formatDollars(TIER_CONFIG.pro.credits)} in credits. Cancel anytime.`,
   alternates: { canonical: '/pricing' },
 }
 
@@ -45,7 +46,7 @@ export default function PricingPage() {
             Prophet uses simple pay-per-use credits where 1 credit equals 1 cent. When you send a message, the agent works on it in Turns, one call to Claude each, and every Turn is charged by the tokens it uses, with a minimum of 1 credit per Turn. Different Claude models have different per-token rates — Haiku is the most affordable for quick tasks, while Opus delivers the deepest reasoning for complex work.
           </p>
           <p className="text-muted-foreground leading-relaxed mb-8">
-            A plan&apos;s credits equal its price: Pro is $9.99 for {formatCreditsAsDollars(TIER_CONFIG.pro.credits)} in credits every month. Subscription credits renew monthly and don&apos;t roll over. Credits you buy once never expire, and each Turn spends your subscription credits first. New accounts get a one-time {formatCreditsAsDollars(TIER_CONFIG.free.credits)} to try Haiku. For most users, this is significantly cheaper than a flat $20/month Claude Pro subscription — especially if you use AI occasionally rather than all day. Curious about the free options?{' '}
+            A plan&apos;s credits equal its price: Pro is $9.99 for {formatDollars(TIER_CONFIG.pro.credits)} in credits every month. Subscription credits renew monthly and don&apos;t roll over. Credits you buy once never expire, and each Turn spends your subscription credits first. New accounts get a one-time {formatDollars(TIER_CONFIG.free.credits)} to try Haiku. For most users, this is significantly cheaper than a flat $20/month Claude Pro subscription — especially if you use AI occasionally rather than all day. Curious about the free options?{' '}
             <Link href="/blog/is-claude-ai-free" className="text-primary hover:underline">
               See every way to use Claude AI for free
             </Link>{' '}

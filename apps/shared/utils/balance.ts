@@ -1,14 +1,16 @@
 import type { UserBalance } from '../schemas'
 
 export interface BalanceDisplay {
-  /** The total balance in dollars, e.g. "$13.00". */
+  /** The total balance in dollars, e.g. "$13" or "$12.57". */
   total: string
   /** How much of the total is Purchased credits, or null when there is nothing to say. */
   neverExpiresNote: string | null
 }
 
-function formatDollars(credits: number): string {
-  const dollars = (Math.abs(credits) / 100).toFixed(2)
+/** Shows Credits (cents) as dollars, with cents only when needed: "$10", "$0.07", "-$10.50". */
+export function formatDollars(credits: number): string {
+  const cents = Math.abs(credits)
+  const dollars = cents % 100 === 0 ? String(cents / 100) : (cents / 100).toFixed(2)
   return credits < 0 ? `-$${dollars}` : `$${dollars}`
 }
 
