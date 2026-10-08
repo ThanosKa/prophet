@@ -12,7 +12,8 @@ users {
   lastName: string
   profileImageUrl: string
   tier: 'free' | 'pro' | 'premium' | 'ultra'
-  creditsRemaining: number             // Current balance (cents)
+  creditsRemaining: number             // Subscription credits + Free grant (cents); may go negative after an overage
+  purchasedCredits: number             // Purchased credits (cents); never expire, CHECK >= 0, default 0
   creditsIncluded: number              // Monthly allocation (cents)
   billingPeriodStart: timestamp
   billingPeriodEnd: timestamp
@@ -26,6 +27,15 @@ users {
   updatedAt: timestamp
 }
 ```
+
+### Two credit balances
+
+A user's balance is `creditsRemaining + purchasedCredits`; APIs return that total as
+`creditsRemaining` plus `purchasedCredits` on its own (`totalCredits()` in
+`apps/marketing/lib/credit-balance.ts`). `reserveCredits` checks a Turn's hold against
+the total and takes it Subscription credits first, then Purchased credits, returning the
+split as a `CreditHold`. `settleCredits` returns the unused hold Purchased-first and
+charges any overage to `creditsRemaining` only.
 
 ## Chats
 
