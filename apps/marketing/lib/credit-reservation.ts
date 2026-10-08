@@ -5,9 +5,7 @@ import { users } from '@/lib/db/schema'
 import { calculateCostInCredits, type ModelName } from '@/lib/pricing'
 
 type CreditStore = Pick<PgDatabase<PgQueryResultHKT>, 'update'>
-type CreditReserveStore = {
-  transaction<T>(run: (tx: Pick<PgDatabase<PgQueryResultHKT>, 'select' | 'update'>) => Promise<T>): Promise<T>
-}
+type CreditReserveStore = Pick<PgDatabase<PgQueryResultHKT>, '$with' | 'with' | 'select'>
 
 /**
  * Deliberately pessimistic: 2 ASCII bytes per token covers English (~3.5 bytes/token),
@@ -116,8 +114,9 @@ export type CreditHold = { subscriptionCents: number; purchasedCents: number }
 
 /**
  * Takes the hold Subscription credits first, then Purchased credits, checked against
- * their combined balance. The row lock serialises parallel requests, so they can never
- * jointly reserve more than the balance; the WHERE guards keep the invariants even so.
+ * their combined balance, in one UPDATE so parallel requests can never jointly
+ * reserve more than the balance. The CTE locks the row and keeps its Subscription
+ * credits as they were, so RETURNING can report how the hold was split.
  * Returns null when the balance can't cover the hold or the user doesn't exist.
  */
 export async function reserveCredits({
@@ -129,35 +128,37 @@ export async function reserveCredits({
   userId: string
   reserveCents: number
 }): Promise<CreditHold | null> {
-  return db.transaction(async (tx) => {
-    const [balance] = await tx
-      .select({ subscription: users.creditsRemaining, purchased: users.purchasedCredits })
+  const before = db.$with('balance_before_hold').as(
+    db
+      .select({ subscription: users.creditsRemaining })
       .from(users)
       .where(eq(users.id, userId))
       .for('update')
-    if (!balance || balance.subscription + balance.purchased < reserveCents) return null
+  )
+  // Subscription credits can be negative after an overage; they then give nothing.
+  const fromSubscription = (subscription: typeof users.creditsRemaining) =>
+    sql`LEAST(GREATEST(${subscription}, 0), ${reserveCents}::integer)`
 
-    // Subscription credits can be negative after an overage; they then give nothing.
-    const subscriptionCents = Math.min(Math.max(balance.subscription, 0), reserveCents)
-    const hold = { subscriptionCents, purchasedCents: reserveCents - subscriptionCents }
-
-    const rows = await tx
-      .update(users)
-      .set({
-        creditsRemaining: sql`${users.creditsRemaining} - ${hold.subscriptionCents}`,
-        purchasedCredits: sql`${users.purchasedCredits} - ${hold.purchasedCents}`,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(users.id, userId),
-          gte(users.purchasedCredits, hold.purchasedCents),
-          gte(sql`${users.creditsRemaining} + ${users.purchasedCredits}`, reserveCents)
-        )
+  const [row] = await db
+    .with(before)
+    .update(users)
+    .set({
+      creditsRemaining: sql`${users.creditsRemaining} - ${fromSubscription(users.creditsRemaining)}`,
+      purchasedCredits: sql`${users.purchasedCredits} - (${reserveCents}::integer - ${fromSubscription(users.creditsRemaining)})`,
+      updatedAt: new Date(),
+    })
+    .from(before)
+    .where(
+      and(
+        eq(users.id, userId),
+        gte(sql`${users.creditsRemaining} + ${users.purchasedCredits}`, reserveCents),
+        gte(users.purchasedCredits, sql`${reserveCents}::integer - ${fromSubscription(users.creditsRemaining)}`)
       )
-      .returning({ id: users.id })
-    return rows.length > 0 ? hold : null
-  })
+    )
+    .returning({ subscriptionCents: fromSubscription(before.subscription).mapWith(Number) })
+
+  if (!row) return null
+  return { subscriptionCents: row.subscriptionCents, purchasedCents: reserveCents - row.subscriptionCents }
 }
 
 /**
