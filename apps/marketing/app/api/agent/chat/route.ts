@@ -25,7 +25,7 @@ import {
   reserveCredits,
   settleCredits,
 } from "@/lib/credit-reservation";
-import { readBodyWithinLimit } from "@/lib/request-body";
+import { parseJsonBody, readBodyWithinLimit } from "@/lib/request-body";
 import {
   AGENT_SIZE_LIMITS,
   agentChatRequestSchema,
@@ -160,7 +160,14 @@ export async function POST(req: Request) {
         { status: 413 }
       );
     }
-    const body: unknown = JSON.parse(bounded.text);
+    const parsed = parseJsonBody(bounded.text);
+    if (parsed.status === "invalid") {
+      logger.warn({ userId }, "Agent chat request body is not JSON");
+      return NextResponse.json(error("Request body must be JSON", "VALIDATION_ERROR"), {
+        status: 400,
+      });
+    }
+    const body = parsed.value;
     const validation = agentChatRequestSchema.safeParse(body);
 
     if (!validation.success) {

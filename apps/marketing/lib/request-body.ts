@@ -31,3 +31,14 @@ export async function readBodyWithinLimit({
   }
   return { status: 'ok', text: new TextDecoder().decode(Buffer.concat(chunks)) }
 }
+
+export type ParsedJson = { status: 'ok'; value: unknown } | { status: 'invalid' }
+
+/** Parses a request body that should be JSON, without throwing on one that isn't. */
+export function parseJsonBody(text: string): ParsedJson {
+  try {
+    return { status: 'ok', value: JSON.parse(text) }
+  } catch {
+    return { status: 'invalid' }
+  }
+}

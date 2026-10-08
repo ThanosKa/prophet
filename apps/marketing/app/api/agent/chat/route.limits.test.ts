@@ -55,6 +55,20 @@ describe('request size in POST /api/agent/chat', () => {
     expect(response.status).toBe(413)
     expect(await response.json()).toMatchObject({ code: 'REQUEST_TOO_LARGE', error: expect.any(String) })
   })
+
+  it('answers 400 VALIDATION_ERROR to a body that is not JSON', async () => {
+    const response = await postRaw(
+      new Request(AGENT_CHAT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: `{"chatId":"${CHAT_ID}","userMessage":`,
+      })
+    )
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({ code: 'VALIDATION_ERROR', error: expect.any(String) })
+    expect(streamMock).not.toHaveBeenCalled()
+  })
 })
 
 const doneTurn = () => anthropicTurn({ content: [text('Done.')], stopReason: 'end_turn' })
