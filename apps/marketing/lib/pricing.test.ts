@@ -4,7 +4,10 @@ import {
   calculateCostInCents,
   TIER_CONFIG,
   MODEL_PRICING,
-  MARKUP,
+  MARGIN,
+  MINIMUM_CHARGE_CREDITS,
+  EXTRA_CREDITS,
+  calculateWorstCaseProfit,
   ALL_MODELS,
   WEB_SEARCH_PRICE_PER_1K_USD,
   WEB_SEARCH_PRICE_PER_SEARCH_USD,
@@ -14,31 +17,92 @@ import {
 } from './pricing'
 import { CLAUDE_MODELS, LEGACY_MODEL_ALIASES, resolveAgentModel } from '@prophet/shared'
 
-describe('Profitability Guarantee', () => {
-  it('all paid tiers are profitable even at 100% usage', () => {
-    for (const tier of ['pro', 'premium', 'ultra'] as const) {
-      const config = TIER_CONFIG[tier]
-      const revenue = config.price
-      const maxCost = config.credits / MARKUP
-      const profit = revenue - maxCost
+describe('Margin, rounding and the Minimum charge', () => {
+  const haikuInput = (inputTokens: number) => ({
+    inputTokens,
+    cacheCreationInputTokens: 0,
+    cacheReadInputTokens: 0,
+    outputTokens: 0,
+  })
 
-      expect(profit).toBeGreaterThan(0)
+  it('the Margin is 25%', () => {
+    expect(MARGIN).toBe(0.25)
+  })
+
+  it('charges a Haiku Turn with an Anthropic cost of 0.8 cents exactly 1 Credit (0.8 x 1.25 = 1.0)', () => {
+    // 80,000 input tokens x $0.10/MTok = $0.008
+    expect(calculateUsageCostInCredits('claude-haiku-5-5', haikuInput(80_000))).toBe(1)
+  })
+
+  it('rounds up: a 1.6-cent Turn costs 2 Credits (1.6 x 1.25 = 2.0), a 2-cent Turn costs 3 (2.5)', () => {
+    // Sonnet input at $2/MTok: 8,000 tokens = $0.016, 10,000 tokens = $0.02
+    expect(calculateCostInCredits('claude-sonnet-5-5', 8_000, 0)).toBe(2)
+    expect(calculateCostInCredits('claude-sonnet-5-5', 10_000, 0)).toBe(3)
+  })
+
+  it('does not round float noise up into an extra Credit: a 5.6-cent Turn costs exactly 7', () => {
+    // Sonnet input: 28,000 tokens x $2/MTok = $0.056; 5.6 x 1.25 = 7.0
+    expect(calculateCostInCredits('claude-sonnet-5-5', 28_000, 0)).toBe(7)
+  })
+
+  it('applies the Margin to a large Turn: a 100-cent Opus Turn costs 125 Credits', () => {
+    // 250,000 input tokens x $4/MTok = $1.00
+    expect(calculateCostInCredits('claude-opus-5-5', 250_000, 0)).toBe(125)
+  })
+
+  it('never charges less than the Minimum charge of 1 Credit', () => {
+    expect(MINIMUM_CHARGE_CREDITS).toBe(1)
+    expect(calculateUsageCostInCredits('claude-haiku-5-5', haikuInput(0))).toBe(1)
+    expect(calculateUsageCostInCredits('claude-haiku-5-5', haikuInput(10))).toBe(1)
+  })
+
+  it('applies the Margin to the web search fee: one $0.01 search costs 2 Credits (1.25 rounded up)', () => {
+    expect(calculateWebSearchCostInCredits(1)).toBe(2)
+    expect(calculateWebSearchCostInCredits(20)).toBe(25)
+  })
+})
+
+describe('Plans, extra credits and the Free grant', () => {
+  it('gives a new user a Free grant of 7 Credits', () => {
+    expect(TIER_CONFIG.free).toMatchObject({ price: 0, credits: 7 })
+  })
+
+  it('gives each plan Subscription credits equal to its price, with no Bonus', () => {
+    expect(TIER_CONFIG.pro).toMatchObject({ price: 999, credits: 1000 })
+    expect(TIER_CONFIG.premium).toMatchObject({ price: 2999, credits: 3000 })
+    expect(TIER_CONFIG.ultra).toMatchObject({ price: 5999, credits: 6000 })
+    for (const tier of ['free', 'pro', 'premium', 'ultra'] as const) {
+      expect(TIER_CONFIG[tier]).not.toHaveProperty('bonus')
     }
   })
 
-  it('markup is high enough to cover all bonuses', () => {
-    for (const tier of ['pro', 'premium', 'ultra'] as const) {
-      const config = TIER_CONFIG[tier]
-      const baseCredits = config.price
-      const totalCredits = config.credits
-      const bonusPercent = ((totalCredits - baseCredits) / baseCredits) * 100
-      const markupPercent = (MARKUP - 1) * 100
-
-      expect(markupPercent).toBeGreaterThan(bonusPercent)
-    }
+  it('sells extra credits at 1000 Credits for $10', () => {
+    expect(EXTRA_CREDITS).toMatchObject({ price: 1000, credits: 1000 })
+    expect(EXTRA_CREDITS).not.toHaveProperty('bonus')
   })
+})
 
-  it('every API call generates profit (markup applied)', () => {
+describe('Worst-case profit after Stripe fees', () => {
+  // A buyer who spends every Credit: Anthropic cost is at most Credits / 1.25, because
+  // rounding up and the Minimum charge only ever charge more than cost x 1.25.
+  // Stripe takes about 2.9% + $0.30 per charge.
+  it.each([
+    { name: 'Pro', plan: TIER_CONFIG.pro, expectedCents: 140 },
+    { name: 'Premium', plan: TIER_CONFIG.premium, expectedCents: 482 },
+    { name: 'Ultra', plan: TIER_CONFIG.ultra, expectedCents: 995 },
+    { name: 'extra credits', plan: EXTRA_CREDITS, expectedCents: 141 },
+  ])('$name keeps a profit of about $expectedCents cents', ({ plan, expectedCents }) => {
+    const { stripeFeeCents, maxAnthropicCostCents, profitCents } = calculateWorstCaseProfit(plan)
+
+    expect(stripeFeeCents).toBeCloseTo(plan.price * 0.029 + 30, 6)
+    expect(maxAnthropicCostCents).toBe(plan.credits * 0.8)
+    expect(profitCents).toBeGreaterThanOrEqual(0)
+    expect(profitCents).toBeCloseTo(expectedCents, 0)
+  })
+})
+
+describe('Every Turn is profitable', () => {
+  it('charges more than Anthropic cost for every model', () => {
     for (const model of Object.keys(MODEL_PRICING) as ModelName[]) {
       const pricing = MODEL_PRICING[model]
       const tokens = 10000
@@ -50,12 +114,6 @@ describe('Profitability Guarantee', () => {
 
       expect(chargedCredits).toBeGreaterThan(rawCostCents)
     }
-  })
-
-  it('higher tiers get better or equal bonuses', () => {
-    expect(TIER_CONFIG.pro.bonus).toBeGreaterThan(TIER_CONFIG.free.bonus)
-    expect(TIER_CONFIG.premium.bonus).toBeGreaterThanOrEqual(TIER_CONFIG.pro.bonus)
-    expect(TIER_CONFIG.ultra.bonus).toBeGreaterThanOrEqual(TIER_CONFIG.premium.bonus)
   })
 })
 
@@ -157,40 +215,6 @@ describe('MODEL_PRICING Structure', () => {
   it('output tokens cost more than input tokens', () => {
     for (const model of Object.keys(MODEL_PRICING) as ModelName[]) {
       expect(MODEL_PRICING[model].output).toBeGreaterThan(MODEL_PRICING[model].input)
-    }
-  })
-})
-
-describe('Markup Validation', () => {
-  it('markup is at least 20%', () => {
-    expect(MARKUP).toBeGreaterThanOrEqual(1.20)
-  })
-
-  it('markup is reasonable (not excessive)', () => {
-    expect(MARKUP).toBeLessThanOrEqual(1.50)
-  })
-})
-
-describe('Business Model Invariants', () => {
-  it('free tier has zero price', () => {
-    expect(TIER_CONFIG.free.price).toBe(0)
-  })
-
-  it('paid tiers give more value than price (bonus credits)', () => {
-    for (const tier of ['pro', 'premium', 'ultra'] as const) {
-      const config = TIER_CONFIG[tier]
-      expect(config.credits).toBeGreaterThanOrEqual(config.price)
-    }
-  })
-
-  it('profit margin is positive for all paid tiers at 100% usage', () => {
-    for (const tier of ['pro', 'premium', 'ultra'] as const) {
-      const config = TIER_CONFIG[tier]
-      const revenue = config.price / 100
-      const apiCostIfAllUsed = config.credits / 100 / MARKUP
-      const profit = revenue - apiCostIfAllUsed
-
-      expect(profit).toBeGreaterThan(0)
     }
   })
 })
@@ -326,23 +350,24 @@ describe('calculateUsageCostInCredits (prompt-cache-aware billing)', () => {
   }
 
   it('charges Opus 5.5 cache reads at $0.20/MTok, not the base input rate', () => {
-    // 1M x $0.20 = $0.20 -> x1.2 = 24 credits
+    // 1M x $0.20 = $0.20 -> x1.25 = 25 credits
     expect(
       calculateUsageCostInCredits('claude-opus-5-5', { ...noUsage, cacheReadInputTokens: 1_000_000 })
-    ).toBe(24)
+    ).toBe(25)
   })
 
   it('charges Sonnet 5.5 cache reads at $0.10/MTok (0.05x input)', () => {
-    // 1M x $0.10 = $0.10 -> x1.2 = 12 credits
+    // 1M x $0.10 = $0.10 -> x1.25 = 12.5 -> 13 credits
     expect(
       calculateUsageCostInCredits('claude-sonnet-5-5', { ...noUsage, cacheReadInputTokens: 1_000_000 })
-    ).toBe(12)
+    ).toBe(13)
   })
 
   it('charges 5-minute cache writes at 1.25x input: Sonnet $2.50, Opus $5.00 per MTok', () => {
     const write = { ...noUsage, cacheCreationInputTokens: 1_000_000 }
-    expect(calculateUsageCostInCredits('claude-sonnet-5-5', write)).toBe(300)
-    expect(calculateUsageCostInCredits('claude-opus-5-5', write)).toBe(600)
+    // $2.50 -> x1.25 = 312.5 -> 313; $5.00 -> x1.25 = 625
+    expect(calculateUsageCostInCredits('claude-sonnet-5-5', write)).toBe(313)
+    expect(calculateUsageCostInCredits('claude-opus-5-5', write)).toBe(625)
   })
 
   const cachedAgentTurn = {
@@ -353,17 +378,17 @@ describe('calculateUsageCostInCredits (prompt-cache-aware billing)', () => {
   }
 
   it('bills every input bucket plus output on Sonnet 5.5', () => {
-    // $0.002 input + $0.005 write + $0.01 read + $0.005 output = $0.022 -> x1.2 = 2.64 -> 3
+    // $0.002 input + $0.005 write + $0.01 read + $0.005 output = $0.022 -> x1.25 = 2.75 -> 3
     expect(calculateUsageCostInCredits('claude-sonnet-5-5', cachedAgentTurn)).toBe(3)
   })
 
   it('bills every input bucket plus output on Opus 5.5', () => {
-    // $0.004 input + $0.01 write + $0.02 read + $0.01 output = $0.044 -> x1.2 = 5.28 -> 6
+    // $0.004 input + $0.01 write + $0.02 read + $0.01 output = $0.044 -> x1.25 = 5.5 -> 6
     expect(calculateUsageCostInCredits('claude-opus-5-5', cachedAgentTurn)).toBe(6)
   })
 
   it('adds the per-search fee on top of cached tokens', () => {
-    // $0.044 tokens + 2 x $0.01 searches = $0.064 -> x1.2 = 7.68 -> 8
+    // $0.044 tokens + 2 x $0.01 searches = $0.064 -> x1.25 = 8
     expect(
       calculateUsageCostInCredits('claude-opus-5-5', { ...cachedAgentTurn, webSearchRequests: 2 })
     ).toBe(8)
@@ -379,13 +404,13 @@ describe('Haiku 5.5 prompt-length rate cards', () => {
   })
 
   it('bills a prompt of up to 100K tokens at $0.10 / $0.50', () => {
-    // 100K x $0.10 + 100K x $0.50 = $0.06 -> x1.2 = 7.2 -> 8
+    // 100K x $0.10 + 100K x $0.50 = $0.06 -> x1.25 = 7.5 -> 8
     expect(calculateUsageCostInCredits('claude-haiku-5-5', usage(100_000, 100_000))).toBe(8)
   })
 
   it('bills the whole request, output included, at $0.50 / $2.50 once the prompt passes 100K', () => {
-    // 200K x $0.50 + 100K x $2.50 = $0.35 -> x1.2 = 42
-    expect(calculateUsageCostInCredits('claude-haiku-5-5', usage(200_000, 100_000))).toBe(42)
+    // 200K x $0.50 + 100K x $2.50 = $0.35 -> x1.25 = 43.75 -> 44
+    expect(calculateUsageCostInCredits('claude-haiku-5-5', usage(200_000, 100_000))).toBe(44)
   })
 
   it('counts cached tokens toward the 100K threshold', () => {
@@ -395,7 +420,7 @@ describe('Haiku 5.5 prompt-length rate cards', () => {
       cacheReadInputTokens: 1_000_000,
       outputTokens: 0,
     }
-    // $0.0005 input + 1M x $0.05 read = $0.0505 -> x1.2 = 6.06 -> 7 (short card would be 2)
+    // $0.0005 input + 1M x $0.05 read = $0.0505 -> x1.25 = 6.31 -> 7 (short card would be 2)
     expect(calculateUsageCostInCredits('claude-haiku-5-5', cachedLongPrompt)).toBe(7)
   })
 

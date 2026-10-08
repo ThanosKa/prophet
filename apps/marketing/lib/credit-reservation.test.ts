@@ -106,7 +106,7 @@ describe('estimateInputTokens', () => {
 
 describe('planCreditReservation', () => {
   it('reserves the full worst case for a small Haiku turn and keeps max_tokens', () => {
-    // (3000 x $0.10 + 4096 x $0.50) / 1M = $0.002348 -> x1.2 = 0.28c -> 1 credit
+    // (3000 x $0.10 + 4096 x $0.50) / 1M = $0.002348 -> x1.25 = 0.29c -> 1 credit
     const plan = planCreditReservation({
       model: 'claude-haiku-5-5',
       balanceCents: 1000,
@@ -120,7 +120,7 @@ describe('planCreditReservation', () => {
   })
 
   it('reserves a Haiku turn whose estimated prompt passes 100K at the long-prompt rates', () => {
-    // (150000 x $0.50 + 16000 x $2.50) / 1M = $0.115 -> x1.2 = 13.8c -> 14 credits
+    // (150000 x $0.50 + 16000 x $2.50) / 1M = $0.115 -> x1.25 = 14.375c -> 15 credits
     const plan = planCreditReservation({
       model: 'claude-haiku-5-5',
       balanceCents: 1000,
@@ -130,13 +130,13 @@ describe('planCreditReservation', () => {
       webSearchMaxUses: 0,
     })
 
-    expect(plan).toEqual({ ok: true, reserveCents: 14, maxTokens: 16_000 })
+    expect(plan).toEqual({ ok: true, reserveCents: 15, maxTokens: 16_000 })
   })
 
-  it('refuses a free account on Opus 5.5 with 30K input tokens: even the floor costs 25 credits', () => {
+  it('refuses a free account on Opus 5.5 with 30K input tokens: even the floor costs 26 credits', () => {
     // input  30000 x $4  / 1M = $0.12
     // floor   4096 x $20 / 1M = $0.08192
-    // ($0.20192) x1.2 = 24.23c -> 25 credits > 20
+    // ($0.20192) x1.25 = 25.24c -> 26 credits > 20
     const plan = planCreditReservation({
       model: 'claude-opus-5-5',
       balanceCents: 20,
@@ -146,12 +146,12 @@ describe('planCreditReservation', () => {
       webSearchMaxUses: 0,
     })
 
-    expect(plan).toEqual({ ok: false, reason: 'INSUFFICIENT_BALANCE', requiredCents: 25 })
+    expect(plan).toEqual({ ok: false, reason: 'INSUFFICIENT_BALANCE', requiredCents: 26 })
   })
 
   it('shrinks max_tokens on Opus 5.5 to what a 20-credit balance affords', () => {
-    // 20 credits buy $0.1667 of API cost; input 5000 x $4 / 1M = $0.02 leaves
-    // $0.1467 / ($20 / 1M) = 7333 output tokens (full 16000 would cost 41 credits)
+    // 20 credits buy $0.16 of API cost; input 5000 x $4 / 1M = $0.02 leaves
+    // $0.14 / ($20 / 1M) = 7000 output tokens (full 16000 would cost 43 credits)
     const plan = planCreditReservation({
       model: 'claude-opus-5-5',
       balanceCents: 20,
@@ -161,11 +161,11 @@ describe('planCreditReservation', () => {
       webSearchMaxUses: 0,
     })
 
-    expect(plan).toEqual({ ok: true, reserveCents: 20, maxTokens: 7333 })
+    expect(plan).toEqual({ ok: true, reserveCents: 20, maxTokens: 7000 })
   })
 
   describe('at the max_tokens floor (Sonnet 5.5, 2000 input, floor 4096)', () => {
-    // floor: (2000 x $2 + 4096 x $10) / 1M = $0.04496 -> x1.2 = 5.40c -> 6 credits
+    // floor: (2000 x $2 + 4096 x $10) / 1M = $0.04496 -> x1.25 = 5.62c -> 6 credits
     const sonnetTurn = {
       model: 'claude-sonnet-5-5',
       estimatedInputTokens: 2000,
@@ -175,11 +175,11 @@ describe('planCreditReservation', () => {
     } as const
 
     it('accepts a balance of exactly the floor cost and grants the most it buys', () => {
-      // 6 credits = $0.05 -> ($0.05 - $0.004) / ($10 / 1M) = 4600 output tokens
+      // 6 credits = $0.048 of API cost -> ($0.048 - $0.004) / ($10 / 1M) = 4400 output tokens
       expect(planCreditReservation({ ...sonnetTurn, balanceCents: 6 })).toEqual({
         ok: true,
         reserveCents: 6,
-        maxTokens: 4600,
+        maxTokens: 4400,
       })
     })
 
@@ -206,7 +206,7 @@ describe('planCreditReservation', () => {
   })
 
   it('reserves every allowed web search on top of tokens', () => {
-    // (1000 x $0.10 + 4096 x $0.50) / 1M + 5 searches x $0.01 = $0.052148 -> x1.2 = 6.26c -> 7
+    // (1000 x $0.10 + 4096 x $0.50) / 1M + 5 searches x $0.01 = $0.052148 -> x1.25 = 6.52c -> 7
     const plan = planCreditReservation({
       model: 'claude-haiku-5-5',
       balanceCents: 1000,

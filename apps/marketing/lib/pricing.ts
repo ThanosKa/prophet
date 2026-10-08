@@ -40,7 +40,9 @@ export const MODEL_PRICING = {
   },
 } as const satisfies Record<string, ModelPricing>;
 
-export const MARKUP = 1.20;
+// Prophet adds the Margin on top of Anthropic's cost on every Turn.
+export const MARGIN = 0.25;
+export const MINIMUM_CHARGE_CREDITS = 1;
 
 // Anthropic bills server-side web search at $10 per 1,000 searches on top of tokens.
 export const WEB_SEARCH_PRICE_PER_1K_USD = 10.0;
@@ -55,38 +57,35 @@ const STRIPE_PRICE_IDS = {
   ultra: process.env.STRIPE_PRICE_ULTRA || 'price_1SoTsqK3NgGLoo5cZQM8Z1lH',
   extraCredits: process.env.STRIPE_PRICE_EXTRA_CREDITS || 'price_1SoTsuK3NgGLoo5cZSh04y1U',
 };
+// Prices are in cents. A plan's Credits equal its price (no Bonus); `free.credits` is the
+// one-time Free grant a new user gets on sign-up.
 export const TIER_CONFIG = {
   free: {
     price: 0,
-    credits: 20,      // $0.20 value
-    bonus: 0,
+    credits: 7,
     priceId: null,
   },
   pro: {
-    price: 999,       // $9.99/month
-    credits: 1100,    // $11 value (+10% bonus)
-    bonus: 10,
+    price: 999,
+    credits: 1000,
     priceId: STRIPE_PRICE_IDS.pro,
   },
   premium: {
-    price: 2999,      // $29.99/month
-    credits: 3500,    // $35 value (+17% bonus)
-    bonus: 17,
+    price: 2999,
+    credits: 3000,
     priceId: STRIPE_PRICE_IDS.premium,
   },
   ultra: {
-    price: 5999,      // $59.99/month
-    credits: 7000,    // $70 value (+17% bonus)
-    bonus: 17,
+    price: 5999,
+    credits: 6000,
     priceId: STRIPE_PRICE_IDS.ultra,
   },
 } as const;
 
-// Extra Credits - one-time purchase (no subscription)
+// Extra credits: a one-time purchase outside any plan.
 export const EXTRA_CREDITS = {
-  price: 1000,        // $10.00 one-time
-  credits: 1000,      // $10 value (no bonus)
-  bonus: 0,
+  price: 1000,
+  credits: 1000,
   priceId: STRIPE_PRICE_IDS.extraCredits,
 } as const;
 
@@ -132,20 +131,26 @@ export function calculateUsageCostInCredits(model: ModelName, usage: TokenUsage)
     perToken(usage.outputTokens, pricing.output) +
     Math.max(0, usage.webSearchRequests ?? 0) * WEB_SEARCH_PRICE_PER_SEARCH_USD;
 
-  // Apply markup and convert to credits (1 credit = 1 cent), minimum 1 credit per request
-  const credits = Math.ceil(totalCostUSD * MARKUP * 100);
-  return Math.max(1, credits);
+  return Math.max(MINIMUM_CHARGE_CREDITS, centsWithMarginRoundedUp(totalCostUSD * 100));
+}
+
+/**
+ * 1 Credit = 1 cent. Rounds to 1e-9 of a cent before rounding up, so float noise in an
+ * exact charge (5.6 cents x 1.25 = 7.000000000000001) doesn't bill an extra Credit.
+ */
+function centsWithMarginRoundedUp(costCents: number): number {
+  const charged = costCents * (1 + MARGIN);
+  return Math.ceil(Math.round(charged * 1e9) / 1e9);
 }
 
 /**
  * Calculate the credit cost for an API call with no prompt caching
- * 1 credit = 1 cent of API cost (with 20% markup)
  *
  * Example: 1000 input + 500 output tokens with Sonnet
  * - Input: (1000/1M) * $2 = $0.002
  * - Output: (500/1M) * $10 = $0.005
  * - Total: $0.007 = 0.7 cents
- * - With 20% markup: 0.84 cents → 1 credit (rounded up)
+ * - With the 25% Margin: 0.875 cents → 1 credit (rounded up)
  *
  * `webSearchRequests` bills Anthropic's per-search server-tool fee on top of tokens.
  * A single search is $0.01, so it dominates a short turn's cost — omitting it would
@@ -167,14 +172,12 @@ export function calculateCostInCredits(
 }
 
 /**
- * Marked-up credit cost of the web-search portion of a turn, for reporting the
+ * Credit cost, Margin included, of the web-search portion of a turn, for reporting the
  * search fee separately from token spend.
  */
 export function calculateWebSearchCostInCredits(webSearchRequests: number): number {
   if (webSearchRequests <= 0) return 0;
-  return Math.ceil(
-    webSearchRequests * WEB_SEARCH_PRICE_PER_SEARCH_USD * MARKUP * 100
-  );
+  return centsWithMarginRoundedUp(webSearchRequests * WEB_SEARCH_PRICE_PER_SEARCH_USD * 100);
 }
 
 // Legacy function for backwards compatibility
@@ -187,20 +190,23 @@ export function calculateCostInCents(
   return calculateCostInCredits(model, inputTokens, outputTokens, webSearchRequests);
 }
 
-/**
- * Calculate guaranteed profit per tier
- */
-export function calculateTierProfit(tier: TierName): {
-  platformFee: number;
-  apiPool: number;
-  markupProfit: number;
-  totalMinProfit: number;
-} {
-  const config = TIER_CONFIG[tier];
-  const platformFee = config.price - config.credits;
-  const apiPool = config.credits;
-  const markupProfit = Math.floor(apiPool * (MARKUP - 1)); // 5% of API pool
-  const totalMinProfit = platformFee + markupProfit;
+// Stripe's standard card fee per charge.
+export const STRIPE_FEE_PERCENT = 2.9;
+export const STRIPE_FEE_FIXED_CENTS = 30;
 
-  return { platformFee, apiPool, markupProfit, totalMinProfit };
+/**
+ * Profit from one charge (a plan's billing period or an extra-credits purchase) when the
+ * buyer spends every Credit. Anthropic's cost is then at most Credits / (1 + Margin):
+ * rounding up and the Minimum charge only ever bill more than cost plus the Margin.
+ */
+export function calculateWorstCaseProfit(plan: { price: number; credits: number }): {
+  stripeFeeCents: number;
+  maxAnthropicCostCents: number;
+  profitCents: number;
+} {
+  const stripeFeeCents = (plan.price * STRIPE_FEE_PERCENT) / 100 + STRIPE_FEE_FIXED_CENTS;
+  const maxAnthropicCostCents = plan.credits / (1 + MARGIN);
+  const profitCents = plan.price - stripeFeeCents - maxAnthropicCostCents;
+
+  return { stripeFeeCents, maxAnthropicCostCents, profitCents };
 }

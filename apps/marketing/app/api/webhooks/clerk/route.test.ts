@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { TIER_CONFIG } from '@/lib/pricing'
 
 const mocks = vi.hoisted(() => {
   const where = vi.fn()
@@ -107,6 +106,13 @@ describe('POST /api/webhooks/clerk', () => {
       expect(payload.tier).toBeUndefined()
     })
 
+    it("leaves an existing user's balance untouched", async () => {
+      await postWebhook(userEvent({ type: 'user.updated' }))
+
+      expect(lastCallArg(mocks.set)).not.toHaveProperty('creditsRemaining')
+      expect(lastCallArg(mocks.set)).not.toHaveProperty('creditsIncluded')
+    })
+
     it('ignores an invalid tier in public_metadata', async () => {
       await postWebhook(userEvent({ type: 'user.updated', publicMetadata: { tier: 'enterprise' } }))
 
@@ -131,8 +137,13 @@ describe('POST /api/webhooks/clerk', () => {
         id: 'user_123',
         email: 'ada@example.com',
         tier: 'free',
-        creditsRemaining: TIER_CONFIG.free.credits,
       })
+    })
+
+    it('gives a new user the Free grant of 7 Credits', async () => {
+      await postWebhook(userEvent({ type: 'user.created' }))
+
+      expect(lastCallArg(mocks.values).creditsRemaining).toBe(7)
     })
   })
 
