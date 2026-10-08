@@ -290,6 +290,47 @@ describe('one live Run per chat in POST /api/agent/chat', () => {
     ])
   })
 
+  it.each([
+    ['previousTurns (1.0.5)', { previousTurns: [A_TURN_1_ECHO] }],
+    ['previousContent (older builds)', { previousContent: A_TURN_1, toolResults: A_TURN_1_ECHO.toolResults }],
+  ])(
+    "keeps an older Run's continuation without runId out of a newer Run whose first Turn is streaming, via %s",
+    async (_label, continuation) => {
+      streamMock.mockReturnValueOnce(anthropicTurn({ content: A_TURN_1, stopReason: 'tool_use' }))
+      await (await post({ userMessage: 'Open a.com' })).text()
+      const bGate = openableGate()
+      streamMock.mockReturnValueOnce(anthropicTurn({ content: B_TURN_1, stopReason: 'tool_use', gate: bGate.gate }))
+      const bTurn1 = await readUntil({ response: await post({ userMessage: 'Open b.com' }), marker: 'content_delta' })
+
+      // B's opening is the newest user row and B has no row yet when A's next Turn ends.
+      streamMock.mockReturnValueOnce(anthropicTurn({ content: [text('a.com is open.')], stopReason: 'end_turn' }))
+      const aTurn2 = await post(continuation)
+      await aTurn2.text()
+      bGate.open()
+      await readToEnd(bTurn1.reader)
+
+      expect(aTurn2.status).toBe(200)
+      expect(await storedMessages()).toEqual([
+        { role: 'user', content: 'Open a.com', toolCalls: null },
+        {
+          role: 'assistant',
+          content: 'Opening a.com.',
+          toolCalls: [{ type: 'tool_use', id: 'toolu_a1', name: 'navigate', input: { url: 'https://a.com' } }],
+        },
+        { role: 'user', content: 'Open b.com', toolCalls: null },
+        {
+          role: 'assistant',
+          content: 'Opening b.com.',
+          toolCalls: [{ type: 'tool_use', id: 'toolu_b1', name: 'navigate', input: { url: 'https://b.com' } }],
+        },
+      ])
+      // A's Turn is still billed.
+      const usage = await db.select().from(schema.usageRecords)
+      expect(usage).toHaveLength(3)
+      expect(await balance()).toBe(1000 - usage.reduce((sum, record) => sum + record.costCents, 0))
+    }
+  )
+
   it('keeps everything the older Run wrote after the newer Run started out of its prompt', async () => {
     const { runB } = await aTurn2EndsWhileBStreams()
     streamMock.mockReturnValueOnce(anthropicTurn({ content: [text('b.com is open.')], stopReason: 'end_turn' }))

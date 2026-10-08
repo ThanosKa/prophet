@@ -66,7 +66,7 @@ vi.mock('@/lib/agent/run-record', async (importOriginal) => {
   return {
     ...actual,
     openRun: vi.fn(async () => ({ history: [], opening: { id: 'opening', createdAt: new Date() } })),
-    writeRunRecord: vi.fn(async () => 'written'),
+    writeRunRecord: vi.fn(async () => {}),
   }
 })
 

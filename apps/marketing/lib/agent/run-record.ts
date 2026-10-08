@@ -162,12 +162,15 @@ function startsWith({ ids, prefix }: { ids: string[]; prefix: string[] }): boole
 /**
  * Without a `runId`, the newest user row may open another panel's Run. A stored row is
  * this Run's only when its calls lead up to the request's: a prefix of every earlier
- * Turn's calls, or for legacy builds ending with the latest Turn's. A row with no calls
- * can't vouch for a request that has some, so it is left alone too.
+ * Turn's calls, or for legacy builds ending with the latest Turn's. A request with calls
+ * can't be vouched for by a row with no calls, nor by no row at all: the newest user row
+ * may then open a Run whose first Turn is still streaming, so the record is left alone.
+ * `stored` is null when the Run has no assistant row yet.
  */
-function isThisRunsRecord({ request, stored }: { request: RunRequest; stored: StoredToolCall[] }): boolean {
-  const storedIds = stored.map((call) => call.id)
+function isThisRunsRecord({ request, stored }: { request: RunRequest; stored: StoredToolCall[] | null }): boolean {
   const requestIds = request.type === 'first' ? [] : requestToolCalls(request.turns).map((call) => call.id)
+  if (stored === null) return request.type === 'first' || request.type === 'run' || requestIds.length === 0
+  const storedIds = stored.map((call) => call.id)
   if (requestIds.length > 0 && storedIds.length === 0) return false
   if (request.type === 'legacy') {
     return startsWith({ ids: [...storedIds].reverse(), prefix: [...requestIds].reverse() })
@@ -244,11 +247,10 @@ export async function writeRunRecord({
   ending: TurnEnding
   model: string
   usage: { inputTokens: number; outputTokens: number; costCents: number }
-}): Promise<'written' | 'skipped' | 'superseded'> {
+}): Promise<void> {
   await lockChat({ tx, chatId })
   const live = await findLiveOpening({ tx, chatId, request })
-  if (live.status === 'superseded') return 'superseded'
-  if (live.status === 'none') return 'skipped'
+  if (live.status !== 'live') return
   const { opening } = live
 
   const [row] = await tx
@@ -264,13 +266,13 @@ export async function writeRunRecord({
     .orderBy(asc(messages.createdAt))
     .limit(1)
   const stored = row ? { content: row.content, toolCalls: parseStoredToolCalls(row.toolCalls) } : null
-  if (stored && !isThisRunsRecord({ request, stored: stored.toolCalls })) return 'skipped'
+  if (!isThisRunsRecord({ request, stored: stored?.toolCalls ?? null })) return
 
   const record = applyEnding({ record: baseRecord({ request, stored }), ending })
   const toolCalls = record.toolCalls.length > 0 ? JSON.stringify(record.toolCalls) : null
 
   if (!row) {
-    if (record.content === '' && record.toolCalls.length === 0) return 'skipped'
+    if (record.content === '' && record.toolCalls.length === 0) return
     await tx.insert(messages).values({
       chatId,
       role: 'assistant',
@@ -280,7 +282,7 @@ export async function writeRunRecord({
       ...usage,
       createdAt: sql`clock_timestamp()`,
     })
-    return 'written'
+    return
   }
 
   await tx
@@ -294,5 +296,4 @@ export async function writeRunRecord({
       costCents: sql`coalesce(${messages.costCents}, 0) + ${usage.costCents}`,
     })
     .where(eq(messages.id, row.id))
-  return 'written'
 }
