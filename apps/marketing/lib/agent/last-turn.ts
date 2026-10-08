@@ -4,10 +4,8 @@ import {
   MAX_AGENT_TURNS,
   RUN_BUDGET_TOKENS,
   type AgentTurn,
+  type RunEnd,
 } from '@prophet/shared'
-
-/** Why a Turn is its Run's last, as the `done` event's `runEnd` reports it. */
-export type RunEnd = 'turn_limit' | 'run_budget'
 
 export const LAST_TURN_NOTICE =
   'This is the last Turn of this Run. Do not call any tools now. ' +

@@ -12,6 +12,20 @@ export const RUN_BUDGET_TOKENS = 90_000;
 // How much of the chat before a Run's opening message its prompt carries, by the same estimator.
 export const HISTORY_BUDGET_TOKENS = 20_000;
 
+// Why a Turn is its Run's last, as the `done` event's `runEnd` reports it.
+export const runEndSchema = z.enum(["turn_limit", "run_budget"]);
+export type RunEnd = z.infer<typeof runEndSchema>;
+
+// Error codes of the agent chat route that the extension acts on, not only shows.
+export const AGENT_ERROR_CODES = {
+  // 409: the chat's newest user row is another Run's opening.
+  runSuperseded: "RUN_SUPERSEDED",
+  // 413: the body is over `AGENT_SIZE_LIMITS.requestBytes`.
+  requestTooLarge: "REQUEST_TOO_LARGE",
+} as const;
+
+export const RUN_SUPERSEDED_MESSAGE = "This chat continued in another panel, so this task stopped here.";
+
 // Every size limit of an agent Run. The extension caps what it sends; the server's caps
 // sit well above them, so only a broken or hostile client ever reaches one.
 export const AGENT_SIZE_LIMITS = {

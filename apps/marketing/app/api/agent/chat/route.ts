@@ -27,11 +27,13 @@ import {
 } from "@/lib/credit-reservation";
 import { parseJsonBody, readBodyWithinLimit } from "@/lib/request-body";
 import {
+  AGENT_ERROR_CODES,
   AGENT_SIZE_LIMITS,
   agentChatRequestSchema,
   DEFAULT_AGENT_MODEL,
   getModelContextWindow,
   resolveAgentModel,
+  RUN_SUPERSEDED_MESSAGE,
   sanitizeForLog,
 } from "@prophet/shared";
 import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
@@ -155,7 +157,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         error(
           "This request is too large to send. Start a new chat to continue.",
-          "REQUEST_TOO_LARGE"
+          AGENT_ERROR_CODES.requestTooLarge
         ),
         { status: 413 }
       );
@@ -252,10 +254,7 @@ export async function POST(req: Request) {
     if (resumed === null) {
       logger.info({ userId, chatId, runId }, "Continuation of a superseded Run");
       return NextResponse.json(
-        error(
-          "This chat continued in another panel, so this task stopped here.",
-          "RUN_SUPERSEDED"
-        ),
+        error(RUN_SUPERSEDED_MESSAGE, AGENT_ERROR_CODES.runSuperseded),
         { status: 409 }
       );
     }

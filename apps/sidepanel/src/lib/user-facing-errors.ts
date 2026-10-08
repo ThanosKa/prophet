@@ -1,9 +1,12 @@
 import { z } from 'zod'
-import { MAX_AGENT_TURNS, currentAgentModelSchema } from '@prophet/shared'
+import { AGENT_SIZE_LIMITS, MAX_AGENT_TURNS, RUN_SUPERSEDED_MESSAGE, currentAgentModelSchema } from '@prophet/shared'
+
+// Base64 spends 4 characters on every 3 bytes.
+const ATTACHED_IMAGE_MB = (AGENT_SIZE_LIMITS.attachedImageChars * 3) / 4 / 1_000_000
 
 export const USER_FACING_TEXT = {
   imageTooLarge: 'That image is too large to send. Try a smaller one.',
-  imageTooLargeToAttach: 'That image is too large to attach. Use one under 1.5 MB, for example a smaller screenshot.',
+  imageTooLargeToAttach: `That image is too large to attach. Use one under ${ATTACHED_IMAGE_MB} MB, for example a smaller screenshot.`,
   imageTypeUnsupported: 'Only JPEG, PNG, GIF or WebP images can be attached.',
   serverUnavailable: "Prophet's server didn't respond. Please try again.",
   generic: 'Something went wrong. Please try again.',
@@ -14,7 +17,7 @@ export const USER_FACING_TEXT = {
   turnLimit: `Prophet paused after ${MAX_AGENT_TURNS} turns. Send "continue" to keep going.`,
   runBudget: 'Prophet paused because this task grew too long for one run. Send "continue" to keep going.',
   requestTooLarge: 'This task grew too large to send, so Prophet stopped here. Send "continue" to keep going.',
-  runSuperseded: 'This chat continued in another panel, so this task stopped here.',
+  runSuperseded: RUN_SUPERSEDED_MESSAGE,
   network: "Can't reach Prophet. Check your connection and try again.",
   browserConnection: 'Prophet lost its connection to the browser. Reopen the side panel and try again.',
 } as const

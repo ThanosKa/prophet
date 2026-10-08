@@ -1,6 +1,14 @@
 import { z } from "zod";
 import { executeToolViaBackground } from "./background-bridge";
-import { AGENT_SIZE_LIMITS, DEFAULT_AGENT_MODEL, MAX_AGENT_TURNS, toolInputSchemas } from "@prophet/shared";
+import {
+  AGENT_ERROR_CODES,
+  AGENT_SIZE_LIMITS,
+  DEFAULT_AGENT_MODEL,
+  MAX_AGENT_TURNS,
+  runEndSchema,
+  toolInputSchemas,
+  type RunEnd,
+} from "@prophet/shared";
 import {
   USER_FACING_TEXT,
   describeHttpFailure,
@@ -32,7 +40,7 @@ interface StreamAgentChatOptions {
 export type AgentRunErrorEvent = { type: "error"; error: string; code?: string; details?: ErrorDetails };
 
 /** Why a Run stopped before Claude finished: shown as a notice after the reply, not as an error. */
-export type RunNoticeReason = "turn_limit" | "run_budget" | "superseded" | "request_too_large";
+export type RunNoticeReason = RunEnd | "superseded" | "request_too_large";
 
 export type AgentRunEvent =
   | Exclude<AgentLoopEvent, { type: "error" }>
@@ -40,10 +48,10 @@ export type AgentRunEvent =
   | { type: "output_truncated"; reducedForBalance: boolean }
   | { type: "run_notice"; reason: RunNoticeReason; message: string };
 
-const RUN_END_NOTICES = {
+const RUN_END_NOTICES: Record<RunEnd, string> = {
   turn_limit: USER_FACING_TEXT.turnLimit,
   run_budget: USER_FACING_TEXT.runBudget,
-} as const;
+};
 
 const REQUEST_TOO_LARGE_NOTICE: AgentRunEvent = {
   type: "run_notice",
@@ -56,7 +64,7 @@ const reducedForBalanceSchema = z.object({ maxTokensReducedForBalance: z.literal
 // The Run's id (its opening message). Only a first Turn's session_created is sure to carry it.
 const runIdSchema = z.object({ runId: z.string().uuid() });
 // On a Run's last Turn the server says why it is the last; it released no tool calls on it.
-const runEndSchema = z.object({ runEnd: z.enum(["turn_limit", "run_budget"]) });
+const runEndFieldSchema = z.object({ runEnd: runEndSchema });
 
 const CANCELLED_EVENT: AgentRunEvent = {
   type: "error",
@@ -149,7 +157,7 @@ async function* streamAgentChat({
         type: "error",
         error: describeHttpFailure({ status: response.status, body: errorData }),
         // Vercel's own 413 has no JSON body, so the status alone names it.
-        code: errorData.code ?? (response.status === 413 ? "REQUEST_TOO_LARGE" : undefined),
+        code: errorData.code ?? (response.status === 413 ? AGENT_ERROR_CODES.requestTooLarge : undefined),
         details,
       };
     }
@@ -497,12 +505,12 @@ export async function* runAgentLoop({
 
         case "error":
           // A 409 with this code means a newer Run took over the chat; BALANCE_HELD is a 409 too.
-          if (event.code === "RUN_SUPERSEDED") {
+          if (event.code === AGENT_ERROR_CODES.runSuperseded) {
             yield { type: "run_notice", reason: "superseded", message: USER_FACING_TEXT.runSuperseded };
             return;
           }
           // A first request's 413 is about the message or image; a continuation's is the Run's history.
-          if (event.code === "REQUEST_TOO_LARGE" && isContinuation) {
+          if (event.code === AGENT_ERROR_CODES.requestTooLarge && isContinuation) {
             yield REQUEST_TOO_LARGE_NOTICE;
             return;
           }
@@ -530,7 +538,7 @@ export async function* runAgentLoop({
 
     // Claude paused mid-Turn (a long server-side search): resend its content as is to let it go on.
     const paused = doneEvent.stopReason === "pause_turn";
-    const serverRunEnd = runEndSchema.safeParse(doneEvent);
+    const serverRunEnd = runEndFieldSchema.safeParse(doneEvent);
     // An older server doesn't say runEnd; a Turn that still wanted to go on ends the Run here anyway.
     const wantedMore = paused || skippedToolCall || doneEvent.stopReason === "tool_use";
     const runEnd = serverRunEnd.success
