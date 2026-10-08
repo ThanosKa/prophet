@@ -89,10 +89,19 @@ Backend → Anthropic API → Backend → Sidepanel
 
 SSE Events:
   data: {"type": "content_delta", "delta": "I'll click..."}
+  data: {"type": "metrics_update", ...}
   data: {"type": "tool_use", "toolUse": {"name": "take_snapshot", ...}}
   data: {"type": "tool_use", "toolUse": {"name": "click_element_by_uid", ...}}
+  data: {"type": "execution_complete", ...}
   data: {"type": "done", ...}
 ```
+
+`tool_use` events are sent after the Turn ends, and only when it stopped with
+`stop_reason: "tool_use"`: after `finalMessage()`, before `citations`,
+`execution_complete` and `done`. A Turn that ends any other way (Stop, error,
+`max_tokens`, `refusal`) releases no tool calls, so none of them run. On
+`max_tokens`, `done.contentBlocks` leaves out the cut-off tool call. Server-tool
+events (`web_search_*`) still stream as they happen.
 
 ### 3. Tool Execution (Client-Side)
 
