@@ -313,7 +313,7 @@ export const webSearchResultSchema = z.object({
   type: z.literal("web_search_result"),
   url: z.string(),
   title: z.string(),
-  encrypted_content: z.string(),
+  encrypted_content: textSchema,
   page_age: z.string().nullable().optional(),
 });
 
@@ -350,7 +350,7 @@ export const thinkingBlockSchema = z.object({
 
 export const redactedThinkingBlockSchema = z.object({
   type: z.literal("redacted_thinking"),
-  data: z.string(),
+  data: textSchema,
 });
 
 export const contentBlockSchema = z.union([

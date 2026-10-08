@@ -121,6 +121,11 @@ describe('server size caps in agentChatRequestSchema', () => {
   const resultFor = (id = 'toolu_1') => ({ type: 'tool_result', tool_use_id: id, content: 'ok' })
   const withTurn = (content: unknown[], toolResults: unknown[] = [resultFor()]) =>
     agentChatRequestSchema.safeParse({ chatId: CHAT_ID, previousTurns: [{ content, toolResults }] })
+  const webSearchResults = (encryptedContent: string) => ({
+    type: 'web_search_tool_result',
+    tool_use_id: 'srvtoolu_1',
+    content: [{ type: 'web_search_result', url: 'https://a.com', title: 'A', encrypted_content: encryptedContent }],
+  })
 
   it('accepts every field right at its cap', () => {
     const result = withTurn([
@@ -139,8 +144,20 @@ describe('server size caps in agentChatRequestSchema', () => {
     ['a signature', { type: 'thinking', thinking: '', signature: 's'.repeat(200_001) }],
     ['a tool_use id', snapshotCall('i'.repeat(257))],
     ['a server tool input', { type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: { query: 'q'.repeat(100_000) } }],
+    ['redacted thinking data', { type: 'redacted_thinking', data: 'd'.repeat(200_001) }],
+    ['a web search result', webSearchResults('e'.repeat(200_001))],
   ])('rejects %s over its cap', (_label, block) => {
     expect(withTurn([block, snapshotCall()]).success).toBe(false)
+  })
+
+  it('accepts redacted thinking data and a web search result right at their cap', () => {
+    const result = withTurn([
+      { type: 'redacted_thinking', data: 'd'.repeat(200_000) },
+      webSearchResults('e'.repeat(200_000)),
+      snapshotCall(),
+    ])
+
+    expect(result.success).toBe(true)
   })
 
   it('accepts 100 blocks and 100 tool results in a Turn, but not 101', () => {
