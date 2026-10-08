@@ -21,12 +21,12 @@ const extensions = [
     tagline: 'Claude AI side panel with browser automation',
     url: 'https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif',
     claudeModels: 'Haiku 5.5, Sonnet 5.5, Opus 5.5',
-    pricing: 'Free tier ($0.20 credits), Pro $9.99/mo, Premium $29.99/mo, Ultra $59.99/mo',
-    description: 'Prophet is a Chrome extension built specifically around Claude AI. It lives in the Chrome side panel and provides three Claude model options: Haiku 5.5 for fast, affordable tasks; Sonnet 5.5 for balanced performance; and Opus 5.5 for the most complex reasoning. What makes Prophet unique among Claude extensions is its browser automation layer. Using 18 built-in tools, Prophet can interact with web pages on your behalf: clicking buttons, filling forms, navigating between pages, extracting data, and managing browser tabs. This is powered by the accessibility tree rather than screenshots, making it faster and more reliable than vision-based approaches. The pay-per-use credit system means you pay only for the API tokens you consume, with higher tiers offering bonus credits. For Claude power users who want the AI to not just analyze web pages but take action on them, Prophet is the most capable option. The entire codebase is open source on GitHub, providing full transparency into how Claude is integrated and how your data flows through the system.',
+    pricing: 'Free tier ($0.07 credits to try Haiku), Pro $9.99/mo, Premium $29.99/mo, Ultra $59.99/mo',
+    description: 'Prophet is a Chrome extension built specifically around Claude AI. It lives in the Chrome side panel and provides three Claude model options: Haiku 5.5 for fast, affordable tasks; Sonnet 5.5 for balanced performance; and Opus 5.5 for the most complex reasoning. What makes Prophet unique among Claude extensions is its browser automation layer. Using 18 built-in tools, Prophet can interact with web pages on your behalf: clicking buttons, filling forms, navigating between pages, extracting data, and managing browser tabs. This is powered by the accessibility tree rather than screenshots, making it faster and more reliable than vision-based approaches. The pay-per-use credit system means you pay only for the tokens you consume, and every plan includes credits equal to its price. For Claude power users who want the AI to not just analyze web pages but take action on them, Prophet is the most capable option. The entire codebase is open source on GitHub, providing full transparency into how Claude is integrated and how your data flows through the system.',
     pros: [
       'All three major Claude models available (Haiku 5.5, Sonnet 5.5, Opus 5.5)',
       'Browser automation with 18 tools for real page interaction',
-      'Pay-per-use credits tied to actual Claude API costs',
+      'Pay-per-use credits charged by the Claude tokens you use',
       'Open source for full transparency',
       'Accessibility tree approach is faster and cheaper than screenshot methods',
       'Persistent chat history with conversation management',
@@ -138,7 +138,7 @@ const faqItems = [
   },
   {
     question: 'Can I use Claude for free in a Chrome extension?',
-    answer: 'Prophet offers a free tier with $0.20 in API credits, which is enough to test the extension with a reasonable number of conversations. Harpa AI lets you use Claude for free if you have your own Anthropic API key (you pay Anthropic directly for token usage). Monica and Sider have free tiers but limit Claude access on the free plan. There is no fully free, unlimited Claude access in any extension because Anthropic charges for API usage.',
+    answer: 'Prophet offers a free tier with a one-time $0.07 in credits, which is enough to try the extension on Claude Haiku. Harpa AI lets you use Claude for free if you have your own Anthropic API key (you pay Anthropic directly for token usage). Monica and Sider have free tiers but limit Claude access on the free plan. There is no fully free, unlimited Claude access in any extension because Anthropic charges for API usage.',
   },
   {
     question: 'What are the best browser extensions for Claude AI in 2026?',
@@ -361,7 +361,7 @@ export default function BestClaudeChromeExtensionsPage() {
               {
                 href: '/pricing',
                 anchor: 'Prophet credit pricing',
-                context: 'the four tiers, the bonus credit rates, and what a credit actually buys.',
+                context: 'the four tiers, the credits each one includes, and what a credit actually buys.',
               },
             ]}
           />

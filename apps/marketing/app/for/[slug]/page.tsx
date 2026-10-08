@@ -179,7 +179,7 @@ export default async function ProfessionPage({ params }: PageProps) {
             </CardContent>
           </Card>
           <p className="text-sm text-muted-foreground mt-4">
-            The Free plan includes $0.20 in credits to get started — no credit card
+            The Free plan includes a one-time $0.07 in credits to try Haiku — no credit card
             required.{' '}
             <Link href="/pricing" className="text-primary hover:underline">
               View all plans

@@ -81,8 +81,8 @@ export default function AboutPage() {
             <section>
               <h2 className="text-xl font-semibold mb-3">Pricing Model</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Prophet operates on a usage-based pricing model. You purchase credits that cover actual API costs,
-                with subscription tiers offering bonus credits. This ensures you only pay for what you use, with complete
+                Prophet operates on a usage-based pricing model. You buy pay-per-use credits, and each plan&apos;s
+                monthly credits equal its price. This ensures you only pay for what you use, with complete
                 cost transparency.
               </p>
             </section>

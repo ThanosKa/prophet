@@ -21,7 +21,7 @@ const features = [
   },
   {
     title: 'Pay Only for What You Use',
-    description: 'No flat monthly fee wasted on unused capacity. Credits map directly to API costs with full transparency.',
+    description: 'No flat monthly fee wasted on unused capacity. Credits are charged by the tokens you use, with full transparency.',
     icon: CreditCard,
   },
   {
