@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { config } from "@/lib/config";
+import { describeBalance } from "@prophet/shared";
 
 export function UserAvatar() {
   const { clerkUser, user } = useAuth();
@@ -18,6 +19,10 @@ export function UserAvatar() {
     : "U";
 
   const imageUrl = clerkUser?.imageUrl;
+  const balance = describeBalance({
+    creditsRemaining: user?.creditsRemaining ?? 0,
+    purchasedCredits: user?.purchasedCredits,
+  });
 
   const handleSettingsClick = () => {
     const optionsUrl = chrome.runtime.getURL('options.html')
@@ -49,8 +54,11 @@ export function UserAvatar() {
           </p>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="pointer-events-none">
-          Balance: ${((user?.creditsRemaining || 0) / 100).toFixed(2)}
+        <DropdownMenuItem className="pointer-events-none flex-col items-start gap-0.5">
+          <span>Balance: {balance.total}</span>
+          {balance.neverExpiresNote && (
+            <span className="text-xs text-muted-foreground">{balance.neverExpiresNote}</span>
+          )}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleAccountClick}>
