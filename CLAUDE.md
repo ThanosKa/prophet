@@ -8,26 +8,15 @@ Chrome side panel extension with a streaming AI agent, a secure backend API and 
 
 **Data Flow**: Extension → Marketing API → Anthropic API (streaming) → Extension
 **Auth**: Clerk, across the web app and the extension
+**Secrets**: `ANTHROPIC_API_KEY` stays server-side; the extension reaches Anthropic only through the marketing API
 
 ## Commands
 
 Package filters are `@prophet/marketing`, `@prophet/sidepanel` and `@prophet/shared`; root scripts in `package.json` fan out with `pnpm -r`. Run tests once with `pnpm test:run` (`pnpm test` is Vitest watch mode).
 
-## Critical Security Rules
-
-- Keep `ANTHROPIC_API_KEY` server-side: every AI request is proxied through the marketing API, never called from the extension or any client bundle.
-- ✅ ALWAYS validate input with Zod
-- ✅ ALWAYS authenticate users
-- ✅ ALWAYS verify resource ownership
-- ✅ Rate-limit every API route with `checkRateLimit` (`apps/marketing/lib/ratelimit.ts`)
-- ✅ Use transactions for credit deductions
-
-## Code Comments
-
-Comment only non-obvious logic (algorithms, gotchas, the reason behind a choice); let names carry the rest.
-
 ## Before working on
 
+- Any code (writing, editing or reviewing a diff) → read `CODING_STANDARDS.md`; every rule there applies
 - API routes (`apps/marketing/app/api/`), the agent loop, prompt caching, model IDs or credit billing → read `.claude/docs/patterns.md`
 - Database schema, migrations or queries → read `.claude/docs/database-schema.md`
 - Seeding a database (`db:seed`), local setup, env vars or loading the unpacked extension → read `.claude/docs/setup.md`

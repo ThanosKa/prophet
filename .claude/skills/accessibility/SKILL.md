@@ -383,7 +383,6 @@ export function Dialog({ open, onOpenChange }: Props) {
 
 ## Anti-Patterns to Avoid
 
-- ❌ `outline: none` without replacement (removes focus indicator)
 - ❌ `aria-hidden="true"` on interactive elements
 - ❌ Click-only interactions (must support Enter/Space for buttons)
 - ❌ Color as only indicator (use icons, text, patterns too)
@@ -395,8 +394,6 @@ export function Dialog({ open, onOpenChange }: Props) {
 ## Quick Checklist
 
 - [ ] All interactive elements are keyboard accessible
-- [ ] Focus indicators are visible
-- [ ] All images/icons have alt text or aria-label
 - [ ] Form labels associated with inputs
 - [ ] Errors announced to screen readers
 - [ ] Color contrast meets WCAG AA (4.5:1)

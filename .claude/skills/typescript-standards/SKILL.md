@@ -1,22 +1,9 @@
 ---
 name: typescript-standards
-description: TypeScript coding standards for type safety and maintainability. Use when writing any TypeScript code.
+description: Worked TypeScript patterns (inference, discriminated unions, Zod and Drizzle types, generics, type guards) for the rules in CODING_STANDARDS.md. Use when writing TypeScript types or narrowing values.
 ---
 
-# TypeScript Standards
-
-## Strict Mode (Always On)
-```json
-// tsconfig.json - NON-NEGOTIABLE
-{
-  "compilerOptions": {
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
-  }
-}
-```
+# TypeScript Patterns
 
 ## Type Inference vs Explicit Types
 ```typescript
@@ -246,20 +233,5 @@ import type { Message } from '@prophet/shared'
 ```
 
 ## Anti-Patterns to Avoid
-- ❌ Using `any` (use `unknown` if truly unknown)
-- ❌ Using `as` assertions (fix the types instead)
-- ❌ Disabling strict mode
-- ❌ `@ts-ignore` comments (fix the issue)
 - ❌ Empty interfaces (use type)
-- ❌ Enums (use const objects + type unions)
 - ❌ Optional chaining abuse (`a?.b?.c?.d`)
-- ❌ Non-null assertions (`value!`) unless 100% sure
-
-## Quick Checklist
-- [ ] Strict mode enabled
-- [ ] Public functions have explicit return types
-- [ ] Runtime validation with Zod for external data
-- [ ] Discriminated unions for complex states
-- [ ] No `any` types
-- [ ] No `@ts-ignore` comments
-- [ ] Types exported from shared package

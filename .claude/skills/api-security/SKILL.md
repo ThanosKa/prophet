@@ -345,26 +345,5 @@ export async function POST(request: Request) {
 }
 ```
 
-## Anti-Patterns to Avoid
-- ❌ No input validation
-- ❌ Missing authentication checks
-- ❌ No ownership verification (authorization)
-- ❌ Exposing error stack traces
-- ❌ Hardcoded secrets in code
-- ❌ No rate limiting
-- ❌ SQL injection via string interpolation
-- ❌ Trusting client-side data
-- ❌ Missing CORS headers (for extensions)
-- ❌ Race conditions in credit checks
-
 ## Quick Checklist
-- [ ] Input validated with Zod
-- [ ] User authenticated
-- [ ] Resource ownership verified
-- [ ] Rate limiting implemented
-- [ ] Errors don't expose internals
-- [ ] No secrets in client code
-- [ ] Parameterized queries only
-- [ ] Webhook signatures verified
-- [ ] Credits deducted atomically
 - [ ] CORS configured for extension

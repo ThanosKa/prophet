@@ -497,7 +497,6 @@ if (!response.ok) {
 - ❌ No global burst protection (one script can DOS entire server)
 - ❌ Missing response headers (clients can't implement backoff)
 - ❌ Generic "HTTP 429" errors (tell users WHEN to retry)
-- ❌ Rate limiting before authentication (wastes resources on unauthenticated requests)
 - ❌ Fixed window algorithm (allows burst attacks at window boundaries)
 - ❌ Rate limiting without analytics (can't debug or optimize)
 
@@ -512,7 +511,6 @@ When implementing rate limiting:
 - [ ] **Tier-based limits** for different subscription levels
 - [ ] **Global burst protection** for 1000+ users
 - [ ] Return proper **response headers** (Retry-After, X-RateLimit-*)
-- [ ] **Graceful degradation** when Redis unavailable
 - [ ] **Analytics enabled** for monitoring
 - [ ] **Unique prefixes** per limiter to avoid collisions
 - [ ] **Separate limits** for expensive vs cheap endpoints

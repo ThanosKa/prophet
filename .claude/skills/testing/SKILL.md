@@ -8,7 +8,6 @@ description: Vitest setup and mocking patterns (Drizzle, Clerk, Stripe, Next.js 
 ## Framework
 
 - **Vitest** for all testing (backend API, frontend components, shared utilities)
-- Colocated test files: `*.test.ts` or `*.test.tsx` next to source files
 - Environment: Node for backend, jsdom for frontend
 
 ---
@@ -32,8 +31,6 @@ pnpm -F @prophet/shared test           # Shared utilities tests (when added)
 ---
 
 ## Test File Location
-
-Tests are **colocated** next to their source files:
 
 ```
 apps/marketing/
@@ -258,8 +255,6 @@ export default defineConfig({
 ## When to Write Tests
 
 ### Always Test
-- ✅ Billing logic (Stripe webhooks, credit calculations)
-- ✅ Authentication flows
 - ✅ Data validation
 - ✅ Critical user paths (chat, message handling)
 - ✅ Utility functions with complex logic
