@@ -127,3 +127,10 @@ pnpm -F @prophet/marketing db:generate  # Generate migrations from schema
 pnpm -F @prophet/marketing db:migrate   # Apply migrations
 pnpm -F @prophet/marketing db:studio    # Open Drizzle Studio GUI
 ```
+
+## Migrations
+
+- The production migration journal (`drizzle.__drizzle_migrations`) is complete: it records every migration in `lib/db/migrations/meta/_journal.json` (0000-0007, fixed on 2026-10-08).
+- A schema change goes through `db:generate`, then `db:migrate` against production, before the branch merges to `main`. Vercel deploys `main` automatically, so code that needs a column must never reach `main` before its migration.
+- Nobody runs `db:push` against production. It changes the schema without recording a journal row, which is how the journal drifted.
+- SQL files that were never in the journal live in `docs/db/legacy-sql/` for reference only.
