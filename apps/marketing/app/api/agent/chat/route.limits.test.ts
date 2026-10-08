@@ -155,8 +155,12 @@ describe('field sizes in POST /api/agent/chat', () => {
     expect(sentResult(0).startsWith(hugeSnapshot.slice(0, 199_000))).toBe(true)
     expect(sentResult(0)).toMatch(/shortened/i)
     expect(sentResult(1)).toBe(sentResult(0))
-    const earlier = JSON.stringify(sentParams(0).messages)
-    const later = JSON.stringify(sentParams(1).messages)
+    // A result this large puts both Turns over the Run budget, so each request ends with
+    // the last-Turn notice; everything before it must still match byte for byte.
+    const withoutNotice = (call: number) =>
+      sentParams(call).messages.filter((message: { role: string }) => message.role !== 'system')
+    const earlier = JSON.stringify(withoutNotice(0))
+    const later = JSON.stringify(withoutNotice(1))
     expect(later.startsWith(earlier.slice(0, -1))).toBe(true)
   })
 

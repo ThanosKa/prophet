@@ -39,6 +39,16 @@ describe('agentChatRequestSchema', () => {
     expect(result.success).toBe(true)
   })
 
+  it('keeps a uuid runId and rejects any other runId', () => {
+    const chatId = '550e8400-e29b-41d4-a716-446655440000'
+    const runId = '8c4f2a1e-7b3d-4e5f-9a6b-0d1c2e3f4a5b'
+    const previousTurns = [{ content: [{ type: 'text', text: 'Done' }], toolResults: [] }]
+
+    const accepted = agentChatRequestSchema.safeParse({ chatId, runId, previousTurns })
+    expect(accepted.success && accepted.data.runId).toBe(runId)
+    expect(agentChatRequestSchema.safeParse({ chatId, runId: 'run-1', previousTurns }).success).toBe(false)
+  })
+
   it('validates continuation with toolResults + previousContent', () => {
     const data = {
       chatId: '550e8400-e29b-41d4-a716-446655440000',

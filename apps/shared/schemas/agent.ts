@@ -3,6 +3,13 @@ import { z } from "zod";
 // The Turn limit: the extension's agent loop pauses after this many Turns per Run.
 // The server accepts up to this many earlier Turns, so older builds that stop sooner keep working.
 export const MAX_AGENT_TURNS = 20;
+// Extension 1.0.5's Turn limit. It sends no `runId`, so a request without one ends its Run here.
+export const LEGACY_MAX_AGENT_TURNS = 10;
+// The Run budget: a Turn whose estimated prompt reaches this is its Run's last. Measured with the
+// Hold's estimator, which over-counts 1.75-2x, so it stays under Haiku's 100K long-prompt tier.
+export const RUN_BUDGET_TOKENS = 90_000;
+// How much of the chat before a Run's opening message its prompt carries, by the same estimator.
+export const HISTORY_BUDGET_TOKENS = 20_000;
 
 // Every size limit of an agent Run. The extension caps what it sends; the server's caps
 // sit well above them, so only a broken or hostile client ever reaches one.
@@ -362,6 +369,8 @@ export const agentChatRequestSchema = z.object({
   chatId: z.string().uuid("Invalid chat ID"),
   model: agentModelSchema.default(DEFAULT_AGENT_MODEL),
   userMessage: z.string().min(1).max(50000).optional(),
+  // The Run's opening message id, from `session_created`. Builds up to 1.0.6 never send it.
+  runId: z.string().uuid().optional(),
   // Every earlier turn of the current run, oldest first. Resending them all keeps the
   // conversation append-only, so each request is a prompt-cache hit on the last one.
   previousTurns: z.array(agentTurnSchema).min(1).max(MAX_AGENT_TURNS).optional(),

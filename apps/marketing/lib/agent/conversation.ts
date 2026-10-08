@@ -1,6 +1,13 @@
 import type { ContentBlockParam, MessageParam } from '@anthropic-ai/sdk/resources/messages'
-import { parseStoredToolCalls, type AgentChatRequest, type AgentTurn, type ImageData } from '@prophet/shared'
+import {
+  HISTORY_BUDGET_TOKENS,
+  parseStoredToolCalls,
+  type AgentChatRequest,
+  type AgentTurn,
+  type ImageData,
+} from '@prophet/shared'
 import type { HistoryRow } from '@/lib/agent/run-record'
+import { estimateTextTokens } from '@/lib/credit-reservation'
 
 const ACTION_INPUT_MAX_CHARS = 300
 const RECORD_TEXT_MAX_CHARS = 8000
@@ -35,6 +42,35 @@ function renderStoredMessage(row: HistoryRow): string {
   if (actions.length === 0) return text
   const list = `Actions taken:\n${actions.join('\n')}`
   return text === '' ? list : `${text}\n\n${list}`
+}
+
+/**
+ * The history window: the newest of the rows strictly older than a Run's opening row
+ * whose rendered size fits `HISTORY_BUDGET_TOKENS`. The newest row is always kept, so
+ * "continue" never loses the previous Run's record. A window never starts with an
+ * assistant row, because a prompt must open with a user message.
+ *
+ * Every Turn of a Run passes the same rows and so gets the same window: the bytes before
+ * the opening message never change, which keeps the prompt cache and replayed thinking valid.
+ */
+export function windowHistory(rows: HistoryRow[]): HistoryRow[] {
+  let start = rows.length
+  let used = 0
+  while (start > 0) {
+    const row = rows[start - 1]
+    if (!row) break
+    const size = estimateTextTokens(renderStoredMessage(row))
+    if (start < rows.length && used + size > HISTORY_BUDGET_TOKENS) break
+    used += size
+    start -= 1
+  }
+  // Start at the window's first user row; a window of assistant rows alone reaches back
+  // to the user row before them instead, so the newest row is never dropped.
+  let userStart = start
+  while (userStart < rows.length && rows[userStart]?.role !== 'user') userStart += 1
+  if (userStart < rows.length) return rows.slice(userStart)
+  while (start > 0 && rows[start]?.role !== 'user') start -= 1
+  return rows.slice(start)
 }
 
 function userContent(text: string, image: ImageData | undefined): MessageParam['content'] {
@@ -72,7 +108,8 @@ export function resolveRunTurns({
  *
  * The run's opening user message is saved before its first turn, and its record is
  * the assistant row after it, so a continuation drops that trailing row and finds
- * the opening message at the end of the stored history.
+ * the opening message at the end of the stored history. Only the history window of
+ * the rows before the opening message is sent.
  */
 export function buildAgentMessages({
   history,
@@ -85,23 +122,21 @@ export function buildAgentMessages({
   image: ImageData | undefined
   runTurns: AgentTurn[]
 }): MessageParam[] {
-  const messages: MessageParam[] = history.map((row) => ({
-    role: row.role,
-    content: renderStoredMessage(row),
-  }))
+  const render = (rows: HistoryRow[]): MessageParam[] =>
+    windowHistory(rows).map((row) => ({ role: row.role, content: renderStoredMessage(row) }))
 
   if (userMessage) {
-    messages.push({ role: 'user', content: userContent(userMessage, image) })
-    return messages
+    return [...render(history), { role: 'user', content: userContent(userMessage, image) }]
   }
 
-  if (messages.at(-1)?.role === 'assistant') messages.pop()
-  // Only the opening message's text is stored; the extension resends the run's image
-  // so the opening message matches the first turn's.
-  const opening = messages.at(-1)
-  if (image && opening?.role === 'user' && typeof opening.content === 'string') {
-    opening.content = userContent(opening.content, image)
-  }
+  const rows = history.at(-1)?.role === 'assistant' ? history.slice(0, -1) : history
+  const opening = rows.at(-1)
+  const messages: MessageParam[] =
+    opening?.role === 'user'
+      ? // Only the opening message's text is stored; the extension resends the run's
+        // image so the opening message matches the first turn's.
+        [...render(rows.slice(0, -1)), { role: 'user', content: userContent(opening.content, image) }]
+      : render(rows)
 
   for (const turn of runTurns) {
     messages.push({ role: 'assistant', content: turn.content as ContentBlockParam[] })

@@ -37,6 +37,7 @@ import {
 import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
 import { totalCredits } from "@/lib/credit-balance";
 import { buildAgentMessages, resolveRunTurns } from "@/lib/agent/conversation";
+import { lastTurnReason, withLastTurnNotice } from "@/lib/agent/last-turn";
 import {
   isToolInput,
   openRun,
@@ -179,6 +180,7 @@ export async function POST(req: Request) {
     const {
       chatId,
       userMessage,
+      runId,
       previousTurns,
       toolResults,
       previousContent,
@@ -240,11 +242,23 @@ export async function POST(req: Request) {
       runTurns,
     });
     const tools = buildAgentTools(AGENT_TOOLS, webSearchEnabled);
-    const estimatedInputTokens = estimateInputTokens({
+    const estimatedPromptTokens = estimateInputTokens({
       system: AGENT_SYSTEM_PROMPT,
       tools,
       messages: estimatedMessages,
     });
+    const runEnd = lastTurnReason({
+      runTurns,
+      hasRunId: runId !== undefined,
+      estimatedPromptTokens,
+    });
+    const estimatedInputTokens = runEnd
+      ? estimateInputTokens({
+          system: AGENT_SYSTEM_PROMPT,
+          tools,
+          messages: withLastTurnNotice(estimatedMessages),
+        })
+      : estimatedPromptTokens;
     const balanceCents = totalCredits(user);
     const planFor = (option: { model: ModelName; enableThinking: boolean }) =>
       planCreditReservation({
@@ -324,7 +338,8 @@ export async function POST(req: Request) {
         return NextResponse.json(error(INTERNAL_ERROR_MESSAGE, "INTERNAL_ERROR"), { status: 500 });
       }
     }
-    const anthropicMessages = buildAgentMessages({ history, userMessage, image, runTurns });
+    const builtMessages = buildAgentMessages({ history, userMessage, image, runTurns });
+    const anthropicMessages = runEnd ? withLastTurnNotice(builtMessages) : builtMessages;
 
     logger.debug(
       {
@@ -336,6 +351,7 @@ export async function POST(req: Request) {
         webSearchEnabled,
         messageCount: anthropicMessages.length,
         runTurns: runTurns.length,
+        runEnd,
       },
       "Starting agent stream"
     );
@@ -623,8 +639,9 @@ export async function POST(req: Request) {
           const echoableContent = toEchoableContent(finalMessage.content);
           // Only a clean `tool_use` stop releases tool calls. Any other ending ran
           // none of them, so neither the reply nor the record carries them; on
-          // `max_tokens` the last one is cut off mid-input.
-          const releasesToolCalls = stopReason === "tool_use";
+          // `max_tokens` the last one is cut off mid-input. A Run's last Turn releases
+          // none whatever Claude does: the Run ends with its text as the reply.
+          const releasesToolCalls = stopReason === "tool_use" && runEnd === null;
           const contentBlocks =
             stopReason === "max_tokens"
               ? echoableContent.filter((block) => block.type !== "tool_use")
@@ -638,7 +655,7 @@ export async function POST(req: Request) {
           // `pause_turn` means Anthropic stopped a long server-tool turn early and
           // the client has to replay the assistant turn, so it is not final either.
           const isFinalTurn =
-            stopReason !== "tool_use" && stopReason !== "pause_turn";
+            runEnd !== null || (stopReason !== "tool_use" && stopReason !== "pause_turn");
 
           // A refused Turn's text isn't a reply the user should see again, and the
           // tool calls it held were never released.
@@ -787,6 +804,7 @@ export async function POST(req: Request) {
             citations,
             contentBlocks,
             maxTokensReducedForBalance,
+            ...(runEnd && { runEnd }),
           });
           send(doneData);
 
