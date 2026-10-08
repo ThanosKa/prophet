@@ -14,7 +14,10 @@ vi.mock('@/lib/db', async () => {
 
 vi.mock('@clerk/nextjs/server', () => ({ auth: vi.fn() }))
 vi.mock('@/lib/ratelimit', () => ({ checkRateLimit: vi.fn() }))
-vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { stream: vi.fn() } } }))
+// A plain vi.fn, so tests can hand it stub streams without casting to MessageStream.
+const { streamMock } = vi.hoisted(() => ({ streamMock: vi.fn() }))
+
+vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { stream: streamMock } } }))
 vi.mock('@/lib/logger', () => ({
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
@@ -201,8 +204,8 @@ function sentMaxTokens(): number | undefined {
 describe('credit reservation in POST /api/agent/chat', () => {
   it('shrinks Opus 5.5 max_tokens to what 20 credits afford and charges only the actual cost', async () => {
     await seedUser({ credits: 20 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(
-      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
     )
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
@@ -221,8 +224,8 @@ describe('credit reservation in POST /api/agent/chat', () => {
       vi.mocked(anthropic.messages.stream).mockClear()
       await db.delete(schema.users)
       await seedUser({ credits })
-      vi.mocked(anthropic.messages.stream).mockReturnValue(
-        completedTurn({ inputTokens: 100, outputTokens: 100 }) as never
+      streamMock.mockReturnValue(
+        completedTurn({ inputTokens: 100, outputTokens: 100 })
       )
 
       const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5', enableThinking: true })
@@ -473,8 +476,8 @@ describe('prompt-cache billing in POST /api/agent/chat', () => {
 describe('done event in POST /api/agent/chat', () => {
   it('flags maxTokensReducedForBalance when a low balance shrank the turn', async () => {
     await seedUser({ credits: 20 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(
-      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
     )
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
@@ -484,8 +487,8 @@ describe('done event in POST /api/agent/chat', () => {
 
   it('does not flag maxTokensReducedForBalance when the balance covers the full turn', async () => {
     await seedUser({ credits: 1000 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(
-      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
     )
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
@@ -604,8 +607,8 @@ describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat',
 
   it('runs a Haiku Turn and charges the 1-Credit Minimum charge', async () => {
     await seedUser({ credits: FREE_GRANT })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(
-      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
     )
 
     const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
@@ -634,8 +637,8 @@ describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat',
 
   it('runs a Sonnet 5.5 Turn on a fresh chat, whose floor is exactly the 7-Credit grant, with max_tokens cut to fit', async () => {
     await seedUser({ credits: FREE_GRANT })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(
-      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
     )
 
     const response = await post({ userMessage: 'Hello', model: 'claude-sonnet-5-5' })
@@ -665,8 +668,8 @@ describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat',
     })
     expect(anthropic.messages.stream).not.toHaveBeenCalled()
 
-    vi.mocked(anthropic.messages.stream).mockReturnValue(
-      completedTurn({ inputTokens: 3000, outputTokens: 500 }) as never
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 3000, outputTokens: 500 })
     )
     const haiku = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
     await haiku.text()
@@ -695,8 +698,8 @@ describe('Subscription credits and Purchased credits in POST /api/agent/chat', (
   // Fresh-chat Opus 5.5 floor at the 25% Margin: 14 credits.
   it('spends the Free grant before Purchased credits', async () => {
     await seedUser({ credits: 7, purchased: 100 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(
-      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
     )
 
     const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
@@ -708,8 +711,8 @@ describe('Subscription credits and Purchased credits in POST /api/agent/chat', (
 
   it('runs a Turn the combined balance covers when Subscription credits alone fall short', async () => {
     await seedUser({ credits: 7, purchased: 10 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(
-      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
     )
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
@@ -722,8 +725,8 @@ describe('Subscription credits and Purchased credits in POST /api/agent/chat', (
 
   it('runs a Turn on Purchased credits alone', async () => {
     await seedUser({ credits: 0, purchased: 20 })
-    vi.mocked(anthropic.messages.stream).mockReturnValue(
-      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    streamMock.mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 })
     )
 
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })

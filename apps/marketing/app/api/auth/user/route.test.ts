@@ -12,14 +12,17 @@ vi.mock('@/lib/db', async () => {
   return { db: drizzle(new PGlite(), { schema: dbSchema }) }
 })
 
-vi.mock('@clerk/nextjs/server', () => ({ auth: vi.fn() }))
+const { authMock } = vi.hoisted(() => ({
+  authMock: vi.fn<() => Promise<{ userId: string | null }>>(),
+}))
+
+vi.mock('@clerk/nextjs/server', () => ({ auth: authMock }))
 vi.mock('@/lib/ratelimit', () => ({ checkRateLimit: vi.fn() }))
 vi.mock('@/lib/logger', () => ({
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
 const { db } = await import('@/lib/db')
-const { auth } = await import('@clerk/nextjs/server')
 const { checkRateLimit } = await import('@/lib/ratelimit')
 
 const USER_ID = 'user_balance'
@@ -34,7 +37,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   vi.clearAllMocks()
   await db.delete(schema.users)
-  vi.mocked(auth).mockResolvedValue({ userId: USER_ID } as never)
+  authMock.mockResolvedValue({ userId: USER_ID })
   vi.mocked(checkRateLimit).mockResolvedValue({ success: true, limit: 60, remaining: 59, reset: 60 })
 })
 
