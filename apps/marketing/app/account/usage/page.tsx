@@ -49,8 +49,9 @@ export default function UsagePage() {
     const controller = new AbortController()
     const params = new URLSearchParams({ days: daysPerPage.toString() })
     if (before) params.append("before", before)
-    if (dateRange?.from) params.append("from", dateRange.from.toISOString())
-    if (dateRange?.to) params.append("to", dateRange.to.toISOString())
+    // The table groups by UTC day, so the days picked are sent as UTC days.
+    if (dateRange?.from) params.append("from", format(dateRange.from, "yyyy-MM-dd"))
+    if (dateRange?.to) params.append("to", format(dateRange.to, "yyyy-MM-dd"))
 
     async function loadUsage() {
       setUsage({ status: "loading" })

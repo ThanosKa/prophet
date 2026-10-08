@@ -46,8 +46,8 @@ describe('UserAvatar balance', () => {
 
     const text = await openMenu()
 
-    expect(text).toContain('Balance: $13.00')
-    expect(text).toContain('Includes $10.00 that never expires')
+    expect(text).toContain('Balance: $13')
+    expect(text).toContain('Includes $10 that never expires')
   })
 
   it('shows only the total without Purchased credits', async () => {

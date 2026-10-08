@@ -13,12 +13,15 @@ const utcDaySchema = z
 
 export const DAILY_USAGE_MAX_DAYS = 90
 
-/** Query string of `GET /api/usage`: a page of `days` UTC days, strictly older than `before`. */
+/**
+ * Query string of `GET /api/usage`: a page of `days` UTC days, strictly older than
+ * `before`, optionally limited to the UTC days `from` through `to`, both inclusive.
+ */
 export const dailyUsageQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(DAILY_USAGE_MAX_DAYS).default(7),
   before: utcDaySchema.optional(),
-  from: z.string().datetime({ offset: true }).optional(),
-  to: z.string().datetime({ offset: true }).optional(),
+  from: utcDaySchema.optional(),
+  to: utcDaySchema.optional(),
 })
 
 /** Usage totals of one model on one UTC day. Credits are the Credits spent that day. */

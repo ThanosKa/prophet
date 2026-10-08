@@ -2,7 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { usageRecords } from '@/lib/db/schema'
-import { and, asc, desc, eq, gte, lt, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, lt, sql } from 'drizzle-orm'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import { dailyUsageQuerySchema, type DailyUsagePage } from '@prophet/shared'
 import { error, success, INTERNAL_ERROR_MESSAGE } from '@/types'
@@ -15,6 +15,8 @@ const utcDay = sql<string>`to_char(${usageRecords.createdAt} AT TIME ZONE 'UTC',
 const total = (column: AnyPgColumn) => sql`coalesce(sum(${column}), 0)`.mapWith(Number)
 
 const startOfUtcDay = (day: string) => new Date(`${day}T00:00:00.000Z`)
+const MS_PER_DAY = 24 * 60 * 60 * 1000
+const startOfNextUtcDay = (day: string) => new Date(startOfUtcDay(day).getTime() + MS_PER_DAY)
 
 /** Daily usage totals per model for the signed-in user, paged by UTC day, newest first. */
 export async function GET(req: Request) {
@@ -49,8 +51,8 @@ export async function GET(req: Request) {
     const scope = and(
       eq(usageRecords.userId, userId),
       before ? lt(usageRecords.createdAt, startOfUtcDay(before)) : undefined,
-      from ? gte(usageRecords.createdAt, new Date(from)) : undefined,
-      to ? lte(usageRecords.createdAt, new Date(to)) : undefined
+      from ? gte(usageRecords.createdAt, startOfUtcDay(from)) : undefined,
+      to ? lt(usageRecords.createdAt, startOfNextUtcDay(to)) : undefined
     )
 
     // Pick the page's days first (one extra to learn whether older days exist), so a

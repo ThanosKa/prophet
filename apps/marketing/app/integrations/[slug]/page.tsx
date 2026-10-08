@@ -48,7 +48,7 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
     },
     {
       question: `Does Prophet cost anything to use on ${integration.platform}?`,
-      answer: `Prophet has a free tier with a one-time $0.07 in credits, enough to try it on ${integration.platform} with Haiku right away. After that it is pay-per-use: you are billed by your Claude usage rather than a flat subscription, starting at $9.99/month for $10 in credits.`,
+      answer: `Prophet has a free tier with a one-time $0.07 in credits, enough to try it on ${integration.platform} with Haiku right away. After that it is pay-per-use: you are billed by your Claude usage rather than a flat subscription, starting at $9.99/month for 1,000 credits.`,
     },
     {
       question: `Which AI model does Prophet use on ${integration.platform}?`,

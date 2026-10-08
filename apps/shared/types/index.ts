@@ -1,22 +1,21 @@
 // Shared type definitions
 // Add types here as the project grows
 
+import type { UserBalance } from '../schemas'
+
 export * from './agent'
 
 export type Tier = 'free' | 'pro' | 'premium' | 'ultra'
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'incomplete'
 
-export interface User {
+/** A user as `GET /api/auth/user` sends it; the balance fields come from `userBalanceSchema`. */
+export interface User extends UserBalance {
   id: string
   email: string
   firstName?: string | null
   lastName?: string | null
   profileImageUrl?: string | null
   tier: Tier
-  /** Total balance: Subscription credits plus Purchased credits. */
-  creditsRemaining: number
-  /** The part of the total that never expires; absent from older servers. */
-  purchasedCredits?: number
   creditsIncluded: number
   billingPeriodStart?: Date | null
   billingPeriodEnd?: Date | null

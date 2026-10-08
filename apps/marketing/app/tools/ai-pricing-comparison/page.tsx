@@ -25,7 +25,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import Link from 'next/link'
-import { TIER_CONFIG, calculateCostInCredits, formatCreditsAsDollars, type ModelName } from '@/lib/pricing'
+import { TIER_CONFIG, calculateCostInCredits, type ModelName } from '@/lib/pricing'
+import { formatDollars } from '@prophet/shared'
 
 // Prophet runs Claude only, so these are the models it can estimate a Prophet bill for.
 const MODEL_OPTIONS = {
@@ -263,7 +264,7 @@ export default function AiPricingComparisonPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold mb-4">Start with Prophet&apos;s free plan</h2>
           <p className="text-muted-foreground mb-6">
-            Get {formatCreditsAsDollars(TIER_CONFIG.free.credits)} in free credits to try it on Haiku. No credit card required.
+            Get {formatDollars(TIER_CONFIG.free.credits)} in free credits to try it on Haiku. No credit card required.
           </p>
           <Button asChild>
             <Link href="https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif">

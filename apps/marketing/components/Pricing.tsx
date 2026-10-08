@@ -8,9 +8,9 @@ import { motion } from 'framer-motion'
 import { Check, Zap } from 'lucide-react'
 import { UpgradeButton } from './UpgradeButton'
 import { BuyCreditsButton } from './BuyCreditsButton'
-import { EXTRA_CREDITS, TIER_CONFIG, formatCreditsAsDollars, type TierName } from '@/lib/pricing'
+import { EXTRA_CREDITS, TIER_CONFIG, type TierName } from '@/lib/pricing'
 import { useUserOptional } from '@/contexts/UserContext'
-import type { User } from '@prophet/shared'
+import { formatDollars, type User } from '@prophet/shared'
 
 const plans: Array<{
   name: string
@@ -26,7 +26,7 @@ const plans: Array<{
     name: 'Free',
     tier: 'free',
     price: '$0',
-    credits: `${formatCreditsAsDollars(TIER_CONFIG.free.credits)} in credits, one-time`,
+    credits: `${formatDollars(TIER_CONFIG.free.credits)} in credits, one-time`,
     features: ['Enough to try Haiku', 'Full browser automation', 'No credit card required', 'Community support'],
     ctaSignedOut: 'Start Free',
     ctaUpgrade: 'Free Tier',
@@ -35,7 +35,7 @@ const plans: Array<{
     name: 'Pro',
     tier: 'pro',
     price: '$9.99',
-    credits: `${formatCreditsAsDollars(TIER_CONFIG.pro.credits)} in credits every month`,
+    credits: `${formatDollars(TIER_CONFIG.pro.credits)} in credits every month`,
     features: ['Best for daily tasks', 'All Claude models included', 'Credits renew monthly', 'Priority email support'],
     ctaSignedOut: 'Get Started',
     ctaUpgrade: 'Choose Pro',
@@ -44,7 +44,7 @@ const plans: Array<{
     name: 'Premium',
     tier: 'premium',
     price: '$29.99',
-    credits: `${formatCreditsAsDollars(TIER_CONFIG.premium.credits)} in credits every month`,
+    credits: `${formatDollars(TIER_CONFIG.premium.credits)} in credits every month`,
     features: ['Best for power users', 'All Claude models included', 'Credits renew monthly', 'Priority support', 'Early feature access'],
     popular: true,
     ctaSignedOut: 'Get Started',
@@ -54,7 +54,7 @@ const plans: Array<{
     name: 'Ultra',
     tier: 'ultra',
     price: '$59.99',
-    credits: `${formatCreditsAsDollars(TIER_CONFIG.ultra.credits)} in credits every month`,
+    credits: `${formatDollars(TIER_CONFIG.ultra.credits)} in credits every month`,
     features: ['Best for heavy usage', 'All Claude models included', 'Credits renew monthly', 'Priority support', 'Early feature access'],
     ctaSignedOut: 'Get Started',
     ctaUpgrade: 'Choose Ultra',
@@ -175,19 +175,19 @@ export function Pricing({ showHeader = true }: PricingProps) {
             <h3 className="text-xl font-bold">Need a one-time top-up?</h3>
           </div>
           <p className="text-muted-foreground mb-4">
-            Buy <span className="font-semibold text-foreground">{formatCreditsAsDollars(EXTRA_CREDITS.credits)} in credits</span> anytime without a subscription.
+            Buy <span className="font-semibold text-foreground">{formatDollars(EXTRA_CREDITS.credits)} in credits</span> anytime without a subscription.
             They never expire, so they suit occasional use or topping up before your next billing cycle.
           </p>
           <SignedOut>
             <SignInButton mode="modal" forceRedirectUrl="/account/billing" signUpForceRedirectUrl="/account/billing">
               <Button variant="outline" size="lg">
-                Buy Extra Credits - {formatCreditsAsDollars(EXTRA_CREDITS.price)}
+                Buy Extra Credits - {formatDollars(EXTRA_CREDITS.price)}
               </Button>
             </SignInButton>
           </SignedOut>
           <SignedIn>
             <BuyCreditsButton>
-              Buy Extra Credits - {formatCreditsAsDollars(EXTRA_CREDITS.price)}
+              Buy Extra Credits - {formatDollars(EXTRA_CREDITS.price)}
             </BuyCreditsButton>
           </SignedIn>
         </motion.div>

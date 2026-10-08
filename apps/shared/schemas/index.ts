@@ -33,7 +33,9 @@ export const updateUserSchema = z.object({
 // (Subscription credits plus Purchased credits); `purchasedCredits` is optional so
 // builds that predate it still parse the response.
 export const userBalanceSchema = z.object({
+  /** Total balance: Subscription credits plus Purchased credits. */
   creditsRemaining: z.number().int(),
+  /** The part of the total that never expires; absent from older servers. */
   purchasedCredits: z.number().int().min(0).optional(),
 })
 

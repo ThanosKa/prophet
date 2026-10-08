@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { formatDollars } from '@prophet/shared'
 import { logger } from '@/lib/logger'
 
 let _resend: Resend | null = null
@@ -228,7 +229,7 @@ export function buildPurchaseHtml(params: SendPurchaseEmailParams): string {
   const { firstName, lastName, planName, credits, isSubscription } = params
   const fullName = formatName(firstName, lastName)
   const greeting = fullName ? `Thank you, ${fullName}!` : 'Thank you for your purchase!'
-  const creditsFormatted = `$${(credits / 100).toFixed(2)}`
+  const creditsFormatted = formatDollars(credits)
   const typeLabel = isSubscription ? 'Subscription' : 'One-time purchase'
 
   const content = `

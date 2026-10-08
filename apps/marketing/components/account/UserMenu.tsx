@@ -21,6 +21,7 @@ import {
   Shield,
 } from "lucide-react";
 import { describeBalance, type User } from "@prophet/shared";
+import { describeAccountBalance } from "@/lib/credit-balance";
 
 export function UserMenu() {
   const { user: clerkUser } = useClerkUser();
@@ -42,8 +43,13 @@ export function UserMenu() {
       .catch((err) => console.error("Failed to fetch user in menu:", err));
   }, [userContext?.user]);
 
-  const dbUser = userContext?.user || fetchedUser;
-  const balance = dbUser ? describeBalance(dbUser) : null;
+  // The context carries the DB row and its named balances; /api/auth/user sends the total.
+  const contextBalance = userContext?.balance;
+  const balance = contextBalance
+    ? describeAccountBalance(contextBalance)
+    : fetchedUser
+      ? describeBalance(fetchedUser)
+      : null;
 
   if (!clerkUser) return null;
 

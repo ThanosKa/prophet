@@ -82,7 +82,7 @@ There are no paying subscribers today (all 854 users are on Free; checked 2026-1
 - Renewal sets Subscription credits to the plan's amount and leaves Purchased credits alone.
 - A new subscription sets Subscription credits to the plan's amount and leaves Purchased credits alone.
 - Cancellation lapses Subscription credits to `least(current, free grant)` and leaves Purchased credits alone.
-- The credit reservation (reserve-then-settle) checks against the combined balance. It takes the hold from Subscription credits first, then Purchased credits, and records how much came from each. On settlement it refunds the unused hold Purchased-first. Overage is charged to Subscription credits, which may go negative. Both updates stay in one transaction with conditional `WHERE` guards, as today.
+- The credit reservation (reserve-then-settle) checks against the combined balance. It takes the hold from Subscription credits first, then Purchased credits, and records how much came from each. On settlement it refunds the unused hold Purchased-first. Overage (user story 19) is taken from Subscription credits down to 0, then from Purchased credits down to 0; only what both can't cover pushes Subscription credits negative. Purchased credits never go below 0. Reserve and settle are each a single `UPDATE` whose split is computed in SQL, with conditional `WHERE` guards; settlement stays in one transaction with the usage record.
 - Every API that returns the user's balance returns the total, plus Purchased credits as a separate field. Shared Zod schemas are updated, and the new field is optional so older extension builds still parse the response.
 - Production migrations are applied by hand. The SQL is run on production before merging to `main` (Vercel auto-deploys `main`).
 
@@ -108,7 +108,7 @@ There are no paying subscribers today (all 854 users are on Free; checked 2026-1
 - Good tests assert external behaviour: Credits charged, balances after a webhook, rows returned by an API, events yielded by the agent loop. They don't assert internal helper calls or SQL text.
 - Seams, all existing:
   1. **Pricing module** (pure unit tests): Margin, rounding, Minimum charge, tier Credits, Free grant, worst-case profit per plan.
-  2. **Agent chat route** with pglite (prior art: the route's credit tests and the credit reservation DB tests): spend order across the two balances, hold and settle split, overage, insufficient-balance responses with a 7-Credit Free user.
+  2. **Agent chat route** with pglite (prior art: the route's credit tests and the credit reservation DB tests): spend order across the two balances, hold and settle split, overage (Subscription credits, then Purchased credits, then a negative Subscription balance), insufficient-balance responses with a 7-Credit Free user.
   3. **Stripe webhook route** (prior art: its route test): renewal, new subscription, cancellation and extra-credit purchase each leave Purchased credits correct.
   4. **Usage API route** (prior art: its route test): daily totals per model, token sums including cache, paging.
   5. **Sidepanel agent loop** (prior art: its loop test): pauses after 20 Turns with the right message.

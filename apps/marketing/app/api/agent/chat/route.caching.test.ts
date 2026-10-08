@@ -13,7 +13,10 @@ vi.mock('@/lib/db', async () => {
 
 vi.mock('@clerk/nextjs/server', () => ({ auth: vi.fn() }))
 vi.mock('@/lib/ratelimit', () => ({ checkRateLimit: vi.fn() }))
-vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { stream: vi.fn() } } }))
+// A plain vi.fn, so tests can hand it stub streams without casting to MessageStream.
+const { streamMock } = vi.hoisted(() => ({ streamMock: vi.fn() }))
+
+vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { stream: streamMock } } }))
 vi.mock('@/lib/logger', () => ({
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
@@ -234,8 +237,8 @@ describe('append-only agent runs in POST /api/agent/chat', () => {
     [10, 'an older build that pauses at 10 Turns'],
     [19, 'the last request of a 20-Turn run'],
   ])('accepts a run history of %i earlier Turns (%s)', async (earlierTurns) => {
-    vi.mocked(anthropic.messages.stream).mockReturnValue(
-      anthropicTurn([{ type: 'text', text: 'Done.' }], 'end_turn') as never
+    streamMock.mockReturnValue(
+      anthropicTurn([{ type: 'text', text: 'Done.' }], 'end_turn')
     )
 
     const response = await post({

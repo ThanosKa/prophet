@@ -28,6 +28,19 @@ vi.mock('@/lib/ratelimit', () => ({
   checkRateLimit: vi.fn(),
 }))
 
+// The reserve/settle SQL has its own PGlite tests; here the route only needs a hold.
+vi.mock('@/lib/credit-reservation', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/credit-reservation')>()
+  return {
+    ...actual,
+    reserveCredits: vi.fn(async ({ reserveCents }: { reserveCents: number }) => ({
+      subscriptionCents: reserveCents,
+      purchasedCents: 0,
+    })),
+    settleCredits: vi.fn(async () => {}),
+  }
+})
+
 vi.mock('@/lib/anthropic', () => ({
   anthropic: { messages: { stream: vi.fn() } },
 }))
@@ -40,6 +53,7 @@ const { auth } = await import('@clerk/nextjs/server')
 const { db } = await import('@/lib/db')
 const { checkRateLimit } = await import('@/lib/ratelimit')
 const { anthropic } = await import('@/lib/anthropic')
+const { settleCredits } = await import('@/lib/credit-reservation')
 
 const CHAT_ID = '550e8400-e29b-41d4-a716-446655440000'
 
@@ -88,22 +102,15 @@ function primeRequestContext(): Captured {
     set: (values: Record<string, unknown>) => ({
       where: () => {
         captured.updates.push(values)
-        return Object.assign(Promise.resolve(), {
-          returning: () => Promise.resolve([{ id: 'user1' }]),
-        })
+        return Promise.resolve()
       },
     }),
-  })
-
-  // The reserve reads the locked balance before taking the hold.
-  const lockedBalance = () => ({
-    from: () => ({ where: () => ({ for: () => Promise.resolve([{ subscription: 1000, purchased: 0 }]) }) }),
   })
 
   vi.mocked(db.insert).mockImplementation(recordInsert as never)
   vi.mocked(db.update).mockImplementation(recordUpdate as never)
   vi.mocked(db.transaction).mockImplementation((async (cb: (tx: unknown) => unknown) =>
-    cb({ insert: recordInsert, update: recordUpdate, select: lockedBalance })) as never)
+    cb({ insert: recordInsert, update: recordUpdate })) as never)
 
   return captured
 }
@@ -329,10 +336,9 @@ describe('Legacy model ids from already-installed extensions', () => {
 
     await drain(await post({ model: 'claude-sonnet-4-6' }))
 
-    expect(captured.updates.some((u) => 'creditsRemaining' in u)).toBe(true)
-    expect(usageRow(captured)?.costCents).toBe(
-      calculateCostInCredits('claude-sonnet-5-5', 1000, 500)
-    )
+    const expected = calculateCostInCredits('claude-sonnet-5-5', 1000, 500)
+    expect(settleCredits).toHaveBeenCalledWith(expect.objectContaining({ actualCents: expected }))
+    expect(usageRow(captured)?.costCents).toBe(expected)
   })
 
   it('rejects a model id that was never shipped', async () => {
@@ -400,7 +406,7 @@ describe('Web search gating and billing', () => {
     expect(done.usage.webSearchCostCents).toBe(calculateWebSearchCostInCredits(2))
 
     expect(usageRow(captured)?.costCents).toBe(expected)
-    expect(captured.updates.some((u) => 'creditsRemaining' in u)).toBe(true)
+    expect(settleCredits).toHaveBeenCalledWith(expect.objectContaining({ actualCents: expected }))
   })
 
   it('streams the query and its sources to the client', async () => {
