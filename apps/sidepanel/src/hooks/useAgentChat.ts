@@ -186,7 +186,7 @@ export function useAgentChat() {
           }
 
           if (event.type === 'turn_limit_reached') {
-            setNotice(USER_FACING_TEXT.turnLimit)
+            setNotice(event.message)
             continue
           }
 
