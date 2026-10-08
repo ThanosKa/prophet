@@ -3,6 +3,8 @@ import { MAX_AGENT_TURNS, currentAgentModelSchema } from '@prophet/shared'
 
 export const USER_FACING_TEXT = {
   imageTooLarge: 'That image is too large to send. Try a smaller one.',
+  imageTooLargeToAttach: 'That image is too large to attach. Use one under 1.5 MB, for example a smaller screenshot.',
+  imageTypeUnsupported: 'Only JPEG, PNG, GIF or WebP images can be attached.',
   serverUnavailable: "Prophet's server didn't respond. Please try again.",
   generic: 'Something went wrong. Please try again.',
   streamCut: 'The response stopped unexpectedly. Please try again.',

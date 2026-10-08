@@ -24,6 +24,8 @@ type Attachment = {
   url: string;
 };
 
+export type FileCheck = { ok: true } | { ok: false; message: string };
+
 type PromptInputContextValue = {
   text: string;
   setText: (text: string) => void;
@@ -55,6 +57,7 @@ export function PromptInput({
   submitDisabled,
   multiple,
   globalDrop,
+  validateFile,
   className,
 }: {
   children: React.ReactNode;
@@ -64,10 +67,13 @@ export function PromptInput({
   submitDisabled?: boolean;
   multiple?: boolean;
   globalDrop?: boolean;
+  /** Runs when a file is attached; a refused file is not attached and its message is shown. */
+  validateFile?: (file: File) => FileCheck;
   className?: string;
 }) {
   const [text, setText] = React.useState("");
   const [attachments, setAttachments] = React.useState<Attachment[]>([]);
+  const [fileError, setFileError] = React.useState<string | null>(null);
   const isSubmittingRef = React.useRef(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -77,7 +83,17 @@ export function PromptInput({
 
   const addFiles = React.useCallback(
     (files: FileList | File[]) => {
-      const next = Array.from(files).map((file) => ({
+      const accepted: File[] = [];
+      let refusal: string | null = null;
+      for (const file of Array.from(files)) {
+        const check: FileCheck = validateFile?.(file) ?? { ok: true };
+        if (check.ok) accepted.push(file);
+        else refusal ??= check.message;
+      }
+      setFileError(refusal);
+      if (accepted.length === 0) return;
+
+      const next = accepted.map((file) => ({
         id: crypto.randomUUID(),
         file,
         url: URL.createObjectURL(file),
@@ -86,7 +102,7 @@ export function PromptInput({
         multiple ? [...prev, ...next] : next.slice(0, 1)
       );
     },
-    [multiple]
+    [multiple, validateFile]
   );
 
   const removeAttachment = React.useCallback((id: string) => {
@@ -99,6 +115,7 @@ export function PromptInput({
 
   const clear = React.useCallback(() => {
     setText("");
+    setFileError(null);
     setAttachments((prev) => {
       prev.forEach((a) => URL.revokeObjectURL(a.url));
       return [];
@@ -183,6 +200,11 @@ export function PromptInput({
           className="hidden"
           onChange={handleFileChange}
         />
+        {fileError && (
+          <p role="alert" className="px-4 pt-3 text-sm text-destructive">
+            {fileError}
+          </p>
+        )}
         {children}
       </form>
     </PromptInputContext.Provider>
