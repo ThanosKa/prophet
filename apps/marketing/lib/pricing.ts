@@ -89,6 +89,11 @@ export const EXTRA_CREDITS = {
   priceId: STRIPE_PRICE_IDS.extraCredits,
 } as const;
 
+/** Credits as the dollars they are worth for marketing copy: whole dollars drop the cents ("$10", "$0.07"). */
+export function formatCreditsAsDollars(credits: number): string {
+  return credits % 100 === 0 ? `$${credits / 100}` : `$${(credits / 100).toFixed(2)}`;
+}
+
 export type ModelName = keyof typeof MODEL_PRICING;
 export type TierName = keyof typeof TIER_CONFIG;
 

@@ -197,7 +197,7 @@ export default async function AlternativePage({ params }: Props) {
                 {
                   step: '2',
                   title: 'Create an Account',
-                  desc: 'Sign up for free. You get $0.20 in credits instantly.',
+                  desc: 'Sign up for free. You get $0.07 in credits instantly to try Haiku.',
                 },
                 {
                   step: '3',

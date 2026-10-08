@@ -37,7 +37,7 @@ export const websiteNode = {
   name: 'Prophet',
   url: BASE_URL,
   description:
-    'Claude AI in the Chrome side panel: streaming chat, 18 browser-automation tools, and pay-per-use credits billed at Anthropic API cost.',
+    'Claude AI in the Chrome side panel: streaming chat, 18 browser-automation tools, and pay-per-use credits.',
   publisher: organizationRef,
   inLanguage: 'en-US',
 }
@@ -73,7 +73,7 @@ export const softwareApplicationNode = {
     '18 browser-automation tools (click, type, navigate, extract)',
     'Claude Haiku 5.5, Sonnet 5.5 and Opus 5.5',
     'Accessibility-tree page reading instead of screenshots',
-    'Pay-per-use credits billed at Anthropic API cost',
+    'Pay-per-use credits',
     'Persistent chat history',
   ],
   offers: [
@@ -84,7 +84,7 @@ export const softwareApplicationNode = {
       priceCurrency: 'USD',
       availability: 'https://schema.org/InStock',
       url: `${BASE_URL}/pricing`,
-      description: '$0.20 in Claude credits, all three models, no card required',
+      description: '$0.07 in Claude credits once, enough to try Haiku, no card required',
     },
     {
       '@type': 'Offer',
@@ -93,7 +93,7 @@ export const softwareApplicationNode = {
       priceCurrency: 'USD',
       availability: 'https://schema.org/InStock',
       url: `${BASE_URL}/pricing`,
-      description: '$11 in Claude credits per month (+10% bonus)',
+      description: '$10 in Claude credits per month',
       priceSpecification: {
         '@type': 'UnitPriceSpecification',
         price: '9.99',
@@ -109,7 +109,7 @@ export const softwareApplicationNode = {
       priceCurrency: 'USD',
       availability: 'https://schema.org/InStock',
       url: `${BASE_URL}/pricing`,
-      description: '$35 in Claude credits per month (+17% bonus)',
+      description: '$30 in Claude credits per month',
       priceSpecification: {
         '@type': 'UnitPriceSpecification',
         price: '29.99',
@@ -125,7 +125,7 @@ export const softwareApplicationNode = {
       priceCurrency: 'USD',
       availability: 'https://schema.org/InStock',
       url: `${BASE_URL}/pricing`,
-      description: '$70 in Claude credits per month (+17% bonus)',
+      description: '$60 in Claude credits per month',
       priceSpecification: {
         '@type': 'UnitPriceSpecification',
         price: '59.99',

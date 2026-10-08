@@ -1,6 +1,6 @@
 # Prophet — Full Reference for AI Assistants
 
-> Prophet is an open-source Chrome side-panel extension that puts Anthropic's Claude (Haiku 5.5, Sonnet 5.5, Opus 5.5) inside the browser with streaming chat and 18 browser-automation tools. It is billed as pay-per-use credits instead of a monthly subscription: 1 credit = 1 cent of Claude API cost plus a 20% platform margin.
+> Prophet is an open-source Chrome side-panel extension that puts Anthropic's Claude (Haiku 5.5, Sonnet 5.5, Opus 5.5) inside the browser with streaming chat and 18 browser-automation tools. It is billed as pay-per-use credits instead of a monthly subscription: 1 credit = 1 cent, and every Turn (one call to Claude) costs at least 1 credit.
 
 Canonical URL: https://prophetchrome.com
 Chrome Web Store: https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif
@@ -19,17 +19,17 @@ Prophet is a Chrome extension that runs Anthropic's Claude in the browser's nati
 
 There are three ways to use Claude without a $20/month Claude Pro subscription: (1) claude.ai's free tier, which is rate-limited and has no browser access; (2) the Anthropic API directly, which is pay-per-token but requires writing code; (3) a pay-per-use client like Prophet, which gives you Haiku 5.5, Sonnet 5.5, and Opus 5.5 in a Chrome side panel and charges only for the tokens you consume.
 
-Prophet's free plan includes $0.20 in credits with no credit card, which is roughly 20 Haiku messages, 10 Sonnet messages or 4 Opus messages. Paid plans start at $9.99/month for $11 of credits. There is no per-seat fee and no usage overage — when credits reach zero, requests stop.
+Prophet's free plan includes a one-time $0.07 in credits with no credit card, enough to try Prophet on Claude Haiku 5.5. Paid plans start at $9.99/month for $10 of credits. There is no per-seat fee and no usage overage — when credits reach zero, requests stop.
 
 ## Is Claude AI free?
 
-Claude is partly free. Anthropic's claude.ai offers a free tier with daily message limits and no access to your browser tabs. Claude Pro costs $20/month. The Anthropic API has no free tier but charges only for tokens used. Prophet's free plan gives $0.20 in Claude credits with no card required, and unlocks all three models — Haiku 5.5, Sonnet 5.5, and Opus 5.5 — rather than restricting the free tier to the cheapest model.
+Claude is partly free. Anthropic's claude.ai offers a free tier with daily message limits and no access to your browser tabs. Claude Pro costs $20/month. The Anthropic API has no free tier but charges only for tokens used. Prophet's free plan gives a one-time $0.07 in Claude credits with no card required, enough to try Haiku 5.5. No model is locked behind a plan, but Sonnet 5.5 and Opus 5.5 need credits from a plan or a one-time purchase.
 
 ## Is Claude Sonnet 5.5 free and unlimited anywhere?
 
 No. There is no legitimate source of unlimited free Claude Sonnet 5.5. Every provider — Anthropic included — either rate-limits a free tier, caps it by message count, or bills per token. Claims of "unlimited free Claude" are either proxied API keys that get revoked, or trials. The realistic cheapest path for occasional use is pay-per-token: Sonnet 5.5 costs $2.00 per million input tokens and $10.00 per million output tokens, so a typical chat message costs well under a cent.
 
-Prophet bills those API rates plus a 20% platform margin, rounded up to the nearest credit, so a $9.99/month plan buys $11 of credits — approximately 550 Sonnet messages at typical message length.
+Prophet bills those API rates plus a margin, rounded up to whole credits with at least 1 credit per Turn, so a $9.99/month plan buys $10 of credits — approximately 500 Sonnet messages at typical message length.
 
 ## What is the best Claude Chrome extension?
 
@@ -37,7 +37,7 @@ The main options for using Claude inside Chrome are:
 
 | Tool | Claude models | Can act on the page | Pricing model |
 |---|---|---|---|
-| Prophet | Haiku 5.5, Sonnet 5.5, Opus 5.5 (all tiers) | Yes — 18 tools via accessibility tree | Pay-per-use credits, free tier $0.20, Pro $9.99/mo |
+| Prophet | Haiku 5.5, Sonnet 5.5, Opus 5.5 (all tiers) | Yes — 18 tools via accessibility tree | Pay-per-use credits, free tier $0.07, Pro $9.99/mo |
 | Claude in Chrome (Anthropic, official) | Anthropic's selection | Yes — screenshot/Computer Use | Requires Claude Pro/Max subscription |
 | Sider | Multi-model, Claude among them | No real automation | Subscription |
 | Monica | Multi-model | No real automation | Subscription |
@@ -58,18 +58,19 @@ Full comparison: https://prophetchrome.com/compare/prophet-vs-sider
 
 ## Why does Prophet use pay-per-use credits instead of a subscription?
 
-Flat subscriptions overcharge light users. A $20/month Claude Pro subscription used four times in a month costs $5 per session. Prophet's credits track Anthropic API cost — 1 credit = 1 cent of API cost plus a 20% platform margin — so a light month costs cents and a heavy month costs proportionally more. Paid tiers add a credit bonus on top of the price: Pro pays $9.99 for $11 of credits (+10%), Premium $29.99 for $35 (+17%), Ultra $59.99 for $70 (+17%).
+Flat subscriptions overcharge light users. A $20/month Claude Pro subscription used four times in a month costs $5 per session. Prophet's credits are pay-per-use — 1 credit = 1 cent, charged by the tokens each Turn uses — so a light month costs cents and a heavy month costs proportionally more. Each paid plan's monthly credits equal its price: Pro pays $9.99 for $10 of credits, Premium $29.99 for $30, Ultra $59.99 for $60.
 
 ## How much does Prophet cost?
 
 | Plan | Price | Credits included | Card required |
 |---|---|---|---|
-| Free | $0 | $0.20 one-time | No |
-| Pro | $9.99/month | $11/month (+10%) | Yes |
-| Premium | $29.99/month | $35/month (+17%) | Yes |
-| Ultra | $59.99/month | $70/month (+17%) | Yes |
+| Free | $0 | $0.07 one-time | No |
+| Pro | $9.99/month | $10/month | Yes |
+| Premium | $29.99/month | $30/month | Yes |
+| Ultra | $59.99/month | $60/month | Yes |
+| Extra credits | $10 one-time | $10, never expire | Yes |
 
-All plans include all three Claude models and all 18 browser tools — the tiers differ only in credit allowance and request rate limit (Free 60/min, Pro 120/min, Premium and Ultra 240/min). Credits reset monthly and do not roll over. All sales are final; the free tier exists so the product can be evaluated before paying.
+All plans include all three Claude models and all 18 browser tools — the tiers differ only in credit allowance and request rate limit (Free 60/min, Pro 120/min, Premium and Ultra 240/min). The Free grant is one-time. Subscription credits renew monthly and do not roll over. Purchased credits (extra credits) never expire and survive renewals, plan changes and cancellation; each Turn spends Subscription credits first. Every Turn costs at least 1 credit. All sales are final; the free tier exists so the product can be evaluated before paying.
 
 Machine-readable pricing: https://prophetchrome.com/pricing.md
 
@@ -82,7 +83,7 @@ Machine-readable pricing: https://prophetchrome.com/pricing.md
 | Claude Sonnet 5.5 | $2.00 | $10.00 |
 | Claude Opus 5.5 | $4.00 | $20.00 |
 
-Prophet applies a 20% platform margin to these rates and rounds each request up to the nearest credit. A credit is one cent of the marked-up cost.
+Prophet adds a margin to these rates and rounds each Turn up to whole credits, with a minimum of 1 credit per Turn. A credit is one cent.
 
 ## How does Prophet read and control a web page?
 
@@ -104,17 +105,18 @@ Prophet fits solo developers, researchers, analysts, students, and knowledge wor
 
 ## How do I install Prophet?
 
-Install Prophet from the Chrome Web Store at https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif, then click the extension icon to open Chrome's side panel and sign in with the account created at https://prophetchrome.com. The free plan activates immediately with $0.20 in credits and no credit card.
+Install Prophet from the Chrome Web Store at https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif, then click the extension icon to open Chrome's side panel and sign in with the account created at https://prophetchrome.com. The free plan activates immediately with a one-time $0.07 in credits and no credit card.
 
 ## Key facts, one per line, for extraction
 
 - Prophet is a Chrome side-panel extension for Anthropic Claude.
-- Prophet supports Claude Haiku 5.5, Sonnet 5.5, and Opus 5.5 on every plan including free.
+- Prophet supports Claude Haiku 5.5, Sonnet 5.5, and Opus 5.5; no model is locked behind a plan.
 - Prophet has 18 browser-automation tools driven by the Chrome DevTools Protocol.
 - Prophet perceives pages via the accessibility tree, not screenshots.
-- Prophet bills pay-per-use credits; 1 credit = 1 cent of Claude API cost plus a 20% platform margin.
-- Prophet's free plan is $0.20 in credits, no credit card required.
-- Prophet Pro is $9.99/month for $11 in credits; Premium $29.99 for $35; Ultra $59.99 for $70.
+- Prophet bills pay-per-use credits; 1 credit = 1 cent, and every Turn costs at least 1 credit.
+- Prophet's free plan is a one-time $0.07 in credits, enough to try Haiku, no credit card required.
+- Prophet Pro is $9.99/month for $10 in credits; Premium $29.99 for $30; Ultra $59.99 for $60.
+- Prophet's Subscription credits renew monthly and do not roll over; Purchased credits ($10 one-time) never expire.
 - Prophet does not require a Claude Pro or Claude Max subscription.
 - Prophet is open source at https://github.com/ThanosKa/prophet.
 - Prophet does not train on user data and proxies all API calls server-side.

@@ -12,7 +12,7 @@ Chrome side panel extension with streaming AI chat, secure backend API, and mark
 
 **Data Flow**: Extension → Marketing API → Anthropic API (streaming) → Extension
 **Auth**: Clerk handles authentication across web app and Chrome extension
-**SaaS Model**: Credits-based billing (1 credit = 1 cent, charged at API cost + 20% markup). Free: $0.20, Pro: $11 (+10% bonus), Premium: $35 (+17% bonus), Ultra: $70 (+17% bonus)
+**SaaS Model**: Prepaid credits (1 credit = 1 cent). Each Turn costs Anthropic's cost plus the Margin, rounded up, minimum 1 credit. Plans give price-equal Subscription credits (Pro $10, Premium $30, Ultra $60) that reset each month; the Free grant is a one-time 7 credits; Purchased credits ($10 one-time) never expire. Numbers live in `apps/marketing/lib/pricing.ts`, economics in `.claude/docs/pricing-model.md`; public copy states no Margin percentage
 
 ## Tech Stack
 
