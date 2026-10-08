@@ -13,6 +13,7 @@ import {
   WEB_SEARCH_PRICE_PER_SEARCH_USD,
   calculateWebSearchCostInCredits,
   calculateUsageCostInCredits,
+  formatCreditsAsDollars,
   type ModelName,
 } from './pricing'
 import { CLAUDE_MODELS, LEGACY_MODEL_ALIASES, resolveAgentModel } from '@prophet/shared'
@@ -431,5 +432,16 @@ describe('Haiku 5.5 prompt-length rate cards', () => {
       cacheReadInputTokens: 20_000,
       outputTokens: 500,
     })).toBe(1)
+  })
+})
+
+describe('formatCreditsAsDollars', () => {
+  it.each([
+    [7, '$0.07'],
+    [1000, '$10'],
+    [6000, '$60'],
+    [1050, '$10.50'],
+  ])('shows %i Credits as %s', (credits, dollars) => {
+    expect(formatCreditsAsDollars(credits)).toBe(dollars)
   })
 })

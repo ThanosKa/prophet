@@ -8,7 +8,7 @@ import { motion } from 'framer-motion'
 import { Check, Zap } from 'lucide-react'
 import { UpgradeButton } from './UpgradeButton'
 import { BuyCreditsButton } from './BuyCreditsButton'
-import { TIER_CONFIG, type TierName } from '@/lib/pricing'
+import { EXTRA_CREDITS, TIER_CONFIG, formatCreditsAsDollars, type TierName } from '@/lib/pricing'
 import { useUserOptional } from '@/contexts/UserContext'
 import type { User } from '@prophet/shared'
 
@@ -26,8 +26,8 @@ const plans: Array<{
     name: 'Free',
     tier: 'free',
     price: '$0',
-    credits: '$0.20 in credits (~20 Haiku messages)',
-    features: ['Perfect for occasional use', 'All Claude models included', 'Full browser automation', 'Community support'],
+    credits: `${formatCreditsAsDollars(TIER_CONFIG.free.credits)} in credits, one-time`,
+    features: ['Enough to try Haiku', 'Full browser automation', 'No credit card required', 'Community support'],
     ctaSignedOut: 'Start Free',
     ctaUpgrade: 'Free Tier',
   },
@@ -35,8 +35,8 @@ const plans: Array<{
     name: 'Pro',
     tier: 'pro',
     price: '$9.99',
-    credits: '$11 in API credits (+10% bonus)',
-    features: ['Best for daily tasks', 'All Claude models included', 'Save 10% on credits', 'Priority email support'],
+    credits: `${formatCreditsAsDollars(TIER_CONFIG.pro.credits)} in credits every month`,
+    features: ['Best for daily tasks', 'All Claude models included', 'Credits renew monthly', 'Priority email support'],
     ctaSignedOut: 'Get Started',
     ctaUpgrade: 'Choose Pro',
   },
@@ -44,8 +44,8 @@ const plans: Array<{
     name: 'Premium',
     tier: 'premium',
     price: '$29.99',
-    credits: '$35 in API credits (+17% bonus)',
-    features: ['Best for power users', 'All Claude models included', 'Save 17% on credits', 'Priority support', 'Early feature access'],
+    credits: `${formatCreditsAsDollars(TIER_CONFIG.premium.credits)} in credits every month`,
+    features: ['Best for power users', 'All Claude models included', 'Credits renew monthly', 'Priority support', 'Early feature access'],
     popular: true,
     ctaSignedOut: 'Get Started',
     ctaUpgrade: 'Choose Premium',
@@ -54,8 +54,8 @@ const plans: Array<{
     name: 'Ultra',
     tier: 'ultra',
     price: '$59.99',
-    credits: '$70 in API credits (+17% bonus)',
-    features: ['Best for heavy usage', 'All Claude models included', 'Save 17% on credits', 'Priority support', 'Early feature access'],
+    credits: `${formatCreditsAsDollars(TIER_CONFIG.ultra.credits)} in credits every month`,
+    features: ['Best for heavy usage', 'All Claude models included', 'Credits renew monthly', 'Priority support', 'Early feature access'],
     ctaSignedOut: 'Get Started',
     ctaUpgrade: 'Choose Ultra',
   },
@@ -175,19 +175,19 @@ export function Pricing({ showHeader = true }: PricingProps) {
             <h3 className="text-xl font-bold">Need a one-time top-up?</h3>
           </div>
           <p className="text-muted-foreground mb-4">
-            Buy <span className="font-semibold text-foreground">$10 in credits</span> anytime without a subscription.
-            Perfect for occasional use or when you need extra credits before your next billing cycle.
+            Buy <span className="font-semibold text-foreground">{formatCreditsAsDollars(EXTRA_CREDITS.credits)} in credits</span> anytime without a subscription.
+            They never expire, so they suit occasional use or topping up before your next billing cycle.
           </p>
           <SignedOut>
             <SignInButton mode="modal" forceRedirectUrl="/account/billing" signUpForceRedirectUrl="/account/billing">
               <Button variant="outline" size="lg">
-                Buy Extra Credits - $10
+                Buy Extra Credits - {formatCreditsAsDollars(EXTRA_CREDITS.price)}
               </Button>
             </SignInButton>
           </SignedOut>
           <SignedIn>
             <BuyCreditsButton>
-              Buy Extra Credits - $10
+              Buy Extra Credits - {formatCreditsAsDollars(EXTRA_CREDITS.price)}
             </BuyCreditsButton>
           </SignedIn>
         </motion.div>
