@@ -275,7 +275,9 @@ export async function* runAgentLoop({
     }
 
     let hasToolUse = false;
-    let sawDone = false;
+    let doneEvent: AgentStreamEvent | undefined;
+    // Held until done says whether the Run ends on this Turn: only a Run's last Turn is its final answer.
+    let finalAnswer: AgentRunEvent | undefined;
     let serverContent: ContentBlock[] | undefined;
     toolResults = []; // Reset for the CURRENT turn only
     const assistantContent: ContentBlock[] = [];
@@ -450,35 +452,19 @@ export async function* runAgentLoop({
           break;
 
         case "execution_complete":
-          // The backend emits execution_complete at the end of EVERY streamed request/turn.
-          // But for tool-use turns, this is not the final assistant answer yet (the loop continues).
-          // Emitting execution_complete mid-run causes the UI to "finalize" and then reset on the next turn.
-          if (!hasToolUse) {
-            yield {
-              type: "execution_complete",
-              finalOutput: event.finalOutput || turnTextContent,
-              metrics: event.metrics || { inputTokens: 0, outputTokens: 0 },
-            };
-          }
+          // The backend emits execution_complete at the end of every Turn. Yielding it on a Turn the
+          // Run continues past would make the UI finalize the reply and then reset on the next Turn.
+          finalAnswer = {
+            type: "execution_complete",
+            finalOutput: event.finalOutput || turnTextContent,
+            metrics: event.metrics || { inputTokens: 0, outputTokens: 0 },
+          };
           break;
 
         case "done":
-          sawDone = true;
+          doneEvent = event;
           if (event.contentBlocks && event.contentBlocks.length > 0) {
             serverContent = event.contentBlocks;
-          }
-          if (!hasToolUse) {
-            if (event.stopReason === "max_tokens") {
-              yield {
-                type: "output_truncated",
-                reducedForBalance: reducedForBalanceSchema.safeParse(event).success,
-              };
-            }
-            yield {
-              type: "done",
-              usage: event.usage,
-            };
-            return;
           }
           break;
 
@@ -504,13 +490,24 @@ export async function* runAgentLoop({
     }
 
     // The server always ends a turn with done or error; anything else means a function timeout or proxy cut.
-    if (!sawDone) {
+    if (!doneEvent) {
       console.error("[agent-loop] Stream ended without done or error", { chatId, turnCount });
       yield { type: "error", error: USER_FACING_TEXT.streamCut };
       return;
     }
 
-    if (!hasToolUse) {
+    // Claude paused mid-Turn (a long server-side search): resend its content as is to let it go on.
+    const paused = doneEvent.stopReason === "pause_turn";
+
+    if (!hasToolUse && !paused) {
+      if (finalAnswer) yield finalAnswer;
+      if (doneEvent.stopReason === "max_tokens") {
+        yield {
+          type: "output_truncated",
+          reducedForBalance: reducedForBalanceSchema.safeParse(doneEvent).success,
+        };
+      }
+      yield { type: "done", usage: doneEvent.usage };
       return;
     }
 

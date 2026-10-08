@@ -242,6 +242,48 @@ describe('runAgentLoop', () => {
     })
   })
 
+  describe('pause_turn', () => {
+    const pausedBlocks = [
+      { type: 'text', text: 'Searching for the invoice.' },
+      { type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: { query: 'March invoice' } },
+    ]
+    const pausedTurn = [
+      { type: 'content_delta', delta: 'Searching for the invoice.' },
+      { type: 'execution_complete', stopReason: 'pause_turn', finalOutput: 'Searching for the invoice.' },
+      { type: 'done', stopReason: 'pause_turn', contentBlocks: pausedBlocks },
+    ]
+
+    it("continues a paused Turn with Claude's content and no tool results", async () => {
+      const { fetchMock, bodies } = serveTurns([
+        pausedTurn,
+        [{ type: 'content_delta', delta: ' Found it.' }, { type: 'done', stopReason: 'end_turn' }],
+      ])
+
+      await collect()
+
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(bodies()[1].previousTurns).toEqual([{ content: pausedBlocks, toolResults: [] }])
+    })
+
+    it("doesn't show the paused Turn's execution_complete as the final answer", async () => {
+      serveTurns([
+        pausedTurn,
+        [
+          { type: 'content_delta', delta: ' Found it.' },
+          { type: 'execution_complete', stopReason: 'end_turn', finalOutput: ' Found it.' },
+          { type: 'done', stopReason: 'end_turn' },
+        ],
+      ])
+
+      const events = await collect()
+
+      expect(events.filter((event) => event.type === 'execution_complete')).toEqual([
+        expect.objectContaining({ finalOutput: ' Found it.' }),
+      ])
+      expect(events.filter((event) => event.type === 'done')).toHaveLength(1)
+    })
+  })
+
   describe('History / Continuation', () => {
     it('includes the first turn and its tool results on the second turn', async () => {
       const turn1 = `data: {"type":"tool_use","toolUse":{"type":"tool_use","id":"tool_1","name":"navigate","input":{"url":"https://example.com"}}}\n\ndata: {"type":"done"}\n\n`
