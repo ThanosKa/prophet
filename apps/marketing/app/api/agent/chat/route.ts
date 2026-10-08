@@ -433,6 +433,14 @@ export async function POST(req: Request) {
             input: string;
             isServerTool: boolean;
           } | null = null;
+          // Held back until the Turn ends cleanly with `tool_use`: a call released
+          // mid-stream would run even when the Turn is then cut off or refused.
+          const clientToolCalls: Array<{
+            type: "tool_use";
+            id: string;
+            name: string;
+            input: unknown;
+          }> = [];
 
           // Send session_created at the start
           const sessionData = JSON.stringify({
@@ -536,16 +544,12 @@ export async function POST(req: Request) {
                   });
                   send(searchData);
                 } else {
-                  const data = JSON.stringify({
+                  clientToolCalls.push({
                     type: "tool_use",
-                    toolUse: {
-                      type: "tool_use",
-                      id: currentToolUse.id,
-                      name: currentToolUse.name,
-                      input: parsedInput,
-                    },
+                    id: currentToolUse.id,
+                    name: currentToolUse.name,
+                    input: parsedInput,
                   });
-                  send(data);
                 }
                 currentToolUse = null;
               }
@@ -576,7 +580,15 @@ export async function POST(req: Request) {
 
           // The API's own blocks are authoritative for replay: they carry the
           // encrypted web-search payloads that must round-trip untouched.
-          const contentBlocks = toEchoableContent(finalMessage.content);
+          const echoableContent = toEchoableContent(finalMessage.content);
+          // Only a clean `tool_use` stop releases tool calls. Any other ending ran
+          // none of them, so neither the reply nor the record carries them; on
+          // `max_tokens` the last one is cut off mid-input.
+          const releasesToolCalls = stopReason === "tool_use";
+          const contentBlocks =
+            stopReason === "max_tokens"
+              ? echoableContent.filter((block) => block.type !== "tool_use")
+              : echoableContent;
           const citations = extractCitations(finalMessage.content);
 
           const costCents = calculateUsageCostInCredits(model, turnUsage(webSearchRequests));
@@ -604,14 +616,17 @@ export async function POST(req: Request) {
             });
           }
 
-          const assistantToolCalls = contentBlocks.filter(b => b.type === "tool_use");
+          const assistantToolCalls = releasesToolCalls
+            ? contentBlocks.filter((block) => block.type === "tool_use")
+            : [];
           const hasContent = fullTextResponse.trim().length > 0 || assistantToolCalls.length > 0;
 
           const maxContextTokens = getModelContextWindow(model);
           await db.transaction(async (tx) => {
             // Only save assistant message on FINAL turn to prevent duplicate messages
             // During intermediate turns, the client manages conversation state
-            if (isFinalTurn && hasContent) {
+            // A refused Turn's text isn't a reply the user should see again.
+            if (isFinalTurn && hasContent && stopReason !== "refusal") {
               await tx.insert(messages).values({
                 chatId,
                 role: "assistant",
@@ -702,6 +717,12 @@ export async function POST(req: Request) {
             }));
             close();
             return;
+          }
+
+          if (releasesToolCalls) {
+            for (const toolUse of clientToolCalls) {
+              send(JSON.stringify({ type: "tool_use", toolUse }));
+            }
           }
 
           if (citations.length > 0) {
