@@ -1,3 +1,4 @@
+import { AGENT_SIZE_LIMITS } from '@prophet/shared'
 import { cdpCommander, type EvaluateResult } from '../cdp-commander'
 import { type ToolExecutionResult, type ScrollDirection, type PageContent } from '../types'
 
@@ -134,7 +135,7 @@ export async function getPageContent(): Promise<ToolExecutionResult> {
       }
     }
 
-    // Reduced from 50k to 15k chars to prevent token explosion (~50k chars = ~12-15k tokens)
+    // Capped at the shared page-content limit to prevent token explosion (~50k chars = ~12-15k tokens)
     // Also filter out obvious JavaScript/CSS noise
     const result = await cdpCommander.sendCommand<EvaluateResult>(
       tab.id,
@@ -142,7 +143,7 @@ export async function getPageContent(): Promise<ToolExecutionResult> {
       {
         expression: `
           (function() {
-            const MAX_CONTENT_LENGTH = 15000;
+            const MAX_CONTENT_LENGTH = ${AGENT_SIZE_LIMITS.pageContentChars};
             const walker = document.createTreeWalker(
               document.body,
               NodeFilter.SHOW_TEXT,

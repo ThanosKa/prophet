@@ -1,5 +1,6 @@
 import { cdpCommander, type AXNode, type AXTreeResult, type ResolveNodeResult, type CallFunctionOnResult } from './cdp-commander'
 import { type Snapshot, type SnapshotNode, INTERACTIVE_ROLES, SEMANTIC_ROLES } from './types'
+import { AGENT_SIZE_LIMITS } from '@prophet/shared'
 
 const UID_ATTRIBUTE = 'data-prophet-nodeid'
 const UID_LENGTH = 8
@@ -11,6 +12,16 @@ function generateUid(): string {
     result += chars.charAt(Math.floor(Math.random() * chars.length))
   }
   return result
+}
+
+/** Caps a node's name or value at the shared node-text limit, marking the cut with an ellipsis. */
+export function capNodeText(text: string): string {
+  const limit = AGENT_SIZE_LIMITS.snapshotNodeTextChars
+  if (text.length <= limit) return text
+  const head = text.slice(0, limit)
+  // Never leave half of a surrogate pair at the end
+  const safeHead = /[\uD800-\uDBFF]$/.test(head) ? head.slice(0, -1) : head
+  return `${safeHead}…`
 }
 
 class SnapshotManagerClass {
@@ -90,11 +101,11 @@ class SnapshotManagerClass {
     parts.push(node.role)
 
     if (node.name) {
-      parts.push(`"${node.name}"`)
+      parts.push(`"${capNodeText(node.name)}"`)
     }
 
     if (node.value !== undefined && node.value !== '') {
-      parts.push(`value="${node.value}"`)
+      parts.push(`value="${capNodeText(node.value)}"`)
     }
 
     if (node.tagName) {
