@@ -214,6 +214,7 @@ describe('useAgentChat run isolation', () => {
     ['turn_limit', 'Prophet paused after 20 turns. Send "continue" to keep going.'],
     ['run_budget', 'Prophet paused because this task grew too long for one run. Send "continue" to keep going.'],
     ['superseded', 'This chat continued in another panel, so this task stopped here.'],
+    ['request_too_large', 'This task grew too large to send, so Prophet stopped here. Send "continue" to keep going.'],
   ] as const)('shows the %s notice after the reply, not an error', async (reason, message) => {
     const runs = scriptRuns([
       {

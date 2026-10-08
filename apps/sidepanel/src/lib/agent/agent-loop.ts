@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { executeToolViaBackground } from "./background-bridge";
-import { DEFAULT_AGENT_MODEL, MAX_AGENT_TURNS, toolInputSchemas } from "@prophet/shared";
+import { AGENT_SIZE_LIMITS, DEFAULT_AGENT_MODEL, MAX_AGENT_TURNS, toolInputSchemas } from "@prophet/shared";
 import {
   USER_FACING_TEXT,
   describeHttpFailure,
@@ -32,7 +32,7 @@ interface StreamAgentChatOptions {
 export type AgentRunErrorEvent = { type: "error"; error: string; code?: string; details?: ErrorDetails };
 
 /** Why a Run stopped before Claude finished: shown as a notice after the reply, not as an error. */
-export type RunNoticeReason = "turn_limit" | "run_budget" | "superseded";
+export type RunNoticeReason = "turn_limit" | "run_budget" | "superseded" | "request_too_large";
 
 export type AgentRunEvent =
   | Exclude<AgentLoopEvent, { type: "error" }>
@@ -44,6 +44,12 @@ const RUN_END_NOTICES = {
   turn_limit: USER_FACING_TEXT.turnLimit,
   run_budget: USER_FACING_TEXT.runBudget,
 } as const;
+
+const REQUEST_TOO_LARGE_NOTICE: AgentRunEvent = {
+  type: "run_notice",
+  reason: "request_too_large",
+  message: USER_FACING_TEXT.requestTooLarge,
+};
 
 // Older servers omit the flag; only an explicit true means max_tokens was lowered to fit the balance.
 const reducedForBalanceSchema = z.object({ maxTokensReducedForBalance: z.literal(true) });
@@ -71,11 +77,12 @@ function checkToolInput({ name, input }: { name: ToolName; input: Record<string,
 
 async function* streamAgentChat({
   baseUrl,
-  options,
+  body,
   signal,
 }: {
   baseUrl: string;
-  options: StreamAgentChatOptions;
+  /** The JSON request body, already checked against the request size limit. */
+  body: string;
   signal?: AbortSignal;
 }): AsyncGenerator<AgentStreamEvent> {
   const tokenResponse = await chrome.runtime.sendMessage({
@@ -97,20 +104,12 @@ async function* streamAgentChat({
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  /*
-  console.log(`[Turn Debug] Sending Turn Request for ${options.chatId}:`, {
-    hasUserMessage: !!options.userMessage,
-    previousTurnsCount: options.previousTurns?.length || 0,
-    payload: sanitizeForLog(options)
-  });
-  */
-
   let response: Response;
   try {
     response = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify(options),
+      body,
       signal,
     });
   } catch (error) {
@@ -149,7 +148,8 @@ async function* streamAgentChat({
       yield {
         type: "error",
         error: describeHttpFailure({ status: response.status, body: errorData }),
-        code: errorData.code,
+        // Vercel's own 413 has no JSON body, so the status alone names it.
+        code: errorData.code ?? (response.status === 413 ? "REQUEST_TOO_LARGE" : undefined),
         details,
       };
     }
@@ -281,6 +281,14 @@ export async function* runAgentLoop({
       if (runId) streamOptions.runId = runId;
     }
 
+    // Measured in UTF-8 bytes, as the server counts them: string length undercounts non-ASCII text.
+    const body = JSON.stringify(streamOptions);
+    if (new TextEncoder().encode(body).length > AGENT_SIZE_LIMITS.requestBytes) {
+      yield REQUEST_TOO_LARGE_NOTICE;
+      return;
+    }
+
+    const isContinuation = streamOptions.previousTurns !== undefined;
     const isLastTurn = turnCount === maxTurns;
     let hasToolUse = false;
     let skippedToolCall = false;
@@ -292,7 +300,7 @@ export async function* runAgentLoop({
     const assistantContent: ContentBlock[] = [];
     let turnTextContent = ""; // Text content for this turn only
 
-    for await (const event of streamAgentChat({ baseUrl, options: streamOptions, signal })) {
+    for await (const event of streamAgentChat({ baseUrl, body, signal })) {
       // Checked per event so a stopped run never executes the remaining tool_use blocks of its turn.
       if (signal?.aborted) {
         yield CANCELLED_EVENT;
@@ -484,6 +492,11 @@ export async function* runAgentLoop({
           // A 409 with this code means a newer Run took over the chat; BALANCE_HELD is a 409 too.
           if (event.code === "RUN_SUPERSEDED") {
             yield { type: "run_notice", reason: "superseded", message: USER_FACING_TEXT.runSuperseded };
+            return;
+          }
+          // A first request's 413 is about the message or image; a continuation's is the Run's history.
+          if (event.code === "REQUEST_TOO_LARGE" && isContinuation) {
+            yield REQUEST_TOO_LARGE_NOTICE;
             return;
           }
           yield {

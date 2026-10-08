@@ -298,6 +298,57 @@ describe('runAgentLoop', () => {
     })
   })
 
+  describe('Request size', () => {
+    const tooLarge = 'This task grew too large to send, so Prophet stopped here. Send "continue" to keep going.'
+    const snapshotTurn = [
+      { type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'take_snapshot', input: {} } },
+      { type: 'done', stopReason: 'tool_use' },
+    ]
+
+    it("doesn't send a request over the limit in UTF-8 bytes, and ends the Run with its notice", async () => {
+      // 1.5M characters is well under 4,000,000 as string length, but each euro sign is 3 bytes.
+      const page = '€'.repeat(1_500_000)
+      const { fetchMock } = serveTurns([snapshotTurn])
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: page, durationMs: 1 })
+
+      const events = await collect()
+
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(events.map((event) => event.type)).not.toContain('error')
+      expect(events.at(-1)).toEqual({ type: 'run_notice', reason: 'request_too_large', message: tooLarge })
+    })
+
+    it('sends a request just under the limit', async () => {
+      const page = 'a'.repeat(3_900_000)
+      const { fetchMock } = serveTurns([snapshotTurn, [{ type: 'done', stopReason: 'end_turn' }]])
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: page, durationMs: 1 })
+
+      await collect()
+
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+    })
+
+    it.each([
+      ['a 413 without a JSON body', new Response('Request Entity Too Large', { status: 413 })],
+      [
+        "the server's 413",
+        new Response(
+          JSON.stringify({ error: 'This request is too large to send. Start a new chat to continue.', code: 'REQUEST_TOO_LARGE' }),
+          { status: 413 }
+        ),
+      ],
+    ])('ends a grown Run with its notice, not the image text, on %s', async (_label, response) => {
+      const { fetchMock } = serveTurns([snapshotTurn])
+      fetchMock.mockResolvedValueOnce(response)
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'uid=1 link "Invoice"', durationMs: 1 })
+
+      const events = await collect()
+
+      expect(JSON.stringify(events)).not.toContain('image')
+      expect(events.at(-1)).toEqual({ type: 'run_notice', reason: 'request_too_large', message: tooLarge })
+    })
+  })
+
   describe('pause_turn', () => {
     const pausedBlocks = [
       { type: 'text', text: 'Searching for the invoice.' },
