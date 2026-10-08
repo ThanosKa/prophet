@@ -104,6 +104,58 @@ describe('agentChatRequestSchema', () => {
   })
 })
 
+describe('server size caps in agentChatRequestSchema', () => {
+  const CHAT_ID = '550e8400-e29b-41d4-a716-446655440000'
+  const snapshotCall = (id = 'toolu_1') => ({ type: 'tool_use', id, name: 'take_snapshot', input: {} })
+  const resultFor = (id = 'toolu_1') => ({ type: 'tool_result', tool_use_id: id, content: 'ok' })
+  const withTurn = (content: unknown[], toolResults: unknown[] = [resultFor()]) =>
+    agentChatRequestSchema.safeParse({ chatId: CHAT_ID, previousTurns: [{ content, toolResults }] })
+
+  it('accepts every field right at its cap', () => {
+    const result = withTurn([
+      { type: 'thinking', thinking: 't'.repeat(200_000), signature: 's'.repeat(200_000) },
+      { type: 'text', text: 'a'.repeat(200_000) },
+      // {"value":"…"} is 12 chars of JSON around the value.
+      { type: 'tool_use', id: 'i'.repeat(256), name: 'fill_element_by_uid', input: { value: 'v'.repeat(99_988) } },
+      snapshotCall(),
+    ])
+
+    expect(result.success).toBe(true)
+  })
+
+  it.each([
+    ['thinking', { type: 'thinking', thinking: 't'.repeat(200_001), signature: 'sig' }],
+    ['a signature', { type: 'thinking', thinking: '', signature: 's'.repeat(200_001) }],
+    ['a tool_use id', snapshotCall('i'.repeat(257))],
+    ['a server tool input', { type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: { query: 'q'.repeat(100_000) } }],
+  ])('rejects %s over its cap', (_label, block) => {
+    expect(withTurn([block, snapshotCall()]).success).toBe(false)
+  })
+
+  it('accepts 100 blocks and 100 tool results in a Turn, but not 101', () => {
+    const calls = (count: number) => Array.from({ length: count }, (_, i) => snapshotCall(`toolu_${i}`))
+    const results = (count: number) => Array.from({ length: count }, (_, i) => resultFor(`toolu_${i}`))
+
+    expect(withTurn(calls(100), results(100)).success).toBe(true)
+    expect(withTurn([...calls(100), { type: 'text', text: 'one more' }], results(100)).success).toBe(false)
+    expect(withTurn(calls(100), [...results(100), resultFor('toolu_0')]).success).toBe(false)
+  })
+
+  it('caps the legacy single-Turn form the same way', () => {
+    const calls = Array.from({ length: 101 }, (_, i) => snapshotCall(`toolu_${i}`))
+
+    expect(agentChatRequestSchema.safeParse({ chatId: CHAT_ID, previousContent: calls }).success).toBe(false)
+  })
+
+  it('accepts an image of 3,000,000 base64 chars but not one more', () => {
+    const withImage = (base64: string) =>
+      agentChatRequestSchema.safeParse({ chatId: CHAT_ID, userMessage: 'Look', image: { base64, mediaType: 'image/png' } })
+
+    expect(withImage('A'.repeat(3_000_000)).success).toBe(true)
+    expect(withImage('A'.repeat(3_000_001)).success).toBe(false)
+  })
+})
+
 describe('agentInitialMessageSchema', () => {
   it('validates valid initial message', () => {
     const data = {
@@ -507,6 +559,35 @@ describe('toolResultSchema', () => {
     }
 
     const result = toolResultSchema.safeParse(data)
+    expect(result.success).toBe(false)
+  })
+
+  const resultWith = (content: string) => ({ type: 'tool_result', tool_use_id: 'tool_123', content })
+
+  it('keeps a result of exactly 200,000 chars as it is', () => {
+    const content = 'a'.repeat(200_000)
+
+    expect(toolResultSchema.parse(resultWith(content)).content).toBe(content)
+  })
+
+  it('shortens a longer result to its first 200,000 chars and a note', () => {
+    const { content } = toolResultSchema.parse(resultWith('a'.repeat(200_000) + 'b'.repeat(50_000)))
+
+    expect(content).toBe(
+      'a'.repeat(200_000) +
+        '\n\n[Shortened by the server: this tool result had 250000 characters; only the first 200000 are shown.]'
+    )
+  })
+
+  it('never cuts an emoji in half when shortening', () => {
+    const { content } = toolResultSchema.parse(resultWith('a'.repeat(199_999) + '😀' + 'b'.repeat(10)))
+
+    expect(content.startsWith('a'.repeat(199_999) + '\n\n[Shortened')).toBe(true)
+  })
+
+  it('rejects a tool_use_id over 256 chars', () => {
+    const result = toolResultSchema.safeParse({ ...resultWith('ok'), tool_use_id: 't'.repeat(257) })
+
     expect(result.success).toBe(false)
   })
 })

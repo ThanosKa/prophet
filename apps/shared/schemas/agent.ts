@@ -1,5 +1,29 @@
 import { z } from "zod";
 
+// The Turn limit: the extension's agent loop pauses after this many Turns per Run.
+// The server accepts up to this many earlier Turns, so older builds that stop sooner keep working.
+export const MAX_AGENT_TURNS = 20;
+
+// Every size limit of an agent Run. The extension caps what it sends; the server's caps
+// sit well above them, so only a broken or hostile client ever reaches one.
+export const AGENT_SIZE_LIMITS = {
+  // Extension caps
+  snapshotChars: 20_000,
+  snapshotNodeTextChars: 200,
+  pageContentChars: 15_000,
+  attachedImageChars: 2_000_000,
+  // Server caps
+  toolResultChars: 200_000,
+  textChars: 200_000,
+  toolInputJsonChars: 100_000,
+  idChars: 256,
+  blocksPerTurn: 100,
+  toolResultsPerTurn: 100,
+  imageChars: 3_000_000,
+  // Both: the extension checks before sending, the route answers 413 REQUEST_TOO_LARGE
+  requestBytes: 4_000_000,
+} as const;
+
 export const toolNameSchema = z.enum([
   "take_snapshot",
   "click_element_by_uid",
@@ -22,10 +46,36 @@ export const toolNameSchema = z.enum([
   "get_page_info",
 ]);
 
+/**
+ * Cuts a tool result to the server cap and says so. Pure: the same result is cut the same
+ * way on every Turn of a Run, so the resent prompt keeps its cached prefix, and an older
+ * build's huge snapshot can't end a Run with a 400.
+ */
+export function shortenToolResult(content: string): string {
+  const cap = AGENT_SIZE_LIMITS.toolResultChars;
+  if (content.length <= cap) return content;
+  // Never split a surrogate pair: half an emoji is not valid text.
+  const lastKept = content.charCodeAt(cap - 1);
+  const kept = lastKept >= 0xd800 && lastKept <= 0xdbff ? cap - 1 : cap;
+  return `${content.slice(0, kept)}\n\n[Shortened by the server: this tool result had ${content.length} characters; only the first ${kept} are shown.]`;
+}
+
+// Server caps from AGENT_SIZE_LIMITS. The extension's own caps are far lower, so only a
+// broken or hostile client reaches one, and it gets a 400 instead of a costly prompt.
+const idSchema = z.string().max(AGENT_SIZE_LIMITS.idChars);
+const textSchema = z.string().max(AGENT_SIZE_LIMITS.textChars);
+// Measured on the JSON text: that is what Claude reads and what every later Turn resends.
+const toolInputSchema = z
+  .record(z.unknown())
+  .refine(
+    (input) => JSON.stringify(input).length <= AGENT_SIZE_LIMITS.toolInputJsonChars,
+    `Tool input is over ${AGENT_SIZE_LIMITS.toolInputJsonChars} characters of JSON`
+  );
+
 export const toolResultSchema = z.object({
   type: z.literal("tool_result"),
-  tool_use_id: z.string(),
-  content: z.string(),
+  tool_use_id: idSchema,
+  content: z.string().transform(shortenToolResult),
   is_error: z.boolean().optional(),
 });
 
@@ -39,7 +89,7 @@ export const webSearchCitationSchema = z.object({
 
 export const textContentSchema = z.object({
   type: z.literal("text"),
-  text: z.string(),
+  text: textSchema,
   citations: z.array(webSearchCitationSchema).nullable().optional(),
 });
 
@@ -124,7 +174,7 @@ export function resolveAgentModel(model: string): CurrentAgentModel {
 }
 
 export const imageDataSchema = z.object({
-  base64: z.string().min(1),
+  base64: z.string().min(1).max(AGENT_SIZE_LIMITS.imageChars),
   mediaType: z.enum(["image/jpeg", "image/png", "image/gif", "image/webp"]),
 });
 
@@ -212,9 +262,9 @@ export const toolCallerSchema = z.object({ type: z.string() }).passthrough();
 // The per-tool input schemas above are the extension's check before a tool runs.
 export const toolUseSchema = z.object({
   type: z.literal("tool_use"),
-  id: z.string(),
+  id: idSchema,
   name: toolNameSchema,
-  input: z.record(z.unknown()),
+  input: toolInputSchema,
   caller: toolCallerSchema.optional(),
 });
 
@@ -239,15 +289,15 @@ export const webSearchToolResultErrorSchema = z.object({
 
 export const serverToolUseSchema = z.object({
   type: z.literal("server_tool_use"),
-  id: z.string(),
+  id: idSchema,
   name: z.literal(WEB_SEARCH_TOOL_NAME),
-  input: z.record(z.unknown()),
+  input: toolInputSchema,
   caller: toolCallerSchema.optional(),
 });
 
 export const webSearchToolResultSchema = z.object({
   type: z.literal("web_search_tool_result"),
-  tool_use_id: z.string(),
+  tool_use_id: idSchema,
   content: z.union([
     z.array(webSearchResultSchema),
     webSearchToolResultErrorSchema,
@@ -259,8 +309,8 @@ export const webSearchToolResultSchema = z.object({
 // so a client cannot forge reasoning, and dropping them would change the prefix.
 export const thinkingBlockSchema = z.object({
   type: z.literal("thinking"),
-  thinking: z.string(),
-  signature: z.string(),
+  thinking: textSchema,
+  signature: textSchema,
 });
 
 export const redactedThinkingBlockSchema = z.object({
@@ -277,35 +327,11 @@ export const contentBlockSchema = z.union([
   redactedThinkingBlockSchema,
 ]);
 
-// The Turn limit: the extension's agent loop pauses after this many Turns per Run.
-// The server accepts up to this many earlier Turns, so older builds that stop sooner keep working.
-export const MAX_AGENT_TURNS = 20;
-
-// Every size limit of an agent Run. The extension caps what it sends; the server's caps
-// sit well above them, so only a broken or hostile client ever reaches one.
-export const AGENT_SIZE_LIMITS = {
-  // Extension caps
-  snapshotChars: 20_000,
-  snapshotNodeTextChars: 200,
-  pageContentChars: 15_000,
-  attachedImageChars: 2_000_000,
-  // Server caps
-  toolResultChars: 200_000,
-  textChars: 200_000,
-  toolInputJsonChars: 100_000,
-  idChars: 256,
-  blocksPerTurn: 100,
-  toolResultsPerTurn: 100,
-  imageChars: 3_000_000,
-  // Both: the extension checks before sending, the route answers 413 REQUEST_TOO_LARGE
-  requestBytes: 4_000_000,
-} as const;
-
 // One completed request of an agent run: what the model said, then what the tools returned.
 export const agentTurnSchema = z
   .object({
-    content: z.array(contentBlockSchema).min(1),
-    toolResults: z.array(toolResultSchema),
+    content: z.array(contentBlockSchema).min(1).max(AGENT_SIZE_LIMITS.blocksPerTurn),
+    toolResults: z.array(toolResultSchema).max(AGENT_SIZE_LIMITS.toolResultsPerTurn),
   })
   .superRefine(({ content, toolResults }, ctx) => {
     const toolUseIds = new Set(
@@ -330,8 +356,8 @@ export const agentChatRequestSchema = z.object({
   // conversation append-only, so each request is a prompt-cache hit on the last one.
   previousTurns: z.array(agentTurnSchema).min(1).max(MAX_AGENT_TURNS).optional(),
   // Legacy single-turn form, still sent by already-installed extension builds.
-  toolResults: z.array(toolResultSchema).optional(),
-  previousContent: z.array(contentBlockSchema).optional(),
+  toolResults: z.array(toolResultSchema).max(AGENT_SIZE_LIMITS.toolResultsPerTurn).optional(),
+  previousContent: z.array(contentBlockSchema).max(AGENT_SIZE_LIMITS.blocksPerTurn).optional(),
   image: imageDataSchema.optional(),
   enableThinking: z.boolean().optional().default(false),
   enableWebSearch: z.boolean().optional().default(false),

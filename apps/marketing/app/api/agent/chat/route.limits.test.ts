@@ -85,3 +85,121 @@ describe('request size in POST /api/agent/chat', () => {
     expect(await response.json()).toMatchObject({ code: 'REQUEST_TOO_LARGE', error: expect.any(String) })
   })
 })
+
+type ApiBlock = Record<string, unknown>
+type StopReason = 'tool_use' | 'end_turn'
+type Usage = { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number }
+
+/** One Anthropic response: streams `content`, then reports it from finalMessage(). */
+function anthropicTurn({
+  content,
+  stopReason,
+  usage = { input_tokens: 100, output_tokens: 50 },
+}: {
+  content: ApiBlock[]
+  stopReason: StopReason
+  usage?: Usage
+}) {
+  return {
+    [Symbol.asyncIterator]: async function* () {
+      yield { type: 'message_start', message: { usage: { ...usage, output_tokens: 1 } } }
+      for (const [index, block] of content.entries()) {
+        if (block.type === 'text') {
+          yield { type: 'content_block_start', index, content_block: { type: 'text', text: '' } }
+          yield { type: 'content_block_delta', index, delta: { type: 'text_delta', text: block.text } }
+        } else {
+          yield { type: 'content_block_start', index, content_block: block }
+        }
+        yield { type: 'content_block_stop', index }
+      }
+      yield { type: 'message_delta', delta: { stop_reason: stopReason }, usage: { output_tokens: usage.output_tokens } }
+    },
+    finalMessage: () => Promise.resolve({ stop_reason: stopReason, content, usage }),
+  }
+}
+
+const doneTurn = () => anthropicTurn({ content: [{ type: 'text', text: 'Done.' }], stopReason: 'end_turn' })
+
+function sentParams(call = 0) {
+  const params = streamMock.mock.calls[call]?.[0]
+  if (!params) throw new Error(`no Anthropic call #${call}`)
+  return params
+}
+
+/** A Turn that took a snapshot and got `snapshot` back, as the extension echoes it. */
+function snapshotTurn({ id, snapshot }: { id: string; snapshot: string }) {
+  return {
+    content: [{ type: 'tool_use', id, name: 'take_snapshot', input: {} }],
+    toolResults: [{ type: 'tool_result', tool_use_id: id, content: snapshot }],
+  }
+}
+
+describe('field sizes in POST /api/agent/chat', () => {
+  const hugeSnapshot = Array.from({ length: 25_000 }, (_, i) => `uid=${i} link "Invoice ${i}"`).join('\n')
+
+  it('shortens an over-cap tool result the same way on consecutive Turns, so the prompt prefix holds', async () => {
+    expect(hugeSnapshot.length).toBeGreaterThan(250_000)
+    streamMock.mockReturnValueOnce(doneTurn()).mockReturnValueOnce(doneTurn())
+    const first = snapshotTurn({ id: 'toolu_1', snapshot: hugeSnapshot })
+    const second = snapshotTurn({ id: 'toolu_2', snapshot: 'uid=1 link "Invoice 1"' })
+
+    const responses = [
+      await post({ model: 'claude-haiku-5-5', previousTurns: [first] }),
+      await post({ model: 'claude-haiku-5-5', previousTurns: [first, second] }),
+    ]
+    for (const response of responses) await response.text()
+
+    expect(responses.map((response) => response.status)).toEqual([200, 200])
+    const sentResult = (call: number) => sentParams(call).messages[1].content[0].content
+    expect(sentResult(0).length).toBeLessThan(200_200)
+    expect(sentResult(0).startsWith(hugeSnapshot.slice(0, 199_000))).toBe(true)
+    expect(sentResult(0)).toMatch(/shortened/i)
+    expect(sentResult(1)).toBe(sentResult(0))
+    const earlier = JSON.stringify(sentParams(0).messages)
+    const later = JSON.stringify(sentParams(1).messages)
+    expect(later.startsWith(earlier.slice(0, -1))).toBe(true)
+  })
+
+  it.each([
+    ['a text block over 200,000 chars', [{ type: 'text', text: 'a'.repeat(200_001) }]],
+    [
+      'a tool input over 100,000 chars of JSON',
+      [{ type: 'tool_use', id: 'toolu_1', name: 'fill_element_by_uid', input: { uid: '4', value: 'v'.repeat(100_000) } }],
+    ],
+  ])('rejects a Turn with %s', async (_label, content) => {
+    const response = await post({
+      model: 'claude-haiku-5-5',
+      previousTurns: [
+        {
+          content: [...content, { type: 'tool_use', id: 'toolu_2', name: 'take_snapshot', input: {} }],
+          toolResults: [{ type: 'tool_result', tool_use_id: 'toolu_2', content: 'uid=1 link "Inbox"' }],
+        },
+      ],
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({ code: 'VALIDATION_ERROR' })
+    expect(streamMock).not.toHaveBeenCalled()
+  })
+
+  it('still answers a request shaped like extension 1.0.5 sends it with a 250K-char snapshot', async () => {
+    streamMock.mockReturnValue(doneTurn())
+    const snapshot = 'x'.repeat(250_000)
+    // 1.0.5 sends its baked-in model id, no runId, and each Turn's server contentBlocks unchanged.
+    const previousTurns = [
+      {
+        content: [
+          { type: 'text', text: 'Reading the page.' },
+          { type: 'tool_use', id: 'toolu_snap', name: 'take_snapshot', input: {}, caller: { type: 'direct' } },
+        ],
+        toolResults: [{ type: 'tool_result', tool_use_id: 'toolu_snap', content: snapshot, is_error: false }],
+      },
+    ]
+
+    const response = await post({ model: 'claude-haiku-4-5', enableThinking: false, enableWebSearch: false, previousTurns })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(streamMock).toHaveBeenCalledOnce()
+  })
+})
