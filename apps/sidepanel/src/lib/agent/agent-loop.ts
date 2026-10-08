@@ -439,12 +439,19 @@ export async function* runAgentLoop({
 
               toolResults.push(result);
 
-              yield {
-                type: "tool_call_complete",
-                toolName: toolUse.name,
-                result: resultContent,
-                toolCallId: toolUse.id,
-              };
+              yield toolResult.success
+                ? {
+                    type: "tool_call_complete",
+                    toolName: toolUse.name,
+                    result: resultContent,
+                    toolCallId: toolUse.id,
+                  }
+                : {
+                    type: "tool_call_error",
+                    toolName: toolUse.name,
+                    error: resultContent,
+                    toolCallId: toolUse.id,
+                  };
             } catch (error) {
               const message = error instanceof Error ? error.message : String(error);
               // Anthropic rejects the next turn if any tool_use lacks a matching tool_result.

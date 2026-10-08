@@ -259,6 +259,7 @@ export class ChatAdapter {
         name: string
         input: Record<string, unknown>
         result?: string
+        isError: boolean
     }> {
         return message.parts
             // Keep tool history stable: executing tool is rendered separately as `currentToolCall`.
@@ -266,8 +267,9 @@ export class ChatAdapter {
             .map((p) => ({
                 id: p.toolCallId,
                 name: p.toolName,
-                input: (p.input as Record<string, unknown>) || {},
-                result: p.output,
+                input: p.input ?? {},
+                result: p.output ?? p.error,
+                isError: p.state === 'error',
             }))
     }
 

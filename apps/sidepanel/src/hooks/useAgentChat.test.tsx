@@ -328,6 +328,28 @@ describe('useAgentChat run isolation', () => {
     expect(JSON.stringify(assistant?.parts)).not.toContain('temporarily busy')
   })
 
+  it("keeps a failed tool call's error state on the assistant message", async () => {
+    const runs = scriptRuns([
+      {
+        before: [
+          { type: 'tool_call_start', toolName: 'take_snapshot', params: {}, toolCallId: 't1' },
+          { type: 'tool_call_error', toolName: 'take_snapshot', error: 'No active tab found', toolCallId: 't1' },
+        ],
+        after: [{ type: 'content_delta', delta: 'No tab.' }, { type: 'done' }],
+      },
+    ])
+
+    await act(async () => {
+      void current().sendMessage('chat-1', 'snap it')
+    })
+    await act(async () => runs[0].release())
+
+    const assistant = (useChatStore.getState().messages['chat-1'] ?? []).find((m) => m.role === 'assistant')
+    expect(assistant?.toolCalls).toEqual([
+      expect.objectContaining({ id: 't1', name: 'take_snapshot', isError: true, result: 'No active tab found' }),
+    ])
+  })
+
   it('clears the error banner and notice when the user switches to another chat', async () => {
     const runs = scriptRuns([{ before: [{ type: 'error', error: 'Not enough credits.', code: 'INSUFFICIENT_BALANCE' }], after: [] }])
     await act(async () => {

@@ -465,6 +465,24 @@ describe('runAgentLoop', () => {
       ])
     })
 
+    it('reports a tool that returned a failure as a tool_call_error, not as completed', async () => {
+      const { bodies } = serveTurns([
+        [{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'take_snapshot', input: {} } }, { type: 'done' }],
+        [{ type: 'content_delta', delta: 'ok' }, { type: 'done' }],
+      ])
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: false, error: 'No active tab found' })
+
+      const events = await collect()
+
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: 'tool_call_error', toolCallId: 't1', error: 'No active tab found' })
+      )
+      expect(events).not.toContainEqual(expect.objectContaining({ type: 'tool_call_complete', toolCallId: 't1' }))
+      expect(bodies()[1].previousTurns[0].toolResults).toEqual([
+        { type: 'tool_result', tool_use_id: 't1', content: 'No active tab found', is_error: true },
+      ])
+    })
+
     it('runs no tools on Turn 20, and the Turn-limit notice follows the reply', async () => {
       const { fetchMock } = serveEveryTurn([
         { type: 'content_delta', delta: 'Scrolling.' },
