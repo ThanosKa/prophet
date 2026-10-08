@@ -199,15 +199,25 @@ async function* streamAgentChat({
   }
 }
 
-export async function* runAgentLoop(
-  baseUrl: string,
-  chatId: string,
-  userMessage: string,
-  model: AgentModel = DEFAULT_AGENT_MODEL,
-  image?: ImageData,
-  signal?: AbortSignal,
-  enableThinking?: boolean
-): AsyncGenerator<AgentRunEvent> {
+export interface RunAgentLoopOptions {
+  baseUrl: string;
+  chatId: string;
+  userMessage: string;
+  model?: AgentModel;
+  image?: ImageData;
+  signal?: AbortSignal;
+  enableThinking?: boolean;
+}
+
+export async function* runAgentLoop({
+  baseUrl,
+  chatId,
+  userMessage,
+  model = DEFAULT_AGENT_MODEL,
+  image,
+  signal,
+  enableThinking,
+}: RunAgentLoopOptions): AsyncGenerator<AgentRunEvent> {
   // Append-only: each request resends the previous one's turns unchanged, so the
   // server's prompt cache hits and the model keeps every earlier tool observation.
   const previousTurns: AgentTurn[] = [];

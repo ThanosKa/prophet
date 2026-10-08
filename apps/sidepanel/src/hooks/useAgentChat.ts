@@ -158,17 +158,17 @@ export function useAgentChat() {
         // Otherwise use production endpoint
         const eventStream = config.useMockApi
           ? mockAgentStream(chatId, content, selectedModel, signal, enableThinking)
-          : runAgentLoop(
-              config.useDevApi
+          : runAgentLoop({
+              baseUrl: config.useDevApi
                 ? `${config.apiUrl}/api/agent/chat/dev`
                 : `${config.apiUrl}/api/agent/chat`,
               chatId,
-              content,
-              selectedModel,
+              userMessage: content,
+              model: selectedModel,
               image,
               signal,
-              enableThinking
-            )
+              enableThinking,
+            })
 
         // A run counts as successful when the final turn completes without an error event.
         // These two events are only emitted once the model finishes without requesting more tools.
