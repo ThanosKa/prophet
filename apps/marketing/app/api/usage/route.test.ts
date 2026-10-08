@@ -183,21 +183,33 @@ describe('GET /api/usage (daily totals per model)', () => {
     expect(body.data.rows.map((row: { day: string }) => row.day)).toEqual(['2026-10-08', '2026-10-07'])
   })
 
-  it('totals only the usage inside the from/to date range filter', async () => {
+  it('totals the from/to range as whole UTC days, including all of the last day', async () => {
     await seed([
-      { at: '2026-10-08T12:00:00Z', costCents: 100 },
-      { at: '2026-10-07T20:00:00Z', costCents: 5 },
+      { at: '2026-10-08T00:00:00Z', costCents: 100 },
+      { at: '2026-10-07T23:59:59.500Z', costCents: 5 },
       { at: '2026-10-07T08:00:00Z', costCents: 7 },
-      { at: '2026-10-06T08:00:00Z', costCents: 9 },
-      { at: '2026-10-05T08:00:00Z', costCents: 200 },
+      { at: '2026-10-06T00:00:00Z', costCents: 9 },
+      { at: '2026-10-05T23:59:59.999Z', costCents: 200 },
     ])
 
-    const { body } = await getUsage('?from=2026-10-06T00:00:00.000Z&to=2026-10-07T23:59:59.999Z')
+    const { body } = await getUsage('?from=2026-10-06&to=2026-10-07')
 
     expect(body.data.rows).toEqual([
       expect.objectContaining({ day: '2026-10-07', turns: 2, credits: 12 }),
       expect.objectContaining({ day: '2026-10-06', turns: 1, credits: 9 }),
     ])
+  })
+
+  it('totals a single UTC day when from and to are the same day', async () => {
+    await seed([
+      { at: '2026-10-07T23:59:59.999Z', costCents: 5 },
+      { at: '2026-10-07T00:00:00Z', costCents: 7 },
+      { at: '2026-10-08T00:00:00Z', costCents: 100 },
+    ])
+
+    const { body } = await getUsage('?from=2026-10-07&to=2026-10-07')
+
+    expect(body.data.rows).toEqual([expect.objectContaining({ day: '2026-10-07', turns: 2, credits: 12 })])
   })
 
   it('returns 401 when the user is not signed in', async () => {
@@ -221,6 +233,7 @@ describe('GET /api/usage (daily totals per model)', () => {
   it.each([
     ['a day that is not YYYY-MM-DD', '?before=08-10-2026'],
     ['a day that does not exist', '?before=2026-02-30'],
+    ['a range end that is a timestamp, not a UTC day', '?to=2026-10-07T23:59:59.999Z'],
     ['zero days', '?days=0'],
     ['too many days', '?days=91'],
     ['a non-numeric page size', '?days=week'],
