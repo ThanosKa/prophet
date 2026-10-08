@@ -30,6 +30,7 @@ import {
   AGENT_SIZE_LIMITS,
   agentChatRequestSchema,
   DEFAULT_AGENT_MODEL,
+  getModelContextWindow,
   resolveAgentModel,
   sanitizeForLog,
 } from "@prophet/shared";
@@ -606,7 +607,7 @@ export async function POST(req: Request) {
           const assistantToolCalls = contentBlocks.filter(b => b.type === "tool_use");
           const hasContent = fullTextResponse.trim().length > 0 || assistantToolCalls.length > 0;
 
-          const MAX_CONTEXT_TOKENS = 200000;
+          const maxContextTokens = getModelContextWindow(model);
           await db.transaction(async (tx) => {
             // Only save assistant message on FINAL turn to prevent duplicate messages
             // During intermediate turns, the client manages conversation state
@@ -639,7 +640,7 @@ export async function POST(req: Request) {
             // Update context tokens on final turn only
             if (isFinalTurn) {
               const promptTokens = inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
-              const newContextTokens = Math.min(promptTokens + outputTokens, MAX_CONTEXT_TOKENS);
+              const newContextTokens = Math.min(promptTokens + outputTokens, maxContextTokens);
               await tx
                 .update(chats)
                 .set({

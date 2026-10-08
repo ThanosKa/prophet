@@ -9,6 +9,7 @@ import { AGENT_TURN_MAX_TOKENS, buildAgentTools, buildOutputConfig, buildThinkin
 import {
   agentChatRequestSchema,
   DEFAULT_AGENT_MODEL,
+  getModelContextWindow,
   resolveAgentModel,
   sanitizeForLog,
 } from '@prophet/shared'
@@ -285,9 +286,8 @@ export async function POST(req: Request) {
           const assistantToolCalls = contentBlocks.filter(b => b.type === "tool_use");
           const hasContent = fullTextResponse.trim().length > 0 || assistantToolCalls.length > 0;
 
-          const MAX_CONTEXT_TOKENS = 200000;
           const promptTokens = inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
-          const newContextTokens = Math.min(promptTokens + outputTokens, MAX_CONTEXT_TOKENS);
+          const newContextTokens = Math.min(promptTokens + outputTokens, getModelContextWindow(model));
 
           await db.transaction(async (tx) => {
             // Save user message on first turn only

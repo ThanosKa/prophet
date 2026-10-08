@@ -93,6 +93,8 @@ return new Response(stream.toReadableStream(), {
 - Deduct credits in a database transaction
 - Return stream with proper Content-Type header
 - Never expose `ANTHROPIC_API_KEY` to client
+- Take every size limit from `AGENT_SIZE_LIMITS` in `@prophet/shared` (next to `MAX_AGENT_TURNS`), never a local number. The route answers a body over `requestBytes` with 413 `REQUEST_TOO_LARGE`; the request schema caps each field and shortens an over-cap tool result the same way every time, so the cached prefix holds
+- Take a model's context window from `getModelContextWindow` (the `contextWindowTokens` on `MODEL_CONFIG`), never a fixed 200K: the chat's stored context is clamped by it
 
 ### Prompt Caching
 

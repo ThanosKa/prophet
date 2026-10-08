@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { generateDrizzleJson, generateMigration } from 'drizzle-kit/api'
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import * as schema from '@/lib/db/schema'
 import { POST } from './route'
 
@@ -201,5 +201,31 @@ describe('field sizes in POST /api/agent/chat', () => {
 
     expect(response.status).toBe(200)
     expect(streamMock).toHaveBeenCalledOnce()
+  })
+})
+
+describe('chat context in POST /api/agent/chat', () => {
+  async function storedContextTokens() {
+    const chat = await db.query.chats.findFirst({ where: eq(schema.chats.id, CHAT_ID) })
+    return chat?.contextTokens
+  }
+
+  it.each([
+    ['a prompt past the old 200K clamp', 'claude-sonnet-5-5', 300_000, 300_050],
+    ['a prompt past the 1M window', 'claude-haiku-5-5', 1_200_000, 1_000_000],
+  ])('stores the context of %s, clamped by the model window', async (_label, model, cachedTokens, expected) => {
+    streamMock.mockReturnValue(
+      anthropicTurn({
+        content: [{ type: 'text', text: 'Done.' }],
+        stopReason: 'end_turn',
+        usage: { input_tokens: 0, cache_read_input_tokens: cachedTokens, output_tokens: 50 },
+      })
+    )
+
+    const response = await post({ model, userMessage: 'Summarise this page' })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(await storedContextTokens()).toBe(expected)
   })
 })

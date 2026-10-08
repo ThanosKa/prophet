@@ -108,20 +108,30 @@ export const MODEL_CONFIG = [
     id: CLAUDE_MODELS.HAIKU,
     label: 'Haiku 5.5',
     description: 'Fast & efficient',
+    contextWindowTokens: 1_000_000,
   },
   {
     id: CLAUDE_MODELS.SONNET,
     label: 'Sonnet 5.5',
     description: 'Balanced',
+    contextWindowTokens: 1_000_000,
   },
   {
     id: CLAUDE_MODELS.OPUS,
     label: 'Opus 5.5',
     description: 'Most capable',
+    contextWindowTokens: 1_000_000,
   },
 ] as const;
 
 export type ModelConfig = typeof MODEL_CONFIG[number];
+
+/** The most tokens a model reads in one request: the chat's context meter and clamp use it. */
+export function getModelContextWindow(model: CurrentAgentModel): number {
+  const config = MODEL_CONFIG.find((entry) => entry.id === model);
+  if (!config) throw new Error(`No model config for ${model}`);
+  return config.contextWindowTokens;
+}
 
 /**
  * Model IDs baked into Chrome extension builds shipped before each model

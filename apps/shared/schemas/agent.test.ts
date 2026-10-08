@@ -7,6 +7,7 @@ import {
   LEGACY_MODEL_ALIASES,
   LEGACY_MODEL_IDS,
   MODEL_CONFIG,
+  getModelContextWindow,
   resolveAgentModel,
   agentInitialMessageSchema,
   agentContinueMessageSchema,
@@ -674,6 +675,12 @@ describe('Model constants and legacy aliases', () => {
       expect(entry.label.length).toBeGreaterThan(0)
       expect(entry.description.length).toBeGreaterThan(0)
     }
+  })
+
+  it('gives every current model its 1M-token context window', () => {
+    expect(Object.values(CLAUDE_MODELS).map((model) => getModelContextWindow(model))).toEqual([
+      1_000_000, 1_000_000, 1_000_000,
+    ])
   })
 
   it('accepts every current model id', () => {
