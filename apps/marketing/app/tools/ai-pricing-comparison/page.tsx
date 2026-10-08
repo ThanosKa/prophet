@@ -25,16 +25,14 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import Link from 'next/link'
+import { TIER_CONFIG, calculateCostInCredits, formatCreditsAsDollars, type ModelName } from '@/lib/pricing'
 
-const PROPHET_MARKUP = 1.20
-
+// Prophet runs Claude only, so these are the models it can estimate a Prophet bill for.
 const MODEL_OPTIONS = {
-  'claude-haiku': { name: 'Claude Haiku 5.5', input: 0.1, output: 0.5 },
-  'claude-sonnet': { name: 'Claude Sonnet 5.5', input: 2, output: 10 },
-  'claude-opus': { name: 'Claude Opus 5.5', input: 4, output: 20 },
-  'gpt-4o': { name: 'GPT-4o', input: 2.5, output: 10 },
-  'gemini-2.5-pro': { name: 'Gemini 2.5 Pro', input: 1.25, output: 10 },
-} as const
+  'claude-haiku': { name: 'Claude Haiku 5.5', prophetModel: 'claude-haiku-5-5' },
+  'claude-sonnet': { name: 'Claude Sonnet 5.5', prophetModel: 'claude-sonnet-5-5' },
+  'claude-opus': { name: 'Claude Opus 5.5', prophetModel: 'claude-opus-5-5' },
+} as const satisfies Record<string, { name: string; prophetModel: ModelName }>
 
 type ModelKey = keyof typeof MODEL_OPTIONS
 
@@ -74,20 +72,10 @@ export default function AiPricingComparisonPage() {
   const tokens = LENGTH_TOKENS[msgLength]
   const model = MODEL_OPTIONS[selectedModel]
 
-  const prophetMonthlyCost = useMemo(() => {
-    const inputCost = (tokens.input / 1_000_000) * model.input
-    const outputCost = (tokens.output / 1_000_000) * model.output
-    const perRequest = (inputCost + outputCost) * PROPHET_MARKUP
-    return perRequest * messagesPerDay * 30
-  }, [messagesPerDay, tokens, model])
-
-  const breakeven = useMemo(() => {
-    const inputCost = (tokens.input / 1_000_000) * model.input
-    const outputCost = (tokens.output / 1_000_000) * model.output
-    const perRequest = (inputCost + outputCost) * PROPHET_MARKUP
-    if (perRequest <= 0) return Infinity
-    return Math.floor(20 / (perRequest * 30))
-  }, [tokens, model])
+  // What Prophet charges for one message, in dollars: rounded up to whole Credits, never below the Minimum charge.
+  const perMessage = calculateCostInCredits(model.prophetModel, tokens.input, tokens.output) / 100
+  const prophetMonthlyCost = perMessage * messagesPerDay * 30
+  const breakeven = Math.floor(20 / (perMessage * 30))
 
   const services = useMemo(() => {
     return SERVICES.map((s) => ({
@@ -113,7 +101,7 @@ export default function AiPricingComparisonPage() {
             <p className="text-lg text-muted-foreground">
               Find out whether a flat-rate subscription or pay-per-use pricing saves you more money.
             </p>
-            <p className="text-xs text-muted-foreground mt-2">Last updated: March 2026</p>
+            <p className="text-xs text-muted-foreground mt-2">Last updated: October 2026</p>
           </div>
 
           <Card className="mb-8">
@@ -219,24 +207,18 @@ export default function AiPricingComparisonPage() {
                 <CardTitle className="text-base">Breakeven Point</CardTitle>
               </CardHeader>
               <CardContent>
-                {breakeven === Infinity ? (
-                  <p className="text-muted-foreground">Unable to calculate breakeven with current settings.</p>
+                <p className="text-3xl font-bold mb-2">{breakeven} messages/day</p>
+                <p className="text-sm text-muted-foreground">
+                  Prophet is cheaper than a $20/mo subscription if you send fewer than {breakeven} {msgLength} messages per day using {model.name}.
+                </p>
+                {messagesPerDay < breakeven ? (
+                  <p className="text-sm mt-3">
+                    You send <strong>{messagesPerDay}</strong> messages/day, which is <strong>below</strong> the breakeven. Prophet saves you <strong>{formatUSD(20 - prophetMonthlyCost)}/mo</strong>.
+                  </p>
                 ) : (
-                  <>
-                    <p className="text-3xl font-bold mb-2">{breakeven} messages/day</p>
-                    <p className="text-sm text-muted-foreground">
-                      Prophet is cheaper than a $20/mo subscription if you send fewer than {breakeven} {msgLength} messages per day using {model.name}.
-                    </p>
-                    {messagesPerDay < breakeven ? (
-                      <p className="text-sm mt-3">
-                        You send <strong>{messagesPerDay}</strong> messages/day, which is <strong>below</strong> the breakeven. Prophet saves you <strong>{formatUSD(20 - prophetMonthlyCost)}/mo</strong>.
-                      </p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground mt-3">
-                        At {messagesPerDay} messages/day, you are above the breakeven. A flat-rate subscription may be a better deal at this volume.
-                      </p>
-                    )}
-                  </>
+                  <p className="text-sm text-muted-foreground mt-3">
+                    At {messagesPerDay} messages/day, you are above the breakeven. A flat-rate subscription may be a better deal at this volume.
+                  </p>
                 )}
               </CardContent>
             </Card>
@@ -252,7 +234,7 @@ export default function AiPricingComparisonPage() {
                   <p>{messagesPerDay} messages/day x 30 days = {messagesPerDay * 30} messages/mo</p>
                   <p>Model: {model.name}</p>
                   <p>~{tokens.input} input + ~{tokens.output} output tokens per message</p>
-                  <p>Includes 20% platform fee</p>
+                  <p>Includes Prophet&apos;s margin, at least 1 credit per message</p>
                 </div>
               </CardContent>
             </Card>
@@ -267,7 +249,7 @@ export default function AiPricingComparisonPage() {
                 Fixed-price subscriptions like ChatGPT Plus and Claude Pro charge $20/mo regardless of how much you use them. This is great value for heavy users who send hundreds of messages daily, but most people use far less.
               </p>
               <p>
-                Prophet&apos;s pay-per-use model means you only pay for the AI tokens you actually consume. For users sending fewer than {breakeven === Infinity ? 'many' : breakeven} {msgLength} messages/day with {model.name}, Prophet costs less than a subscription.
+                Prophet&apos;s pay-per-use model means you only pay for the AI tokens you actually consume. For users sending fewer than {breakeven} {msgLength} messages/day with {model.name}, Prophet costs less than a subscription.
               </p>
               <p>
                 Additionally, Prophet gives you browser automation capabilities that subscriptions do not include -- the AI can interact with web pages, fill forms, click buttons, and extract data directly from your browser.
@@ -281,7 +263,7 @@ export default function AiPricingComparisonPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold mb-4">Start with Prophet&apos;s free plan</h2>
           <p className="text-muted-foreground mb-6">
-            Get $0.20 in free credits to try it out. No credit card required.
+            Get {formatCreditsAsDollars(TIER_CONFIG.free.credits)} in free credits to try it on Haiku. No credit card required.
           </p>
           <Button asChild>
             <Link href="https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif">
