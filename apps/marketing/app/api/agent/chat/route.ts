@@ -282,7 +282,8 @@ export async function POST(req: Request) {
       planCreditReservation({
         model: option.model,
         balanceCents,
-        estimatedInputTokens,
+        cachedPrefixTokens: 0,
+        restTokens: estimatedInputTokens,
         maxTokens: AGENT_TURN_MAX_TOKENS,
         minTokens: getAgentMinTokens(option.enableThinking),
         webSearchMaxUses: webSearchEnabled ? WEB_SEARCH_MAX_USES : 0,

@@ -585,9 +585,10 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
   })
 
   it('on Haiku 5.5 + Thinking, only suggests turning Thinking off (there is no cheaper model)', async () => {
-    // ~120K tokens of history puts Haiku on its over-100K rate card:
-    // floors 10 credits without Thinking, 12 with it
-    await seedUser({ credits: 10, history: ['x'.repeat(240_000)] })
+    // ~126K estimated tokens (mostly one long history row) put Haiku on its over-100K
+    // rate card, a first Turn's prompt priced as a cache write ($0.625/MTok):
+    // floors 12 credits without Thinking (4,096 output tokens), 14 with it (12,096)
+    await seedUser({ credits: 12, history: ['x'.repeat(240_000)] })
 
     const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5', enableThinking: true })
     const body = await response.json()
@@ -646,8 +647,10 @@ describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat',
 
     expect(response.status).toBe(200)
     expect(anthropic.messages.stream).toHaveBeenCalledTimes(1)
-    // The whole grant is held, which affords 4,445 output tokens on top of the estimated input.
-    expect(sentMaxTokens()).toBe(4445)
+    // The whole grant ($0.056 of API cost) is held. The ~5,775-token estimated prompt is a
+    // first Turn's, priced as a cache write ($2.50/MTok, $0.0144), which leaves 4,156
+    // output tokens at $10/MTok.
+    expect(sentMaxTokens()).toBe(4156)
     expect(doneEvent(events)).toMatchObject({ maxTokensReducedForBalance: true })
     // (1000 x $2 + 500 x $10) / 1M = $0.007 -> x1.25 = 0.875c -> 1 credit
     expect(await balance()).toBe(6)
