@@ -186,11 +186,6 @@ export function useAgentChat() {
             continue
           }
 
-          if (event.type === 'turn_limit_reached') {
-            setNotice(event.message)
-            continue
-          }
-
           // The loop sends it once the reply is in, so the notice shows after the reply.
           if (event.type === 'run_notice') {
             stoppedEarly = true

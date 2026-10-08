@@ -210,26 +210,15 @@ describe('useAgentChat run isolation', () => {
     })
   })
 
-  it('shows a neutral notice when the run pauses at the Turn limit', async () => {
-    const pause = 'Prophet paused after 20 turns. Send "continue" to keep going.'
-    const runs = scriptRuns([{ before: [], after: [{ type: 'turn_limit_reached', message: pause }] }])
-
-    await act(async () => {
-      void current().sendMessage('chat-1', 'hi')
-    })
-    await act(async () => runs[0].release())
-
-    expect(current().notice).toBe(pause)
-    expect(current().error).toBeNull()
-  })
-
   it.each([
+    ['turn_limit', 'Prophet paused after 20 turns. Send "continue" to keep going.'],
+    ['run_budget', 'Prophet paused because this task grew too long for one run. Send "continue" to keep going.'],
     ['superseded', 'This chat continued in another panel, so this task stopped here.'],
   ] as const)('shows the %s notice after the reply, not an error', async (reason, message) => {
     const runs = scriptRuns([
       {
         before: [{ type: 'content_delta', delta: 'I opened the invoice.' }],
-        after: [{ type: 'run_notice', reason, message }],
+        after: [{ type: 'done' }, { type: 'run_notice', reason, message }],
       },
     ])
 

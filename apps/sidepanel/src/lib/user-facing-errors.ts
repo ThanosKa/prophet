@@ -10,6 +10,7 @@ export const USER_FACING_TEXT = {
   truncatedLowBalance:
     'This answer was cut short because your balance is low. Buy credits or switch to Haiku 5.5 for full-length answers.',
   turnLimit: `Prophet paused after ${MAX_AGENT_TURNS} turns. Send "continue" to keep going.`,
+  runBudget: 'Prophet paused because this task grew too long for one run. Send "continue" to keep going.',
   runSuperseded: 'This chat continued in another panel, so this task stopped here.',
   network: "Can't reach Prophet. Check your connection and try again.",
   browserConnection: 'Prophet lost its connection to the browser. Reopen the side panel and try again.',

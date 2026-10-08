@@ -32,19 +32,25 @@ interface StreamAgentChatOptions {
 export type AgentRunErrorEvent = { type: "error"; error: string; code?: string; details?: ErrorDetails };
 
 /** Why a Run stopped before Claude finished: shown as a notice after the reply, not as an error. */
-export type RunNoticeReason = "superseded";
+export type RunNoticeReason = "turn_limit" | "run_budget" | "superseded";
 
 export type AgentRunEvent =
   | Exclude<AgentLoopEvent, { type: "error" }>
   | AgentRunErrorEvent
   | { type: "output_truncated"; reducedForBalance: boolean }
-  | { type: "turn_limit_reached"; message: string }
   | { type: "run_notice"; reason: RunNoticeReason; message: string };
+
+const RUN_END_NOTICES = {
+  turn_limit: USER_FACING_TEXT.turnLimit,
+  run_budget: USER_FACING_TEXT.runBudget,
+} as const;
 
 // Older servers omit the flag; only an explicit true means max_tokens was lowered to fit the balance.
 const reducedForBalanceSchema = z.object({ maxTokensReducedForBalance: z.literal(true) });
 // The Run's id (its opening message). Only a first Turn's session_created is sure to carry it.
 const runIdSchema = z.object({ runId: z.string().uuid() });
+// On a Run's last Turn the server says why it is the last; it released no tool calls on it.
+const runEndSchema = z.object({ runEnd: z.enum(["turn_limit", "run_budget"]) });
 
 const CANCELLED_EVENT: AgentRunEvent = {
   type: "error",
@@ -250,7 +256,8 @@ export async function* runAgentLoop({
   // Track tool calls to detect repetitive patterns (like Manus does)
   const toolCallHistory: Array<{ name: string; inputHash: string }> = [];
 
-  while (turnCount < maxTurns) {
+  // Every path through Turn `maxTurns` returns: it runs no tools and never resumes.
+  while (true) {
     if (signal?.aborted) {
       yield CANCELLED_EVENT;
       return;
@@ -274,7 +281,9 @@ export async function* runAgentLoop({
       if (runId) streamOptions.runId = runId;
     }
 
+    const isLastTurn = turnCount === maxTurns;
     let hasToolUse = false;
+    let skippedToolCall = false;
     let doneEvent: AgentStreamEvent | undefined;
     // Held until done says whether the Run ends on this Turn: only a Run's last Turn is its final answer.
     let finalAnswer: AgentRunEvent | undefined;
@@ -342,7 +351,10 @@ export async function* runAgentLoop({
                 }
               : null);
 
-          if (toolUse) {
+          // The Run ends on its last Turn, so Claude would never see what a tool run there did.
+          if (toolUse && isLastTurn) {
+            skippedToolCall = true;
+          } else if (toolUse) {
             // Ensure the type property is set for message history persistence
             if (!toolUse.type) {
               toolUse = { ...toolUse, type: "tool_use" };
@@ -498,8 +510,16 @@ export async function* runAgentLoop({
 
     // Claude paused mid-Turn (a long server-side search): resend its content as is to let it go on.
     const paused = doneEvent.stopReason === "pause_turn";
+    const serverRunEnd = runEndSchema.safeParse(doneEvent);
+    // An older server doesn't say runEnd; a Turn that still wanted to go on ends the Run here anyway.
+    const wantedMore = paused || skippedToolCall || doneEvent.stopReason === "tool_use";
+    const runEnd = serverRunEnd.success
+      ? serverRunEnd.data.runEnd
+      : isLastTurn && wantedMore
+        ? "turn_limit"
+        : null;
 
-    if (!hasToolUse && !paused) {
+    if (runEnd || (!hasToolUse && !paused)) {
       if (finalAnswer) yield finalAnswer;
       if (doneEvent.stopReason === "max_tokens") {
         yield {
@@ -508,6 +528,7 @@ export async function* runAgentLoop({
         };
       }
       yield { type: "done", usage: doneEvent.usage };
+      if (runEnd) yield { type: "run_notice", reason: runEnd, message: RUN_END_NOTICES[runEnd] };
       return;
     }
 
@@ -522,6 +543,4 @@ export async function* runAgentLoop({
     // tool-use turn must replay. Fall back to the streamed blocks if none came.
     previousTurns.push({ content: serverContent ?? assistantContent, toolResults });
   }
-
-  yield { type: "turn_limit_reached", message: USER_FACING_TEXT.turnLimit };
 }

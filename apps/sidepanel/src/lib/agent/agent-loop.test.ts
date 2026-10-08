@@ -242,6 +242,62 @@ describe('runAgentLoop', () => {
     })
   })
 
+  describe("A Run's last Turn", () => {
+    const toolTurn = (id: string) => [
+      { type: 'tool_use', toolUse: { type: 'tool_use', id, name: 'take_snapshot', input: {} } },
+      { type: 'done', stopReason: 'tool_use' },
+    ]
+    // The server releases no tool calls on a last Turn, but done still names the one Claude asked for.
+    const lastTurn = (runEnd: string) => [
+      { type: 'content_delta', delta: 'I found two invoices; the March one is still open.' },
+      { type: 'execution_complete', stopReason: 'tool_use', finalOutput: 'I found two invoices; the March one is still open.' },
+      {
+        type: 'done',
+        stopReason: 'tool_use',
+        runEnd,
+        contentBlocks: [
+          { type: 'text', text: 'I found two invoices; the March one is still open.' },
+          { type: 'tool_use', id: 't9', name: 'take_snapshot', input: {} },
+        ],
+      },
+    ]
+
+    beforeEach(() => {
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'uid=1 link "Invoice"', durationMs: 1 })
+    })
+
+    it('ends the Run on a pause_turn on Turn 20 instead of resuming', async () => {
+      const paused = [{ type: 'content_delta', delta: 'Still searching.' }, { type: 'done', stopReason: 'pause_turn' }]
+      const { fetchMock } = serveTurns([...Array.from({ length: 19 }, (_, turn) => toolTurn(`t${turn}`)), paused])
+
+      const events = await collect()
+
+      expect(fetchMock).toHaveBeenCalledTimes(20)
+      expect(events.at(-1)).toEqual({
+        type: 'run_notice',
+        reason: 'turn_limit',
+        message: 'Prophet paused after 20 turns. Send "continue" to keep going.',
+      })
+    })
+
+    it.each([
+      ['turn_limit', 'Prophet paused after 20 turns. Send "continue" to keep going.'],
+      ['run_budget', 'Prophet paused because this task grew too long for one run. Send "continue" to keep going.'],
+    ])('ends the Run when done carries runEnd %s, and its notice follows the reply', async (runEnd, notice) => {
+      const { fetchMock } = serveTurns([toolTurn('t1'), lastTurn(runEnd)])
+
+      const events = await collect()
+
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(executeToolViaBackground).toHaveBeenCalledTimes(1)
+      expect(events.slice(-3)).toEqual([
+        expect.objectContaining({ type: 'execution_complete' }),
+        expect.objectContaining({ type: 'done' }),
+        { type: 'run_notice', reason: runEnd, message: notice },
+      ])
+    })
+  })
+
   describe('pause_turn', () => {
     const pausedBlocks = [
       { type: 'text', text: 'Searching for the invoice.' },
@@ -358,9 +414,11 @@ describe('runAgentLoop', () => {
       ])
     })
 
-    it('pauses after exactly 20 Turns and says so', async () => {
+    it('runs no tools on Turn 20, and the Turn-limit notice follows the reply', async () => {
       const { fetchMock } = serveEveryTurn([
+        { type: 'content_delta', delta: 'Scrolling.' },
         { type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'scroll', input: {} } },
+        { type: 'execution_complete', stopReason: 'tool_use', finalOutput: 'Scrolling.' },
         { type: 'done', stopReason: 'tool_use' },
       ])
       vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'ok', durationMs: 1 })
@@ -368,8 +426,12 @@ describe('runAgentLoop', () => {
       const events = await collect()
 
       expect(fetchMock).toHaveBeenCalledTimes(20)
+      expect(executeToolViaBackground).toHaveBeenCalledTimes(19)
+      expect(events.filter((event) => event.type === 'tool_call_start')).toHaveLength(19)
+      expect(events.slice(-3).map((event) => event.type)).toEqual(['execution_complete', 'done', 'run_notice'])
       expect(events.at(-1)).toEqual({
-        type: 'turn_limit_reached',
+        type: 'run_notice',
+        reason: 'turn_limit',
         message: 'Prophet paused after 20 turns. Send "continue" to keep going.',
       })
     })
