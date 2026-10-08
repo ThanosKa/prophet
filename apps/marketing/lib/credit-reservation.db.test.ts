@@ -199,14 +199,44 @@ describe.each(backends)('credit reservation SQL on $name', ({ connect }) => {
       expect(await balances()).toEqual({ subscription: 2, purchased: 10 })
     })
 
-    it('charges a Turn that cost more than its hold to Subscription credits only, which may go negative', async () => {
+    it('charges the overage of a Turn to Subscription credits while they have room', async () => {
+      await seedBalances({ subscription: 20, purchased: 10 })
+      const hold = await reserveCredits({ db: connection.db, userId: USER_ID, reserveCents: 5 })
+      if (!hold) throw new Error('expected the hold to be taken')
+
+      await settleCredits({ db: connection.db, userId: USER_ID, hold, actualCents: 9 })
+
+      expect(await balances()).toEqual({ subscription: 11, purchased: 10 })
+    })
+
+    it('charges the overage to Purchased credits once Subscription credits are used up', async () => {
       await seedBalances({ subscription: 3, purchased: 10 })
       const hold = await reserveCredits({ db: connection.db, userId: USER_ID, reserveCents: 5 })
       if (!hold) throw new Error('expected the hold to be taken')
 
       await settleCredits({ db: connection.db, userId: USER_ID, hold, actualCents: 9 })
 
-      expect(await balances()).toEqual({ subscription: -4, purchased: 8 })
+      expect(await balances()).toEqual({ subscription: 0, purchased: 4 })
+    })
+
+    it('splits an overage across the Subscription credits left, then Purchased credits', async () => {
+      await seedBalances({ subscription: 7, purchased: 10 })
+      const hold = await reserveCredits({ db: connection.db, userId: USER_ID, reserveCents: 5 })
+      if (!hold) throw new Error('expected the hold to be taken')
+
+      await settleCredits({ db: connection.db, userId: USER_ID, hold, actualCents: 10 })
+
+      expect(await balances()).toEqual({ subscription: 0, purchased: 7 })
+    })
+
+    it('pushes Subscription credits negative only for the overage both balances cannot cover', async () => {
+      await seedBalances({ subscription: 3, purchased: 2 })
+      const hold = await reserveCredits({ db: connection.db, userId: USER_ID, reserveCents: 5 })
+      if (!hold) throw new Error('expected the hold to be taken')
+
+      await settleCredits({ db: connection.db, userId: USER_ID, hold, actualCents: 9 })
+
+      expect(await balances()).toEqual({ subscription: -4, purchased: 0 })
     })
 
     it('refuses a hold the combined balance cannot cover and leaves both balances alone', async () => {

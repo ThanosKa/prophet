@@ -162,8 +162,9 @@ export async function reserveCredits({
 
 /**
  * Returns the unused part of the hold Purchased credits first, so the Credits that
- * never expire last longest. A Turn that cost more than its hold charges the overage
- * to Subscription credits, which may go negative.
+ * never expire last longest. A Turn that cost more than its hold takes the overage
+ * from Subscription credits down to 0, then Purchased credits down to 0; only what
+ * both can't cover pushes Subscription credits negative.
  */
 export async function settleCredits({
   db,
@@ -177,14 +178,19 @@ export async function settleCredits({
   actualCents: number
 }): Promise<void> {
   const unusedCents = hold.subscriptionCents + hold.purchasedCents - actualCents
-  const toPurchased = Math.min(Math.max(unusedCents, 0), hold.purchasedCents)
-  const toSubscription = unusedCents - toPurchased
+  const refundToPurchased = Math.min(Math.max(unusedCents, 0), hold.purchasedCents)
+  const refundToSubscription = Math.max(unusedCents, 0) - refundToPurchased
+  const overageCents = Math.max(-unusedCents, 0)
+
+  // Both SET expressions read the row as it was before this UPDATE.
+  const overageFromSubscription = sql`LEAST(GREATEST(${users.creditsRemaining}, 0), ${overageCents}::integer)`
+  const overageFromPurchased = sql`LEAST(${users.purchasedCredits}, ${overageCents}::integer - ${overageFromSubscription})`
 
   await db
     .update(users)
     .set({
-      creditsRemaining: sql`${users.creditsRemaining} + ${toSubscription}`,
-      purchasedCredits: sql`${users.purchasedCredits} + ${toPurchased}`,
+      creditsRemaining: sql`${users.creditsRemaining} + ${refundToSubscription}::integer - (${overageCents}::integer - ${overageFromPurchased})`,
+      purchasedCredits: sql`${users.purchasedCredits} + ${refundToPurchased}::integer - ${overageFromPurchased}`,
       updatedAt: new Date(),
     })
     .where(eq(users.id, userId))

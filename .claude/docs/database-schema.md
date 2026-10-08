@@ -35,7 +35,9 @@ A user's balance is `creditsRemaining + purchasedCredits`; APIs return that tota
 `apps/marketing/lib/credit-balance.ts`). `reserveCredits` checks a Turn's hold against
 the total and takes it Subscription credits first, then Purchased credits, returning the
 split as a `CreditHold`. `settleCredits` returns the unused hold Purchased-first and
-charges any overage to `creditsRemaining` only.
+takes any overage from `creditsRemaining` down to 0, then `purchasedCredits` down to 0;
+only the remainder pushes `creditsRemaining` negative. Both are single SQL-expression
+`UPDATE`s that compute the split in SQL.
 
 Stripe webhooks never touch `purchasedCredits` except to add a purchase: renewal and a new
 subscription set `creditsRemaining` to the plan's Credits, plan changes leave it alone, and
