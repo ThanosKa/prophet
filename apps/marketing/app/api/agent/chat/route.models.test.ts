@@ -284,7 +284,7 @@ describe('Legacy model ids from already-installed extensions', () => {
 
     const events = await drain(await post({ model: 'claude-opus-4-6' }))
 
-    // Opus 5.5: (1000/1M x $4) + (500/1M x $20) = $0.014 -> x1.2 markup = 1.68c -> 2 credits
+    // Opus 5.5: (1000/1M x $4) + (500/1M x $20) = $0.014 -> x1.25 Margin = 1.75c -> 2 credits
     const expected = calculateCostInCredits('claude-opus-5-5', 1000, 500)
     expect(expected).toBe(2)
 
