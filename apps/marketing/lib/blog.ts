@@ -27,7 +27,7 @@ const chatgptVsClaudeExtension: BlogPost = {
     },
     {
       question: 'What is the best Claude Chrome extension in 2026?',
-      answer: 'Anthropic\'s official Claude in Chrome is a convenience shortcut to claude.ai with no page-reading. Third-party options like Prophet add full side-panel integration, all three Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5), and 18 built-in browser-automation tools. Pick first-party for casual chat, Prophet for automation and pay-per-use ($0.20 free credits, no card).',
+      answer: 'Anthropic\'s official Claude in Chrome is a convenience shortcut to claude.ai with no page-reading. Third-party options like Prophet add full side-panel integration, all three Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5), and 18 built-in browser-automation tools. Pick first-party for casual chat, Prophet for automation and pay-per-use ($0.07 free credits to try Haiku, no card).',
     },
     {
       question: 'Do ChatGPT extensions read the current page?',
@@ -35,7 +35,7 @@ const chatgptVsClaudeExtension: BlogPost = {
     },
     {
       question: 'How much do Claude and ChatGPT Chrome extensions cost?',
-      answer: 'ChatGPT Plus is $20/month, plus $10-20/month for third-party extensions. Claude Pro is also $20/month. Prophet replaces both with pay-per-use credits: $0.20 free, then $9.99/month for $11 in credits (Pro), scaling to $59.99/month ($70 credits, Ultra). At 20-30 messages/day on Sonnet, that\'s roughly $0.50-1.50 in credits monthly.',
+      answer: 'ChatGPT Plus is $20/month, plus $10-20/month for third-party extensions. Claude Pro is also $20/month. Prophet replaces both with pay-per-use credits: $0.07 free to try Haiku, then $9.99/month for $10 in credits (Pro), scaling to $59.99/month ($60 in credits, Ultra). At 20-30 messages/day on Sonnet, that\'s roughly $12-18 in credits monthly.',
     },
     {
       question: 'Are Claude extensions more private than ChatGPT ones?',
@@ -83,7 +83,7 @@ const chatgptVsClaudeExtension: BlogPost = {
 <p>The total cost for a ChatGPT-based browser AI setup ranges from $10/month (third-party only, with query limits) to $40/month (ChatGPT Plus plus a premium third-party extension).</p>
 
 <h3>Claude Ecosystem</h3>
-<p>Claude Pro costs $20/month for access to claude.ai with higher limits. Anthropic's official extension is free with a Claude account. Third-party Claude extensions vary: Prophet starts with a free tier ($0.20 in credits) and scales from $9.99/month (Pro, $11 in credits) to $59.99/month (Ultra, $70 in credits).</p>
+<p>Claude Pro costs $20/month for access to claude.ai with higher limits. Anthropic's official extension is free with a Claude account. Third-party Claude extensions vary: Prophet starts with a free tier ($0.07 in credits) and scales from $9.99/month (Pro, $10 in credits) to $59.99/month (Ultra, $60 in credits).</p>
 <p>Prophet's pay-per-use model means you only pay for tokens consumed. A typical user sending 50 messages per day with Claude Haiku 5.5 spends roughly $3-5/month. The same usage with Sonnet 5.5 costs $8-15/month. With Opus 5.5, expect $15-30/month. This granularity lets you match costs to your actual usage rather than paying a flat rate that may be too high or too low.</p>
 
 <h3>Cost Efficiency</h3>
@@ -211,9 +211,9 @@ const claudeModelComparison: BlogPost = {
 <li>Input: (800 / 1,000,000) x $0.10 = $0.00008</li>
 <li>Output: (400 / 1,000,000) x $0.50 = $0.0002</li>
 <li>Total: $0.00028 per message</li>
-<li>With Prophet's 20% markup and 1-credit minimum: 1 credit (1 cent) per message</li>
+<li>Converted to Prophet credits, rounded up, with the 1-credit minimum: 1 credit (1 cent) per message</li>
 </ul>
-<p>At this rate, the Prophet Pro plan ($9.99/month for $11 in credits) supports roughly 1,100 Haiku messages per month, or about 36 per day.</p>
+<p>At this rate, the Prophet Pro plan ($9.99/month for $10 in credits) supports roughly 1,000 Haiku messages per month, or about 33 per day.</p>
 
 <h2>Claude Sonnet 5.5: The Daily Driver</h2>
 <p>Sonnet 5.5 occupies the middle ground and is the model most users should default to. It offers a strong balance between response quality, speed, and cost. For most professional tasks, Sonnet produces output that is indistinguishable from Opus at 40% lower cost.</p>
@@ -233,9 +233,9 @@ const claudeModelComparison: BlogPost = {
 <li>Input: (1,200 / 1,000,000) x $3.00 = $0.0036</li>
 <li>Output: (600 / 1,000,000) x $15.00 = $0.009</li>
 <li>Total: $0.0126 per message</li>
-<li>With Prophet's 20% markup: roughly 2 credits (2 cents) per message</li>
+<li>Converted to Prophet credits, rounded up: roughly 2 credits (2 cents) per message</li>
 </ul>
-<p>The Prophet Pro plan supports roughly 550 Sonnet messages per month, or about 18 per day. The Premium plan ($29.99/month for $35 in credits) supports roughly 1,750 messages, or 58 per day.</p>
+<p>The Prophet Pro plan supports roughly 500 Sonnet messages per month, or about 16 per day. The Premium plan ($29.99/month for $30 in credits) supports roughly 1,500 messages, or 50 per day.</p>
 
 <h2>Claude Opus 5.5: The Deep Thinker</h2>
 <p>Opus 5.5 is Anthropic's most capable model and the right choice when quality matters more than speed or cost. It handles complex reasoning, long-context analysis, and nuanced tasks that the smaller models cannot match.</p>
@@ -256,9 +256,9 @@ const claudeModelComparison: BlogPost = {
 <li>Input: (2,000 / 1,000,000) x $5.00 = $0.01</li>
 <li>Output: (1,000 / 1,000,000) x $25.00 = $0.025</li>
 <li>Total: $0.035 per message</li>
-<li>With Prophet's 20% markup: roughly 5 credits (5 cents) per message</li>
+<li>Converted to Prophet credits, rounded up: roughly 5 credits (5 cents) per message</li>
 </ul>
-<p>The Prophet Premium plan supports roughly 700 Opus messages per month, or about 23 per day. The Ultra plan ($59.99/month for $70 in credits) supports roughly 1,400 messages, or 47 per day.</p>
+<p>The Prophet Premium plan supports roughly 600 Opus messages per month, or about 20 per day. The Ultra plan ($59.99/month for $60 in credits) supports roughly 1,200 messages, or 40 per day.</p>
 
 <h2>A Practical Model Selection Strategy</h2>
 <p>Rather than picking one model for all tasks, the most cost-effective approach is to match the model to the task:</p>
@@ -302,7 +302,7 @@ const claudeModelComparison: BlogPost = {
 <tr><td>Heavy</td><td>60</td><td>$18</td><td>$36</td><td>$90</td></tr>
 </tbody>
 </table>
-<p>A mixed strategy &mdash; using Haiku for 60% of messages, Sonnet for 30%, and Opus for 10% &mdash; reduces the moderate user's cost from $18/month (all Sonnet) to roughly $11/month, fitting comfortably within Prophet's Pro plan.</p>
+<p>A mixed strategy &mdash; using Haiku for 60% of messages, Sonnet for 30%, and Opus for 10% &mdash; reduces the moderate user's cost from $18/month (all Sonnet) to roughly $15/month. A light user on the same mix spends about $5/month, well within Prophet's Pro plan.</p>
 
 <h2>How to Switch Models in Prophet</h2>
 <p>Prophet makes model switching simple. In the side panel, you can select your model from a dropdown before sending each message. The model choice persists until you change it, so you can set Sonnet as your default and switch to Haiku or Opus when the task calls for it. Each message in your chat history shows which model generated it, so you can compare output quality across models on the same conversation.</p>
@@ -324,7 +324,7 @@ const isClaudeAiFree: BlogPost = {
   faq: [
     {
       question: 'Is Claude AI free?',
-      answer: 'Yes. Claude.ai\'s free tier offers Claude Sonnet 5.5 with a daily cap of roughly 10-30 messages depending on traffic (as of May 2026). The Anthropic API has no free tier but accepts deposits as low as $5. Prophet\'s Chrome extension gives $0.20 in free credits — about 20 Haiku, 10 Sonnet, or 4 Opus messages — with no card required.',
+      answer: 'Yes. Claude.ai\'s free tier offers Claude Sonnet 5.5 with a daily cap of roughly 10-30 messages depending on traffic (as of May 2026). The Anthropic API has no free tier but accepts deposits as low as $5. Prophet\'s Chrome extension gives a one-time $0.07 in free credits, enough to try Claude Haiku, with no card required.',
     },
     {
       question: 'What are Claude\'s free tier limits?',
@@ -332,7 +332,7 @@ const isClaudeAiFree: BlogPost = {
     },
     {
       question: 'Does Claude have a free trial?',
-      answer: 'Anthropic does not offer a time-limited Claude Pro trial. Instead, the claude.ai free tier acts as an indefinite evaluation with capped daily messages. For API access, new accounts may receive a small starter credit. To trial all three Claude models (including Opus 5.5) for free, Prophet\'s $0.20 credit grant is the most direct option.',
+      answer: 'Anthropic does not offer a time-limited Claude Pro trial. Instead, the claude.ai free tier acts as an indefinite evaluation with capped daily messages. For API access, new accounts may receive a small starter credit. To try Claude in your browser for free, Prophet\'s one-time $0.07 credit grant covers a first run on Haiku; Sonnet and Opus are pay-per-use after that.',
     },
     {
       question: 'Is the Claude API free?',
@@ -340,12 +340,12 @@ const isClaudeAiFree: BlogPost = {
     },
     {
       question: 'Is Claude Pro free?',
-      answer: 'No. Claude Pro costs $20/month and unlocks Opus 5.5, higher rate limits, Projects, and larger file uploads. It does not include a free trial period. For users who need Opus access without committing to $20/month, pay-per-use platforms like Prophet ($9.99/month for $11 in credits) typically cost less for under ~50 messages/day.',
+      answer: 'No. Claude Pro costs $20/month and unlocks Opus 5.5, higher rate limits, Projects, and larger file uploads. It does not include a free trial period. For users who need Opus access without committing to $20/month, pay-per-use platforms like Prophet ($9.99/month for $10 in credits) typically cost less for under ~50 messages/day.',
     },
   ],
   content: `
 <aside class="quick-answer" aria-label="Quick answer">
-  <strong>Quick answer:</strong> Yes, Claude AI is free at claude.ai with a daily cap of roughly 10-30 Sonnet 5.5 messages (varies with server load, as of May 2026). Opus 5.5 and higher limits require Claude Pro at $20/month. For all three Claude models without a subscription, Prophet's Chrome extension provides $0.20 in free pay-per-use credits &mdash; about 20 Haiku, 10 Sonnet, or 4 Opus messages &mdash; with no card required.
+  <strong>Quick answer:</strong> Yes, Claude AI is free at claude.ai with a daily cap of roughly 10-30 Sonnet 5.5 messages (varies with server load, as of May 2026). Opus 5.5 and higher limits require Claude Pro at $20/month. For all three Claude models without a subscription, Prophet's Chrome extension provides a one-time $0.07 in free credits &mdash; enough to try Haiku &mdash; then pay-per-use access to all three, with no card required.
 </aside>
 <p>Claude AI is one of the most capable large language models available today, but understanding what you can use for free versus what requires payment is surprisingly confusing. Anthropic offers multiple access points with different pricing structures, and third-party tools like Prophet add additional free options. This guide covers every way to use Claude without paying, what limitations apply, and when upgrading makes sense.</p>
 
@@ -375,12 +375,12 @@ const isClaudeAiFree: BlogPost = {
 <p>At $20/month, Claude Pro competes directly with ChatGPT Plus at the same price point. The choice between them comes down to model preference and specific task performance rather than price.</p>
 
 <h2>Prophet's Free Plan: Claude in Your Browser</h2>
-<p>Prophet offers a different approach to accessing Claude for free. When you install the <a href="/pricing">Prophet Chrome extension</a>, you receive $0.20 in credits at no cost. These credits work on a pay-per-use basis where one credit equals one cent of API cost plus a 20% platform margin.</p>
-<p>What does $0.20 in credits get you? More than you might expect:</p>
+<p>Prophet offers a different approach to accessing Claude for free. When you install the <a href="/pricing">Prophet Chrome extension</a>, you receive a one-time $0.07 in credits at no cost. Credits are pay-per-use: one credit is one cent, and every Turn (one call to Claude) costs at least 1 credit.</p>
+<p>What does $0.07 in credits get you? Enough to try Prophet on Claude Haiku 5.5, the fastest and most affordable model:</p>
 <ul>
-<li><strong>Approximately 200 messages with Claude Haiku 5.5</strong> at roughly $0.001 per message</li>
-<li><strong>Approximately 100 messages with Claude Sonnet 5.5</strong> at roughly $0.002 per message</li>
-<li><strong>Approximately 40 messages with Claude Opus 5.5</strong> at roughly $0.005 per message</li>
+<li><strong>A few short Haiku conversations</strong>, since a short Haiku reply usually costs the 1-credit minimum</li>
+<li><strong>A first browser task or two</strong>, where the agent reads the page and acts over several Turns</li>
+<li><strong>A feel for the side panel</strong> before you decide whether Sonnet or Opus on a paid plan is worth it</li>
 </ul>
 <p>The key difference is that Prophet gives you access to all three Claude models on the free tier, including Opus 5.5, which Claude.ai reserves for paying subscribers. You also get full browser integration with the ability to read and interact with web pages, which Claude.ai does not offer at any price tier.</p>
 <p>Prophet's free credits do not renew monthly. They are a one-time allocation to help you evaluate the service. Once depleted, you need to upgrade to a paid plan starting at $9.99/month. Check the <a href="/pricing">pricing page</a> for current plan details.</p>
@@ -423,11 +423,11 @@ const isClaudeAiFree: BlogPost = {
 <li>You require browser automation or page-reading capabilities</li>
 <li>You want predictable access without rate limit interruptions</li>
 </ul>
-<p>For users in this position, Prophet's Pro plan at $9.99/month offers more flexibility than Claude Pro at $20/month, because you get access to all three models and pay only for the tokens you consume. A user who primarily uses Haiku with occasional Sonnet queries might spend only $3-5 of their $11 monthly credits, making the effective cost much lower than a flat subscription.</p>
+<p>For users in this position, Prophet's Pro plan at $9.99/month offers more flexibility than Claude Pro at $20/month, because you get access to all three models and pay only for the tokens you consume. A user who primarily uses Haiku with occasional Sonnet queries might spend only $3-5 of their $10 monthly credits, making the effective cost much lower than a flat subscription.</p>
 <p>Use the <a href="/tools/ai-api-cost-calculator">AI API cost calculator</a> to estimate your monthly spend based on your usage patterns.</p>
 
 <h2>Is Claude AI Free or Just Cheap? Both, Depending on Use</h2>
-<p>Whether Claude AI is truly free or just cheap depends on the path you pick. Claude.ai's free tier is genuinely free for casual chat &mdash; no card, no expiry, just daily message caps. Prophet's $0.20 starter credit is also free but one-time; after that you pay per token but without the $20/month commitment. The Anthropic API is never free but cheap for light users &mdash; under $1/month is common at low volume. "Free" for unlimited heavy use is the option that does not exist; "cheap and predictable" is the realistic frame for anyone past the casual stage.</p>
+<p>Whether Claude AI is truly free or just cheap depends on the path you pick. Claude.ai's free tier is genuinely free for casual chat &mdash; no card, no expiry, just daily message caps. Prophet's $0.07 starter credit is also free but one-time; after that you pay per token but without the $20/month commitment. The Anthropic API is never free but cheap for light users &mdash; under $1/month is common at low volume. "Free" for unlimited heavy use is the option that does not exist; "cheap and predictable" is the realistic frame for anyone past the casual stage.</p>
 
 <h2>The Bottom Line</h2>
 <p>Yes, Claude AI is free to use through multiple channels. Claude.ai provides a solid free tier for occasional use with Sonnet. Prophet offers a small but versatile free credit allocation that unlocks all three Claude models plus browser integration. The API provides pay-per-use access with no subscription requirement for developers willing to write code.</p>
@@ -443,7 +443,7 @@ const isClaudeAiFree: BlogPost = {
 const useClaudeWithoutSubscription: BlogPost = {
   slug: 'use-claude-without-subscription',
   title: 'Use Claude Without a $20/mo Subscription: 5 Ways (2026)',
-  description: 'Five working routes to Claude with no Pro plan, including all three models for $0.20. What each one costs, what it caps, and who it suits.',
+  description: 'Five working routes to Claude with no Pro plan, including a free way to try Haiku in Chrome. What each one costs, what it caps, and who it suits.',
   date: '2026-02-15',
   lastModified: '2026-05-19',
   readingTime: '10 min read',
@@ -452,15 +452,15 @@ const useClaudeWithoutSubscription: BlogPost = {
   faq: [
     {
       question: 'How can I use Claude AI without a subscription?',
-      answer: 'Four routes work as of May 2026: (1) claude.ai\'s free tier with Sonnet 5.5 and a daily message cap; (2) the Anthropic API at pay-per-use rates starting at $5 minimum deposit; (3) Prophet\'s $0.20 free credits covering all three Claude models with browser integration; (4) cloud platform credits via AWS Bedrock or Google Vertex AI.',
+      answer: 'Four routes work as of May 2026: (1) claude.ai\'s free tier with Sonnet 5.5 and a daily message cap; (2) the Anthropic API at pay-per-use rates starting at $5 minimum deposit; (3) Prophet\'s $0.07 free credits to try Claude Haiku with browser integration, then pay-per-use access to all three models; (4) cloud platform credits via AWS Bedrock or Google Vertex AI.',
     },
     {
       question: 'Is there a Claude Pro alternative cheaper than $20/month?',
-      answer: 'Yes. Prophet Pro at $9.99/month includes $11 in credits and access to all three Claude models — half the price of Claude Pro for most usage profiles. A user sending 20 Sonnet messages/day consumes roughly $12/month in credits on Prophet. Claude Pro becomes cheaper only above roughly 33 Sonnet messages/day.',
+      answer: 'Yes. Prophet Pro at $9.99/month includes $10 in credits and access to all three Claude models — half the price of Claude Pro for most usage profiles. A user sending 20 Sonnet messages/day consumes roughly $12/month in credits on Prophet. Claude Pro becomes cheaper only above roughly 33 Sonnet messages/day.',
     },
     {
       question: 'Can I use Claude Opus 5.5 without paying $20/month?',
-      answer: 'Yes, through pay-per-use. Anthropic locks Opus behind Claude Pro on claude.ai, but the API exposes it to anyone with a deposit. Prophet\'s free $0.20 credit covers about 4 Opus messages. For sustained Opus use, expect roughly $0.05 per message — light users still spend under $5/month on Opus this way.',
+      answer: 'Yes, through pay-per-use. Anthropic locks Opus behind Claude Pro on claude.ai, but the API exposes it to anyone with a deposit. Prophet\'s pay-per-use credits work the same way: a $10 one-time credit purchase never expires and covers Opus too. For sustained Opus use, expect roughly $0.05 per message — light users still spend under $5/month on Opus this way.',
     },
     {
       question: 'Is pay-per-use cheaper than Claude Pro for occasional users?',
@@ -468,7 +468,7 @@ const useClaudeWithoutSubscription: BlogPost = {
     },
     {
       question: 'What is the cheapest way to use Claude AI in 2026?',
-      answer: 'Claude.ai\'s free tier costs nothing for casual Sonnet 5.5 chat within daily limits. For browser-integrated workflows or Opus access, Prophet\'s $0.20 free credit is the lowest-cost entry. The Anthropic API is cheapest per token at scale but requires writing code to invoke it — Prophet\'s backend handles that proxy and adds a transparent per-credit markup.',
+      answer: 'Claude.ai\'s free tier costs nothing for casual Sonnet 5.5 chat within daily limits. For browser-integrated workflows, Prophet\'s $0.07 free credit is the lowest-cost way to try it on Haiku. The Anthropic API is cheapest per token at scale but requires writing code to invoke it — Prophet\'s backend handles that proxy and charges pay-per-use credits for it.',
     },
   ],
   content: `
@@ -480,15 +480,15 @@ const useClaudeWithoutSubscription: BlogPost = {
 <p>Fortunately, several alternatives exist that let you pay proportionally to your actual usage.</p>
 
 <h2>Option 1: Prophet's Pay-Per-Use Model</h2>
-<p>Prophet is a Chrome extension that provides access to all three Claude models (Haiku 5.5, Sonnet 5.5, and Opus 5.5) through a credit-based system where one credit equals one cent of API cost plus a 20% platform margin. While Prophet does offer monthly subscription plans, the key advantage is that your credits directly reflect your consumption.</p>
-<p>Here is how the economics work in practice. A user who sends 20 messages per day using Claude Sonnet 5.5 consumes roughly $0.40 per day in credits, or about $12 per month. That same usage on Claude Pro would cost $20/month, so the saving is real but modest at that volume. The Prophet Pro plan at $9.99/month provides $11 in credits, which covers almost all of it.</p>
+<p>Prophet is a Chrome extension that provides access to all three Claude models (Haiku 5.5, Sonnet 5.5, and Opus 5.5) through pay-per-use credits, where one credit equals one cent. While Prophet does offer monthly subscription plans, the key advantage is that your credits directly reflect your consumption.</p>
+<p>Here is how the economics work in practice. A user who sends 20 messages per day using Claude Sonnet 5.5 consumes roughly $0.40 per day in credits, or about $12 per month. That same usage on Claude Pro would cost $20/month, so the saving is real but modest at that volume. The Prophet Pro plan at $9.99/month provides $10 in credits, which covers most of it.</p>
 <p>For lighter users, the math is far more compelling:</p>
 <ul>
 <li><strong>5 Haiku messages per day:</strong> approximately $1.50/month in credit consumption</li>
 <li><strong>10 Sonnet messages per day:</strong> approximately $6.00/month in credit consumption</li>
 <li><strong>5 Opus messages per day:</strong> approximately $7.50/month in credit consumption</li>
 </ul>
-<p>Prophet's free tier starts you with $0.20 in credits, which is enough to evaluate the service thoroughly before committing to any plan. Visit the <a href="/pricing">pricing page</a> for detailed plan comparisons.</p>
+<p>Prophet's free tier starts you with a one-time $0.07 in credits, which is enough to try the service on Haiku before committing to any plan. Visit the <a href="/pricing">pricing page</a> for detailed plan comparisons.</p>
 <p>The browser integration is a significant bonus. Prophet runs in Chrome's side panel and can read the current web page, extract content, fill forms, and automate browser tasks. You get capabilities that neither Claude.ai nor the Anthropic API provide, at a fraction of the subscription cost.</p>
 
 <h2>Option 2: Anthropic API Direct Access</h2>
@@ -536,7 +536,7 @@ const useClaudeWithoutSubscription: BlogPost = {
 <ul>
 <li><strong>Claude Pro:</strong> $20/month (significant overpayment)</li>
 <li><strong>Prophet Pro:</strong> $9.99/month, consuming roughly $2.60/month in credits (most credits go unused)</li>
-<li><strong>Prophet Free:</strong> $0.20 in free credits covers about 10 Sonnet messages, so a few days at this rate</li>
+<li><strong>Prophet Free:</strong> a one-time $0.07 in free credits, enough to try Haiku before choosing a plan</li>
 </ul>
 <p><strong>Best option:</strong> Prophet free tier, then evaluate if Pro is needed.</p>
 
@@ -544,8 +544,8 @@ const useClaudeWithoutSubscription: BlogPost = {
 <p>Marcus is a software developer who uses Claude for code review, debugging, and documentation. He sends 40-50 messages per day, split between Sonnet (80%) and Opus (20%).</p>
 <ul>
 <li><strong>Claude Pro:</strong> $20/month</li>
-<li><strong>Prophet Premium:</strong> $29.99/month with $35 in credits, consuming roughly $4-6/month in credits</li>
-<li><strong>Prophet Pro:</strong> $9.99/month with $11 in credits, consuming roughly $4-6/month in credits</li>
+<li><strong>Prophet Premium:</strong> $29.99/month with $30 in credits, consuming roughly $4-6/month in credits</li>
+<li><strong>Prophet Pro:</strong> $9.99/month with $10 in credits, consuming roughly $4-6/month in credits</li>
 </ul>
 <p><strong>Best option:</strong> Prophet Pro covers this usage comfortably. The browser integration for code review on GitHub adds value that Claude.ai cannot match.</p>
 
@@ -553,7 +553,7 @@ const useClaudeWithoutSubscription: BlogPost = {
 <p>Dr. Patel is an academic researcher who sends 100+ long messages per day, primarily using Opus for analyzing research papers and synthesizing findings.</p>
 <ul>
 <li><strong>Claude Pro:</strong> $20/month (best value at this volume, if rate limits allow)</li>
-<li><strong>Prophet Ultra:</strong> $59.99/month with $70 in credits, consuming roughly $15-25/month in credits</li>
+<li><strong>Prophet Ultra:</strong> $59.99/month with $60 in credits, consuming roughly $15-25/month in credits</li>
 </ul>
 <p><strong>Best option:</strong> Claude Pro is most cost-effective at this extreme volume, but Prophet Ultra provides browser automation and page reading that Claude.ai lacks.</p>
 
@@ -561,8 +561,8 @@ const useClaudeWithoutSubscription: BlogPost = {
 <p>For most users, the optimal approach combines multiple access points:</p>
 <ol>
 <li><strong>Start with Claude.ai free tier</strong> for basic chat needs and to evaluate model quality.</li>
-<li><strong>Install Prophet</strong> for browser-integrated tasks that benefit from page reading and automation. The free $0.20 credits let you test without commitment.</li>
-<li><strong>Upgrade to Prophet Pro ($9.99/month)</strong> if you need consistent access. The $11 monthly credits cover moderate usage across all three models.</li>
+<li><strong>Install Prophet</strong> for browser-integrated tasks that benefit from page reading and automation. The free $0.07 in credits lets you try it on Haiku without commitment.</li>
+<li><strong>Upgrade to Prophet Pro ($9.99/month)</strong> if you need consistent access. The $10 monthly credits cover moderate usage across all three models.</li>
 <li><strong>Consider Claude Pro ($20/month)</strong> only if you need Claude.ai-specific features like Projects and Artifacts, or if your Opus usage is so heavy that flat-rate pricing becomes cheaper.</li>
 </ol>
 <p>Use the <a href="/tools/ai-api-cost-calculator">cost calculator</a> to model your specific usage pattern and see exactly which option saves you the most.</p>
@@ -601,7 +601,7 @@ const summarizeWebPageWithAi: BlogPost = {
 <p>Prophet is a Chrome extension that opens in the browser side panel and connects to Claude AI. It reads the current web page through the accessibility tree, which means it can access the full text content of any page you are viewing.</p>
 <ol>
 <li>Install Prophet from the Chrome Web Store or load it as an unpacked extension.</li>
-<li>Create an account or sign in. The free tier includes $0.20 in credits, which is enough for dozens of summaries.</li>
+<li>Create an account or sign in. The free tier includes a one-time $0.07 in credits, enough to try a few summaries with Haiku.</li>
 <li>Navigate to any web page you want to summarize.</li>
 <li>Open the Prophet side panel by clicking the extension icon.</li>
 <li>Type your summarization prompt and press enter.</li>
@@ -923,7 +923,7 @@ const aiFormFillingAutomation: BlogPost = {
 
 <h2>Cost of AI Form Filling</h2>
 <p>Form filling uses Prophet's standard credit system. A typical form fill with 10-15 fields costs roughly 2-3 credits (2-3 cents) with Claude Sonnet 5.5. Multi-page forms with 30+ fields might cost 5-8 credits due to the additional back-and-forth between the AI and the browser.</p>
-<p>For perspective, filling out 10 job applications per day with Sonnet would cost approximately $0.25/day or $7.50/month, well within Prophet's Pro plan allocation of $11 in monthly credits. Check the <a href="/tools/ai-api-cost-calculator">cost calculator</a> to estimate your specific usage.</p>
+<p>For perspective, filling out 10 job applications per day with Sonnet would cost approximately $0.25/day or $7.50/month, within Prophet's Pro plan allocation of $10 in monthly credits. Check the <a href="/tools/ai-api-cost-calculator">cost calculator</a> to estimate your specific usage.</p>
 
 <h2>Getting Started</h2>
 <p>Start with a low-stakes form to build confidence. A newsletter signup, a feedback survey, or a test account registration form are good first targets. Once you see how Prophet identifies and fills fields, graduate to more complex forms like job applications and CRM updates.</p>
@@ -955,11 +955,11 @@ const payPerUseVsSubscription: BlogPost = {
     },
     {
       question: 'Does pay-per-use AI have hidden costs?',
-      answer: 'Two real ones. First, usage anxiety — some users self-censor follow-up questions when each costs visible credits, reducing the value extracted. Second, unpredictable monthly bills during heavy weeks. Tiered credit plans like Prophet\'s ($11, $35, or $70 monthly allocations) cap the upside while still costing less than flat subscriptions for typical use.',
+      answer: 'Two real ones. First, usage anxiety — some users self-censor follow-up questions when each costs visible credits, reducing the value extracted. Second, unpredictable monthly bills during heavy weeks. Tiered credit plans like Prophet\'s ($10, $30, or $60 monthly allocations) cap the upside while still costing less than flat subscriptions for typical use.',
     },
     {
       question: 'Why don\'t AI companies offer rollover credits?',
-      answer: 'Most do not because unused subscription value is the primary source of margin — providers price plans assuming average users underuse them by 30-50%. Pay-per-use platforms remove that asymmetry: you pay only what you consume that month. Prophet\'s monthly credits do not roll over, but a 1-2 month buffer is built into Pro and Premium tiers via the bonus credit allocation.',
+      answer: 'Most do not because unused subscription value is the primary source of margin — providers price plans assuming average users underuse them by 30-50%. Pay-per-use platforms remove that asymmetry: you pay only what you consume that month. Prophet\'s Subscription credits do not roll over either, but Purchased credits, bought once outside a plan, never expire.',
     },
   ],
   content: `
@@ -982,11 +982,12 @@ const payPerUseVsSubscription: BlogPost = {
 <p>You pay for each token processed. The economics scale linearly: use more, pay more. Use less, pay less. The provider charges a markup over raw API costs to cover infrastructure and profit.</p>
 <p>Prophet's credit system works as follows:</p>
 <ul>
-<li>Free tier: $0.20 in credits (one-time)</li>
-<li>Pro: $9.99/month for $11 in credits (10% bonus)</li>
-<li>Premium: $29.99/month for $35 in credits (17% bonus)</li>
-<li>Ultra: $59.99/month for $70 in credits (17% bonus)</li>
-<li>1 credit = 1 cent of API cost plus a 20% platform margin</li>
+<li>Free tier: $0.07 in credits (one-time), enough to try Haiku</li>
+<li>Pro: $9.99/month for $10 in credits</li>
+<li>Premium: $29.99/month for $30 in credits</li>
+<li>Ultra: $59.99/month for $60 in credits</li>
+<li>Extra credits: $10 one-time for $10 in credits that never expire</li>
+<li>1 credit = 1 cent, and every Turn (one call to Claude) costs at least 1 credit</li>
 <li>Per-message cost varies by model: Haiku ~$0.0003 (billed at the 1-credit minimum), Sonnet ~$0.013, Opus ~$0.035</li>
 </ul>
 <p>Visit the <a href="/pricing">pricing page</a> for current plan details.</p>
@@ -1012,11 +1013,11 @@ const payPerUseVsSubscription: BlogPost = {
 <tbody>
 <tr><td>ChatGPT Plus</td><td>$20.00</td><td>$0.067</td><td>High</td></tr>
 <tr><td>Claude Pro</td><td>$20.00</td><td>$0.067</td><td>High</td></tr>
-<tr><td>Prophet Pro</td><td>$9.99</td><td>$0.013</td><td>Low (uses ~$3.90 of $11 credits)</td></tr>
-<tr><td>Prophet Free</td><td>$0.00</td><td>$0.013</td><td>None (credits deplete in ~15 days)</td></tr>
+<tr><td>Prophet Pro</td><td>$9.99</td><td>$0.013</td><td>Low (uses ~$3.90 of $10 credits)</td></tr>
+<tr><td>Prophet Free</td><td>$0.00</td><td>$0.013</td><td>None (one-time $0.07, enough to try Haiku)</td></tr>
 </tbody>
 </table>
-<p><strong>Verdict:</strong> Pay-per-use saves approximately $10/month over subscriptions. The Prophet Pro plan provides nearly three months of capacity at this usage level, meaning you could theoretically purchase it quarterly if credit rollover were available. Even without rollover, $9.99/month versus $20/month is a clear win.</p>
+<p><strong>Verdict:</strong> Pay-per-use saves approximately $10/month over subscriptions. The Prophet Pro plan provides more than two months of capacity at this usage level. Subscription credits do not roll over, but a one-time $10 credit purchase never expires, so a light user can skip the plan and buy credits only when they run out.</p>
 
 <h2>Moderate User Analysis (20-40 Messages Per Day)</h2>
 <p>A moderate user relies on AI throughout the workday for code review, content writing, research, and communication.</p>
@@ -1029,8 +1030,8 @@ const payPerUseVsSubscription: BlogPost = {
 <tbody>
 <tr><td>ChatGPT Plus</td><td>$20.00</td><td>N/A</td><td>May hit rate limits with heavy Opus equivalent usage</td></tr>
 <tr><td>Claude Pro</td><td>$20.00</td><td>N/A</td><td>May hit rate limits during peak hours</td></tr>
-<tr><td>Prophet Pro</td><td>$9.99</td><td>~$18.00/month</td><td>Exceeds the $11 credit allocation</td></tr>
-<tr><td>Prophet Premium</td><td>$29.99</td><td>~$18.00/month</td><td>Fits inside $35 credits with buffer for heavy weeks</td></tr>
+<tr><td>Prophet Pro</td><td>$9.99</td><td>~$18.00/month</td><td>Exceeds the $10 credit allocation</td></tr>
+<tr><td>Prophet Premium</td><td>$29.99</td><td>~$18.00/month</td><td>Fits inside $30 credits with buffer for heavy weeks</td></tr>
 </tbody>
 </table>
 <p>The monthly credit consumption breaks down as follows, at the charged credit rate of 1 credit per Haiku message, 2 per Sonnet message and 5 per Opus message:</p>
@@ -1054,8 +1055,8 @@ const payPerUseVsSubscription: BlogPost = {
 <tbody>
 <tr><td>ChatGPT Plus</td><td>$20.00</td><td>N/A</td><td>Will frequently hit rate limits on GPT-4o</td></tr>
 <tr><td>Claude Pro</td><td>$20.00</td><td>N/A</td><td>Will frequently hit Opus rate limits</td></tr>
-<tr><td>Prophet Premium</td><td>$29.99</td><td>~$60.75/month</td><td>Well over the $35 credit allocation</td></tr>
-<tr><td>Prophet Ultra</td><td>$59.99</td><td>~$60.75/month</td><td>Roughly matches the $70 credit allocation</td></tr>
+<tr><td>Prophet Premium</td><td>$29.99</td><td>~$60.75/month</td><td>Well over the $30 credit allocation</td></tr>
+<tr><td>Prophet Ultra</td><td>$59.99</td><td>~$60.75/month</td><td>Roughly matches the $60 credit allocation</td></tr>
 </tbody>
 </table>
 <p>The credit breakdown:</p>
@@ -1189,7 +1190,7 @@ const aiExtensionsThatSellYourData: BlogPost = {
 <h2>Red Flag 1: The Extension Is Free With No Clear Business Model</h2>
 <p>Running AI models costs money. Claude, GPT-4, and Gemini all charge per token for API access. An extension that offers unlimited access to these models for free is either operating at a loss (unsustainable), using a lower-quality model than advertised, or monetizing something other than the subscription fee. That something is usually your data.</p>
 <p>Some free extensions sell aggregated browsing data to advertising networks. Others sell anonymized usage patterns to market research firms. A few sell individual-level data to data brokers. The common thread is that the AI functionality is a hook to get you to install an extension that has broad access to your browsing activity.</p>
-<p>This does not mean every free AI extension is problematic. Some offer genuinely free tiers with limited usage as a funnel to paid plans. Prophet, for example, provides a <a href="/pricing">free tier with $0.20 in credits</a> and clearly charges for additional usage. The key indicator is whether the free offering is a sample of a paid product or the entirety of what the company offers.</p>
+<p>This does not mean every free AI extension is problematic. Some offer genuinely free tiers with limited usage as a funnel to paid plans. Prophet, for example, provides a <a href="/pricing">free tier with $0.07 in credits</a> and clearly charges for additional usage. The key indicator is whether the free offering is a sample of a paid product or the entirety of what the company offers.</p>
 
 <h2>Red Flag 2: Excessive Permission Requests</h2>
 <p>Chrome extensions declare their required permissions in a manifest file, and Chrome shows you these permissions before installation. The permissions an AI extension requests should match its stated functionality.</p>
@@ -1836,7 +1837,7 @@ const hiddenCostsOfAiSubscriptions: BlogPost = {
 <h2>The Case for Usage-Based Pricing</h2>
 <p>Usage-based pricing is not perfect. It introduces cost variability, which can be harder to budget for. Heavy users may pay more than they would with a flat subscription. And without a fixed monthly cost, it is possible to be surprised by a bill during an unusually intensive period.</p>
 <p>But usage-based pricing eliminates the hidden costs outlined above. You never pay for unused capacity. You do not subsidize features you do not use. There are no rate limits hiding behind "unlimited" branding. Lock-in is reduced because you are not pre-committing capital. And your costs always reflect the value you are receiving.</p>
-<p>Prophet's credit system makes this concrete: one credit equals one cent of API cost plus a 20% platform margin. You can see the cost of every message in your chat history. You can predict your monthly spend based on your actual usage patterns. And you can adjust your usage in real time based on your budget. For a transparent look at how credits map to different models and usage levels, visit the <a href="/pricing">pricing page</a> or compare AI pricing across providers with the <a href="/tools/ai-pricing-comparison">pricing comparison tool</a>.</p>
+<p>Prophet's credit system makes this concrete: one credit equals one cent, charged per Turn by the tokens it uses. You can see the cost of every message in your chat history. You can predict your monthly spend based on your actual usage patterns. And you can adjust your usage in real time based on your budget. For a transparent look at how credits map to different models and usage levels, visit the <a href="/pricing">pricing page</a> or compare AI pricing across providers with the <a href="/tools/ai-pricing-comparison">pricing comparison tool</a>.</p>
 `
 }
 
@@ -2023,7 +2024,7 @@ const chatgptPlusVsClaudeProVsProphet: BlogPost = {
   category: 'Comparisons',
   keywords: ['chatgpt plus vs claude pro pricing', 'chatgpt plus price', 'claude pro price', 'prophet pricing', 'ai subscription comparison'],
   content: `
-<p>Choosing between ChatGPT Plus, Claude Pro, and Prophet comes down to how you use AI and how much you are willing to pay for it. All three give you access to frontier-class models, but their pricing structures are fundamentally different. ChatGPT Plus and Claude Pro charge flat monthly subscriptions with usage caps. Prophet charges per token with tiered plans that include credit bonuses. This difference has enormous implications for your actual monthly spend depending on whether you are a light, moderate, or heavy user.</p>
+<p>Choosing between ChatGPT Plus, Claude Pro, and Prophet comes down to how you use AI and how much you are willing to pay for it. All three give you access to frontier-class models, but their pricing structures are fundamentally different. ChatGPT Plus and Claude Pro charge flat monthly subscriptions with usage caps. Prophet charges per token, with tiered plans whose monthly credits equal their price. This difference has enormous implications for your actual monthly spend depending on whether you are a light, moderate, or heavy user.</p>
 <p>This breakdown compares all three services across multiple usage profiles so you can calculate what each option actually costs for your workflow, not just what the marketing page says.</p>
 
 <h2>Subscription Costs at a Glance</h2>
@@ -2036,10 +2037,10 @@ const chatgptPlusVsClaudeProVsProphet: BlogPost = {
 <tr><td>ChatGPT Plus</td><td>Team</td><td>$30/user/month</td><td>Higher limits, workspace features, admin console</td></tr>
 <tr><td>Claude Pro</td><td>Pro</td><td>$20/month</td><td>5x more usage than free, priority access, Claude Opus/Sonnet</td></tr>
 <tr><td>Claude Pro</td><td>Team</td><td>$30/user/month</td><td>Higher limits, team workspace, admin tools</td></tr>
-<tr><td>Prophet</td><td>Free</td><td>$0</td><td>$0.20 in credits, all Claude models</td></tr>
-<tr><td>Prophet</td><td>Pro</td><td>$9.99/month</td><td>$11 in credits (10% bonus), all Claude models</td></tr>
-<tr><td>Prophet</td><td>Premium</td><td>$29.99/month</td><td>$35 in credits (17% bonus), all Claude models</td></tr>
-<tr><td>Prophet</td><td>Ultra</td><td>$59.99/month</td><td>$70 in credits (17% bonus), all Claude models</td></tr>
+<tr><td>Prophet</td><td>Free</td><td>$0</td><td>$0.07 in credits once, enough to try Haiku</td></tr>
+<tr><td>Prophet</td><td>Pro</td><td>$9.99/month</td><td>$10 in credits, all Claude models</td></tr>
+<tr><td>Prophet</td><td>Premium</td><td>$29.99/month</td><td>$30 in credits, all Claude models</td></tr>
+<tr><td>Prophet</td><td>Ultra</td><td>$59.99/month</td><td>$60 in credits, all Claude models</td></tr>
 </tbody>
 </table>
 
@@ -2054,7 +2055,7 @@ const chatgptPlusVsClaudeProVsProphet: BlogPost = {
 <h3>Pay-Per-Use: Prophet</h3>
 <p>Prophet's model is fundamentally different. You buy credits that correspond directly to API costs. One credit equals one cent. When you send a message, Prophet calculates the token cost, applies its markup, and deducts the result from your balance. You can see the cost of every message after it completes.</p>
 <p>This transparency has two advantages. First, you never pay for usage you do not consume. A month where you barely use AI costs you almost nothing on Prophet, while it costs $20 on ChatGPT Plus or Claude Pro. Second, you can optimize costs by choosing the right model for each task: use Haiku for simple questions at roughly 1 cent per message, Sonnet for standard work at 2 cents, and Opus for complex analysis at 5 cents.</p>
-<p>The disadvantage is unpredictability. A month of unusually heavy usage could exhaust your credits faster than expected. However, Prophet's tiered plans mitigate this: the Pro plan at $9.99 gives you $11 in credits, Premium at $29.99 gives $35, and Ultra at $59.99 gives $70. The credit bonuses effectively discount your per-message cost as you scale up.</p>
+<p>The disadvantage is unpredictability. A month of unusually heavy usage could exhaust your credits faster than expected. However, Prophet's tiered plans mitigate this: the Pro plan at $9.99 gives you $10 in credits, Premium at $29.99 gives $30, and Ultra at $59.99 gives $60. If a month runs over, a one-time $10 credit purchase tops you up, and those credits never expire.</p>
 
 <h2>Cost Comparison by Usage Level</h2>
 <h3>Light User: 10 Messages Per Day</h3>
@@ -2103,7 +2104,7 @@ const chatgptPlusVsClaudeProVsProphet: BlogPost = {
 <tr><td>Prophet (Mixed)</td><td>$31.00</td><td>$0.013</td><td>Premium plan plus some extra</td></tr>
 </tbody>
 </table>
-<p>At heavy usage, the flat subscriptions become more cost-effective per message, but they also start hitting rate limits. If you need unthrottled access, ChatGPT Team at $30/month or Claude Team at $30/month provides higher limits. Prophet's Ultra plan at $59.99/month gives you $70 in credits with no rate throttling beyond the per-minute limits designed for server protection.</p>
+<p>At heavy usage, the flat subscriptions become more cost-effective per message, but they also start hitting rate limits. If you need unthrottled access, ChatGPT Team at $30/month or Claude Team at $30/month provides higher limits. Prophet's Ultra plan at $59.99/month gives you $60 in credits with no rate throttling beyond the per-minute limits designed for server protection.</p>
 
 <h2>Hidden Costs and Considerations</h2>
 <h3>Rate Limits as a Hidden Cost</h3>
@@ -2192,7 +2193,7 @@ const claudeApiPricingExplained: BlogPost = {
 <p>To convert MTok pricing to per-token pricing, divide by 1,000,000. For example, Claude Sonnet input costs $3.00 / 1,000,000 = $0.000003 per token. Not particularly intuitive, which is why thinking in terms of message cost is more practical.</p>
 
 <h2>Anthropic API Free Tier Credits (2026)</h2>
-<p>Anthropic's API does not have a recurring free tier in 2026 &mdash; you pay per token from the first call, with a $5 minimum deposit on console.anthropic.com. New accounts occasionally receive a small one-time evaluation credit (historically $5), but this is not guaranteed and is not advertised as a free tier. For free Claude API access via a third party, AWS Bedrock and Google Cloud Vertex AI new-account credits both apply to Claude calls, and Prophet's $0.20 free credit covers around 100 Sonnet 5.5 messages with no card required. Treat these as one-time grants rather than ongoing free quotas.</p>
+<p>Anthropic's API does not have a recurring free tier in 2026 &mdash; you pay per token from the first call, with a $5 minimum deposit on console.anthropic.com. New accounts occasionally receive a small one-time evaluation credit (historically $5), but this is not guaranteed and is not advertised as a free tier. For free Claude API access via a third party, AWS Bedrock and Google Cloud Vertex AI new-account credits both apply to Claude calls, and Prophet's one-time $0.07 free credit lets you try Claude Haiku 5.5 in the browser with no card required. Treat these as one-time grants rather than ongoing free quotas.</p>
 
 <h2>What Does a Typical Message Cost?</h2>
 <p>Let us walk through a real example. You paste a 500-word article (about 650 input tokens) into Claude Sonnet and ask it to "summarize this in three bullet points" (about 10 more input tokens). The system prompt adds another 200 tokens. Claude responds with a summary of about 150 tokens.</p>
@@ -2240,11 +2241,11 @@ const claudeApiPricingExplained: BlogPost = {
 <p>For users who send fewer than 1,000 messages per month with Sonnet, Prophet's Pro plan at $9.99/month is more economical than Claude Pro. For users who send more than 2,000 Sonnet-equivalent messages per month, Claude Pro's flat rate becomes the better deal. The crossover point depends on your model mix and message length.</p>
 
 <h2>Key Takeaways</h2>
-<p>Tokens are the fundamental pricing unit, and one token is roughly three-quarters of a word. Output tokens cost 3-5x more than input tokens. Conversation history accumulates input tokens with every message. The most effective cost reduction strategy is choosing the right model for each task. Prophet abstracts away all the complexity of API billing into a simple credit system where one credit equals one cent of API cost plus a 20% platform margin, and you can see exactly what each conversation costs.</p>
+<p>Tokens are the fundamental pricing unit, and one token is roughly three-quarters of a word. Output tokens cost 3-5x more than input tokens. Conversation history accumulates input tokens with every message. The most effective cost reduction strategy is choosing the right model for each task. Prophet abstracts away all the complexity of API billing into a simple credit system where one credit equals one cent, and you can see exactly what each conversation costs.</p>
 
 <h2>Put these numbers to work</h2>
 <p>The fastest way to turn this into a monthly figure is the <a href="/tools/ai-api-cost-calculator">AI API cost calculator</a>, which prices your real message volume against current rates, or the <a href="/tools/ai-pricing-comparison">AI pricing comparison</a> if you want Claude, GPT and Gemini per-token rates side by side. Since model choice is the single biggest lever on cost, <a href="/blog/claude-haiku-vs-sonnet-vs-opus">Claude Haiku vs Sonnet vs Opus</a> is worth reading before you optimise anything else.</p>
-<p>On whether to pay per token at all, <a href="/blog/pay-per-use-ai-vs-subscription">pay-per-use AI vs subscription pricing</a> works out the break-even against a $20/month plan, and <a href="/free-claude-ai">free Claude AI</a> covers what you can do without paying anything. If you would rather not manage an API key yourself, <a href="/pricing">Prophet's credit pricing</a> bills these same API rates plus a 20% platform margin, with no key handling.</p>
+<p>On whether to pay per token at all, <a href="/blog/pay-per-use-ai-vs-subscription">pay-per-use AI vs subscription pricing</a> works out the break-even against a $20/month plan, and <a href="/free-claude-ai">free Claude AI</a> covers what you can do without paying anything. If you would rather not manage an API key yourself, <a href="/pricing">Prophet's credit pricing</a> turns these same API rates into pay-per-use credits, with no key handling.</p>
 `
 }
 
@@ -2422,7 +2423,7 @@ const browserAutomationWithoutCode: BlogPost = {
 <p>Robotic Process Automation (RPA) tools like UiPath and Automation Anywhere also automate browser interactions, but they require building flowcharts or recording macros, and they break when page layouts change. Prophet's AI-driven approach adapts to page changes automatically because it reads the current page structure rather than replaying recorded coordinates.</p>
 
 <h2>Getting Started</h2>
-<p>If you want to try natural language browser automation, Prophet's free tier includes $0.20 in credits, which is enough for 5-15 automation tasks depending on complexity. Install the extension, open the side panel, and start with a simple command like "What page am I on?" to see the agent read your current page. Then try "Find the first result for [your search term] on Google" to see a full navigation-and-extraction workflow. Visit our <a href="/pricing">pricing page</a> to see plans that fit your automation needs.</p>
+<p>If you want to try natural language browser automation, Prophet's free tier includes a one-time $0.07 in credits, enough to try a simple automation task or two on Haiku. Install the extension, open the side panel, and start with a simple command like "What page am I on?" to see the agent read your current page. Then try "Find the first result for [your search term] on Google" to see a full navigation-and-extraction workflow. Visit our <a href="/pricing">pricing page</a> to see plans that fit your automation needs.</p>
 `
 }
 
@@ -2727,11 +2728,11 @@ const freeAiTools2026: BlogPost = {
   faq: [
     {
       question: 'What AI tools are actually free in 2026?',
-      answer: 'Genuinely useful free tiers include ChatGPT Free (GPT-4o mini unlimited, GPT-4o capped at ~15-20/day), Claude Free (Sonnet 5.5, ~20-30 messages/day), Google Gemini Free (Gemini 2.5 Pro with generous limits), Microsoft Copilot Free (GPT-4o-powered), Perplexity Free (5 Pro searches/day with citations), and Prophet Free ($0.20 in credits across all three Claude models with browser automation).',
+      answer: 'Genuinely useful free tiers include ChatGPT Free (GPT-4o mini unlimited, GPT-4o capped at ~15-20/day), Claude Free (Sonnet 5.5, ~20-30 messages/day), Google Gemini Free (Gemini 2.5 Pro with generous limits), Microsoft Copilot Free (GPT-4o-powered), Perplexity Free (5 Pro searches/day with citations), and Prophet Free ($0.07 in credits to try Claude Haiku with browser automation).',
     },
     {
       question: 'Which free AI tool is best for browser automation?',
-      answer: 'Prophet\'s free tier is the only one in the category that includes full browser-automation capability — 18 built-in tools for clicking, typing, navigating, and data extraction — alongside chat. The $0.20 credit lasts roughly 10 Sonnet messages or 20 Haiku messages. Sider\'s free tier offers 30 daily queries but no real automation.',
+      answer: 'Prophet\'s free tier is the only one in the category that includes full browser-automation capability — 18 built-in tools for clicking, typing, navigating, and data extraction — alongside chat. The one-time $0.07 credit is enough to try it on Haiku. Sider\'s free tier offers 30 daily queries but no real automation.',
     },
     {
       question: 'Is ChatGPT or Claude better on the free tier?',
@@ -2748,7 +2749,7 @@ const freeAiTools2026: BlogPost = {
   ],
   content: `
 <aside class="quick-answer" aria-label="Quick answer">
-  <strong>Quick answer:</strong> As of May 2026, the most useful genuinely-free AI tiers are ChatGPT Free (GPT-4o mini unlimited, GPT-4o capped near 15-20 messages/day), Claude Free (Sonnet 5.5, ~20-30 messages/day), Google Gemini Free (Gemini 2.5 Pro), Microsoft Copilot Free, Perplexity Free (5 cited Pro searches/day), and Prophet Free ($0.20 in credits across all three Claude models with full browser automation). Avoid Notion AI Free and GitHub Copilot Free if you need more than a 20-50 action trial.
+  <strong>Quick answer:</strong> As of May 2026, the most useful genuinely-free AI tiers are ChatGPT Free (GPT-4o mini unlimited, GPT-4o capped near 15-20 messages/day), Claude Free (Sonnet 5.5, ~20-30 messages/day), Google Gemini Free (Gemini 2.5 Pro), Microsoft Copilot Free, Perplexity Free (5 cited Pro searches/day), and Prophet Free ($0.07 in credits to try Claude Haiku with full browser automation). Avoid Notion AI Free and GitHub Copilot Free if you need more than a 20-50 action trial.
 </aside>
 <p>Every AI tool advertises a free tier, but what you actually get for free varies enormously. Some free tiers are genuinely useful for daily work. Others are barely functional demos designed to push you toward a paid plan within minutes. This guide examines 12 popular AI tools in 2026, detailing exactly what their free tiers include, what limitations you will encounter, and at what point upgrading becomes necessary. No marketing spin: just what you get.</p>
 
@@ -2763,9 +2764,9 @@ const freeAiTools2026: BlogPost = {
 <p><strong>When to upgrade:</strong> If you hit the daily limit regularly or need Opus for complex reasoning tasks. Claude Pro is $20/month.</p>
 
 <h2>3. Prophet Free</h2>
-<p><strong>What you get:</strong> $0.20 in credits (roughly 20 Haiku messages or 10 Sonnet messages). Access to all three Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5). Full browser automation capabilities. Chat history. All 18 browser tools.</p>
-<p><strong>What you do not get:</strong> The free credits do not last long with heavy use. No credit replenishment without upgrading. Rate limits are more restrictive (5 requests per minute).</p>
-<p><strong>When to upgrade:</strong> As soon as you exhaust the $0.20 in credits and want to continue using the tool. Prophet Pro at $9.99/month gives you $11 in credits. See the full breakdown on our <a href="/pricing">pricing page</a>.</p>
+<p><strong>What you get:</strong> a one-time $0.07 in credits, enough to try Claude Haiku 5.5. Access to all three Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5), though the free credits are meant for trying Haiku. Full browser automation capabilities. Chat history. All 18 browser tools.</p>
+<p><strong>What you do not get:</strong> The free credits do not last long with heavy use. No credit replenishment without upgrading or buying credits. Rate limits are more restrictive (5 requests per minute).</p>
+<p><strong>When to upgrade:</strong> As soon as you exhaust the $0.07 in credits and want to continue using the tool. Prophet Pro at $9.99/month gives you $10 in credits. See the full breakdown on our <a href="/pricing">pricing page</a>.</p>
 
 <h2>4. Google Gemini Free</h2>
 <p><strong>What you get:</strong> Access to Gemini 2.5 Pro with generous daily limits. Google Search integration. Image understanding. Google Workspace integration for Docs, Sheets, and Gmail (limited).</p>
