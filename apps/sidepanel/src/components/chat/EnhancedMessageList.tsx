@@ -19,11 +19,12 @@ import {
 } from "@/components/ai-elements/message";
 import { ToolCallCollapsible } from "./ToolCallCollapsible";
 import { useStickToBottomContext } from "use-stick-to-bottom";
-import type { Message as MessageType, ToolCall } from "@prophet/shared";
-import type { MessagePart, TextPart, ToolPart } from "@/lib/agent/chat-adapter";
+import { readStoredToolCalls, type Message as MessageType, type ToolCall } from "@prophet/shared";
+import { toolPartView, type MessagePart } from "@/lib/agent/chat-adapter";
 
 interface AgentMessage extends MessageType {
-  toolCalls?: ToolCall[];
+  /** From the messages API after a reload, so validated before it is shown. */
+  toolCalls?: unknown;
   thinkingContent?: string;
   parts?: MessagePart[];
 }
@@ -67,6 +68,8 @@ function MessageWithActions({
   const isAssistant = message.role === "assistant";
   const displayContent = message.content;
   const hasParts = message.parts && message.parts.length > 0;
+  // A reloaded message has no live parts; its Run's actions come from the stored tool calls
+  const storedToolCalls = hasParts ? [] : readStoredToolCalls(message.toolCalls);
   const hasThinking = Boolean(message.thinkingContent);
   const showThinking = hasThinking && isStreaming && !displayContent && !hasParts;
 
@@ -94,29 +97,20 @@ function MessageWithActions({
       <div className="space-y-2">
         {message.parts.map((part, index) => {
           if (part.type === "text") {
-            const textPart = part as TextPart;
-            return textPart.text.trim() ? (
-              <MessageResponse key={index}>{textPart.text}</MessageResponse>
+            return part.text.trim() ? (
+              <MessageResponse key={index}>{part.text}</MessageResponse>
             ) : null;
-          } else {
-            const toolPart = part as ToolPart;
-            const toolCall: ToolCall = {
-              id: toolPart.toolCallId,
-              name: toolPart.toolName as ToolCall["name"],
-              input: toolPart.input || {},
-              result: toolPart.output,
-            };
-            return (
-              <ToolCallCollapsible
-                key={toolPart.toolCallId}
-                toolCall={toolCall}
-                isExecuting={toolPart.state === "executing"}
-              />
-            );
           }
+          return (
+            <ToolCallCollapsible
+              key={part.toolCallId}
+              toolCall={toolPartView(part)}
+              isExecuting={part.state === "executing"}
+            />
+          );
         })}
         {currentToolCall && !message.parts.some(
-          (p) => p.type === "tool" && (p as ToolPart).toolCallId === currentToolCall.id
+          (p) => p.type === "tool" && p.toolCallId === currentToolCall.id
         ) && (
             <ToolCallCollapsible toolCall={currentToolCall} isExecuting />
           )}
@@ -138,8 +132,13 @@ function MessageWithActions({
         ) : isAssistant ? (
           hasParts ? (
             renderInlineParts()
-          ) : displayContent ? (
-            <MessageResponse>{displayContent}</MessageResponse>
+          ) : displayContent || storedToolCalls.length > 0 ? (
+            <div className="space-y-2">
+              {displayContent && <MessageResponse>{displayContent}</MessageResponse>}
+              {storedToolCalls.map((call) => (
+                <ToolCallCollapsible key={call.id} toolCall={call} />
+              ))}
+            </div>
           ) : isStreaming ? (
             <Shimmer duration={1.5} className="text-sm">Working…</Shimmer>
           ) : null

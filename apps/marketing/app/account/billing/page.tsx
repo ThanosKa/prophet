@@ -9,6 +9,9 @@ import { CreditCard, CheckCircle2, Zap, Loader2, AlertCircle, Clock, XCircle } f
 import { format } from "date-fns"
 import { useUser } from "@/contexts/UserContext"
 import { SubscriptionAlerts } from "@/components/account/SubscriptionAlerts"
+import { formatDollars } from "@prophet/shared"
+import { describeAccountBalance } from "@/lib/credit-balance"
+import { EXTRA_CREDITS } from "@/lib/pricing"
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -31,7 +34,7 @@ const itemVariants = {
 }
 
 export default function BillingPage() {
-  const { user, isLoading } = useUser()
+  const { user, balance, isLoading } = useUser()
 
   const [isBuyingCredits, setIsBuyingCredits] = useState(false)
   const [isManagingSubscription, setIsManagingSubscription] = useState(false)
@@ -79,12 +82,13 @@ export default function BillingPage() {
     )
   }
 
-  if (!user) {
+  if (!user || !balance) {
     return null
   }
 
   const currentTier = user.tier
   const status = user.subscriptionStatus || 'none'
+  const balanceDisplay = describeAccountBalance(balance)
   const isCanceled = status === 'canceled'
   const isIncomplete = status === 'incomplete'
   const isPastDue = status === 'past_due'
@@ -142,14 +146,14 @@ export default function BillingPage() {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.3, duration: 0.3 }}
                 >
-                  ${(user.creditsRemaining / 100).toFixed(2)}
+                  {balanceDisplay.total}
                 </motion.div>
-                {user.creditsIncluded > 0 && (
+                {balanceDisplay.neverExpiresNote && (
+                  <div className="text-sm text-muted-foreground">{balanceDisplay.neverExpiresNote}</div>
+                )}
+                {currentTier !== 'free' && user.creditsIncluded > 0 && (
                   <div className="text-sm text-muted-foreground">
-                    {user.creditsRemaining > user.creditsIncluded
-                      ? `Includes $${((user.creditsRemaining - user.creditsIncluded) / 100).toFixed(2)} in extra credits`
-                      : `$${(user.creditsIncluded / 100).toFixed(2)}/mo included`
-                    }
+                    {formatDollars(user.creditsIncluded)}/mo included
                   </div>
                 )}
               </div>
@@ -225,8 +229,10 @@ export default function BillingPage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold">$10.00</p>
-                  <p className="text-sm text-muted-foreground">$10 in credits added to your balance</p>
+                  <p className="text-2xl font-bold">{formatDollars(EXTRA_CREDITS.price)}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {EXTRA_CREDITS.credits.toLocaleString("en-US")} Credits for {formatDollars(EXTRA_CREDITS.price)} that never expire
+                  </p>
                 </div>
                 <Button
                   onClick={handleBuyCredits}

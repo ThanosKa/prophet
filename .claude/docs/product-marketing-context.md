@@ -8,7 +8,7 @@ Foundation document for all marketing content, campaigns, and messaging.
 
 ### What Prophet Is
 
-Prophet is a Chrome browser extension that embeds a full AI assistant into your browser's side panel. It connects to Anthropic's Claude models (Haiku 4.5, Sonnet 5.5, Opus 5.5) and gives the AI agent the ability to see, understand, and interact with any web page you have open -- clicking buttons, filling forms, navigating sites, and extracting content -- all while you stay in control.
+Prophet is a Chrome browser extension that embeds a full AI assistant into your browser's side panel. It connects to Anthropic's Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5) and gives the AI agent the ability to see, understand, and interact with any web page you have open -- clicking buttons, filling forms, navigating sites, and extracting content -- all while you stay in control.
 
 ### What It Does
 
@@ -16,7 +16,7 @@ Prophet operates in two modes:
 
 1. **Conversational AI** -- Chat with Claude directly from any tab. Ask questions, get writing help, analyze content, brainstorm. Standard AI chat, but always one click away in the side panel.
 
-2. **Browser Automation Agent** -- Give Prophet a task ("fill out this form", "search for X on this page", "navigate to my account settings and find my billing date") and the AI agent autonomously observes the page via the accessibility tree, decides which actions to take, and executes them using the Chrome DevTools Protocol. It can click, type, scroll, navigate, manage tabs, and wait for dynamic content -- up to 10 tool calls per conversation turn.
+2. **Browser Automation Agent** -- Give Prophet a task ("fill out this form", "search for X on this page", "navigate to my account settings and find my billing date") and the AI agent autonomously observes the page via the accessibility tree, decides which actions to take, and executes them using the Chrome DevTools Protocol. It can click, type, scroll, navigate, manage tabs, and wait for dynamic content -- up to 20 Turns per Run before it pauses for the user to say "continue".
 
 ### How It Works (Technical Differentiator)
 
@@ -36,7 +36,7 @@ Prophet uses the **accessibility tree** (the same structured data screen readers
 - Tool execution happens **client-side** in the user's own logged-in browser session -- the backend never sees page content
 - Accessibility tree approach is faster, cheaper (fewer tokens), and more deterministic than screenshot-based alternatives
 - Streaming responses for real-time feedback
-- Credits-based billing with transparent per-token pricing
+- Pay-per-use credits, charged by the tokens each Turn uses
 
 ---
 
@@ -154,7 +154,7 @@ Prophet sits at the intersection of:
 1. **Accessibility tree + UID targeting** -- Same approach as Playwright MCP but in a consumer-friendly Chrome extension
 2. **Client-side tool execution** -- Privacy-preserving architecture where page content never leaves the browser
 3. **Model choice per conversation** -- Haiku for simple tasks, Opus for complex ones; users optimize cost/quality
-4. **Pay-per-use credits** -- No flat $20/month; granular pricing from free ($0.20) to heavy usage ($70/month in credits)
+4. **Pay-per-use credits** -- No flat $20/month; granular pricing from a free $0.07 to try Haiku up to $60/month in credits, plus $10 top-ups that never expire
 5. **Custom agent loop** -- No dependency on Claude Agent SDK; full control over tool execution
 
 ---
@@ -183,7 +183,7 @@ Prophet sits at the intersection of:
 **For the Productivity-Obsessed Knowledge Worker:**
 - "Prophet lives in your browser's side panel -- no more copying text into a separate AI tab."
 - "Tell it what you need, and it handles the clicking, scrolling, and form-filling for you."
-- "Start free with $0.20 in credits. Upgrade only when you're hooked."
+- "Start free with $0.07 in credits to try Haiku. Upgrade only when you're hooked."
 - "Your conversations stream in real-time, so you see answers as they're generated."
 
 **For the Technical Power User:**
@@ -214,12 +214,12 @@ Prophet sits at the intersection of:
 | **Accessibility tree observation** | Faster, cheaper, more reliable page understanding | Same approach as Microsoft's Playwright MCP; structured text vs expensive image processing |
 | **UID-based element targeting** | Deterministic interactions -- clicks exactly the right element | Each interactive element gets a stable unique ID; no coordinate-guessing |
 | **Client-side tool execution** | Your browsing data never leaves your machine | Tools run via Chrome DevTools Protocol in your logged-in session |
-| **3 Claude model tiers** | Optimize cost vs capability per task | Haiku 4.5 ($1/$5 per MTok), Sonnet 5.5 ($2/$10), Opus 5.5 ($4/$20) |
+| **3 Claude model tiers** | Optimize cost vs capability per task | Haiku 5.5 ($0.10/$0.50 per MTok up to 100K-token prompts), Sonnet 5.5 ($2/$10), Opus 5.5 ($4/$20) |
 | **Streaming responses** | See answers as they generate, not after a loading spinner | Server-sent events from Anthropic API streamed in real-time |
 | **Persistent chat history** | Pick up where you left off | Conversations stored in secure database with full message history |
-| **Credits-based pricing** | Pay for exactly what you use | 1 credit = 1 cent of API cost; transparent usage tracking in dashboard |
-| **Subscription bonus credits** | Rewarded for commitment | Pro: +10% bonus, Premium/Ultra: +17% bonus on credits included |
-| **One-time credit top-up ($10)** | Flexibility for variable usage | Buy extra credits anytime without changing your subscription |
+| **Credits-based pricing** | Pay for exactly what you use | 1 credit = 1 cent; every Turn costs at least 1 credit; daily usage per model in the dashboard |
+| **Plans with price-equal credits** | No guesswork about what a plan buys | Pro $9.99 → $10, Premium $29.99 → $30, Ultra $59.99 → $60 in credits every month |
+| **One-time credit top-up ($10)** | Flexibility for variable usage | Buy $10 of credits anytime; they never expire and survive renewals, plan changes and cancellation |
 | **Tier-based rate limiting** | Fair resource allocation | Free: 5 req/min, Pro: 20, Premium/Ultra: 60 |
 | **Secure authentication (Clerk)** | Enterprise-grade account security | OAuth integration, session sync between web and extension |
 | **Agent overlay with stop button** | Stay in control during automation | Blue glow border shows agent is active; red stop button cancels instantly |
@@ -239,37 +239,46 @@ Flat subscriptions ($20/month for Claude Pro, $200/month for Claude Max) force u
 ### How to Talk About Pricing
 
 **Frame 1: Transparency**
-"Every credit equals one cent of actual AI API cost. We add a 20% service fee for infrastructure, and that's it. No hidden charges, no surprise limits."
+"Every credit is one cent, charged by the tokens you actually use. No seat fee, no hidden charges, and the credits you buy once never expire."
 
 **Frame 2: Control**
 "Pick the model that fits the task. Use Haiku for quick questions (pennies per conversation). Switch to Opus when you need the full power of Claude's best model. You're in charge."
 
 **Frame 3: Low barrier, room to grow**
-"Start free with $0.20 in credits -- enough to try Prophet and see the value. When you're ready, $9.99/month gets you $11 in credits with a 10% bonus."
+"Start free with $0.07 in credits -- enough to try Prophet on Haiku and see the value. When you're ready, $9.99/month gets you $10 in credits every month."
 
-**Frame 4: Bonus as loyalty reward**
-"The more you commit, the more you save. Pro subscribers get 10% bonus credits. Premium and Ultra subscribers get 17% more credits than what they pay for."
+**Frame 4: Nothing you buy goes to waste**
+"Credits you buy once never expire: they stay in your balance through renewals, plan changes and cancellation. Plan credits renew every month and don't roll over, and Prophet spends them first."
 
 ### Pricing Tier Positioning
 
 | Tier | Monthly Price | Credits Included | Best For | Messaging |
 |------|-------------|-----------------|----------|-----------|
-| **Free** | $0 | $0.20 | Trial / occasional use | "Try Prophet risk-free" |
-| **Pro** | $9.99 | $11 (+10%) | Daily use, individuals | "Best value for daily AI assistance" |
-| **Premium** | $29.99 | $35 (+17%) | Power users, professionals | "For professionals who rely on AI daily" (MOST POPULAR) |
-| **Ultra** | $59.99 | $70 (+17%) | Heavy use, teams | "Maximum credits for maximum productivity" |
-| **Extra Credits** | $10 (one-time) | $10 | Top-up between cycles | "Need more? Buy credits anytime" |
+| **Free** | $0 | $0.07 one-time | Trying Prophet on Haiku | "Try Prophet risk-free" |
+| **Pro** | $9.99 | $10/month | Daily use, individuals | "Best value for daily AI assistance" |
+| **Premium** | $29.99 | $30/month | Power users, professionals | "For professionals who rely on AI daily" (MOST POPULAR) |
+| **Ultra** | $59.99 | $60/month | Heavy use, teams | "Maximum credits for maximum productivity" |
+| **Extra Credits** | $10 (one-time) | $10, never expire | Top-up between cycles | "Need more? Buy credits anytime" |
+
+### Pricing rules for all copy
+
+- Never state the margin percentage. Describe credits as pay-per-use.
+- Never advertise a bonus: a plan's credits equal its price.
+- The free grant is a one-time $0.07, enough to try Haiku. Never promise Sonnet or Opus messages on it.
+- Subscription credits renew monthly and don't roll over; purchased credits never expire.
+- Every Turn (one call to Claude) costs at least 1 credit.
+- Numbers come from `apps/marketing/lib/pricing.ts`; `apps/marketing/lib/pricing-copy.test.ts` fails on the old claims.
 
 ### Objection Handling
 
 **"Why not just use Claude.ai for $20/month?"**
-Prophet gives you browser automation and side-panel convenience that Claude.ai doesn't. Plus, if you use less than $20/month worth of AI, Prophet costs less. If you use more, our bonus credits make it competitive.
+Prophet gives you browser automation and side-panel convenience that Claude.ai doesn't. Plus, if you use less than $20/month worth of AI, Prophet costs less. If you use more, Premium and Ultra scale with you, and $10 top-ups never expire.
 
 **"What if I run out of credits?"**
 You can buy a $10 one-time top-up anytime, or upgrade your plan. You're never locked out -- just paused until you add credits.
 
 **"How do I know what things cost?"**
-Your dashboard shows real-time credit balance and usage history. Every conversation shows token counts. Pick cheaper models (Haiku) for simple tasks to stretch your credits further.
+Your dashboard shows your credit balance and daily usage per model, with Turns, tokens and credits spent. Pick cheaper models (Haiku) for simple tasks to stretch your credits further.
 
 ---
 
@@ -344,7 +353,7 @@ Prophet's voice is **competent, direct, and approachable** -- like a sharp cowor
 ### Do's
 
 - Lead with what the user gets, not what the product is
-- Use concrete numbers (18 tools, 3 models, $0.20 free credits, 10% bonus)
+- Use concrete numbers (18 tools, 3 models, $0.07 free credits, $10 of credits on Pro)
 - Reference the accessibility tree advantage when differentiating
 - Acknowledge limitations honestly (can't see images, can't solve CAPTCHAs)
 - Show the product in action (screenshots, demos, code examples on technical pages)
@@ -355,7 +364,7 @@ Prophet's voice is **competent, direct, and approachable** -- like a sharp cowor
 - Don't claim "revolutionary" or "groundbreaking" -- let the architecture speak for itself
 - Don't hide the fact that this is a proxy to Anthropic's Claude -- transparency is a brand value
 - Don't use fear-based marketing ("You're losing productivity without AI!")
-- Don't promise the agent can do everything -- the 10 tool-call limit and known limitations are features of responsible design
+- Don't promise the agent can do everything -- the 20-Turn limit and known limitations are features of responsible design
 - Don't use emojis in product copy (matches codebase standards)
 - Don't compare to competitors by name in negative terms -- show Prophet's approach and let users draw conclusions
 - Don't use "AI-powered" as a standalone descriptor -- always pair it with what the AI actually does
@@ -391,7 +400,7 @@ Prophet's voice is **competent, direct, and approachable** -- like a sharp cowor
 
 **Current social proof (from Hero):** "Join 1,000+ users already using Prophet"
 
-**Models available:** Claude Haiku 4.5, Claude Sonnet 5.5, Claude Opus 5.5
+**Models available:** Claude Haiku 5.5, Claude Sonnet 5.5, Claude Opus 5.5
 
 **Extension version:** 1.0.1
 

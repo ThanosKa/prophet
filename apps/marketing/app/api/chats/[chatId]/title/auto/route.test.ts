@@ -84,7 +84,7 @@ function messageRow({ role, content }: { role: MessageRow['role']; content: stri
     chatId: mockChatId,
     role,
     content,
-    model: role === 'assistant' ? 'claude-haiku-4-5' : null,
+    model: role === 'assistant' ? 'claude-haiku-5-5' : null,
     inputTokens: null,
     outputTokens: null,
     costCents: null,
@@ -147,7 +147,7 @@ describe('POST /api/chats/[chatId]/title/auto', () => {
     vi.clearAllMocks()
     mocks.auth.mockResolvedValue({ userId: mockUserId })
     vi.mocked(checkRateLimit).mockResolvedValue({ success: true, limit: 10, remaining: 9, reset: 60 })
-    mocks.usersFindFirst.mockResolvedValue({ creditsRemaining: 100 })
+    mocks.usersFindFirst.mockResolvedValue({ creditsRemaining: 100, purchasedCredits: 0 })
   })
 
   describe('Authentication & Authorization', () => {
@@ -230,10 +230,26 @@ describe('POST /api/chats/[chatId]/title/auto', () => {
       expect(responseData.data?.title).toBe('Weather Check')
       expect(mocks.createMessage).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: 'claude-haiku-4-5',
+          model: 'claude-haiku-5-5',
           max_tokens: 50,
+          thinking: { type: 'disabled' },
         })
       )
+      expect(store.title).toBe('Weather Check')
+    })
+
+    it('reads the title from the text block even when a thinking block comes first', async () => {
+      const store = useChatStore({ title: DEFAULT_TITLE })
+      useMessages({ user: 'What is the weather like?', assistant: 'The weather is sunny.' })
+      mocks.createMessage.mockResolvedValue({
+        content: [
+          { type: 'thinking', thinking: '', signature: 'sig' },
+          { type: 'text', text: 'Weather Check' },
+        ],
+      })
+
+      await callAutoTitle()
+
       expect(store.title).toBe('Weather Check')
     })
 
@@ -314,7 +330,7 @@ describe('POST /api/chats/[chatId]/title/auto', () => {
     it('skips Anthropic and stores the fallback title when the user has no credits', async () => {
       const store = useChatStore({ title: DEFAULT_TITLE })
       useMessages({ user: 'Summarize this page', assistant: 'Here is a summary.' })
-      mocks.usersFindFirst.mockResolvedValue({ creditsRemaining: 0 })
+      mocks.usersFindFirst.mockResolvedValue({ creditsRemaining: 0, purchasedCredits: 0 })
       modelReplies('Page Summary')
 
       const response = await callAutoTitle()
@@ -324,6 +340,18 @@ describe('POST /api/chats/[chatId]/title/auto', () => {
       expect(response.status).toBe(200)
       expect(store.title).toBe('Summarize this page')
       expect(responseData.data?.title).toBe('Summarize this page')
+    })
+
+    it('generates a title for a user whose balance is all Purchased credits', async () => {
+      const store = useChatStore({ title: DEFAULT_TITLE })
+      useMessages({ user: 'Summarize this page', assistant: 'Here is a summary.' })
+      mocks.usersFindFirst.mockResolvedValue({ creditsRemaining: 0, purchasedCredits: 50 })
+      modelReplies('Page Summary')
+
+      await callAutoTitle()
+
+      expect(mocks.createMessage).toHaveBeenCalledTimes(1)
+      expect(store.title).toBe('Page Summary')
     })
 
     it('does not call Anthropic when a concurrent request already claimed the chat', async () => {

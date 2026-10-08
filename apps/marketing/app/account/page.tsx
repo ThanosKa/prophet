@@ -9,9 +9,10 @@ import { BarChart3, CreditCard, ChevronRight, Chrome, CheckCircle2, AlertCircle,
 import { format } from "date-fns";
 import { useUser } from "@/contexts/UserContext";
 import { SubscriptionAlerts } from "@/components/account/SubscriptionAlerts";
+import { describeAccountBalance } from "@/lib/credit-balance";
 
 export default function AccountOverviewPage() {
-  const { user, isLoading } = useUser();
+  const { user, balance, isLoading } = useUser();
 
   if (isLoading) {
     return (
@@ -21,16 +22,16 @@ export default function AccountOverviewPage() {
     );
   }
 
-  if (!user) {
+  if (!user || !balance) {
     return null;
   }
 
-  const creditsRemaining = (user.creditsRemaining / 100).toFixed(2);
+  const balanceDisplay = describeAccountBalance(balance);
   const tierName = user.tier.charAt(0).toUpperCase() + user.tier.slice(1);
-  const hasExtraCredits = user.creditsRemaining > user.creditsIncluded;
+  // The bar tracks Subscription credits against the plan; Purchased credits sit outside it.
   const creditPercentage =
     user.creditsIncluded > 0
-      ? Math.min(100, Math.round((user.creditsRemaining / user.creditsIncluded) * 100))
+      ? Math.max(0, Math.min(100, Math.round((balance.subscription / user.creditsIncluded) * 100)))
       : 0;
 
   return (
@@ -63,7 +64,10 @@ export default function AccountOverviewPage() {
           <div className={`grid grid-cols-1 ${user.subscriptionStatus ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-8`}>
             <div>
               <p className="text-sm text-muted-foreground mb-1">Balance</p>
-              <p className="text-4xl font-bold">${creditsRemaining}</p>
+              <p className="text-4xl font-bold">{balanceDisplay.total}</p>
+              {balanceDisplay.neverExpiresNote && (
+                <p className="mt-1 text-xs text-muted-foreground">{balanceDisplay.neverExpiresNote}</p>
+              )}
               {user.creditsIncluded > 0 && (
                 <div className="mt-3 space-y-1">
                   <div className="flex items-center gap-2">
@@ -77,11 +81,6 @@ export default function AccountOverviewPage() {
                       {creditPercentage}%
                     </span>
                   </div>
-                  {hasExtraCredits && (
-                    <p className="text-xs text-muted-foreground">
-                      +${((user.creditsRemaining - user.creditsIncluded) / 100).toFixed(2)} extra credits
-                    </p>
-                  )}
                 </div>
               )}
             </div>

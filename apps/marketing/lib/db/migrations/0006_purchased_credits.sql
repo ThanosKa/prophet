@@ -1,0 +1,2 @@
+ALTER TABLE "users" ADD COLUMN "purchased_credits" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "users" ADD CONSTRAINT "users_purchased_credits_non_negative" CHECK ("users"."purchased_credits" >= 0);

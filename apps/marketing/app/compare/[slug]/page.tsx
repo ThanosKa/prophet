@@ -189,8 +189,8 @@ export default async function ComparisonPage({ params }: Props) {
               <p>
                 Both tools can be installed side by side in Chrome, so you can
                 test each on your actual workflow before committing. Prophet&apos;s
-                free tier includes $0.20 in credits -- enough for dozens of
-                messages to evaluate whether it meets your needs.
+                free tier includes a one-time $0.07 in credits -- enough to try
+                it on Haiku and see whether it meets your needs.
               </p>
             </div>
           </section>
@@ -284,7 +284,7 @@ export default async function ComparisonPage({ params }: Props) {
             Try Prophet Free
           </h2>
           <p className="text-muted-foreground mb-6">
-            Install the extension, get $0.20 in free credits, and see how
+            Install the extension, get $0.07 in free credits, and see how
             accessibility-tree automation compares to {data.competitor}. No
             credit card required.
           </p>

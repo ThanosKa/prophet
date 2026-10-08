@@ -44,6 +44,8 @@ cp apps/sidepanel/.env.example apps/sidepanel/.env.local
 pnpm db:migrate
 ```
 
+`pnpm -F @prophet/marketing db:seed` / `db:seed:reset` refuse `NODE_ENV=production` but write to whatever `DATABASE_URL` points at, and a local `.env.local` can point at the prod database. Confirm the target before running either.
+
 ## 5. Start Development
 
 ```bash
@@ -105,3 +107,6 @@ Copy from [apps/sidepanel/.env.example](apps/sidepanel/.env.example) - Chrome ex
 
 - `VITE_CLERK_PUBLISHABLE_KEY` - Clerk public key (Vite prefixed for build-time inlining)
 - `VITE_API_URL` - API URL for extension requests (http://localhost:3000 in dev)
+- `VITE_CLERK_SYNC_HOST` - Clerk session sync host (empty in dev, falls back to `VITE_API_URL`)
+- `VITE_USE_DEV_API` - `mock` / `true` / unset; see `.claude/docs/MOCK_MODE_GUIDE.md`
+- `VITE_EXTENSION_ID` - Extension ID from `chrome://extensions` (defaults to `chrome.runtime.id`)

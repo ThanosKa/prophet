@@ -26,11 +26,19 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
-import type { ToolCall, ToolName } from '@prophet/shared'
+import { toolNameSchema, type ToolCall, type ToolName } from '@prophet/shared'
+
+/** A tool call to show. Stored calls may name a tool this build doesn't know, so any name is allowed. */
+export type ToolCallView = Omit<ToolCall, 'name'> & { name: string }
 
 interface ToolCallCollapsibleProps {
-  toolCall: ToolCall
+  toolCall: ToolCallView
   isExecuting?: boolean
+}
+
+function knownToolName(name: string): ToolName | null {
+  const parsed = toolNameSchema.safeParse(name)
+  return parsed.success ? parsed.data : null
 }
 
 const toolIcons: Record<ToolName, React.ComponentType<{ className?: string }>> = {
@@ -77,7 +85,7 @@ const toolLabels: Record<ToolName, string> = {
   get_page_info: 'Page Info',
 }
 
-function formatToolInput(toolCall: ToolCall): string {
+function formatToolInput(toolCall: ToolCallView): string {
   const { name, input } = toolCall
   switch (name) {
     case 'click_element_by_uid':
@@ -99,7 +107,7 @@ function formatToolInput(toolCall: ToolCall): string {
   }
 }
 
-function formatToolResult(toolCall: ToolCall): string | null {
+function formatToolResult(toolCall: ToolCallView): string | null {
   if (toolCall.isError) {
     if (typeof toolCall.result === 'string' && toolCall.result.trim()) return toolCall.result
     return 'Tool failed'
@@ -140,8 +148,9 @@ export function ToolCallCollapsible({
 }: ToolCallCollapsibleProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const Icon = toolIcons[toolCall.name] || Camera
-  const label = toolLabels[toolCall.name] || toolCall.name
+  const toolName = knownToolName(toolCall.name)
+  const Icon = toolName ? toolIcons[toolName] : Camera
+  const label = toolName ? toolLabels[toolName] : toolCall.name
   const inputSummary = formatToolInput(toolCall)
   const resultSummary = !isExecuting ? formatToolResult(toolCall) : null
 
@@ -153,7 +162,14 @@ export function ToolCallCollapsible({
 
   const getStatusIcon = () => {
     if (isExecuting) return <Loader2 className="h-3 w-3 animate-spin text-zinc-500" />
-    if (toolCall.isError) return <X className="h-3 w-3 text-red-500" />
+    if (toolCall.isError) {
+      return (
+        <>
+          <X className="h-3 w-3 text-red-500" aria-hidden="true" />
+          <span className="sr-only">Failed</span>
+        </>
+      )
+    }
     return <Check className="h-3 w-3 text-zinc-500" />
   }
 

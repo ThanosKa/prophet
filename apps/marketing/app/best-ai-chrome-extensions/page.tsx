@@ -21,14 +21,14 @@ const extensions = [
     tagline: 'AI side panel with Claude and browser automation',
     bestFor: 'Power users who want Claude with full browser automation and pay-per-use pricing.',
     url: 'https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif',
-    pricing: 'Free tier ($0.20 credits), Pro $9.99/mo with $11 credits (10% bonus), Premium $29.99/mo with $35 credits (17% bonus), Ultra $59.99/mo with $70 credits (17% bonus). 1 credit = 1 cent of Anthropic API cost plus a 20% platform margin, so you see the real per-message cost and stop paying the moment you stop using it. No "unused capacity" charge — light months cost almost nothing.',
+    pricing: 'Free tier ($0.07 credits to try Haiku), Pro $9.99/mo with $10 credits, Premium $29.99/mo with $30 credits, Ultra $59.99/mo with $60 credits. 1 credit = 1 cent, charged per use, so you see the real per-message cost and stop paying the moment you stop using it. No "unused capacity" charge — light months cost almost nothing.',
     description: 'Prophet brings Anthropic\'s Claude AI directly into the Chrome side panel with a focus on browser automation. Unlike most AI extensions that only offer chat, Prophet includes 18 built-in tools for interacting with web pages: clicking buttons, filling forms, navigating between pages, and extracting data. It uses the accessibility tree instead of screenshots, which makes automation faster and more reliable. The pay-per-use credit system means you only pay for what you actually use, and the full source code is available on GitHub.',
     pros: [
       'Browser automation with 18 tools (click, fill, navigate, extract)',
       'Accessibility tree approach is faster and cheaper than screenshot-based AI',
       'Pay-per-use credits instead of flat monthly fees for unused capacity',
       'Open source with full transparency into how it works',
-      'Multiple Claude models (Haiku 4.5, Sonnet 5.5, Opus 5.5)',
+      'Multiple Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5)',
     ],
     cons: [
       'Claude-only; no GPT or Gemini model options',
@@ -235,7 +235,7 @@ const faqItems = [
   {
     question: 'What are the best free AI Chrome extensions?',
     answer:
-      'Glasp is the only genuinely and permanently free option here, though it only does highlighting and summaries. Compose AI\'s basic autocomplete is free indefinitely. Monica, Merlin, MaxAI and Sider all offer free tiers with daily caps that function as trials rather than usable long-term plans. Harpa AI is free if you bring your own API key and pay the model provider directly. Prophet gives $0.20 in credits with no card and unlocks all three Claude models on the free tier. No extension offers unlimited free frontier-model access, because every message costs the provider real compute.',
+      'Glasp is the only genuinely and permanently free option here, though it only does highlighting and summaries. Compose AI\'s basic autocomplete is free indefinitely. Monica, Merlin, MaxAI and Sider all offer free tiers with daily caps that function as trials rather than usable long-term plans. Harpa AI is free if you bring your own API key and pay the model provider directly. Prophet gives $0.07 in credits with no card, enough to try Claude Haiku, and locks no model behind a plan. No extension offers unlimited free frontier-model access, because every message costs the provider real compute.',
   },
   {
     question: 'Which AI Chrome extension can actually automate browser tasks?',
@@ -245,7 +245,7 @@ const faqItems = [
   {
     question: 'How much do AI Chrome extensions cost per month?',
     answer:
-      'Most sit between $9 and $15 per month for an entry paid tier: Sider from $8.99, Monica from $9.90, MaxAI and Compose AI from $9.99, Merlin from $14.25, Harpa from $15. Anthropic\'s Claude in Chrome is the outlier at $20/month because it requires a Claude Pro subscription. Prophet is the only pay-per-use option, billing credits at Anthropic API cost plus a 20% margin, which means a light month costs cents rather than a flat fee. The break-even against a $10/month subscription lands at roughly 500 Sonnet messages a month.',
+      'Most sit between $9 and $15 per month for an entry paid tier: Sider from $8.99, Monica from $9.90, MaxAI and Compose AI from $9.99, Merlin from $14.25, Harpa from $15. Anthropic\'s Claude in Chrome is the outlier at $20/month because it requires a Claude Pro subscription. Prophet is the only pay-per-use option, billing credits for the tokens you use, which means a light month costs cents rather than a flat fee. The break-even against a $10/month subscription lands at roughly 500 Sonnet messages a month.',
   },
   {
     question: 'Does Anthropic have an official Chrome extension for Claude?',
@@ -316,7 +316,7 @@ export default function BestAIChromeExtensionsPage() {
               If you want the answer without the detail, here is how the nine AI Chrome extensions rank by what you are actually trying to do:
             </p>
             <ul className="space-y-2 text-muted-foreground">
-              <li><strong className="text-foreground">Best overall and only real browser automation:</strong> Prophet (Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5, 18 automation tools, pay-per-use credits)</li>
+              <li><strong className="text-foreground">Best overall and only real browser automation:</strong> Prophet (Claude Haiku 5.5, Sonnet 5.5 and Opus 5.5, 18 automation tools, pay-per-use credits)</li>
               <li><strong className="text-foreground">Best multi-model assistant:</strong> Monica (GPT-4o, Claude and Gemini plus image generation in one sidebar)</li>
               <li><strong className="text-foreground">Best for comparing model answers:</strong> Sider (group chat queries several models on the same prompt)</li>
               <li><strong className="text-foreground">Best with live web search:</strong> Merlin (search-grounded answers and document analysis)</li>
@@ -348,7 +348,7 @@ export default function BestAIChromeExtensionsPage() {
                 <strong className="text-foreground">Free with a daily quota.</strong> Monica, Merlin, MaxAI and Sider all run limited free tiers that reset daily. These are designed as trials — the caps are tight enough that regular use pushes you to a subscription within a week or two.
               </li>
               <li>
-                <strong className="text-foreground">Free tooling, you pay the model.</strong> Harpa AI is free if you supply your own API key; you pay Anthropic or OpenAI directly for tokens. Prophet includes $0.20 in credits with no card, then bills credits at API cost plus a 20% margin.
+                <strong className="text-foreground">Free tooling, you pay the model.</strong> Harpa AI is free if you supply your own API key; you pay Anthropic or OpenAI directly for tokens. Prophet includes $0.07 in credits with no card, then bills pay-per-use credits for the tokens you use.
               </li>
             </ul>
             <p className="text-muted-foreground leading-relaxed">

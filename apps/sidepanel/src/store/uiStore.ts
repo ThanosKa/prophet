@@ -1,11 +1,30 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { DEFAULT_AGENT_MODEL, CLAUDE_MODELS } from '@prophet/shared'
+import { z } from 'zod'
+import {
+  DEFAULT_AGENT_MODEL,
+  CLAUDE_MODELS,
+  agentModelSchema,
+  getModelContextWindow,
+  resolveAgentModel,
+} from '@prophet/shared'
 import type { AgentModel } from '@prophet/shared'
 
-const MAX_CONTEXT_TOKENS = 200000
+/** The context meter's denominator and clamp: the active model's window. */
+export function selectMaxContextTokens(state: Pick<UIState, 'selectedModel'>): number {
+  return getModelContextWindow(resolveAgentModel(state.selectedModel))
+}
 
 type Theme = 'light' | 'dark'
+
+// Each field degrades to undefined on its own, so one bad value never resets the rest.
+const persistedUIStateSchema = z
+  .object({
+    selectedModel: agentModelSchema.optional().catch(undefined),
+    theme: z.enum(['light', 'dark']).optional().catch(undefined),
+    enableThinking: z.boolean().optional().catch(undefined),
+  })
+  .catch({})
 
 interface UIState {
   drawerOpen: boolean
@@ -14,7 +33,6 @@ interface UIState {
   contextOutputTokens: number
   contextReasoningTokens: number
   contextCachedInputTokens: number
-  maxContextTokens: number
   selectedModel: AgentModel
   theme: Theme
   enableThinking: boolean
@@ -42,7 +60,6 @@ export const useUIStore = create<UIState>()(
       contextOutputTokens: 0,
       contextReasoningTokens: 0,
       contextCachedInputTokens: 0,
-      maxContextTokens: MAX_CONTEXT_TOKENS,
       selectedModel: DEFAULT_AGENT_MODEL,
       theme: 'dark' as Theme,
       enableThinking: false,
@@ -55,7 +72,7 @@ export const useUIStore = create<UIState>()(
 
       addContextTokens: (tokens) =>
         set((state) => ({
-          contextTokens: Math.min(state.contextTokens + tokens, MAX_CONTEXT_TOKENS),
+          contextTokens: Math.min(state.contextTokens + tokens, selectMaxContextTokens(state)),
         })),
 
       addContextUsage: (usage) =>
@@ -67,7 +84,7 @@ export const useUIStore = create<UIState>()(
           const total = input + output + reasoning + cached
 
           return {
-            contextTokens: Math.min(state.contextTokens + total, MAX_CONTEXT_TOKENS),
+            contextTokens: Math.min(state.contextTokens + total, selectMaxContextTokens(state)),
             contextInputTokens: state.contextInputTokens + input,
             contextOutputTokens: state.contextOutputTokens + output,
             contextReasoningTokens: state.contextReasoningTokens + reasoning,
@@ -76,13 +93,13 @@ export const useUIStore = create<UIState>()(
         }),
 
       setContextUsage: (usage) =>
-        set({
-          contextTokens: Math.min(usage.contextTokens, MAX_CONTEXT_TOKENS),
+        set((state) => ({
+          contextTokens: Math.min(usage.contextTokens, selectMaxContextTokens(state)),
           contextInputTokens: usage.contextInputTokens,
           contextOutputTokens: usage.contextOutputTokens,
           contextReasoningTokens: usage.contextReasoningTokens,
           contextCachedInputTokens: usage.contextCachedInputTokens,
-        }),
+        })),
 
       resetContextTokens: () =>
         set({
@@ -95,7 +112,7 @@ export const useUIStore = create<UIState>()(
 
       getContextPercentage: () => {
         const state = get()
-        return (state.contextTokens / state.maxContextTokens) * 100
+        return (state.contextTokens / selectMaxContextTokens(state)) * 100
       },
 
       setTheme: (theme) => set({ theme }),
@@ -119,6 +136,17 @@ export const useUIStore = create<UIState>()(
         theme: state.theme,
         enableThinking: state.enableThinking,
       }),
+      // Earlier builds saved the model IDs they shipped with (e.g. claude-haiku-4-5);
+      // map those onto the current model so the picker still shows a label.
+      merge: (persisted, current) => {
+        const saved = persistedUIStateSchema.parse(persisted)
+        return {
+          ...current,
+          ...(saved.theme && { theme: saved.theme }),
+          ...(saved.enableThinking !== undefined && { enableThinking: saved.enableThinking }),
+          ...(saved.selectedModel && { selectedModel: resolveAgentModel(saved.selectedModel) }),
+        }
+      },
     }
   )
 )

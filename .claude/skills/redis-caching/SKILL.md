@@ -1012,10 +1012,6 @@ async function getCacheHitRatio() {
 - Impact: Stale data shown to users
 - Solution: Invalidate on updates or use appropriate TTL
 
-❌ **Hard dependency on Redis**
-- Impact: App down if Redis unavailable
-- Solution: Graceful degradation with try/catch
-
 ❌ **GET + SET pattern for counters**
 - Impact: Race conditions, lost increments
 - Solution: Use atomic INCR/DECR
@@ -1040,7 +1036,6 @@ Before deploying Redis caching to production:
 
 - [ ] All cached data has TTL (no permanent keys)
 - [ ] Cache invalidation strategy defined
-- [ ] Graceful degradation if Redis unavailable
 - [ ] Using correct data structure for use case
 - [ ] Cost-aware global replication settings (read-heavy only)
 - [ ] Monitoring cache hit ratios (target >80%)

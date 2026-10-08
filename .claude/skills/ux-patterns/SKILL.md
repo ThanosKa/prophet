@@ -394,7 +394,6 @@ const [chat, messages, related] = await Promise.all([...])
 - ❌ Blocking spinners that hide all content
 - ❌ Generic error messages without context
 - ❌ No empty states (users don't know what to do)
-- ❌ No loading indicators (users wonder if action worked)
 - ❌ Waiting for all data before showing anything
 - ❌ No error recovery mechanisms (retry buttons)
 - ❌ Toast messages that dismiss too fast
@@ -408,7 +407,6 @@ const [chat, messages, related] = await Promise.all([...])
 - [ ] Error boundaries catch and display errors gracefully
 - [ ] One component's error doesn't break the entire page
 - [ ] Empty states have clear call-to-action
-- [ ] Actions show loading state (spinner/disabled button)
 - [ ] Inline validation as users type
 - [ ] Toast notifications for transient feedback
 - [ ] Critical content loads first, nice-to-have content later

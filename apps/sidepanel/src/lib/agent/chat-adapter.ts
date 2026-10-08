@@ -25,6 +25,25 @@ export interface ToolPart {
 
 export type MessagePart = TextPart | ToolPart
 
+/** A tool part as the tool-call list shows it. */
+export interface ToolPartView {
+    id: string
+    name: string
+    input: Record<string, unknown>
+    result?: string
+    isError: boolean
+}
+
+export function toolPartView(part: ToolPart): ToolPartView {
+    return {
+        id: part.toolCallId,
+        name: part.toolName,
+        input: part.input ?? {},
+        result: part.output ?? part.error,
+        isError: part.state === 'error',
+    }
+}
+
 export interface UIMessage {
     id: string
     role: 'user' | 'assistant'
@@ -254,21 +273,11 @@ export class ChatAdapter {
     /**
    * Convert UIMessage to legacy ToolCall array for compatibility.
    */
-    extractToolCalls(message: UIMessage): Array<{
-        id: string
-        name: string
-        input: Record<string, unknown>
-        result?: string
-    }> {
+    extractToolCalls(message: UIMessage): ToolPartView[] {
         return message.parts
             // Keep tool history stable: executing tool is rendered separately as `currentToolCall`.
             .filter((p): p is ToolPart => p.type === 'tool' && p.state !== 'executing')
-            .map((p) => ({
-                id: p.toolCallId,
-                name: p.toolName,
-                input: (p.input as Record<string, unknown>) || {},
-                result: p.output,
-            }))
+            .map(toolPartView)
     }
 
     /**

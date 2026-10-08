@@ -16,7 +16,7 @@ export default function TermsPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h1 className="text-4xl sm:text-5xl font-bold mb-4">Terms of Service</h1>
-            <p className="text-sm text-muted-foreground">Last updated: January 2026</p>
+            <p className="text-sm text-muted-foreground">Last updated: October 2026</p>
           </div>
 
           <div className="space-y-8">
@@ -58,8 +58,9 @@ export default function TermsPage() {
 
                   <h3 className="text-lg font-medium mb-2 mt-4">Subscription Plans</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    We offer multiple subscription tiers (Free, Pro, Premium, Ultra). Each plan includes a monthly usage
-                    balance. Unused balance does not roll over to the next billing period.
+                    We offer multiple subscription tiers (Free, Pro, Premium, Ultra). Each paid plan includes a monthly usage
+                    balance. Unused plan balance does not roll over to the next billing period. Balance you buy once,
+                    outside a plan, never expires.
                   </p>
 
                   <h3 className="text-lg font-medium mb-2 mt-4">Refunds</h3>

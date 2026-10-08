@@ -5,6 +5,7 @@ import { AccountSidebar } from "@/components/account/AccountSidebar"
 import { AccountHeader } from "@/components/account/AccountHeader"
 import { ensureDbUser } from "@/lib/db/user"
 import { UserProvider } from "@/contexts/UserContext"
+import { balanceOf } from "@/lib/credit-balance"
 
 export default async function AccountLayout({
   children,
@@ -26,7 +27,7 @@ export default async function AccountLayout({
   }
 
   return (
-    <UserProvider user={user}>
+    <UserProvider user={user} balance={user && balanceOf(user)}>
       <SidebarProvider>
         <AccountSidebar />
         <SidebarInset>

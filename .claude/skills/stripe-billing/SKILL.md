@@ -473,11 +473,9 @@ STRIPE_PRICE_EXTRA_CREDITS=price_...    # One-time credit purchase
 When implementing Stripe billing:
 
 - [ ] **Essential webhooks**: checkout.session.completed, subscription.created/updated/deleted, invoice.payment_succeeded/failed
-- [ ] **Signature verification** on all webhook requests
 - [ ] **Credit preservation** on plan upgrades/downgrades
 - [ ] **Duplicate prevention** for credit resets (check billing period)
 - [ ] **Customer Portal** for self-service management
-- [ ] **Concurrent-safe** credit updates with SQL expressions
 - [ ] **Cache invalidation** when tier changes
 - [ ] **Logging** for debugging webhook issues
 - [ ] **Local testing** with Stripe CLI
@@ -488,7 +486,5 @@ When implementing Stripe billing:
 
 - **Trusting client-side tier data** - Always determine tier from Stripe price ID in webhook
 - **Resetting credits on every subscription.updated** - Use isFirstSubscription check
-- **Parsing JSON body before signature verification** - Use raw body
-- **Missing idempotency** - Webhooks can be delivered multiple times
 - **Immediate access revocation on cancellation** - Let subscription run until period end
 - **Storing sensitive Stripe data** - Only store IDs, not full payment details

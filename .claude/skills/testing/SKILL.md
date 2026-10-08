@@ -1,11 +1,13 @@
-# Testing Standards - Prophet Project
+---
+name: testing
+description: Vitest setup and mocking patterns (Drizzle, Clerk, Stripe, Next.js headers). Use when writing, fixing or reviewing tests.
+---
 
-Use this skill when writing or reviewing tests for any part of the Prophet monorepo.
+# Testing Standards - Prophet Project
 
 ## Framework
 
 - **Vitest** for all testing (backend API, frontend components, shared utilities)
-- Colocated test files: `*.test.ts` or `*.test.tsx` next to source files
 - Environment: Node for backend, jsdom for frontend
 
 ---
@@ -29,8 +31,6 @@ pnpm -F @prophet/shared test           # Shared utilities tests (when added)
 ---
 
 ## Test File Location
-
-Tests are **colocated** next to their source files:
 
 ```
 apps/marketing/
@@ -255,8 +255,6 @@ export default defineConfig({
 ## When to Write Tests
 
 ### Always Test
-- ✅ Billing logic (Stripe webhooks, credit calculations)
-- ✅ Authentication flows
 - ✅ Data validation
 - ✅ Critical user paths (chat, message handling)
 - ✅ Utility functions with complex logic

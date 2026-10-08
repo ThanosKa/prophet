@@ -158,23 +158,24 @@ export function useAgentChat() {
         // Otherwise use production endpoint
         const eventStream = config.useMockApi
           ? mockAgentStream(chatId, content, selectedModel, signal, enableThinking)
-          : runAgentLoop(
-              config.useDevApi
+          : runAgentLoop({
+              baseUrl: config.useDevApi
                 ? `${config.apiUrl}/api/agent/chat/dev`
                 : `${config.apiUrl}/api/agent/chat`,
               chatId,
-              content,
-              selectedModel,
+              userMessage: content,
+              model: selectedModel,
               image,
               signal,
-              enableThinking
-            )
+              enableThinking,
+            })
 
         // A run counts as successful when the final turn completes without an error event.
         // These two events are only emitted once the model finishes without requesting more tools.
         let finishedCleanly = false
         let sawError = false
         let truncated = false
+        let stoppedEarly = false
 
         for await (const event of eventStream) {
           if (signal.aborted) break
@@ -185,8 +186,10 @@ export function useAgentChat() {
             continue
           }
 
-          if (event.type === 'turn_limit_reached') {
-            setNotice(USER_FACING_TEXT.turnLimit)
+          // The loop sends it once the reply is in, so the notice shows after the reply.
+          if (event.type === 'run_notice') {
+            stoppedEarly = true
+            setNotice(event.message)
             continue
           }
 
@@ -259,7 +262,7 @@ export function useAgentChat() {
           }
         }
 
-        if (finishedCleanly && !sawError && !truncated && !signal.aborted) {
+        if (finishedCleanly && !sawError && !truncated && !stoppedEarly && !signal.aborted) {
           void useReviewPromptStore.getState().recordSuccessfulRun()
         }
       } catch (err) {

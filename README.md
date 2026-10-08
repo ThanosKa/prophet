@@ -97,8 +97,8 @@ Perfect for developers who want to:
 - **Offline Support**: Graceful handling of network issues
 
 ### Backend & API
-- **Credits-Based Billing**: Transparent pricing (1 credit = 1 cent API cost)
-- **Subscription Tiers**: Free ($0.20), Pro ($11 + 10%), Premium ($35 + 17%), Ultra ($70 + 17%)
+- **Credits-Based Billing**: Pay-per-use credits (1 credit = 1 cent, at least 1 credit per Turn)
+- **Subscription Tiers**: Free ($0.07 one-time), Pro ($10/month), Premium ($30/month), Ultra ($60/month); $10 one-time credits that never expire
 - **Rate Limiting**: Tier-based limits (Free: 5/min, Pro: 20/min, Premium/Ultra: 60/min) + global burst protection
 - **Streaming API**: Server-Sent Events for real-time AI responses
 - **Webhooks**: Clerk user sync + Stripe payment processing
@@ -292,10 +292,10 @@ Extension → Backend API (`/api/chat`) → Anthropic API (streaming) → Backen
 - Auto-reload on auth state changes
 
 **SaaS Model:**
-- Credits-based billing (1 credit = 1 cent API cost + 20% markup)
-- Tiers: Free ($0.20), Pro ($11 +10%), Premium ($35 +17%), Ultra ($70 +17%)
+- Credits-based billing (1 credit = 1 cent; each Turn costs Anthropic's cost plus a margin, rounded up, minimum 1 credit)
+- Tiers: Free ($0.07 one-time), Pro ($10/month), Premium ($30/month), Ultra ($60/month); plan credits equal the price
 - Stripe subscriptions with automatic credit allocation
-- Non-expiring credits, roll over monthly
+- Subscription credits reset monthly and don't roll over; purchased credits ($10 one-time) never expire
 
 **Security:**
 - ANTHROPIC_API_KEY never exposed to client (server-side only)

@@ -53,7 +53,8 @@ const finalMessage = await stream.finalMessage()
 const { usage } = finalMessage
 
 // `input_tokens` is only the uncached remainder; cache writes and reads are billed
-// separately (writes 1.25x input, reads 0.1x, 0.05x on Opus 5.5).
+// separately (writes 1.25x input, reads 0.1x, 0.05x on Opus 5.5 and Sonnet 5.5).
+// Haiku 5.5 bills the whole request at a higher rate card once the prompt passes 100K tokens.
 const costCents = calculateUsageCostInCredits(model, {
   inputTokens: usage.input_tokens,
   cacheCreationInputTokens: usage.cache_creation_input_tokens ?? 0,
@@ -87,11 +88,18 @@ return new Response(stream.toReadableStream(), {
 
 - Use `anthropic.messages.stream()` for streaming responses
 - Await `finalMessage()` for authoritative usage, including `server_tool_use.web_search_requests`
+- Release client tool calls only after a `tool_use` stop: collect them while streaming and send the `tool_use` events after `finalMessage()`, before `citations`, `execution_complete` and `done` (extension 1.0.5 takes `execution_complete` without a prior tool call as the final answer). On `max_tokens`, `refusal`, Stop or an error, send none and store none; on `max_tokens`, `done.contentBlocks` drops the cut-off call
+- Each Run keeps one assistant row, updated after every Turn (`writeRunRecord` in `lib/agent/run-record.ts`): in the billing transaction on a normal end, and in the unfinished-Turn settlement on Stop, disconnect or error. The Run's user row is saved under the chat lock before the first Turn (`openRun`), so it survives a failed Turn. Lock the chat row before the user row in every transaction that writes the record. A new Run's prompt renders an earlier assistant row as its text plus an "Actions taken" list
+- The live Run is the chat's newest user row. `session_created` carries `runId` (the Run's opening row id), and a continuation that sends it back gets 409 `RUN_SUPERSEDED` before any Hold once a newer Run has started (`resumeRun`); its prompt uses the rows up to and including the `runId` row. `writeRunRecord` re-checks under the chat lock and skips a superseded Run's record, while billing still settles. A continuation without `runId` (extension 1.0.5) keeps the legacy rules
+- A Run's last Turn (`lib/agent/last-turn.ts`) gets a mid-conversation `role: "system"` notice after the newest tool results, releases no tool calls and records none, saves its text as the Run's reply, and ends with `done.runEnd: "turn_limit" | "run_budget"`. A Turn is the last when the request carries `MAX_AGENT_TURNS - 1` earlier Turns, or `LEGACY_MAX_AGENT_TURNS - 1` without a `runId` (extension 1.0.5), or its estimated prompt reaches `RUN_BUDGET_TOKENS`. A `pause_turn` resume (no tool results) is never a last Turn. Never change `tool_choice` or the tools for it: that invalidates the messages cache on the Run's largest prompt
+- A Run's prompt carries only the history window (`windowHistory` in `lib/agent/conversation.ts`): the newest rows before the opening message whose rendered size fits `HISTORY_BUDGET_TOKENS`, always including the newest one. Turn 1 and every continuation pass it the same rows, so the bytes before the opening message never change
 - Resolve legacy model IDs before the call and bill from the model actually invoked
 - Bill all three input buckets with `calculateUsageCostInCredits`; the prompt's size is `input_tokens + cache_creation_input_tokens + cache_read_input_tokens`, which is what context displays must show
 - Deduct credits in a database transaction
 - Return stream with proper Content-Type header
 - Never expose `ANTHROPIC_API_KEY` to client
+- Take every size limit from `AGENT_SIZE_LIMITS` in `@prophet/shared` (next to `MAX_AGENT_TURNS`), never a local number. The route answers a body over `requestBytes` with 413 `REQUEST_TOO_LARGE`; the request schema caps each field and shortens an over-cap tool result the same way every time, so the cached prefix holds
+- Take a model's context window from `getModelContextWindow` (the `contextWindowTokens` on `MODEL_CONFIG`), never a fixed 200K: the chat's stored context is clamped by it, and the side panel's context meter divides by it (`selectMaxContextTokens` in `uiStore.ts`)
 
 ### Prompt Caching
 
@@ -100,7 +108,7 @@ invalidates everything after it. The agent route uses two of the four breakpoint
 
 | Breakpoint | Covers | Why |
 | --- | --- | --- |
-| `cache_control` on the system block | 18 tools + system prompt (~3k tokens) | Identical for every user and chat, so it is a guaranteed read point that survives anything later in `messages` |
+| `cache_control` on the system block | 18 tools + system prompt (~4.4k tokens) | Identical for every user and chat, so it is a guaranteed read point that survives anything later in `messages` |
 | Top-level `cache_control` (automatic) | The whole conversation so far | Moves to the newest block each request, so turn N+1 reads what turn N wrote |
 
 Rules that keep it hitting:
@@ -109,20 +117,22 @@ Rules that keep it hitting:
   `previousTurns` (the server's `contentBlocks` from each `done` event, unchanged),
   plus the run's image. Never trim, reorder or rewrite an earlier turn.
 - **Replay thinking blocks.** They are part of the prefix and are signature-checked by
-  the API; dropping or editing them breaks the cache and, on Sonnet 5.5 / Opus 5.5,
+  the API; dropping or editing them breaks the cache and, on every current model,
   the preserved-thinking check.
 - **Same settings for the whole run.** The same `enableThinking` on every request, so
   `thinking` and `output_config.effort` never change mid-run. Tool order is a fixed
   array; web search is a server-wide flag. No timestamps or IDs in the system prompt.
-- **Minimums.** Opus 5.5 and Sonnet 5.5 cache prefixes from 512 tokens; Haiku 4.5
-  needs 4,096, so on Haiku the tools + system breakpoint alone never caches and
-  savings start once the conversation passes that size. Don't pad the prompt.
+- **Minimums.** Haiku 5.5, Sonnet 5.5 and Opus 5.5 all cache prefixes from 512 tokens,
+  so the tools + system breakpoint (~4.4k tokens) caches on every model. Don't pad the prompt.
 - **Verify** with `usage.cache_read_input_tokens` (persisted on `usage_records`); in a
   healthy run it grows every turn while `cache_creation_input_tokens` stays near the
   size of the last turn.
-- Credit reservations deliberately ignore caching and price the whole estimated prompt
-  as uncached input. The estimator over-counts ASCII text ~1.75-2x, which covers the
-  1.25x cache-write premium; a turn that settles above its hold is logged.
+- **The Hold expects the cache.** For a continuation that sends `previousTurns`, the
+  Hold prices the prompt the previous Turn sent (system, tools, history window, opening
+  message, every earlier Turn but the newest) at the cache-read rate and the rest,
+  including a last Turn's notice, at the cache-write rate. First Turns and the legacy
+  single-Turn form price the whole prompt as a cache write. Settlement bills the real
+  usage, so a cache miss settles above the Hold as overage and is logged.
 
 ### Model IDs and Legacy Aliases
 
@@ -138,7 +148,7 @@ resolved value, never the raw request field.
 | `claude-opus-4-6` | `claude-opus-5-5` |
 | `claude-sonnet-5` | `claude-sonnet-5-5` |
 | `claude-sonnet-4-6` | `claude-sonnet-5-5` |
-| `claude-haiku-4-5` | `claude-haiku-4-5` (unchanged) |
+| `claude-haiku-4-5` | `claude-haiku-5-5` |
 
 ### Server-Side Web Search
 

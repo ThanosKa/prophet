@@ -5,10 +5,11 @@ import { eq } from 'drizzle-orm'
 import { anthropic } from '@/lib/anthropic'
 import { AGENT_TOOLS } from '@/lib/agent/tools'
 import { AGENT_SYSTEM_PROMPT } from '@/lib/agent/system-prompt'
-import { buildAgentTools, buildOutputConfig, buildThinkingConfig, getAgentMaxTokens, toEchoableContent } from '@/lib/agent/web-search'
+import { AGENT_TURN_MAX_TOKENS, buildAgentTools, buildOutputConfig, buildThinkingConfig, toEchoableContent } from '@/lib/agent/web-search'
 import {
   agentChatRequestSchema,
   DEFAULT_AGENT_MODEL,
+  getModelContextWindow,
   resolveAgentModel,
   sanitizeForLog,
 } from '@prophet/shared'
@@ -135,14 +136,14 @@ export async function POST(req: Request) {
         let toolUseCount = 0
 
         try {
-          logger.debug({ model, maxTokens: getAgentMaxTokens({ model, enableThinking }), enableThinking }, '[DEV] Creating Anthropic stream')
+          logger.debug({ model, maxTokens: AGENT_TURN_MAX_TOKENS, enableThinking }, '[DEV] Creating Anthropic stream')
 
-          const thinkingConfig = buildThinkingConfig(model, enableThinking)
-          const outputConfig = buildOutputConfig({ model, enableThinking })
+          const thinkingConfig = buildThinkingConfig(enableThinking)
+          const outputConfig = buildOutputConfig(enableThinking)
 
           const anthropicStream = await anthropic.messages.stream({
             model,
-            max_tokens: getAgentMaxTokens({ model, enableThinking }),
+            max_tokens: AGENT_TURN_MAX_TOKENS,
             cache_control: { type: 'ephemeral' },
             system: [
               {
@@ -285,9 +286,8 @@ export async function POST(req: Request) {
           const assistantToolCalls = contentBlocks.filter(b => b.type === "tool_use");
           const hasContent = fullTextResponse.trim().length > 0 || assistantToolCalls.length > 0;
 
-          const MAX_CONTEXT_TOKENS = 200000;
           const promptTokens = inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
-          const newContextTokens = Math.min(promptTokens + outputTokens, MAX_CONTEXT_TOKENS);
+          const newContextTokens = Math.min(promptTokens + outputTokens, getModelContextWindow(model));
 
           await db.transaction(async (tx) => {
             // Save user message on first turn only

@@ -16,6 +16,37 @@ global.chrome = {
 const { executeToolViaBackground } = await import('./background-bridge')
 const { runAgentLoop } = await import('./agent-loop')
 
+const API = 'http://localhost:3000'
+
+/** An SSE body with one `data:` frame per event. */
+const sse = (events: unknown[]) => events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join('')
+
+const requestBodies = (fetchMock: ReturnType<typeof vi.fn>) =>
+  fetchMock.mock.calls.map((call) => JSON.parse(String(call[1]?.body)))
+
+/** Answers each request with the next Turn's events, in order. */
+function serveTurns(turns: unknown[][]) {
+  const fetchMock = vi.fn()
+  for (const turn of turns) fetchMock.mockResolvedValueOnce(new Response(sse(turn)))
+  vi.stubGlobal('fetch', fetchMock)
+  return { fetchMock, bodies: () => requestBodies(fetchMock) }
+}
+
+/** Answers every request with the same Turn (a fresh Response each time: a body reads once). */
+function serveEveryTurn(turn: unknown[]) {
+  const fetchMock = vi.fn(() => Promise.resolve(new Response(sse(turn))))
+  vi.stubGlobal('fetch', fetchMock)
+  return { fetchMock, bodies: () => requestBodies(fetchMock) }
+}
+
+async function collect(options: Partial<Parameters<typeof runAgentLoop>[0]> = {}) {
+  const events = []
+  for await (const event of runAgentLoop({ baseUrl: API, chatId: 'chat-1', userMessage: 'Hi', ...options })) {
+    events.push(event)
+  }
+  return events
+}
+
 describe('runAgentLoop', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -50,7 +81,7 @@ describe('runAgentLoop', () => {
       )
 
       const events: any[] = []
-      for await (const event of runAgentLoop('http://localhost:3000', 'chat-1', 'Hi')) {
+      for await (const event of runAgentLoop({ baseUrl: API, chatId: 'chat-1', userMessage: 'Hi' })) {
         events.push(event)
         if (events.length > 10) break // Safety
       }
@@ -86,7 +117,7 @@ describe('runAgentLoop', () => {
       )
 
       const events: any[] = []
-      for await (const event of runAgentLoop('http://localhost:3000', 'chat-1', 'Hi')) {
+      for await (const event of runAgentLoop({ baseUrl: API, chatId: 'chat-1', userMessage: 'Hi' })) {
         events.push(event)
         if (events.length > 10) break
       }
@@ -127,7 +158,7 @@ describe('runAgentLoop', () => {
       })
 
       const events: any[] = []
-      for await (const event of runAgentLoop('http://localhost:3000', 'chat-1', 'Check')) {
+      for await (const event of runAgentLoop({ baseUrl: API, chatId: 'chat-1', userMessage: 'Check' })) {
         events.push(event)
         if (events.length > 10) break
       }
@@ -139,6 +170,225 @@ describe('runAgentLoop', () => {
       expect(toolComplete.toolName).toBe('take_snapshot')
     })
 
+  })
+
+  describe('Tool input check', () => {
+    it("doesn't run a tool call whose input breaks its schema, and names each invalid field to Claude", async () => {
+      const badScroll = { type: 'tool_use', id: 't1', name: 'scroll_page', input: { direction: 'sideways', pixels: 'lots' } }
+      const { fetchMock, bodies } = serveTurns([
+        [{ type: 'tool_use', toolUse: badScroll }, { type: 'done', stopReason: 'tool_use' }],
+        [{ type: 'content_delta', delta: 'Scrolling down instead.' }, { type: 'done', stopReason: 'end_turn' }],
+      ])
+
+      const events = await collect()
+
+      expect(executeToolViaBackground).not.toHaveBeenCalled()
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      const [result] = bodies()[1].previousTurns[0].toolResults
+      expect(result).toMatchObject({ type: 'tool_result', tool_use_id: 't1', is_error: true })
+      expect(result.content).toContain('direction')
+      expect(result.content).toContain('pixels')
+      expect(events).toContainEqual(expect.objectContaining({ type: 'tool_call_error', toolCallId: 't1' }))
+    })
+
+    it('runs a valid tool call with the schema defaults filled in', async () => {
+      serveTurns([
+        [{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'scroll_page', input: { direction: 'down' } } }, { type: 'done', stopReason: 'tool_use' }],
+        [{ type: 'done', stopReason: 'end_turn' }],
+      ])
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'Scrolled', durationMs: 1 })
+
+      await collect()
+
+      expect(executeToolViaBackground).toHaveBeenCalledWith('scroll_page', { direction: 'down', pixels: 500 })
+    })
+  })
+
+  describe('Run id', () => {
+    const runId = '5f0c6f9e-2b7a-4c1e-9d3a-8e2f1b6c4a70'
+    const snapshotTurn = (id: string) => [
+      { type: 'tool_use', toolUse: { type: 'tool_use', id, name: 'take_snapshot', input: {} } },
+      { type: 'done', stopReason: 'tool_use' },
+    ]
+
+    beforeEach(() => {
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'uid=1 button "Send"', durationMs: 1 })
+    })
+
+    it('sends the runId from session_created on every continuation, even when a later frame lacks it', async () => {
+      const { bodies } = serveTurns([
+        [{ type: 'session_created', sessionId: 'chat-1', runId }, ...snapshotTurn('t1')],
+        [{ type: 'session_created', sessionId: 'chat-1' }, ...snapshotTurn('t2')],
+        [{ type: 'session_created', sessionId: 'chat-1', runId }, { type: 'done', stopReason: 'end_turn' }],
+      ])
+
+      await collect()
+
+      expect(bodies().map((body) => body.runId)).toEqual([undefined, runId, runId])
+    })
+
+    it('ends the Run with a notice when the chat continued in another panel', async () => {
+      const superseded = 'This chat continued in another panel, so this task stopped here.'
+      const { fetchMock } = serveTurns([[{ type: 'session_created', sessionId: 'chat-1', runId }, ...snapshotTurn('t1')]])
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: superseded, code: 'RUN_SUPERSEDED' }), { status: 409 })
+      )
+
+      const events = await collect()
+
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(events.map((event) => event.type)).not.toContain('error')
+      expect(events.at(-1)).toEqual({ type: 'run_notice', reason: 'superseded', message: superseded })
+    })
+  })
+
+  describe("A Run's last Turn", () => {
+    const toolTurn = (id: string) => [
+      { type: 'tool_use', toolUse: { type: 'tool_use', id, name: 'take_snapshot', input: {} } },
+      { type: 'done', stopReason: 'tool_use' },
+    ]
+    // The server releases no tool calls on a last Turn, but done still names the one Claude asked for.
+    const lastTurn = (runEnd: string) => [
+      { type: 'content_delta', delta: 'I found two invoices; the March one is still open.' },
+      { type: 'execution_complete', stopReason: 'tool_use', finalOutput: 'I found two invoices; the March one is still open.' },
+      {
+        type: 'done',
+        stopReason: 'tool_use',
+        runEnd,
+        contentBlocks: [
+          { type: 'text', text: 'I found two invoices; the March one is still open.' },
+          { type: 'tool_use', id: 't9', name: 'take_snapshot', input: {} },
+        ],
+      },
+    ]
+
+    beforeEach(() => {
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'uid=1 link "Invoice"', durationMs: 1 })
+    })
+
+    it('ends the Run on a pause_turn on Turn 20 instead of resuming', async () => {
+      const paused = [{ type: 'content_delta', delta: 'Still searching.' }, { type: 'done', stopReason: 'pause_turn' }]
+      const { fetchMock } = serveTurns([...Array.from({ length: 19 }, (_, turn) => toolTurn(`t${turn}`)), paused])
+
+      const events = await collect()
+
+      expect(fetchMock).toHaveBeenCalledTimes(20)
+      expect(events.at(-1)).toEqual({
+        type: 'run_notice',
+        reason: 'turn_limit',
+        message: 'Prophet paused after 20 turns. Send "continue" to keep going.',
+      })
+    })
+
+    it.each([
+      ['turn_limit', 'Prophet paused after 20 turns. Send "continue" to keep going.'],
+      ['run_budget', 'Prophet paused because this task grew too long for one run. Send "continue" to keep going.'],
+    ])('ends the Run when done carries runEnd %s, and its notice follows the reply', async (runEnd, notice) => {
+      const { fetchMock } = serveTurns([toolTurn('t1'), lastTurn(runEnd)])
+
+      const events = await collect()
+
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(executeToolViaBackground).toHaveBeenCalledTimes(1)
+      expect(events.slice(-3)).toEqual([
+        expect.objectContaining({ type: 'execution_complete' }),
+        expect.objectContaining({ type: 'done' }),
+        { type: 'run_notice', reason: runEnd, message: notice },
+      ])
+    })
+  })
+
+  describe('Request size', () => {
+    const tooLarge = 'This task grew too large to send, so Prophet stopped here. Send "continue" to keep going.'
+    const snapshotTurn = [
+      { type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'take_snapshot', input: {} } },
+      { type: 'done', stopReason: 'tool_use' },
+    ]
+
+    it("doesn't send a request over the limit in UTF-8 bytes, and ends the Run with its notice", async () => {
+      // 1.5M characters is well under 4,000,000 as string length, but each euro sign is 3 bytes.
+      const page = '€'.repeat(1_500_000)
+      const { fetchMock } = serveTurns([snapshotTurn])
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: page, durationMs: 1 })
+
+      const events = await collect()
+
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(events.map((event) => event.type)).not.toContain('error')
+      expect(events.at(-1)).toEqual({ type: 'run_notice', reason: 'request_too_large', message: tooLarge })
+    })
+
+    it('sends a request just under the limit', async () => {
+      const page = 'a'.repeat(3_900_000)
+      const { fetchMock } = serveTurns([snapshotTurn, [{ type: 'done', stopReason: 'end_turn' }]])
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: page, durationMs: 1 })
+
+      await collect()
+
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+    })
+
+    it.each([
+      ['a 413 without a JSON body', new Response('Request Entity Too Large', { status: 413 })],
+      [
+        "the server's 413",
+        new Response(
+          JSON.stringify({ error: 'This request is too large to send. Start a new chat to continue.', code: 'REQUEST_TOO_LARGE' }),
+          { status: 413 }
+        ),
+      ],
+    ])('ends a grown Run with its notice, not the image text, on %s', async (_label, response) => {
+      const { fetchMock } = serveTurns([snapshotTurn])
+      fetchMock.mockResolvedValueOnce(response)
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'uid=1 link "Invoice"', durationMs: 1 })
+
+      const events = await collect()
+
+      expect(JSON.stringify(events)).not.toContain('image')
+      expect(events.at(-1)).toEqual({ type: 'run_notice', reason: 'request_too_large', message: tooLarge })
+    })
+  })
+
+  describe('pause_turn', () => {
+    const pausedBlocks = [
+      { type: 'text', text: 'Searching for the invoice.' },
+      { type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: { query: 'March invoice' } },
+    ]
+    const pausedTurn = [
+      { type: 'content_delta', delta: 'Searching for the invoice.' },
+      { type: 'execution_complete', stopReason: 'pause_turn', finalOutput: 'Searching for the invoice.' },
+      { type: 'done', stopReason: 'pause_turn', contentBlocks: pausedBlocks },
+    ]
+
+    it("continues a paused Turn with Claude's content and no tool results", async () => {
+      const { fetchMock, bodies } = serveTurns([
+        pausedTurn,
+        [{ type: 'content_delta', delta: ' Found it.' }, { type: 'done', stopReason: 'end_turn' }],
+      ])
+
+      await collect()
+
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(bodies()[1].previousTurns).toEqual([{ content: pausedBlocks, toolResults: [] }])
+    })
+
+    it("doesn't show the paused Turn's execution_complete as the final answer", async () => {
+      serveTurns([
+        pausedTurn,
+        [
+          { type: 'content_delta', delta: ' Found it.' },
+          { type: 'execution_complete', stopReason: 'end_turn', finalOutput: ' Found it.' },
+          { type: 'done', stopReason: 'end_turn' },
+        ],
+      ])
+
+      const events = await collect()
+
+      expect(events.filter((event) => event.type === 'execution_complete')).toEqual([
+        expect.objectContaining({ finalOutput: ' Found it.' }),
+      ])
+      expect(events.filter((event) => event.type === 'done')).toHaveLength(1)
+    })
   })
 
   describe('History / Continuation', () => {
@@ -178,7 +428,7 @@ describe('runAgentLoop', () => {
       })
 
       const events: any[] = []
-      for await (const event of runAgentLoop('http://localhost:3000', 'chat-1', 'Go')) {
+      for await (const event of runAgentLoop({ baseUrl: API, chatId: 'chat-1', userMessage: 'Go' })) {
         events.push(event)
         if (events.find((e) => e.type === 'done')) break
       }
@@ -193,31 +443,19 @@ describe('runAgentLoop', () => {
   })
 
   describe('Silent stops', () => {
-    const API = 'http://localhost:3000'
-    const sse = (lines: string[]) => lines.map((line) => `data: ${line}\n\n`).join('')
 
     it('sends an is_error tool_result for a tool that threw, so the next turn stays valid', async () => {
-      const fetchMock = vi
-        .fn()
-        .mockResolvedValueOnce(
-          new Response(
-            sse([
-              '{"type":"tool_use","toolUse":{"type":"tool_use","id":"t1","name":"click","input":{"ref":"a"}}}',
-              '{"type":"done"}',
-            ])
-          )
-        )
-        .mockResolvedValueOnce(new Response(sse(['{"type":"content_delta","delta":"ok"}', '{"type":"done"}'])))
-      vi.stubGlobal('fetch', fetchMock)
+      const { fetchMock, bodies } = serveTurns([
+        [{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'click', input: { ref: 'a' } } }, { type: 'done' }],
+        [{ type: 'content_delta', delta: 'ok' }, { type: 'done' }],
+      ])
       vi.mocked(executeToolViaBackground).mockRejectedValue(new Error('Could not establish connection'))
 
-      const events = []
-      for await (const event of runAgentLoop(API, 'chat-1', 'Go')) events.push(event)
+      const events = await collect()
 
       expect(events).toContainEqual(expect.objectContaining({ type: 'tool_call_error', toolCallId: 't1' }))
       expect(fetchMock).toHaveBeenCalledTimes(2)
-      const continuation = JSON.parse(fetchMock.mock.calls[1][1].body)
-      expect(continuation.previousTurns[0].toolResults).toEqual([
+      expect(bodies()[1].previousTurns[0].toolResults).toEqual([
         {
           type: 'tool_result',
           tool_use_id: 't1',
@@ -227,47 +465,59 @@ describe('runAgentLoop', () => {
       ])
     })
 
-    it('announces the pause when the run hits the 10-turn cap', async () => {
-      const fetchMock = vi.fn(() =>
-        Promise.resolve(
-          new Response(
-            sse([
-              '{"type":"tool_use","toolUse":{"type":"tool_use","id":"t1","name":"scroll","input":{}}}',
-              '{"type":"done","stopReason":"tool_use"}',
-            ])
-          )
-        )
+    it('reports a tool that returned a failure as a tool_call_error, not as completed', async () => {
+      const { bodies } = serveTurns([
+        [{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'take_snapshot', input: {} } }, { type: 'done' }],
+        [{ type: 'content_delta', delta: 'ok' }, { type: 'done' }],
+      ])
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: false, error: 'No active tab found' })
+
+      const events = await collect()
+
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: 'tool_call_error', toolCallId: 't1', error: 'No active tab found' })
       )
-      vi.stubGlobal('fetch', fetchMock)
+      expect(events).not.toContainEqual(expect.objectContaining({ type: 'tool_call_complete', toolCallId: 't1' }))
+      expect(bodies()[1].previousTurns[0].toolResults).toEqual([
+        { type: 'tool_result', tool_use_id: 't1', content: 'No active tab found', is_error: true },
+      ])
+    })
+
+    it('runs no tools on Turn 20, and the Turn-limit notice follows the reply', async () => {
+      const { fetchMock } = serveEveryTurn([
+        { type: 'content_delta', delta: 'Scrolling.' },
+        { type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'scroll', input: {} } },
+        { type: 'execution_complete', stopReason: 'tool_use', finalOutput: 'Scrolling.' },
+        { type: 'done', stopReason: 'tool_use' },
+      ])
       vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'ok', durationMs: 1 })
 
-      const events = []
-      for await (const event of runAgentLoop(API, 'chat-1', 'Hi')) events.push(event)
+      const events = await collect()
 
-      expect(fetchMock).toHaveBeenCalledTimes(10)
-      expect(events.at(-1)).toEqual({ type: 'turn_limit_reached' })
+      expect(fetchMock).toHaveBeenCalledTimes(20)
+      expect(executeToolViaBackground).toHaveBeenCalledTimes(19)
+      expect(events.filter((event) => event.type === 'tool_call_start')).toHaveLength(19)
+      expect(events.slice(-3).map((event) => event.type)).toEqual(['execution_complete', 'done', 'run_notice'])
+      expect(events.at(-1)).toEqual({
+        type: 'run_notice',
+        reason: 'turn_limit',
+        message: 'Prophet paused after 20 turns. Send "continue" to keep going.',
+      })
     })
 
     it('reports a stream that ends without done or error as an unexpected stop', async () => {
-      vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(sse(['{"type":"content_delta","delta":"Half an ans"}'])))))
+      serveEveryTurn([{ type: 'content_delta', delta: 'Half an ans' }])
 
-      const events = []
-      for await (const event of runAgentLoop(API, 'chat-1', 'Hi')) events.push(event)
+      const events = await collect()
 
       expect(events.at(-1)).toEqual({ type: 'error', error: 'The response stopped unexpectedly. Please try again.' })
     })
 
     it('does not start another turn when a tool turn was cut before done', async () => {
-      const fetchMock = vi.fn(() =>
-        Promise.resolve(
-          new Response(sse(['{"type":"tool_use","toolUse":{"type":"tool_use","id":"t1","name":"click","input":{}}}']))
-        )
-      )
-      vi.stubGlobal('fetch', fetchMock)
+      const { fetchMock } = serveEveryTurn([{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'click', input: {} } }])
       vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'ok', durationMs: 1 })
 
-      const events = []
-      for await (const event of runAgentLoop(API, 'chat-1', 'Hi')) events.push(event)
+      const events = await collect()
 
       expect(fetchMock).toHaveBeenCalledTimes(1)
       expect(events.at(-1)).toEqual({ type: 'error', error: 'The response stopped unexpectedly. Please try again.' })
@@ -298,7 +548,7 @@ describe('runAgentLoop', () => {
       )
 
       const events: any[] = []
-      for await (const event of runAgentLoop('http://localhost:3000', 'chat-1', 'Hi')) {
+      for await (const event of runAgentLoop({ baseUrl: API, chatId: 'chat-1', userMessage: 'Hi' })) {
         events.push(event)
         if (events.length > 10) break
       }
@@ -314,7 +564,7 @@ describe('runAgentLoop', () => {
       )
 
       const events: any[] = []
-      for await (const event of runAgentLoop('http://localhost:3000', 'chat-1', 'Hi')) {
+      for await (const event of runAgentLoop({ baseUrl: API, chatId: 'chat-1', userMessage: 'Hi' })) {
         events.push(event)
         if (events.length > 10) break
       }
@@ -349,7 +599,7 @@ describe('runAgentLoop', () => {
       )
 
       const events: any[] = []
-      for await (const event of runAgentLoop('http://localhost:3000', 'chat-1', 'Hi')) {
+      for await (const event of runAgentLoop({ baseUrl: API, chatId: 'chat-1', userMessage: 'Hi' })) {
         events.push(event)
         if (events.length > 10) break
       }
@@ -362,7 +612,6 @@ describe('runAgentLoop', () => {
 
   describe('Cancellation', () => {
     const encoder = new TextEncoder()
-    const API = 'http://localhost:3000'
 
     // A response whose body stays open after the first chunk, like a long generation.
     const openStreamingResponse = () => {
@@ -388,7 +637,7 @@ describe('runAgentLoop', () => {
       vi.stubGlobal('fetch', fetchMock)
       const controller = new AbortController()
 
-      const loop = runAgentLoop(API, 'chat-1', 'Hi', undefined, undefined, controller.signal)
+      const loop = runAgentLoop({ baseUrl: API, chatId: 'chat-1', userMessage: 'Hi', signal: controller.signal })
       await loop.next()
       controller.abort()
 
@@ -401,7 +650,7 @@ describe('runAgentLoop', () => {
       vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(response)))
       const controller = new AbortController()
 
-      const loop = runAgentLoop(API, 'chat-1', 'Hi', undefined, undefined, controller.signal)
+      const loop = runAgentLoop({ baseUrl: API, chatId: 'chat-1', userMessage: 'Hi', signal: controller.signal })
       const first = await loop.next()
       expect(first.value).toMatchObject({ type: 'content_delta', delta: 'Hel' })
 
@@ -429,7 +678,7 @@ describe('runAgentLoop', () => {
       })
 
       const events = []
-      for await (const event of runAgentLoop(API, 'chat-1', 'Go', undefined, undefined, controller.signal)) {
+      for await (const event of runAgentLoop({ baseUrl: API, chatId: 'chat-1', userMessage: 'Go', signal: controller.signal })) {
         events.push(event)
       }
 
@@ -439,14 +688,6 @@ describe('runAgentLoop', () => {
   })
 
   describe('Error codes', () => {
-    const API = 'http://localhost:3000'
-
-    const collect = async () => {
-      const events = []
-      for await (const event of runAgentLoop(API, 'chat-1', 'Hi')) events.push(event)
-      return events
-    }
-
     it('keeps code and pricingUrl for 402 INSUFFICIENT_BALANCE', async () => {
       const body = JSON.stringify({
         error: 'Insufficient credits',
@@ -511,7 +752,7 @@ describe('runAgentLoop', () => {
       const details = {
         pricingUrl: '/pricing',
         isContinuation: true,
-        suggestedModel: 'claude-haiku-4-5',
+        suggestedModel: 'claude-haiku-5-5',
         suggestDisableThinking: true,
         canUpgrade: false,
       }
@@ -549,14 +790,6 @@ describe('runAgentLoop', () => {
   })
 
   describe('User-facing error texts', () => {
-    const API = 'http://localhost:3000'
-
-    const collect = async () => {
-      const events = []
-      for await (const event of runAgentLoop(API, 'chat-1', 'Hi')) events.push(event)
-      return events
-    }
-
     it('explains a 413 without a JSON body as an image that is too large', async () => {
       vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response('Request Entity Too Large', { status: 413 }))))
 
@@ -608,19 +841,16 @@ describe('runAgentLoop', () => {
   })
 
   describe('Truncation', () => {
-    const collectFrom = async (payload: string[]) => {
-      const body = payload.map((line) => `data: ${line}\n\n`).join('')
-      vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(body))))
-      const events = []
-      for await (const event of runAgentLoop('http://localhost:3000', 'chat-1', 'Hi')) events.push(event)
-      return events
+    const collectFrom = async (turn: unknown[]) => {
+      serveEveryTurn(turn)
+      return collect()
     }
 
     it('flags a final answer that stopped on max_tokens', async () => {
       const events = await collectFrom([
-        '{"type":"content_delta","delta":"The answer is"}',
-        '{"type":"execution_complete","stopReason":"max_tokens"}',
-        '{"type":"done","stopReason":"max_tokens"}',
+        { type: 'content_delta', delta: 'The answer is' },
+        { type: 'execution_complete', stopReason: 'max_tokens' },
+        { type: 'done', stopReason: 'max_tokens' },
       ])
 
       expect(events).toContainEqual({ type: 'output_truncated', reducedForBalance: false })
@@ -628,38 +858,26 @@ describe('runAgentLoop', () => {
 
     it('says when the cut came from max_tokens being lowered for a low balance', async () => {
       const events = await collectFrom([
-        '{"type":"content_delta","delta":"The answer is"}',
-        '{"type":"done","stopReason":"max_tokens","maxTokensReducedForBalance":true}',
+        { type: 'content_delta', delta: 'The answer is' },
+        { type: 'done', stopReason: 'max_tokens', maxTokensReducedForBalance: true },
       ])
 
       expect(events).toContainEqual({ type: 'output_truncated', reducedForBalance: true })
     })
 
     it('does not flag a normal end_turn answer', async () => {
-      const events = await collectFrom(['{"type":"done","stopReason":"end_turn"}'])
+      const events = await collectFrom([{ type: 'done', stopReason: 'end_turn' }])
 
       expect(events.map((e) => e.type)).not.toContain('output_truncated')
     })
   })
 
   describe('Append-only run history (prompt caching)', () => {
-    const API = 'http://localhost:3000'
-    const sse = (events: unknown[]) => events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join('')
     const navigate = { type: 'tool_use', id: 't1', name: 'navigate', input: { url: 'https://mail.google.com/' } }
     const snapshot = { type: 'tool_use', id: 't2', name: 'take_snapshot', input: {} }
 
-    function serveTurns(turns: unknown[][]) {
-      const fetchMock = vi.fn()
-      for (const turn of turns) fetchMock.mockResolvedValueOnce(new Response(sse(turn)))
-      vi.stubGlobal('fetch', fetchMock)
-      return () => fetchMock.mock.calls.map((call) => JSON.parse(call[1].body))
-    }
-
-    async function run(...args: [model?: 'claude-sonnet-5-5', image?: { base64: string; mediaType: 'image/png' }, signal?: AbortSignal, enableThinking?: boolean]) {
-      const events = []
-      for await (const event of runAgentLoop(API, 'chat-1', 'Find the March invoice', ...args)) events.push(event)
-      return events
-    }
+    const run = (options: Partial<Parameters<typeof runAgentLoop>[0]> = {}) =>
+      collect({ userMessage: 'Find the March invoice', ...options })
 
     beforeEach(() => {
       vi.mocked(executeToolViaBackground)
@@ -668,7 +886,7 @@ describe('runAgentLoop', () => {
     })
 
     it('resends every earlier turn of the run, oldest first, on each continuation', async () => {
-      const bodies = serveTurns([
+      const { bodies } = serveTurns([
         [{ type: 'content_delta', delta: 'Opening your inbox.' }, { type: 'tool_use', toolUse: navigate }, { type: 'done', stopReason: 'tool_use' }],
         [{ type: 'tool_use', toolUse: snapshot }, { type: 'done', stopReason: 'tool_use' }],
         [{ type: 'content_delta', delta: 'Found it.' }, { type: 'done', stopReason: 'end_turn' }],
@@ -689,12 +907,12 @@ describe('runAgentLoop', () => {
     })
 
     it("keeps the user's Thinking choice on every request of the run", async () => {
-      const bodies = serveTurns([
+      const { bodies } = serveTurns([
         [{ type: 'tool_use', toolUse: navigate }, { type: 'done', stopReason: 'tool_use' }],
         [{ type: 'content_delta', delta: 'Done.' }, { type: 'done', stopReason: 'end_turn' }],
       ])
 
-      await run('claude-sonnet-5-5', undefined, undefined, true)
+      await run({ model: 'claude-sonnet-5-5', enableThinking: true })
 
       expect(bodies().map((body) => body.enableThinking)).toEqual([true, true])
     })
@@ -705,7 +923,7 @@ describe('runAgentLoop', () => {
         { type: 'text', text: 'Opening your inbox.', citations: null },
         navigate,
       ]
-      const bodies = serveTurns([
+      const { bodies } = serveTurns([
         [
           { type: 'thinking_delta', delta: 'The inbox is one click away.' },
           { type: 'content_delta', delta: 'Opening your inbox.' },
@@ -715,19 +933,19 @@ describe('runAgentLoop', () => {
         [{ type: 'content_delta', delta: 'Done.' }, { type: 'done', stopReason: 'end_turn' }],
       ])
 
-      await run('claude-sonnet-5-5', undefined, undefined, true)
+      await run({ model: 'claude-sonnet-5-5', enableThinking: true })
 
       expect(bodies()[1].previousTurns[0].content).toEqual(contentBlocks)
     })
 
     it('resends the attached image with every request of the run', async () => {
       const image = { base64: 'iVBORw0KGgo=', mediaType: 'image/png' as const }
-      const bodies = serveTurns([
+      const { bodies } = serveTurns([
         [{ type: 'tool_use', toolUse: navigate }, { type: 'done', stopReason: 'tool_use' }],
         [{ type: 'content_delta', delta: 'Done.' }, { type: 'done', stopReason: 'end_turn' }],
       ])
 
-      await run('claude-sonnet-5-5', image)
+      await run({ model: 'claude-sonnet-5-5', image })
 
       expect(bodies().map((body) => body.image)).toEqual([image, image])
     })

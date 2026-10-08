@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { formatDollars } from '@prophet/shared'
 import { logger } from '@/lib/logger'
 
 let _resend: Resend | null = null
@@ -203,7 +204,7 @@ You just unlocked a powerful AI assistant that lives right inside your browser. 
 <tr>
 <td style="background-color:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:16px 20px;">
 <p style="margin:0;font-size:14px;color:#92400E;line-height:1.5;">
-<strong>Your free credits are ready.</strong> Every new account includes $0.20 in API credits so you can try Prophet risk-free. Upgrade anytime for more credits and bonus value.
+<strong>Your free credits are ready.</strong> Every new account includes a one-time $0.07 in credits so you can try Prophet on Claude Haiku risk-free. Upgrade anytime for monthly credits.
 </p>
 </td>
 </tr>
@@ -228,7 +229,7 @@ export function buildPurchaseHtml(params: SendPurchaseEmailParams): string {
   const { firstName, lastName, planName, credits, isSubscription } = params
   const fullName = formatName(firstName, lastName)
   const greeting = fullName ? `Thank you, ${fullName}!` : 'Thank you for your purchase!'
-  const creditsFormatted = `$${(credits / 100).toFixed(2)}`
+  const creditsFormatted = formatDollars(credits)
   const typeLabel = isSubscription ? 'Subscription' : 'One-time purchase'
 
   const content = `
