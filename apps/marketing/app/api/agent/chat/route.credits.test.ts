@@ -584,3 +584,78 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
     })
   })
 })
+
+describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat', () => {
+  // Fresh-chat floors at the 25% Margin: Haiku 1 credit, Sonnet 7, Sonnet + Thinking 17, Opus 14.
+  const FREE_GRANT = 7
+
+  it('runs a Haiku Turn and charges the 1-Credit Minimum charge', async () => {
+    await seedUser({ credits: FREE_GRANT })
+    vi.mocked(anthropic.messages.stream).mockReturnValue(
+      completedTurn({ inputTokens: 1000, outputTokens: 500 }) as never
+    )
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(anthropic.messages.stream).toHaveBeenCalledTimes(1)
+    expect(await balance()).toBe(6)
+  })
+
+  it('refuses an Opus 5.5 Turn the balance cannot cover and points to Haiku', async () => {
+    await seedUser({ credits: FREE_GRANT })
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+    const body = await response.json()
+
+    expect(response.status).toBe(402)
+    expect(body).toEqual({
+      error: 'Not enough credits left for Opus 5.5. Switch to Haiku 5.5 or buy more credits.',
+      code: 'INSUFFICIENT_BALANCE',
+      details: { pricingUrl: '/pricing', isContinuation: false, suggestedModel: 'claude-haiku-5-5', canUpgrade: true },
+    })
+    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    expect(await balance()).toBe(FREE_GRANT)
+  })
+
+  it('refuses a Sonnet 5.5 Turn with some chat history the balance cannot cover, and Haiku still runs', async () => {
+    // ~2,000 tokens of history lift the Sonnet floor to 8 credits
+    await seedUser({ credits: FREE_GRANT, history: ['a'.repeat(4_000)] })
+
+    const sonnet = await post({ userMessage: 'Hello', model: 'claude-sonnet-5-5' })
+    const body = await sonnet.json()
+
+    expect(sonnet.status).toBe(402)
+    expect(body).toEqual({
+      error: 'Not enough credits left for Sonnet 5.5. Switch to Haiku 5.5 or buy more credits.',
+      code: 'INSUFFICIENT_BALANCE',
+      details: { pricingUrl: '/pricing', isContinuation: false, suggestedModel: 'claude-haiku-5-5', canUpgrade: true },
+    })
+    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+
+    vi.mocked(anthropic.messages.stream).mockReturnValue(
+      completedTurn({ inputTokens: 3000, outputTokens: 500 }) as never
+    )
+    const haiku = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
+    await haiku.text()
+
+    expect(haiku.status).toBe(200)
+    expect(await balance()).toBe(6)
+  })
+
+  it('refuses a Sonnet 5.5 + Thinking Turn and offers turning Thinking off or Haiku', async () => {
+    await seedUser({ credits: FREE_GRANT })
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-sonnet-5-5', enableThinking: true })
+    const body = await response.json()
+
+    expect(response.status).toBe(402)
+    expect(body).toMatchObject({
+      code: 'INSUFFICIENT_BALANCE',
+      details: { suggestedModel: 'claude-haiku-5-5', suggestDisableThinking: true, canUpgrade: true },
+    })
+    expect(anthropic.messages.stream).not.toHaveBeenCalled()
+    expect(await balance()).toBe(FREE_GRANT)
+  })
+})
