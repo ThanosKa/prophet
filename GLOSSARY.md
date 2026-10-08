@@ -16,6 +16,10 @@ _Avoid_: Step, tool call, message
 The most Turns a Run may take before the agent pauses and waits for the user to say "continue".
 _Avoid_: Max steps
 
+**Run budget**:
+The estimated prompt size at which a Run's next Turn becomes its last: 90K by the Hold's deliberately high estimate, roughly 50-80K real tokens.
+_Avoid_: Context limit, prompt budget
+
 ## Billing
 
 **Credit**:
