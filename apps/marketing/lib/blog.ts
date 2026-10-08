@@ -489,7 +489,7 @@ const useClaudeWithoutSubscription: BlogPost = {
 <li><strong>5 Opus messages per day:</strong> approximately $7.50/month in credit consumption</li>
 </ul>
 <p>Prophet's free tier starts you with a one-time $0.07 in credits, which is enough to try the service on Haiku before committing to any plan. Visit the <a href="/pricing">pricing page</a> for detailed plan comparisons.</p>
-<p>The browser integration is a significant bonus. Prophet runs in Chrome's side panel and can read the current web page, extract content, fill forms, and automate browser tasks. You get capabilities that neither Claude.ai nor the Anthropic API provide, at a fraction of the subscription cost.</p>
+<p>The browser integration is a significant advantage. Prophet runs in Chrome's side panel and can read the current web page, extract content, fill forms, and automate browser tasks. You get capabilities that neither Claude.ai nor the Anthropic API provide, at a fraction of the subscription cost.</p>
 
 <h2>Option 2: Anthropic API Direct Access</h2>
 <p>For developers and technically inclined users, Anthropic's API provides pure pay-per-use access to Claude with no subscription at all. You create an account at console.anthropic.com, add credits (minimum $5), and pay per token consumed.</p>
