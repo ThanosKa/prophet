@@ -31,14 +31,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 const modelLabels: Record<string, string> = {
-  haiku: 'Haiku 4.5',
+  haiku: 'Haiku 5.5',
   sonnet: 'Sonnet 5.5',
   opus: 'Opus 5.5',
 }
 
 const modelDescriptions: Record<string, string> = {
   haiku:
-    'Claude Haiku 4.5 is the fastest and most affordable model. It handles straightforward tasks like drafting emails, answering questions, and summarizing content with low latency and minimal cost. Ideal when speed and budget matter more than deep reasoning.',
+    'Claude Haiku 5.5 is the fastest and most affordable model. It handles straightforward tasks like drafting emails, answering questions, and summarizing content with low latency and minimal cost. Ideal when speed and budget matter more than deep reasoning.',
   sonnet:
     'Claude Sonnet 5.5 balances capability and cost. It handles complex tasks like code review, detailed analysis, and nuanced writing while keeping token costs reasonable. The best default choice for most professional workflows.',
   opus:
@@ -147,7 +147,7 @@ export default async function ProfessionPage({ params }: PageProps) {
           </Card>
           <p className="text-sm text-muted-foreground mt-4">
             You can switch models at any time from the chat interface. All three
-            models — Haiku 4.5, Sonnet 5.5, and Opus 5.5 — are available on every plan.
+            models — Haiku 5.5, Sonnet 5.5, and Opus 5.5 — are available on every plan.
           </p>
         </div>
       </section>

@@ -57,7 +57,7 @@ export default function PricingPage() {
 
           <h2 className="text-2xl font-bold mb-4">All Plans Include</h2>
           <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-            <li>Access to Claude Haiku 4.5, Sonnet 5.5, and Opus 5.5</li>
+            <li>Access to Claude Haiku 5.5, Sonnet 5.5, and Opus 5.5</li>
             <li>18 browser automation tools via Chrome DevTools Protocol</li>
             <li>Real-time streaming responses</li>
             <li>Persistent chat history</li>

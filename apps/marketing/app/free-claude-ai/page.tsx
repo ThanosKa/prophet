@@ -28,7 +28,7 @@ const freeOptions = [
   {
     name: 'Prophet free tier',
     cost: '$0 (no card)',
-    models: 'Haiku 4.5, Sonnet 5.5, Opus 5.5',
+    models: 'Haiku 5.5, Sonnet 5.5, Opus 5.5',
     limits: '$0.20 in credits — roughly 20 Haiku messages, 10 Sonnet or 4 Opus.',
     catch: 'Credits are finite. When they run out you either stop or buy more.',
   },
@@ -266,7 +266,7 @@ export default function FreeClaudeAIPage() {
             </p>
             <p className="text-muted-foreground leading-relaxed mb-4">
               <strong className="text-foreground">What is free:</strong> $0.20 in credits when you
-              sign up, no credit card. All three models — Haiku 4.5, Sonnet 5.5 and Opus 5.5 — are
+              sign up, no credit card. All three models — Haiku 5.5, Sonnet 5.5 and Opus 5.5 — are
               unlocked on the free tier, which is unusual; most extensions reserve the strong models
               for paid plans. All 18 browser automation tools work on the free tier. In practice
               $0.20 is roughly 20 Haiku messages, 10 Sonnet messages, or four Opus messages at
@@ -366,7 +366,7 @@ export default function FreeClaudeAIPage() {
 
       <InstallCta
         title="Try Claude free in your browser"
-        description="$0.20 in credits, no card required, and Haiku 4.5, Sonnet 5.5 and Opus 5.5 all unlocked from the start."
+        description="$0.20 in credits, no card required, and Haiku 5.5, Sonnet 5.5 and Opus 5.5 all unlocked from the start."
         secondary={{ href: '/pricing', label: 'See credit pricing' }}
       >
         <p className="text-sm text-muted-foreground mb-6">

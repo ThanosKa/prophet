@@ -29,7 +29,7 @@ import Link from 'next/link'
 const PROPHET_MARKUP = 1.20
 
 const MODEL_OPTIONS = {
-  'claude-haiku': { name: 'Claude Haiku 4.5', input: 1, output: 5 },
+  'claude-haiku': { name: 'Claude Haiku 5.5', input: 0.1, output: 0.5 },
   'claude-sonnet': { name: 'Claude Sonnet 5.5', input: 2, output: 10 },
   'claude-opus': { name: 'Claude Opus 5.5', input: 4, output: 20 },
   'gpt-4o': { name: 'GPT-4o', input: 2.5, output: 10 },

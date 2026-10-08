@@ -20,11 +20,11 @@ const extensions = [
     name: 'Prophet',
     tagline: 'Claude AI side panel with browser automation',
     url: 'https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif',
-    claudeModels: 'Haiku 4.5, Sonnet 5.5, Opus 5.5',
+    claudeModels: 'Haiku 5.5, Sonnet 5.5, Opus 5.5',
     pricing: 'Free tier ($0.20 credits), Pro $9.99/mo, Premium $29.99/mo, Ultra $59.99/mo',
-    description: 'Prophet is a Chrome extension built specifically around Claude AI. It lives in the Chrome side panel and provides three Claude model options: Haiku 4.5 for fast, affordable tasks; Sonnet 5.5 for balanced performance; and Opus 5.5 for the most complex reasoning. What makes Prophet unique among Claude extensions is its browser automation layer. Using 18 built-in tools, Prophet can interact with web pages on your behalf: clicking buttons, filling forms, navigating between pages, extracting data, and managing browser tabs. This is powered by the accessibility tree rather than screenshots, making it faster and more reliable than vision-based approaches. The pay-per-use credit system means you pay only for the API tokens you consume, with higher tiers offering bonus credits. For Claude power users who want the AI to not just analyze web pages but take action on them, Prophet is the most capable option. The entire codebase is open source on GitHub, providing full transparency into how Claude is integrated and how your data flows through the system.',
+    description: 'Prophet is a Chrome extension built specifically around Claude AI. It lives in the Chrome side panel and provides three Claude model options: Haiku 5.5 for fast, affordable tasks; Sonnet 5.5 for balanced performance; and Opus 5.5 for the most complex reasoning. What makes Prophet unique among Claude extensions is its browser automation layer. Using 18 built-in tools, Prophet can interact with web pages on your behalf: clicking buttons, filling forms, navigating between pages, extracting data, and managing browser tabs. This is powered by the accessibility tree rather than screenshots, making it faster and more reliable than vision-based approaches. The pay-per-use credit system means you pay only for the API tokens you consume, with higher tiers offering bonus credits. For Claude power users who want the AI to not just analyze web pages but take action on them, Prophet is the most capable option. The entire codebase is open source on GitHub, providing full transparency into how Claude is integrated and how your data flows through the system.',
     pros: [
-      'All three major Claude models available (Haiku 4.5, Sonnet 5.5, Opus 5.5)',
+      'All three major Claude models available (Haiku 5.5, Sonnet 5.5, Opus 5.5)',
       'Browser automation with 18 tools for real page interaction',
       'Pay-per-use credits tied to actual Claude API costs',
       'Open source for full transparency',
@@ -130,7 +130,7 @@ const faqItems = [
   },
   {
     question: 'Which Claude model should I choose?',
-    answer: 'Haiku 4.5 is best for fast, simple tasks like quick questions, short summaries, and basic analysis. It is the cheapest option per token. Sonnet 5.5 balances speed and capability for most everyday tasks including writing, code analysis, and detailed explanations. Opus 5.5 is the most capable model for complex reasoning, multi-step planning, and tasks requiring deep analysis. Start with Sonnet for most tasks and switch to Haiku for cost savings on simple tasks or Opus when you need maximum quality.',
+    answer: 'Haiku 5.5 is best for fast, simple tasks like quick questions, short summaries, and basic analysis. It is the cheapest option per token. Sonnet 5.5 balances speed and capability for most everyday tasks including writing, code analysis, and detailed explanations. Opus 5.5 is the most capable model for complex reasoning, multi-step planning, and tasks requiring deep analysis. Start with Sonnet for most tasks and switch to Haiku for cost savings on simple tasks or Opus when you need maximum quality.',
   },
   {
     question: 'Is Prophet better than Claude in Chrome from Anthropic?',
@@ -142,11 +142,11 @@ const faqItems = [
   },
   {
     question: 'What are the best browser extensions for Claude AI in 2026?',
-    answer: 'As of May 2026, the strongest browser extensions for Claude AI are Prophet (Haiku 4.5, Sonnet 5.5, and Opus 5.5 with pay-per-use credits and accessibility-tree browser automation), Anthropic\'s official Claude in Chrome (requires a $20/mo Claude Pro subscription and uses screenshot-based Computer Use), Monica and Sider (multi-model sidebars that include Claude 3.5 Sonnet alongside GPT and Gemini), and Harpa AI (bring-your-own-Anthropic-key for unmarked Claude API access). Prophet is the only one in this list built exclusively around Claude.',
+    answer: 'As of May 2026, the strongest browser extensions for Claude AI are Prophet (Haiku 5.5, Sonnet 5.5, and Opus 5.5 with pay-per-use credits and accessibility-tree browser automation), Anthropic\'s official Claude in Chrome (requires a $20/mo Claude Pro subscription and uses screenshot-based Computer Use), Monica and Sider (multi-model sidebars that include Claude 3.5 Sonnet alongside GPT and Gemini), and Harpa AI (bring-your-own-Anthropic-key for unmarked Claude API access). Prophet is the only one in this list built exclusively around Claude.',
   },
   {
     question: 'Which is the best Claude Chrome extension for 2026?',
-    answer: 'For most users in 2026, Prophet is the best Claude Chrome extension. It is the only sidebar that offers all three production Claude models (Haiku 4.5, Sonnet 5.5, Opus 5.5), pairs them with 18 browser automation tools, and bills pay-per-use against your actual Anthropic API spend instead of a flat monthly fee. If you already pay for Claude Pro, Anthropic\'s own Claude in Chrome is the safer pick for first-party support, though it costs more per browser-automation task because Computer Use sends screenshots on every step.',
+    answer: 'For most users in 2026, Prophet is the best Claude Chrome extension. It is the only sidebar that offers all three production Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5), pairs them with 18 browser automation tools, and bills pay-per-use against your actual Anthropic API spend instead of a flat monthly fee. If you already pay for Claude Pro, Anthropic\'s own Claude in Chrome is the safer pick for first-party support, though it costs more per browser-automation task because Computer Use sends screenshots on every step.',
   },
   {
     question: 'Is there a Claude AI Chrome extension in 2026?',

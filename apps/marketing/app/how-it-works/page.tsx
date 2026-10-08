@@ -347,7 +347,7 @@ chrome.debugger.sendCommand(
             <div className="grid gap-3 md:grid-cols-3 mb-6">
               <Card className="bg-muted/30">
                 <CardContent className="pt-4 pb-4">
-                  <p className="font-semibold text-sm">Haiku 4.5</p>
+                  <p className="font-semibold text-sm">Haiku 5.5</p>
                   <p className="text-xs text-muted-foreground mt-1">Fast & efficient for simple tasks</p>
                 </CardContent>
               </Card>

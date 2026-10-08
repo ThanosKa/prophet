@@ -28,7 +28,7 @@ const extensions = [
       'Accessibility tree approach is faster and cheaper than screenshot-based AI',
       'Pay-per-use credits instead of flat monthly fees for unused capacity',
       'Open source with full transparency into how it works',
-      'Multiple Claude models (Haiku 4.5, Sonnet 5.5, Opus 5.5)',
+      'Multiple Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5)',
     ],
     cons: [
       'Claude-only; no GPT or Gemini model options',
@@ -316,7 +316,7 @@ export default function BestAIChromeExtensionsPage() {
               If you want the answer without the detail, here is how the nine AI Chrome extensions rank by what you are actually trying to do:
             </p>
             <ul className="space-y-2 text-muted-foreground">
-              <li><strong className="text-foreground">Best overall and only real browser automation:</strong> Prophet (Claude Haiku 4.5, Sonnet 5.5 and Opus 5.5, 18 automation tools, pay-per-use credits)</li>
+              <li><strong className="text-foreground">Best overall and only real browser automation:</strong> Prophet (Claude Haiku 5.5, Sonnet 5.5 and Opus 5.5, 18 automation tools, pay-per-use credits)</li>
               <li><strong className="text-foreground">Best multi-model assistant:</strong> Monica (GPT-4o, Claude and Gemini plus image generation in one sidebar)</li>
               <li><strong className="text-foreground">Best for comparing model answers:</strong> Sider (group chat queries several models on the same prompt)</li>
               <li><strong className="text-foreground">Best with live web search:</strong> Merlin (search-grounded answers and document analysis)</li>

@@ -4,7 +4,7 @@
 
 ## Product Overview
 **One-liner:** The AI Chrome extension that automates your browser, powered by Claude.
-**What it does:** Prophet is an open-source Chrome side-panel extension that brings Anthropic's Claude AI (Haiku 4.5, Sonnet 4.6, Opus 4.6) into the browser with real-time streaming chat and 18 built-in browser-automation tools (click, fill, navigate, extract). Unlike screenshot-based browser AI, Prophet reads the **accessibility tree** for faster, deterministic, cheaper interactions.
+**What it does:** Prophet is an open-source Chrome side-panel extension that brings Anthropic's Claude AI (Haiku 5.5, Sonnet 5.5, Opus 5.5) into the browser with real-time streaming chat and 18 built-in browser-automation tools (click, fill, navigate, extract). Unlike screenshot-based browser AI, Prophet reads the **accessibility tree** for faster, deterministic, cheaper interactions.
 **Product category:** AI Chrome extension / AI browser sidebar / browser automation agent.
 **Product type:** SaaS — Chrome extension + Next.js web app + API backend.
 **Business model:** Pay-per-use credits + monthly subscription tiers.
@@ -92,7 +92,7 @@
 ## Proof Points
 **Metrics to cite:** 18 browser tools; 3 Claude models on free tier; 2-4× faster than screenshot agents; ~50% cheaper per perception step.
 **Open source:** github.com/ThanosKa/prophet (verifiable claim).
-**Tech credibility:** Anthropic Claude (Haiku 4.5/Sonnet 4.6/Opus 4.6), Chrome DevTools Protocol.
+**Tech credibility:** Anthropic Claude (Haiku 5.5/Sonnet 5.5/Opus 5.5), Chrome DevTools Protocol.
 
 ## Goals
 **Business goal:** Drive Chrome Web Store installs → free signup → upgrade to Pro/Premium.

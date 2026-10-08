@@ -30,7 +30,7 @@
 ### Step 1: Calculate Raw API Cost
 ```
 Anthropic charges per million tokens:
-- Haiku:  $1 input,  $5 output (per 1M tokens)
+- Haiku:  $0.10 input, $0.50 output (per 1M tokens; prompts over 100K tokens: $0.50 / $2.50)
 - Sonnet: $3 input, $15 output (per 1M tokens)
 - Opus:   $5 input, $25 output (per 1M tokens)
 

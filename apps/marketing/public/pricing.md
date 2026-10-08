@@ -9,7 +9,7 @@ Last updated: 2026-05-04
 ### Free
 - Price: $0/month
 - Credits included: $0.20 (one-time, does not renew)
-- Models: Claude Haiku 4.5, Sonnet 5.5, Opus 5.5 (all 3 available)
+- Models: Claude Haiku 5.5, Sonnet 5.5, Opus 5.5 (all 3 available)
 - Browser automation: Yes — full 18 tools
 - Rate limit: 60 chat req/min
 - Card required: No
@@ -17,7 +17,7 @@ Last updated: 2026-05-04
 
 ### Pro — $9.99/month
 - Credits included: $11/month (+10% bonus over price)
-- Models: All Claude models (Haiku 4.5, Sonnet 5.5, Opus 5.5)
+- Models: All Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5)
 - Browser automation: Yes — full 18 tools
 - Rate limit: 120 chat req/min
 - Persistent chat history
@@ -43,7 +43,8 @@ Last updated: 2026-05-04
 
 | Model | Input ($/MTok) | Output ($/MTok) |
 |---|---:|---:|
-| Claude Haiku 4.5 | $1.00 | $5.00 |
+| Claude Haiku 5.5 (prompts up to 100K tokens) | $0.10 | $0.50 |
+| Claude Haiku 5.5 (prompts over 100K tokens) | $0.50 | $2.50 |
 | Claude Sonnet 5.5 | $2.00 | $10.00 |
 | Claude Opus 5.5 | $4.00 | $20.00 |
 

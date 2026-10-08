@@ -26,7 +26,7 @@ import {
 import Link from 'next/link'
 
 const MODELS = {
-  'claude-haiku': { name: 'Claude Haiku 4.5', provider: 'Anthropic', input: 1, output: 5 },
+  'claude-haiku': { name: 'Claude Haiku 5.5', provider: 'Anthropic', input: 0.1, output: 0.5 },
   'claude-sonnet': { name: 'Claude Sonnet 5.5', provider: 'Anthropic', input: 2, output: 10 },
   'claude-opus': { name: 'Claude Opus 5.5', provider: 'Anthropic', input: 4, output: 20 },
   'gpt-4o': { name: 'GPT-4o', provider: 'OpenAI', input: 2.5, output: 10 },
@@ -311,7 +311,7 @@ export default function AiApiCostCalculatorPage() {
                 </TableBody>
               </Table>
               <p className="text-xs text-muted-foreground mt-3">
-                Costs include Prophet&apos;s 20% platform fee. Based on {effectiveTokens.input.toLocaleString()} input + {effectiveTokens.output.toLocaleString()} output tokens per request, {effectiveRequestsPerDay} requests/day.
+                Costs include Prophet&apos;s 20% platform fee. Based on {effectiveTokens.input.toLocaleString()} input + {effectiveTokens.output.toLocaleString()} output tokens per request, {effectiveRequestsPerDay} requests/day. Claude Haiku 5.5 rates apply to prompts up to 100K tokens; longer prompts bill at $0.50 / $2.50 per MTok.
               </p>
             </CardContent>
           </Card>

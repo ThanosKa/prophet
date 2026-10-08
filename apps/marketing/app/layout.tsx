@@ -8,7 +8,7 @@ import './globals.css'
 
 const HOME_TITLE = 'Claude AI Sidebar for Chrome: Pay Per Use | Prophet'
 const HOME_DESCRIPTION =
-  "Run Claude Haiku, Sonnet 5.5 and Opus 5.5 in your Chrome side panel — it reads and acts on the page you're on. $0.20 free credits, no card."
+  "Run Claude Haiku, Sonnet and Opus 5.5 in your Chrome side panel — it reads and acts on the page you're on. $0.20 free credits, no card."
 
 export const metadata: Metadata = {
   title: {

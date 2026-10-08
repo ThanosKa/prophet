@@ -8,7 +8,7 @@ Foundation document for all marketing content, campaigns, and messaging.
 
 ### What Prophet Is
 
-Prophet is a Chrome browser extension that embeds a full AI assistant into your browser's side panel. It connects to Anthropic's Claude models (Haiku 4.5, Sonnet 5.5, Opus 5.5) and gives the AI agent the ability to see, understand, and interact with any web page you have open -- clicking buttons, filling forms, navigating sites, and extracting content -- all while you stay in control.
+Prophet is a Chrome browser extension that embeds a full AI assistant into your browser's side panel. It connects to Anthropic's Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5) and gives the AI agent the ability to see, understand, and interact with any web page you have open -- clicking buttons, filling forms, navigating sites, and extracting content -- all while you stay in control.
 
 ### What It Does
 
@@ -214,7 +214,7 @@ Prophet sits at the intersection of:
 | **Accessibility tree observation** | Faster, cheaper, more reliable page understanding | Same approach as Microsoft's Playwright MCP; structured text vs expensive image processing |
 | **UID-based element targeting** | Deterministic interactions -- clicks exactly the right element | Each interactive element gets a stable unique ID; no coordinate-guessing |
 | **Client-side tool execution** | Your browsing data never leaves your machine | Tools run via Chrome DevTools Protocol in your logged-in session |
-| **3 Claude model tiers** | Optimize cost vs capability per task | Haiku 4.5 ($1/$5 per MTok), Sonnet 5.5 ($2/$10), Opus 5.5 ($4/$20) |
+| **3 Claude model tiers** | Optimize cost vs capability per task | Haiku 5.5 ($0.10/$0.50 per MTok up to 100K-token prompts), Sonnet 5.5 ($2/$10), Opus 5.5 ($4/$20) |
 | **Streaming responses** | See answers as they generate, not after a loading spinner | Server-sent events from Anthropic API streamed in real-time |
 | **Persistent chat history** | Pick up where you left off | Conversations stored in secure database with full message history |
 | **Credits-based pricing** | Pay for exactly what you use | 1 credit = 1 cent of API cost; transparent usage tracking in dashboard |
@@ -391,7 +391,7 @@ Prophet's voice is **competent, direct, and approachable** -- like a sharp cowor
 
 **Current social proof (from Hero):** "Join 1,000+ users already using Prophet"
 
-**Models available:** Claude Haiku 4.5, Claude Sonnet 5.5, Claude Opus 5.5
+**Models available:** Claude Haiku 5.5, Claude Sonnet 5.5, Claude Opus 5.5
 
 **Extension version:** 1.0.1
 
