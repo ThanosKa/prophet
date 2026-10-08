@@ -26,6 +26,10 @@ _Avoid_: Context limit, prompt budget
 The unit of a user's prepaid balance, worth one US cent.
 _Avoid_: Token, point
 
+**Hold**:
+The Credits set aside from a user's balance before a Turn starts, sized to the most the Turn could cost. When the Turn ends, the unused part is returned and anything above it is charged.
+_Avoid_: Reservation, pre-auth
+
 **Margin**:
 The percentage Prophet adds on top of Anthropic's cost when converting a Turn's cost into Credits. It applies to every Turn, whichever kind of Credits pays for it.
 _Avoid_: Markup, fee

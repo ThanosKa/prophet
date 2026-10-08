@@ -127,9 +127,12 @@ Rules that keep it hitting:
 - **Verify** with `usage.cache_read_input_tokens` (persisted on `usage_records`); in a
   healthy run it grows every turn while `cache_creation_input_tokens` stays near the
   size of the last turn.
-- Credit reservations deliberately ignore caching and price the whole estimated prompt
-  as uncached input. The estimator over-counts ASCII text ~1.75-2x, which covers the
-  1.25x cache-write premium; a turn that settles above its hold is logged.
+- **The Hold expects the cache.** For a continuation that sends `previousTurns`, the
+  Hold prices the prompt the previous Turn sent (system, tools, history window, opening
+  message, every earlier Turn but the newest) at the cache-read rate and the rest,
+  including a last Turn's notice, at the cache-write rate. First Turns and the legacy
+  single-Turn form price the whole prompt as a cache write. Settlement bills the real
+  usage, so a cache miss settles above the Hold as overage and is logged.
 
 ### Model IDs and Legacy Aliases
 
