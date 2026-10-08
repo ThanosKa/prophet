@@ -284,3 +284,81 @@ describe('append-only agent runs in POST /api/agent/chat', () => {
     }
   })
 })
+
+describe('echoed tool calls in POST /api/agent/chat', () => {
+  /** A run history with one Turn that made `toolUse`, as the extension echoes it back. */
+  function echoing(toolUse: ApiBlock) {
+    return [
+      {
+        content: [toolUse],
+        toolResults: [{ type: 'tool_result', tool_use_id: 'toolu_echo', content: 'Done', is_error: false }],
+      },
+    ]
+  }
+
+  it.each([
+    ['negative scroll pixels', 'scroll_page', { direction: 'down', pixels: -500 }],
+    ['a wait over the 30s the tool clamps to', 'wait_for_timeout', { ms: 90000 }],
+    ['a fractional wait', 'wait_for_timeout', { ms: 1500.5 }],
+    ['a URL without a scheme', 'navigate', { url: 'example.com/inbox' }],
+    ['a new tab URL without a scheme', 'open_new_tab', { url: 'example.com/inbox', active: true }],
+    ['a snapshot search over 500 chars', 'search_snapshot', { query: 'invoice '.repeat(200) }],
+  ])('accepts an echoed tool call with %s', async (_label, name, input) => {
+    streamMock.mockReturnValue(anthropicTurn([{ type: 'text', text: 'Done.' }], 'end_turn'))
+    const toolUse = { type: 'tool_use', id: 'toolu_echo', name, input }
+
+    const response = await post({ model: 'claude-sonnet-5-5', previousTurns: echoing(toolUse) })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(sentParams().messages.at(-2)).toEqual({ role: 'assistant', content: [toolUse] })
+  })
+
+  it('still accepts a continuation shaped like extension 1.0.5 sends it', async () => {
+    streamMock.mockReturnValue(anthropicTurn([{ type: 'text', text: 'Done.' }], 'end_turn'))
+    // 1.0.5 sends its baked-in model id, no runId, and each Turn's server contentBlocks unchanged.
+    const previousTurns = [
+      {
+        content: [
+          { type: 'thinking', thinking: 'Scroll to find the invoice.', signature: 'sig-1' },
+          { type: 'text', text: 'Scrolling down.' },
+          { type: 'tool_use', id: 'toolu_a', name: 'scroll_page', input: { direction: 'down', pixels: 20000 }, caller: { type: 'direct' } },
+        ],
+        toolResults: [{ type: 'tool_result', tool_use_id: 'toolu_a', content: 'Scrolled down by 20000px', is_error: false }],
+      },
+      {
+        content: [
+          { type: 'thinking', thinking: 'Wait for the list to load.', signature: 'sig-2' },
+          { type: 'tool_use', id: 'toolu_b', name: 'wait_for_timeout', input: { ms: 90000 }, caller: { type: 'direct' } },
+        ],
+        toolResults: [{ type: 'tool_result', tool_use_id: 'toolu_b', content: 'Tool execution failed', is_error: true }],
+      },
+    ]
+
+    const response = await post({ model: 'claude-haiku-4-5', enableThinking: true, previousTurns })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(sentParams().model).toBe('claude-haiku-5-5')
+    expect(sentParams().messages.slice(-4)).toEqual([
+      { role: 'assistant', content: previousTurns[0].content },
+      { role: 'user', content: previousTurns[0].toolResults },
+      { role: 'assistant', content: previousTurns[1].content },
+      { role: 'user', content: previousTurns[1].toolResults },
+    ])
+  })
+
+  it.each([
+    ['a direct caller', { type: 'direct' }],
+    ['a caller type the schema has never seen', { type: 'code_execution_20270101', tool_id: 'srvtoolu_7' }],
+  ])('hands an echoed tool call with %s to Anthropic with its caller intact', async (_label, caller) => {
+    streamMock.mockReturnValue(anthropicTurn([{ type: 'text', text: 'Done.' }], 'end_turn'))
+    const toolUse = { type: 'tool_use', id: 'toolu_echo', name: 'take_snapshot', input: {}, caller }
+
+    const response = await post({ model: 'claude-sonnet-5-5', previousTurns: echoing(toolUse) })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(sentParams().messages.at(-2)).toEqual({ role: 'assistant', content: [toolUse] })
+  })
+})

@@ -142,31 +142,51 @@ export const hoverElementInputSchema = z.object({
   uid: z.string().min(1, "UID is required"),
 });
 
+// The tool input schemas match what each tool does, not stricter: the extension checks a
+// tool call against them before it runs, and Claude retries when one fails.
+
+/** The URL the navigate and open_new_tab tools open: they add https:// when there's no http(s) scheme. */
+function opensAsUrl(url: string): boolean {
+  const opened = url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
+  try {
+    new URL(opened);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const toolUrlSchema = z.string().min(1, "URL is required").refine(opensAsUrl, "Invalid URL");
+
 export const navigateInputSchema = z.object({
-  url: z.string().url("Invalid URL"),
+  url: toolUrlSchema,
 });
 
 export const scrollPageInputSchema = z.object({
   direction: z.enum(["up", "down", "left", "right", "top", "bottom"]),
-  pixels: z.number().int().min(0).max(10000).optional().default(500),
+  // Negative pixels scroll the other way, and the page stops scrolling at its edge.
+  pixels: z.number().optional().default(500),
 });
 
 export const searchSnapshotInputSchema = z.object({
-  query: z.string().min(1, "Query is required").max(500),
+  query: z.string().min(1, "Query is required"),
 });
+
+// The wait tools clamp every wait to 30 seconds, so any non-negative wait is fine.
+const waitMsSchema = z.number().min(0);
 
 export const waitForSelectorInputSchema = z.object({
   selector: z.string().min(1, "Selector is required"),
-  timeout: z.number().int().min(0).max(60000).optional().default(10000),
+  timeout: waitMsSchema.optional().default(10000),
   visible: z.boolean().optional().default(false),
 });
 
 export const waitForNavigationInputSchema = z.object({
-  timeout: z.number().int().min(0).max(60000).optional().default(30000),
+  timeout: waitMsSchema.optional().default(30000),
 });
 
 export const waitForTimeoutInputSchema = z.object({
-  ms: z.number().int().min(0).max(60000),
+  ms: waitMsSchema,
 });
 
 export const switchTabInputSchema = z.object({
@@ -178,45 +198,24 @@ export const closeTabInputSchema = z.object({
 });
 
 export const openNewTabInputSchema = z.object({
-  url: z.string().url("Invalid URL"),
+  url: toolUrlSchema,
   active: z.boolean().optional().default(true),
 });
 
+// Who made a tool call: `{type: "direct"}`, or a server tool such as code execution.
+// Open on purpose: an echoed block must reach Anthropic exactly as Claude returned it,
+// and a caller type added later must not become a 400 mid-Run.
+export const toolCallerSchema = z.object({ type: z.string() }).passthrough();
+
+// An echoed tool call is checked by shape only. Claude already ran it, so a per-tool
+// check here could only turn a call the tool definitions allow into a 400 mid-Run.
+// The per-tool input schemas above are the extension's check before a tool runs.
 export const toolUseSchema = z.object({
   type: z.literal("tool_use"),
   id: z.string(),
   name: toolNameSchema,
   input: z.record(z.unknown()),
-}).superRefine((data, ctx) => {
-  const { name, input } = data;
-  let schema: z.ZodSchema | null = null;
-
-  switch (name) {
-    case "click_element_by_uid": schema = clickElementInputSchema; break;
-    case "fill_element_by_uid": schema = fillElementInputSchema; break;
-    case "hover_element_by_uid": schema = hoverElementInputSchema; break;
-    case "navigate": schema = navigateInputSchema; break;
-    case "scroll_page": schema = scrollPageInputSchema; break;
-    case "search_snapshot": schema = searchSnapshotInputSchema; break;
-    case "wait_for_selector": schema = waitForSelectorInputSchema; break;
-    case "wait_for_navigation": schema = waitForNavigationInputSchema; break;
-    case "wait_for_timeout": schema = waitForTimeoutInputSchema; break;
-    case "switch_tab": schema = switchTabInputSchema; break;
-    case "close_tab": schema = closeTabInputSchema; break;
-    case "open_new_tab": schema = openNewTabInputSchema; break;
-  }
-
-  if (schema) {
-    const result = schema.safeParse(input);
-    if (!result.success) {
-      result.error.issues.forEach((issue) => {
-        ctx.addIssue({
-          ...issue,
-          path: ["input", ...issue.path],
-        });
-      });
-    }
-  }
+  caller: toolCallerSchema.optional(),
 });
 
 // Anthropic-executed web search. These blocks arrive inside the assistant turn and
@@ -243,6 +242,7 @@ export const serverToolUseSchema = z.object({
   id: z.string(),
   name: z.literal(WEB_SEARCH_TOOL_NAME),
   input: z.record(z.unknown()),
+  caller: toolCallerSchema.optional(),
 });
 
 export const webSearchToolResultSchema = z.object({
@@ -252,6 +252,7 @@ export const webSearchToolResultSchema = z.object({
     z.array(webSearchResultSchema),
     webSearchToolResultErrorSchema,
   ]),
+  caller: toolCallerSchema.optional(),
 });
 
 // Replayed verbatim on the next turn of a run. The API verifies `signature` / `data`,

@@ -307,13 +307,20 @@ describe('navigateInputSchema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('rejects invalid URL', () => {
-    const data = { url: 'not-a-url' }
+  it('accepts a URL without a scheme, which the tool opens over https', () => {
+    const result = navigateInputSchema.safeParse({ url: 'example.com/inbox' })
 
-    const result = navigateInputSchema.safeParse(data)
-    expect(result.success).toBe(false)
-    if (!result.success) {
-      expect(result.error.issues[0].message).toBe('Invalid URL')
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.url).toBe('example.com/inbox')
+  })
+
+  it('rejects a URL the tool still could not open', () => {
+    for (const url of ['http://', 'exa mple.com']) {
+      const result = navigateInputSchema.safeParse({ url })
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.issues[0].message).toBe('Invalid URL')
+      }
     }
   })
 
@@ -322,6 +329,54 @@ describe('navigateInputSchema', () => {
 
     const result = navigateInputSchema.safeParse(data)
     expect(result.success).toBe(false)
+  })
+})
+
+describe('openNewTabInputSchema', () => {
+  it('opens the new tab in front by default', () => {
+    const result = openNewTabInputSchema.safeParse({ url: 'https://example.com' })
+
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.active).toBe(true)
+  })
+
+  it('accepts a URL without a scheme, which the tool opens over https', () => {
+    const result = openNewTabInputSchema.safeParse({ url: 'example.com/inbox', active: false })
+
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects a URL the tool still could not open', () => {
+    expect(openNewTabInputSchema.safeParse({ url: 'http://' }).success).toBe(false)
+    expect(openNewTabInputSchema.safeParse({ url: '' }).success).toBe(false)
+  })
+})
+
+describe('wait tool input schemas', () => {
+  it('accept any non-negative wait, because the tools clamp it to 30 seconds', () => {
+    for (const ms of [0, 1500.5, 90000]) {
+      expect(waitForTimeoutInputSchema.safeParse({ ms }).success).toBe(true)
+      expect(waitForSelectorInputSchema.safeParse({ selector: 'body', timeout: ms }).success).toBe(true)
+      expect(waitForNavigationInputSchema.safeParse({ timeout: ms }).success).toBe(true)
+    }
+  })
+
+  it('reject a negative wait', () => {
+    expect(waitForTimeoutInputSchema.safeParse({ ms: -1 }).success).toBe(false)
+    expect(waitForSelectorInputSchema.safeParse({ selector: 'body', timeout: -1 }).success).toBe(false)
+    expect(waitForNavigationInputSchema.safeParse({ timeout: -1 }).success).toBe(false)
+  })
+
+  it('wait_for_timeout requires ms', () => {
+    expect(waitForTimeoutInputSchema.safeParse({}).success).toBe(false)
+  })
+
+  it('fill in the default timeouts', () => {
+    const selector = waitForSelectorInputSchema.safeParse({ selector: 'body' })
+    const navigation = waitForNavigationInputSchema.safeParse({})
+
+    expect(selector.success && selector.data).toEqual({ selector: 'body', timeout: 10000, visible: false })
+    expect(navigation.success && navigation.data).toEqual({ timeout: 30000 })
   })
 })
 
@@ -362,32 +417,23 @@ describe('scrollPageInputSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('rejects negative pixels', () => {
-    const data = { direction: 'down', pixels: -100 }
-
-    const result = scrollPageInputSchema.safeParse(data)
-    expect(result.success).toBe(false)
-  })
-
-  it('rejects pixels > 10000', () => {
-    const data = { direction: 'down', pixels: 10001 }
-
-    const result = scrollPageInputSchema.safeParse(data)
-    expect(result.success).toBe(false)
-  })
-
-  it('accepts pixels = 0', () => {
-    const data = { direction: 'down', pixels: 0 }
+  it('accepts negative pixels, which scroll the other way', () => {
+    const data = { direction: 'down', pixels: -500 }
 
     const result = scrollPageInputSchema.safeParse(data)
     expect(result.success).toBe(true)
   })
 
-  it('accepts pixels = 10000 (max)', () => {
-    const data = { direction: 'down', pixels: 10000 }
+  it('accepts pixels of any size, because the page stops at its edge', () => {
+    for (const pixels of [0, 20000, 250.5]) {
+      expect(scrollPageInputSchema.safeParse({ direction: 'down', pixels }).success).toBe(true)
+    }
+  })
 
-    const result = scrollPageInputSchema.safeParse(data)
-    expect(result.success).toBe(true)
+  it('rejects pixels that are not a number', () => {
+    const result = scrollPageInputSchema.safeParse({ direction: 'down', pixels: '500' })
+
+    expect(result.success).toBe(false)
   })
 })
 
@@ -409,15 +455,8 @@ describe('searchSnapshotInputSchema', () => {
     }
   })
 
-  it('rejects query > 500 chars', () => {
-    const data = { query: 'a'.repeat(501) }
-
-    const result = searchSnapshotInputSchema.safeParse(data)
-    expect(result.success).toBe(false)
-  })
-
-  it('accepts query exactly 500 chars', () => {
-    const data = { query: 'a'.repeat(500) }
+  it('accepts a query over 500 chars, because the tool matches any substring', () => {
+    const data = { query: 'invoice '.repeat(200) }
 
     const result = searchSnapshotInputSchema.safeParse(data)
     expect(result.success).toBe(true)
@@ -690,6 +729,24 @@ describe('Web search content blocks', () => {
       tool_use_id: 'srvtoolu_1',
       content: [{ type: 'web_search_result', url: 'https://example.com', title: 'A' }],
     })
+
+    expect(result.success).toBe(false)
+  })
+
+  it.each([
+    ['server_tool_use', searchBlocks[0]],
+    ['web_search_tool_result', searchBlocks[1]],
+  ])('keeps the caller of a %s block, unknown fields included', (_type, block) => {
+    const caller = { type: 'code_execution_20270101', tool_id: 'srvtoolu_7' }
+
+    const result = contentBlockSchema.safeParse({ ...block, caller })
+
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data).toEqual({ ...block, caller })
+  })
+
+  it('rejects a caller without a type', () => {
+    const result = contentBlockSchema.safeParse({ ...searchBlocks[0], caller: { tool_id: 'srvtoolu_7' } })
 
     expect(result.success).toBe(false)
   })
