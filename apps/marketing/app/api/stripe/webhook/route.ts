@@ -3,7 +3,7 @@ import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
-import { users } from '@/lib/db/schema'
+import { creditPurchases, users } from '@/lib/db/schema'
 import { eq, sql } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
 import { TIER_CONFIG } from '@/lib/pricing'
@@ -99,14 +99,29 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const creditsToAdd = parseInt(session.metadata?.credits || '0', 10)
 
     if (type === 'extra_credits' && creditsToAdd > 0) {
-      await db
-        .update(users)
-        .set({
-          stripeCustomerId: customerId,
-          creditsRemaining: sql`${users.creditsRemaining} + ${creditsToAdd}`,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, userId))
+      const isFirstDelivery = await db.transaction(async (tx) => {
+        const recorded = await tx
+          .insert(creditPurchases)
+          .values({ stripeCheckoutSessionId: session.id, userId, credits: creditsToAdd })
+          .onConflictDoNothing()
+          .returning({ id: creditPurchases.stripeCheckoutSessionId })
+        if (recorded.length === 0) return false
+
+        await tx
+          .update(users)
+          .set({
+            stripeCustomerId: customerId,
+            purchasedCredits: sql`${users.purchasedCredits} + ${creditsToAdd}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, userId))
+        return true
+      })
+
+      if (!isFirstDelivery) {
+        logger.info({ userId, sessionId: session.id }, 'Extra credits already added for this checkout session')
+        return
+      }
 
       const user = await db.query.users.findFirst({
         where: eq(users.id, userId),

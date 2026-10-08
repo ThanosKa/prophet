@@ -114,6 +114,20 @@ export const usageRecords = pgTable(
   ]
 )
 
+// One row per paid extra-credits checkout; the session id makes webhook redelivery a no-op.
+export const creditPurchases = pgTable(
+  'credit_purchases',
+  {
+    stripeCheckoutSessionId: text('stripe_checkout_session_id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    credits: integer('credits').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('credit_purchases_user_id_idx').on(table.userId)]
+)
+
 // Relations (for Drizzle ORM query builder)
 export const usersRelations = relations(users, ({ many }) => ({
   chats: many(chats),
