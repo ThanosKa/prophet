@@ -2,7 +2,7 @@ import type { MessageParam, ToolUnion } from '@anthropic-ai/sdk/resources/messag
 import { and, eq, gte, sql } from 'drizzle-orm'
 import type { AnyPgColumn, PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core'
 import { users } from '@/lib/db/schema'
-import { calculateCostInCredits, type ModelName } from '@/lib/pricing'
+import { calculateUsageCostInCredits, type ModelName } from '@/lib/pricing'
 
 type CreditStore = Pick<PgDatabase<PgQueryResultHKT>, 'update'>
 type CreditReserveStore = Pick<PgDatabase<PgQueryResultHKT>, '$with' | 'with' | 'select'>
@@ -68,23 +68,38 @@ export type CreditReservationPlan =
   | { ok: true; reserveCents: number; maxTokens: number }
   | { ok: false; reason: 'INSUFFICIENT_BALANCE'; requiredCents: number }
 
+/**
+ * Sizes a Turn's Hold from its estimated prompt in two parts. The cached prefix (what
+ * the previous Turn of the Run already sent) is priced as a cache read; the rest as a
+ * cache write, since automatic caching writes it. A first Turn has no cached prefix.
+ * Pricing goes through the billing function itself, so long-prompt tiers switch exactly
+ * as a real bill does. A cache miss settles above the Hold through the overage path.
+ */
 export function planCreditReservation({
   model,
   balanceCents,
-  estimatedInputTokens,
+  cachedPrefixTokens,
+  restTokens,
   maxTokens,
   minTokens,
   webSearchMaxUses,
 }: {
   model: ModelName
   balanceCents: number
-  estimatedInputTokens: number
+  cachedPrefixTokens: number
+  restTokens: number
   maxTokens: number
   minTokens: number
   webSearchMaxUses: number
 }): CreditReservationPlan {
   const costWith = (outputTokens: number) =>
-    calculateCostInCredits(model, estimatedInputTokens, outputTokens, webSearchMaxUses)
+    calculateUsageCostInCredits(model, {
+      inputTokens: 0,
+      cacheCreationInputTokens: restTokens,
+      cacheReadInputTokens: cachedPrefixTokens,
+      outputTokens,
+      webSearchRequests: webSearchMaxUses,
+    })
 
   const floorCents = costWith(minTokens)
   if (floorCents > balanceCents) {

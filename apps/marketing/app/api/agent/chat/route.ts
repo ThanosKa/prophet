@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { APIError, BadRequestError } from "@anthropic-ai/sdk";
 import { db } from "@/lib/db";
 import { users, chats, messages, usageRecords } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { anthropic } from "@/lib/anthropic";
 import { AGENT_TOOLS } from "@/lib/agent/tools";
@@ -25,15 +25,32 @@ import {
   reserveCredits,
   settleCredits,
 } from "@/lib/credit-reservation";
+import { parseJsonBody, readBodyWithinLimit } from "@/lib/request-body";
 import {
+  AGENT_ERROR_CODES,
+  AGENT_SIZE_LIMITS,
   agentChatRequestSchema,
   DEFAULT_AGENT_MODEL,
+  errorMessage,
+  getModelContextWindow,
   resolveAgentModel,
+  RUN_SUPERSEDED_MESSAGE,
   sanitizeForLog,
+  type StoredToolCall,
 } from "@prophet/shared";
 import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
 import { totalCredits } from "@/lib/credit-balance";
 import { buildAgentMessages, resolveRunTurns } from "@/lib/agent/conversation";
+import { lastTurnReason, withLastTurnNotice } from "@/lib/agent/last-turn";
+import {
+  isToolInput,
+  openRun,
+  resumeRun,
+  writeRunRecord,
+  type HistoryRow,
+  type RunRequest,
+  type TurnEnding,
+} from "@/lib/agent/run-record";
 import { error, INTERNAL_ERROR_MESSAGE, SESSION_EXPIRED_MESSAGE } from "@/types";
 import { logger } from "@/lib/logger";
 import {
@@ -43,7 +60,7 @@ import {
   type TokenUsage,
 } from "@/lib/pricing";
 import { devLogger } from "@/lib/dev-logger";
-import type { ContentBlock } from "@anthropic-ai/sdk/resources/messages";
+import type { ContentBlock, MessageParam } from "@anthropic-ai/sdk/resources/messages";
 
 function extractCitations(blocks: ContentBlock[]) {
   const seen = new Set<string>();
@@ -136,7 +153,25 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = await req.json();
+    const bounded = await readBodyWithinLimit({ req, maxBytes: AGENT_SIZE_LIMITS.requestBytes });
+    if (bounded.status === "too_large") {
+      logger.warn({ userId }, "Agent chat request body over the size limit");
+      return NextResponse.json(
+        error(
+          "This request is too large to send. Start a new chat to continue.",
+          AGENT_ERROR_CODES.requestTooLarge
+        ),
+        { status: 413 }
+      );
+    }
+    const parsed = parseJsonBody(bounded.text);
+    if (parsed.status === "invalid") {
+      logger.warn({ userId }, "Agent chat request body is not JSON");
+      return NextResponse.json(error("Request body must be JSON", "VALIDATION_ERROR"), {
+        status: 400,
+      });
+    }
+    const body = parsed.value;
     const validation = agentChatRequestSchema.safeParse(body);
 
     if (!validation.success) {
@@ -157,6 +192,7 @@ export async function POST(req: Request) {
     const {
       chatId,
       userMessage,
+      runId,
       previousTurns,
       toolResults,
       previousContent,
@@ -173,7 +209,7 @@ export async function POST(req: Request) {
 
     const [chat, user] = await Promise.all([
       db.query.chats.findFirst({
-        where: eq(chats.id, chatId),
+        where: and(eq(chats.id, chatId), eq(chats.userId, userId)),
       }),
       db.query.users.findFirst({
         where: eq(users.id, userId),
@@ -183,12 +219,6 @@ export async function POST(req: Request) {
     if (!chat) {
       return NextResponse.json(error("Chat not found", "CHAT_NOT_FOUND"), {
         status: 404,
-      });
-    }
-
-    if (chat.userId !== userId) {
-      return NextResponse.json(error("Forbidden", "FORBIDDEN"), {
-        status: 403,
       });
     }
 
@@ -211,43 +241,67 @@ export async function POST(req: Request) {
       );
     }
 
-    // The client owns the run's intermediate turns; the DB holds the chat up to and
-    // including the run's opening message (assistant replies are saved only when a run ends).
-    const history = await db.query.messages.findMany({
+    // Read without a lock to size the Hold; a first Turn rebuilds its prompt from the
+    // read it takes under the chat lock once the Hold is in place.
+    const unlockedHistory = await db.query.messages.findMany({
       where: eq(messages.chatId, chatId),
       orderBy: (messages, { asc }) => [asc(messages.createdAt)],
     });
-    const anthropicMessages = buildAgentMessages({ history, userMessage, image, runTurns });
-
-    logger.debug(
-      {
-        userId,
-        chatId,
-        model,
-        requestedModel,
-        modelAliased: requestedModel !== model,
-        webSearchEnabled,
-        messageCount: anthropicMessages.length,
-        runTurns: runTurns.length,
-      },
-      "Starting agent stream"
-    );
-
-    // DEV LOGGING: Log request to LLM
-    await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking });
-
-    const tools = buildAgentTools(AGENT_TOOLS, webSearchEnabled);
-    const estimatedInputTokens = estimateInputTokens({
-      system: AGENT_SYSTEM_PROMPT,
-      tools,
-      messages: anthropicMessages,
+    // A continuation that names its Run goes on only while that Run is the live one,
+    // and stops before any Hold once another panel has started a newer Run.
+    const resumed =
+      isContinuationTurn && runId !== undefined
+        ? resumeRun({ history: unlockedHistory, runId })
+        : undefined;
+    if (resumed === null) {
+      logger.info({ userId, chatId, runId }, "Continuation of a superseded Run");
+      return NextResponse.json(
+        error(RUN_SUPERSEDED_MESSAGE, AGENT_ERROR_CODES.runSuperseded),
+        { status: 409 }
+      );
+    }
+    const runHistory: HistoryRow[] = resumed ? resumed.history : unlockedHistory;
+    const estimatedMessages = buildAgentMessages({
+      history: runHistory,
+      userMessage,
+      image,
+      runTurns,
     });
+    const tools = buildAgentTools(AGENT_TOOLS, webSearchEnabled);
+    const estimatePrompt = (promptMessages: MessageParam[]) =>
+      estimateInputTokens({ system: AGENT_SYSTEM_PROMPT, tools, messages: promptMessages });
+    const estimatedPromptTokens = estimatePrompt(estimatedMessages);
+    const runEnd = lastTurnReason({
+      runTurns,
+      hasRunId: runId !== undefined,
+      estimatedPromptTokens,
+    });
+    const estimatedInputTokens = runEnd
+      ? estimatePrompt(withLastTurnNotice(estimatedMessages))
+      : estimatedPromptTokens;
+    // The Hold expects the cache: a `previousTurns` continuation's previous Turn already
+    // sent (and cached) this prompt minus its newest Turn, so that prefix is priced as a
+    // cache read and the rest, the last-Turn notice included, as a cache write. First
+    // Turns and the legacy form write their whole prompt. A miss settles as overage.
+    const cachedPrefixTokens =
+      isContinuationTurn && previousTurns
+        ? estimatePrompt(
+            buildAgentMessages({
+              history: runHistory,
+              userMessage,
+              image,
+              runTurns: runTurns.slice(0, -1),
+            })
+          )
+        : 0;
+    const restTokens = Math.max(0, estimatedInputTokens - cachedPrefixTokens);
     const balanceCents = totalCredits(user);
     const planFor = (option: { model: ModelName; enableThinking: boolean }) =>
       planCreditReservation({
         model: option.model,
         balanceCents,
-        estimatedInputTokens,
+        cachedPrefixTokens,
+        restTokens,
         maxTokens: AGENT_TURN_MAX_TOKENS,
         minTokens: getAgentMinTokens(option.enableThinking),
         webSearchMaxUses: webSearchEnabled ? WEB_SEARCH_MAX_USES : 0,
@@ -297,6 +351,53 @@ export async function POST(req: Request) {
     }
     const { reserveCents, maxTokens } = plan;
     const maxTokensReducedForBalance = maxTokens < AGENT_TURN_MAX_TOKENS;
+
+    let history: HistoryRow[] = runHistory;
+    let runRequest: RunRequest = { type: "legacy", turns: runTurns };
+    if (resumed) {
+      runRequest = { type: "run", opening: resumed.opening, turns: runTurns };
+    } else if (previousTurns) {
+      runRequest = { type: "continuation", turns: runTurns };
+    }
+    if (userMessage) {
+      try {
+        const started = await openRun({ db, chatId, userMessage });
+        history = started.history;
+        runRequest = { type: "first", opening: started.opening };
+      } catch (startError) {
+        logger.error(
+          { userId, chatId, error: errorMessage(startError) },
+          "Failed to start the Run; returning its hold"
+        );
+        await settleCredits({ db, userId, hold, actualCents: 0 }).catch((settleError: unknown) => {
+          logger.error(
+            { userId, chatId, reserveCents, error: errorMessage(settleError) },
+            "Failed to return the hold of a Run that never started"
+          );
+        });
+        return NextResponse.json(error(INTERNAL_ERROR_MESSAGE, "INTERNAL_ERROR"), { status: 500 });
+      }
+    }
+    const builtMessages = buildAgentMessages({ history, userMessage, image, runTurns });
+    const anthropicMessages = runEnd ? withLastTurnNotice(builtMessages) : builtMessages;
+
+    logger.debug(
+      {
+        userId,
+        chatId,
+        model,
+        requestedModel,
+        modelAliased: requestedModel !== model,
+        webSearchEnabled,
+        messageCount: anthropicMessages.length,
+        runTurns: runTurns.length,
+        runEnd,
+      },
+      "Starting agent stream"
+    );
+
+    // DEV LOGGING: Log request to LLM
+    await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking });
 
     const encoder = new TextEncoder();
     const upstream = new AbortController();
@@ -361,6 +462,15 @@ export async function POST(req: Request) {
             : 0;
           try {
             await db.transaction(async (tx) => {
+              // Stop, disconnect or error released no tool calls: only the text so far.
+              await writeRunRecord({
+                tx,
+                chatId,
+                request: runRequest,
+                ending: { type: "reply", text: fullTextResponse, releasedToolCalls: [] },
+                model,
+                usage: { inputTokens, outputTokens, costCents: actualCents },
+              });
               await settleCredits({ db: tx, userId, hold, actualCents });
               if (actualCents > 0) {
                 await tx.insert(usageRecords).values({
@@ -381,7 +491,7 @@ export async function POST(req: Request) {
                 chatId,
                 reserveCents,
                 actualCents,
-                error: settleError instanceof Error ? settleError.message : String(settleError),
+                error: errorMessage(settleError),
               },
               "Failed to settle credit reservation; hold kept"
             );
@@ -419,11 +529,18 @@ export async function POST(req: Request) {
             input: string;
             isServerTool: boolean;
           } | null = null;
+          // Held back until the Turn ends cleanly with `tool_use`: a call released
+          // mid-stream would run even when the Turn is then cut off or refused.
+          const clientToolCalls: StoredToolCall[] = [];
 
           // Send session_created at the start
           const sessionData = JSON.stringify({
             type: "session_created",
             sessionId: chatId,
+            // The extension names the Run by this id on every continuation.
+            ...((runRequest.type === "first" || runRequest.type === "run") && {
+              runId: runRequest.opening.id,
+            }),
           });
           send(sessionData);
 
@@ -506,7 +623,7 @@ export async function POST(req: Request) {
                     {
                       toolUseId: currentToolUse.id,
                       input: currentToolUse.input,
-                      error: e instanceof Error ? e.message : String(e),
+                      error: errorMessage(e),
                     },
                     "Failed to parse tool input, using empty object"
                   );
@@ -522,16 +639,12 @@ export async function POST(req: Request) {
                   });
                   send(searchData);
                 } else {
-                  const data = JSON.stringify({
+                  clientToolCalls.push({
                     type: "tool_use",
-                    toolUse: {
-                      type: "tool_use",
-                      id: currentToolUse.id,
-                      name: currentToolUse.name,
-                      input: parsedInput,
-                    },
+                    id: currentToolUse.id,
+                    name: currentToolUse.name,
+                    input: isToolInput(parsedInput) ? parsedInput : {},
                   });
-                  send(data);
                 }
                 currentToolUse = null;
               }
@@ -562,7 +675,16 @@ export async function POST(req: Request) {
 
           // The API's own blocks are authoritative for replay: they carry the
           // encrypted web-search payloads that must round-trip untouched.
-          const contentBlocks = toEchoableContent(finalMessage.content);
+          const echoableContent = toEchoableContent(finalMessage.content);
+          // Only a clean `tool_use` stop releases tool calls. Any other ending ran
+          // none of them, so neither the reply nor the record carries them; on
+          // `max_tokens` the last one is cut off mid-input. A Run's last Turn releases
+          // none whatever Claude does: the Run ends with its text as the reply.
+          const releasesToolCalls = stopReason === "tool_use" && runEnd === null;
+          const contentBlocks =
+            stopReason === "max_tokens"
+              ? echoableContent.filter((block) => block.type !== "tool_use")
+              : echoableContent;
           const citations = extractCitations(finalMessage.content);
 
           const costCents = calculateUsageCostInCredits(model, turnUsage(webSearchRequests));
@@ -572,43 +694,30 @@ export async function POST(req: Request) {
           // `pause_turn` means Anthropic stopped a long server-tool turn early and
           // the client has to replay the assistant turn, so it is not final either.
           const isFinalTurn =
-            stopReason !== "tool_use" && stopReason !== "pause_turn";
+            runEnd !== null || (stopReason !== "tool_use" && stopReason !== "pause_turn");
 
-          // Save messages to DB only on appropriate turns:
-          // - User message: Save on first turn only
-          // - Assistant message: Save on FINAL turn only (prevents duplicate assistant messages)
-          // - Credits/usage: Always track (for billing accuracy)
-          if (isFirstTurn && userMessage) {
-            await db.insert(messages).values({
-              chatId,
-              role: "user",
-              content: userMessage,
-              model: null,
-              inputTokens: 0,
-              outputTokens: 0,
-              costCents: 0,
-            });
-          }
+          // A refused Turn's text isn't a reply the user should see again, and the
+          // tool calls it held were never released.
+          const ending: TurnEnding =
+            stopReason === "refusal"
+              ? { type: "refused" }
+              : {
+                  type: "reply",
+                  text: fullTextResponse,
+                  releasedToolCalls: releasesToolCalls ? clientToolCalls : [],
+                };
 
-          const assistantToolCalls = contentBlocks.filter(b => b.type === "tool_use");
-          const hasContent = fullTextResponse.trim().length > 0 || assistantToolCalls.length > 0;
-
-          const MAX_CONTEXT_TOKENS = 200000;
+          const maxContextTokens = getModelContextWindow(model);
           await db.transaction(async (tx) => {
-            // Only save assistant message on FINAL turn to prevent duplicate messages
-            // During intermediate turns, the client manages conversation state
-            if (isFinalTurn && hasContent) {
-              await tx.insert(messages).values({
-                chatId,
-                role: "assistant",
-                content: fullTextResponse,
-                model,
-                inputTokens,
-                outputTokens,
-                costCents,
-                toolCalls: assistantToolCalls.length > 0 ? JSON.stringify(assistantToolCalls) : null,
-              });
-            }
+            // Locks the chat row, so it goes before settlement locks the user row.
+            await writeRunRecord({
+              tx,
+              chatId,
+              request: runRequest,
+              ending,
+              model,
+              usage: { inputTokens, outputTokens, costCents },
+            });
 
             await settleCredits({ db: tx, userId, hold, actualCents: costCents });
 
@@ -626,7 +735,7 @@ export async function POST(req: Request) {
             // Update context tokens on final turn only
             if (isFinalTurn) {
               const promptTokens = inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
-              const newContextTokens = Math.min(promptTokens + outputTokens, MAX_CONTEXT_TOKENS);
+              const newContextTokens = Math.min(promptTokens + outputTokens, maxContextTokens);
               await tx
                 .update(chats)
                 .set({
@@ -644,7 +753,7 @@ export async function POST(req: Request) {
           if (costCents > reserveCents) {
             logger.warn(
               { userId, chatId, model, reserveCents, costCents, inputTokens },
-              "Turn cost exceeded its credit reservation (input estimate miss)"
+              "Turn cost exceeded its Hold (cache miss or input estimate miss)"
             );
           }
 
@@ -690,6 +799,12 @@ export async function POST(req: Request) {
             return;
           }
 
+          if (releasesToolCalls) {
+            for (const toolUse of clientToolCalls) {
+              send(JSON.stringify({ type: "tool_use", toolUse }));
+            }
+          }
+
           if (citations.length > 0) {
             const citationsData = JSON.stringify({
               type: "citations",
@@ -721,6 +836,7 @@ export async function POST(req: Request) {
             citations,
             contentBlocks,
             maxTokensReducedForBalance,
+            ...(runEnd && { runEnd }),
           });
           send(doneData);
 
@@ -728,7 +844,7 @@ export async function POST(req: Request) {
         } catch (err) {
           logger.error(
             {
-              error: err instanceof Error ? err.message : String(err),
+              error: errorMessage(err),
               userId,
               chatId,
             },
@@ -803,7 +919,7 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     logger.error(
-      { error: err instanceof Error ? err.message : String(err) },
+      { error: errorMessage(err) },
       "Agent chat endpoint error"
     );
     return NextResponse.json(

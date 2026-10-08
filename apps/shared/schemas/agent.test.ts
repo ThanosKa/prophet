@@ -7,6 +7,7 @@ import {
   LEGACY_MODEL_ALIASES,
   LEGACY_MODEL_IDS,
   MODEL_CONFIG,
+  getModelContextWindow,
   resolveAgentModel,
   agentInitialMessageSchema,
   agentContinueMessageSchema,
@@ -36,6 +37,16 @@ describe('agentChatRequestSchema', () => {
 
     const result = agentChatRequestSchema.safeParse(data)
     expect(result.success).toBe(true)
+  })
+
+  it('keeps a uuid runId and rejects any other runId', () => {
+    const chatId = '550e8400-e29b-41d4-a716-446655440000'
+    const runId = '8c4f2a1e-7b3d-4e5f-9a6b-0d1c2e3f4a5b'
+    const previousTurns = [{ content: [{ type: 'text', text: 'Done' }], toolResults: [] }]
+
+    const accepted = agentChatRequestSchema.safeParse({ chatId, runId, previousTurns })
+    expect(accepted.success && accepted.data.runId).toBe(runId)
+    expect(agentChatRequestSchema.safeParse({ chatId, runId: 'run-1', previousTurns }).success).toBe(false)
   })
 
   it('validates continuation with toolResults + previousContent', () => {
@@ -101,6 +112,75 @@ describe('agentChatRequestSchema', () => {
 
     const result = agentChatRequestSchema.safeParse(data)
     expect(result.success).toBe(true)
+  })
+})
+
+describe('server size caps in agentChatRequestSchema', () => {
+  const CHAT_ID = '550e8400-e29b-41d4-a716-446655440000'
+  const snapshotCall = (id = 'toolu_1') => ({ type: 'tool_use', id, name: 'take_snapshot', input: {} })
+  const resultFor = (id = 'toolu_1') => ({ type: 'tool_result', tool_use_id: id, content: 'ok' })
+  const withTurn = (content: unknown[], toolResults: unknown[] = [resultFor()]) =>
+    agentChatRequestSchema.safeParse({ chatId: CHAT_ID, previousTurns: [{ content, toolResults }] })
+  const webSearchResults = (encryptedContent: string) => ({
+    type: 'web_search_tool_result',
+    tool_use_id: 'srvtoolu_1',
+    content: [{ type: 'web_search_result', url: 'https://a.com', title: 'A', encrypted_content: encryptedContent }],
+  })
+
+  it('accepts every field right at its cap', () => {
+    const result = withTurn([
+      { type: 'thinking', thinking: 't'.repeat(200_000), signature: 's'.repeat(200_000) },
+      { type: 'text', text: 'a'.repeat(200_000) },
+      // {"value":"…"} is 12 chars of JSON around the value.
+      { type: 'tool_use', id: 'i'.repeat(256), name: 'fill_element_by_uid', input: { value: 'v'.repeat(99_988) } },
+      snapshotCall(),
+    ])
+
+    expect(result.success).toBe(true)
+  })
+
+  it.each([
+    ['thinking', { type: 'thinking', thinking: 't'.repeat(200_001), signature: 'sig' }],
+    ['a signature', { type: 'thinking', thinking: '', signature: 's'.repeat(200_001) }],
+    ['a tool_use id', snapshotCall('i'.repeat(257))],
+    ['a server tool input', { type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: { query: 'q'.repeat(100_000) } }],
+    ['redacted thinking data', { type: 'redacted_thinking', data: 'd'.repeat(200_001) }],
+    ['a web search result', webSearchResults('e'.repeat(200_001))],
+  ])('rejects %s over its cap', (_label, block) => {
+    expect(withTurn([block, snapshotCall()]).success).toBe(false)
+  })
+
+  it('accepts redacted thinking data and a web search result right at their cap', () => {
+    const result = withTurn([
+      { type: 'redacted_thinking', data: 'd'.repeat(200_000) },
+      webSearchResults('e'.repeat(200_000)),
+      snapshotCall(),
+    ])
+
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts 100 blocks and 100 tool results in a Turn, but not 101', () => {
+    const calls = (count: number) => Array.from({ length: count }, (_, i) => snapshotCall(`toolu_${i}`))
+    const results = (count: number) => Array.from({ length: count }, (_, i) => resultFor(`toolu_${i}`))
+
+    expect(withTurn(calls(100), results(100)).success).toBe(true)
+    expect(withTurn([...calls(100), { type: 'text', text: 'one more' }], results(100)).success).toBe(false)
+    expect(withTurn(calls(100), [...results(100), resultFor('toolu_0')]).success).toBe(false)
+  })
+
+  it('caps the legacy single-Turn form the same way', () => {
+    const calls = Array.from({ length: 101 }, (_, i) => snapshotCall(`toolu_${i}`))
+
+    expect(agentChatRequestSchema.safeParse({ chatId: CHAT_ID, previousContent: calls }).success).toBe(false)
+  })
+
+  it('accepts an image of 3,000,000 base64 chars but not one more', () => {
+    const withImage = (base64: string) =>
+      agentChatRequestSchema.safeParse({ chatId: CHAT_ID, userMessage: 'Look', image: { base64, mediaType: 'image/png' } })
+
+    expect(withImage('A'.repeat(3_000_000)).success).toBe(true)
+    expect(withImage('A'.repeat(3_000_001)).success).toBe(false)
   })
 })
 
@@ -307,13 +387,20 @@ describe('navigateInputSchema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('rejects invalid URL', () => {
-    const data = { url: 'not-a-url' }
+  it('accepts a URL without a scheme, which the tool opens over https', () => {
+    const result = navigateInputSchema.safeParse({ url: 'example.com/inbox' })
 
-    const result = navigateInputSchema.safeParse(data)
-    expect(result.success).toBe(false)
-    if (!result.success) {
-      expect(result.error.issues[0].message).toBe('Invalid URL')
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.url).toBe('example.com/inbox')
+  })
+
+  it('rejects a URL the tool still could not open', () => {
+    for (const url of ['http://', 'exa mple.com']) {
+      const result = navigateInputSchema.safeParse({ url })
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.issues[0].message).toBe('Invalid URL')
+      }
     }
   })
 
@@ -322,6 +409,54 @@ describe('navigateInputSchema', () => {
 
     const result = navigateInputSchema.safeParse(data)
     expect(result.success).toBe(false)
+  })
+})
+
+describe('openNewTabInputSchema', () => {
+  it('opens the new tab in front by default', () => {
+    const result = openNewTabInputSchema.safeParse({ url: 'https://example.com' })
+
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.active).toBe(true)
+  })
+
+  it('accepts a URL without a scheme, which the tool opens over https', () => {
+    const result = openNewTabInputSchema.safeParse({ url: 'example.com/inbox', active: false })
+
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects a URL the tool still could not open', () => {
+    expect(openNewTabInputSchema.safeParse({ url: 'http://' }).success).toBe(false)
+    expect(openNewTabInputSchema.safeParse({ url: '' }).success).toBe(false)
+  })
+})
+
+describe('wait tool input schemas', () => {
+  it('accept any non-negative wait, because the tools clamp it to 30 seconds', () => {
+    for (const ms of [0, 1500.5, 90000]) {
+      expect(waitForTimeoutInputSchema.safeParse({ ms }).success).toBe(true)
+      expect(waitForSelectorInputSchema.safeParse({ selector: 'body', timeout: ms }).success).toBe(true)
+      expect(waitForNavigationInputSchema.safeParse({ timeout: ms }).success).toBe(true)
+    }
+  })
+
+  it('reject a negative wait', () => {
+    expect(waitForTimeoutInputSchema.safeParse({ ms: -1 }).success).toBe(false)
+    expect(waitForSelectorInputSchema.safeParse({ selector: 'body', timeout: -1 }).success).toBe(false)
+    expect(waitForNavigationInputSchema.safeParse({ timeout: -1 }).success).toBe(false)
+  })
+
+  it('wait_for_timeout requires ms', () => {
+    expect(waitForTimeoutInputSchema.safeParse({}).success).toBe(false)
+  })
+
+  it('fill in the default timeouts', () => {
+    const selector = waitForSelectorInputSchema.safeParse({ selector: 'body' })
+    const navigation = waitForNavigationInputSchema.safeParse({})
+
+    expect(selector.success && selector.data).toEqual({ selector: 'body', timeout: 10000, visible: false })
+    expect(navigation.success && navigation.data).toEqual({ timeout: 30000 })
   })
 })
 
@@ -362,32 +497,23 @@ describe('scrollPageInputSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('rejects negative pixels', () => {
-    const data = { direction: 'down', pixels: -100 }
-
-    const result = scrollPageInputSchema.safeParse(data)
-    expect(result.success).toBe(false)
-  })
-
-  it('rejects pixels > 10000', () => {
-    const data = { direction: 'down', pixels: 10001 }
-
-    const result = scrollPageInputSchema.safeParse(data)
-    expect(result.success).toBe(false)
-  })
-
-  it('accepts pixels = 0', () => {
-    const data = { direction: 'down', pixels: 0 }
+  it('accepts negative pixels, which scroll the other way', () => {
+    const data = { direction: 'down', pixels: -500 }
 
     const result = scrollPageInputSchema.safeParse(data)
     expect(result.success).toBe(true)
   })
 
-  it('accepts pixels = 10000 (max)', () => {
-    const data = { direction: 'down', pixels: 10000 }
+  it('accepts pixels of any size, because the page stops at its edge', () => {
+    for (const pixels of [0, 20000, 250.5]) {
+      expect(scrollPageInputSchema.safeParse({ direction: 'down', pixels }).success).toBe(true)
+    }
+  })
 
-    const result = scrollPageInputSchema.safeParse(data)
-    expect(result.success).toBe(true)
+  it('rejects pixels that are not a number', () => {
+    const result = scrollPageInputSchema.safeParse({ direction: 'down', pixels: '500' })
+
+    expect(result.success).toBe(false)
   })
 })
 
@@ -409,15 +535,8 @@ describe('searchSnapshotInputSchema', () => {
     }
   })
 
-  it('rejects query > 500 chars', () => {
-    const data = { query: 'a'.repeat(501) }
-
-    const result = searchSnapshotInputSchema.safeParse(data)
-    expect(result.success).toBe(false)
-  })
-
-  it('accepts query exactly 500 chars', () => {
-    const data = { query: 'a'.repeat(500) }
+  it('accepts a query over 500 chars, because the tool matches any substring', () => {
+    const data = { query: 'invoice '.repeat(200) }
 
     const result = searchSnapshotInputSchema.safeParse(data)
     expect(result.success).toBe(true)
@@ -468,6 +587,35 @@ describe('toolResultSchema', () => {
     }
 
     const result = toolResultSchema.safeParse(data)
+    expect(result.success).toBe(false)
+  })
+
+  const resultWith = (content: string) => ({ type: 'tool_result', tool_use_id: 'tool_123', content })
+
+  it('keeps a result of exactly 200,000 chars as it is', () => {
+    const content = 'a'.repeat(200_000)
+
+    expect(toolResultSchema.parse(resultWith(content)).content).toBe(content)
+  })
+
+  it('shortens a longer result to its first 200,000 chars and a note', () => {
+    const { content } = toolResultSchema.parse(resultWith('a'.repeat(200_000) + 'b'.repeat(50_000)))
+
+    expect(content).toBe(
+      'a'.repeat(200_000) +
+        '\n\n[Shortened by the server: this tool result had 250000 characters; only the first 200000 are shown.]'
+    )
+  })
+
+  it('never cuts an emoji in half when shortening', () => {
+    const { content } = toolResultSchema.parse(resultWith('a'.repeat(199_999) + '😀' + 'b'.repeat(10)))
+
+    expect(content.startsWith('a'.repeat(199_999) + '\n\n[Shortened')).toBe(true)
+  })
+
+  it('rejects a tool_use_id over 256 chars', () => {
+    const result = toolResultSchema.safeParse({ ...resultWith('ok'), tool_use_id: 't'.repeat(257) })
+
     expect(result.success).toBe(false)
   })
 })
@@ -554,6 +702,12 @@ describe('Model constants and legacy aliases', () => {
       expect(entry.label.length).toBeGreaterThan(0)
       expect(entry.description.length).toBeGreaterThan(0)
     }
+  })
+
+  it('gives every current model its 1M-token context window', () => {
+    expect(Object.values(CLAUDE_MODELS).map((model) => getModelContextWindow(model))).toEqual([
+      1_000_000, 1_000_000, 1_000_000,
+    ])
   })
 
   it('accepts every current model id', () => {
@@ -690,6 +844,24 @@ describe('Web search content blocks', () => {
       tool_use_id: 'srvtoolu_1',
       content: [{ type: 'web_search_result', url: 'https://example.com', title: 'A' }],
     })
+
+    expect(result.success).toBe(false)
+  })
+
+  it.each([
+    ['server_tool_use', searchBlocks[0]],
+    ['web_search_tool_result', searchBlocks[1]],
+  ])('keeps the caller of a %s block, unknown fields included', (_type, block) => {
+    const caller = { type: 'code_execution_20270101', tool_id: 'srvtoolu_7' }
+
+    const result = contentBlockSchema.safeParse({ ...block, caller })
+
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data).toEqual({ ...block, caller })
+  })
+
+  it('rejects a caller without a type', () => {
+    const result = contentBlockSchema.safeParse({ ...searchBlocks[0], caller: { tool_id: 'srvtoolu_7' } })
 
     expect(result.success).toBe(false)
   })

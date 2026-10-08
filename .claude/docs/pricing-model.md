@@ -21,9 +21,9 @@ Internal economics. Terms (Turn, Credit, Margin, Minimum charge, Free grant, Sub
 
 ## How a Turn is charged
 
-1. **Reserve** (`planCreditReservation` + `reserveCredits` in `lib/credit-reservation.ts`): estimate the Turn's input tokens and price it at the maximum output allowance. If the balance can't cover even the minimum output, answer 402 `INSUFFICIENT_BALANCE`. Otherwise shrink the output allowance to what the balance covers and hold that many Credits, Subscription credits first, then Purchased credits.
+1. **Reserve** (`planCreditReservation` + `reserveCredits` in `lib/credit-reservation.ts`): estimate the Turn's prompt in two parts and price it at the maximum output allowance. The cached prefix (for a continuation that sends `previousTurns`, everything the previous Turn sent) is priced at the cache-read rate; the rest at the cache-write rate. First Turns and the legacy single-Turn form price the whole prompt at the cache-write rate. Pricing goes through `calculateUsageCostInCredits`, so Haiku 5.5's long-prompt tier applies exactly as on the bill. If the balance can't cover even the minimum output, answer 402 `INSUFFICIENT_BALANCE`. Otherwise shrink the output allowance to what the balance covers and hold that many Credits, Subscription credits first, then Purchased credits.
 2. **Stream** the Turn from Anthropic.
-3. **Settle** (`settleCredits`): price the Turn's real usage with `calculateUsageCostInCredits` (input, cache writes, cache reads, output, web searches). Return the unused hold Purchased-first; charge any overage to Subscription credits, which may go negative. The settlement and its `usageRecords` row land in one transaction.
+3. **Settle** (`settleCredits`): price the Turn's real usage with `calculateUsageCostInCredits` (input, cache writes, cache reads, output, web searches). Return the unused hold Purchased-first; charge any overage to Subscription credits, which may go negative. A cache miss settles above the Hold this way. The settlement and its `usageRecords` row land in one transaction.
 
 ### Example (Sonnet 5.5, 1,000 input + 500 output tokens, no cache)
 

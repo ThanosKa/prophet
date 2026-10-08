@@ -59,6 +59,17 @@ vi.mock('@/lib/ratelimit', () => ({
   checkRateLimit: vi.fn(),
 }))
 
+// The Run record has its own PGlite tests (route.run-record.test.ts); here the route
+// only needs a started Run.
+vi.mock('@/lib/agent/run-record', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/agent/run-record')>()
+  return {
+    ...actual,
+    openRun: vi.fn(async () => ({ history: [], opening: { id: 'opening', createdAt: new Date() } })),
+    writeRunRecord: vi.fn(async () => {}),
+  }
+})
+
 vi.mock('@/lib/anthropic', () => ({
   anthropic: {
     messages: {
@@ -107,38 +118,6 @@ describe('POST /api/agent/chat', () => {
       expect(response.status).toBe(401)
       expect(data.code).toBe('UNAUTHORIZED')
       expect(data.error).toBe('Your session has expired. Please sign out and sign in again.')
-    })
-
-    it('rejects access to chats owned by other users', async () => {
-      vi.mocked(auth).mockResolvedValue({ userId: 'user1' } as any)
-      vi.mocked(checkRateLimit).mockResolvedValue({ success: true, limit: 10, remaining: 9, reset: 60 })
-      vi.mocked(db.query.chats.findFirst).mockResolvedValue({
-        id: '550e8400-e29b-41d4-a716-446655440000',
-        userId: 'user2', // Different user!
-        title: 'Chat',
-        contextTokens: 0,
-        contextInputTokens: 0,
-        contextOutputTokens: 0,
-        contextReasoningTokens: 0,
-        contextCachedInputTokens: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-
-      const request = new Request('http://localhost:3000/api/agent/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chatId: '550e8400-e29b-41d4-a716-446655440000',
-          userMessage: 'Hello',
-        }),
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(403)
-      expect(data.error).toContain('Forbidden')
     })
   })
 
@@ -621,87 +600,6 @@ describe('POST /api/agent/chat', () => {
         const currRole = capturedMessages[i].role
         expect(currRole).not.toBe(prevRole)
       }
-    })
-
-    it('should only save assistant message on final turn (stop_reason !== tool_use)', async () => {
-      vi.mocked(auth).mockResolvedValue({ userId: 'user1' } as any)
-      vi.mocked(checkRateLimit).mockResolvedValue({ success: true, limit: 10, remaining: 9, reset: 60 })
-      vi.mocked(db.query.chats.findFirst).mockResolvedValue({
-        id: '550e8400-e29b-41d4-a716-446655440000',
-        userId: 'user1',
-        title: 'Chat',
-        contextTokens: 0,
-        contextInputTokens: 0,
-        contextOutputTokens: 0,
-        contextReasoningTokens: 0,
-        contextCachedInputTokens: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      vi.mocked(db.query.users.findFirst).mockResolvedValue({
-        id: 'user1',
-        email: 'test@example.com',
-        creditsRemaining: 1000,
-        purchasedCredits: 0,
-      } as any)
-      vi.mocked(db.query.messages.findMany).mockResolvedValue([
-        {
-          id: 'msg1',
-          chatId: '550e8400-e29b-41d4-a716-446655440000',
-          role: 'user',
-          content: 'User message',
-          createdAt: new Date(),
-        },
-      ] as any)
-
-      // Track what gets inserted
-      const insertedMessages: any[] = []
-      const mockTransaction = vi.fn((callback) => callback({
-        insert: vi.fn(() => ({
-          values: vi.fn((data: any) => {
-            insertedMessages.push(data)
-            return Promise.resolve()
-          }),
-        })),
-        update: vi.fn(() => ({
-          set: vi.fn(() => ({
-            where: vi.fn(() => Promise.resolve()),
-          })),
-        })),
-      }))
-      vi.mocked(db.transaction).mockImplementation(mockTransaction)
-
-      // Intermediate turn: stop_reason is tool_use (NOT final)
-      const mockStreamIntermediate = {
-        [Symbol.asyncIterator]: async function* () {
-          yield { type: 'message_start', message: { usage: { input_tokens: 10 } } }
-          yield { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'tool_456', name: 'take_snapshot' } }
-          yield { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: '{}' } }
-          yield { type: 'content_block_stop', index: 0 }
-          yield { type: 'message_delta', delta: { stop_reason: 'tool_use' }, usage: { output_tokens: 5 } }
-        },
-        finalMessage: vi.fn(() => Promise.resolve({
-          stop_reason: 'tool_use', // Intermediate turn!
-          usage: { cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
-        })),
-      }
-      vi.mocked(anthropic.messages.stream).mockResolvedValue(mockStreamIntermediate as any)
-
-      const request = new Request('http://localhost:3000/api/agent/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chatId: '550e8400-e29b-41d4-a716-446655440000',
-          toolResults: [{ type: 'tool_result', tool_use_id: 'tool_123', content: 'Done' }],
-          previousContent: [{ type: 'text', text: 'Using tool' }],
-        }),
-      })
-
-      await POST(request)
-
-      // On intermediate turns (stop_reason === 'tool_use'), should NOT save assistant message
-      const assistantInserts = insertedMessages.filter((m) => m.role === 'assistant')
-      expect(assistantInserts.length).toBe(0)
     })
   })
 })

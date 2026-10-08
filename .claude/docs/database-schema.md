@@ -78,9 +78,23 @@ messages {
   inputTokens: number
   outputTokens: number
   costCents: number       // Actual API cost in cents
-  createdAt: timestamp
+  toolCalls: text | null  // JSON string, see below
+  createdAt: timestamp    // clock_timestamp(), so rows keep their real order under the chat lock
 }
 ```
+
+- **One assistant row per Run.** A Run's user row is saved when the Run starts, before
+  its first Turn. Its assistant row is the first assistant row after that user row:
+  inserted at the end of the first Turn with text or released tool calls, then updated
+  after every Turn, including a Stop, disconnect or error. `content` is the Run's
+  visible text so far; tokens and cost add up over the Run's Turns. A refused Turn adds
+  a fixed "Claude declined" note instead of its text and tool calls.
+- **`tool_calls`** holds every tool call the server released to the extension during the
+  Run, oldest first: `[{ type: 'tool_use', id, name, input, isError? }]`. `isError` is
+  filled in from the call's `tool_result` when the next Turn arrives. Tool results are
+  never stored. Read it only through `parseStoredToolCalls` (`@prophet/shared`), which
+  validates it with `storedToolCallSchema`.
+- Every transaction that writes a Run's record locks the chat row first, then the user row.
 
 ## Usage Records
 
@@ -113,3 +127,10 @@ pnpm -F @prophet/marketing db:generate  # Generate migrations from schema
 pnpm -F @prophet/marketing db:migrate   # Apply migrations
 pnpm -F @prophet/marketing db:studio    # Open Drizzle Studio GUI
 ```
+
+## Migrations
+
+- The production migration journal (`drizzle.__drizzle_migrations`) is complete: it records every migration in `lib/db/migrations/meta/_journal.json` (0000-0007, fixed on 2026-10-08).
+- A schema change goes through `db:generate`, then `db:migrate` against production, before the branch merges to `main`. Vercel deploys `main` automatically, so code that needs a column must never reach `main` before its migration.
+- Nobody runs `db:push` against production. It changes the schema without recording a journal row, which is how the journal drifted.
+- SQL files that were never in the journal live in `docs/db/legacy-sql/` for reference only.

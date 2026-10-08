@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 export * from './agent'
 export * from './usage'
+export * from './stored-tool-call'
 
 // Chat schemas
 export const createChatSchema = z.object({

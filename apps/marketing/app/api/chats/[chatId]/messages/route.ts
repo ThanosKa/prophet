@@ -6,6 +6,7 @@ import { and, eq, desc, lt } from 'drizzle-orm'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { error, success, INTERNAL_ERROR_MESSAGE } from '@/types'
 import { logger } from '@/lib/logger'
+import { parseStoredToolCalls } from '@prophet/shared'
 
 export async function GET(
   req: Request,
@@ -69,10 +70,10 @@ export async function GET(
       ? { beforeCreatedAt: paginatedMessages[0].createdAt.toISOString() }
       : null
 
-    const parsedMessages = reversed.map(msg => ({
-      ...msg,
-      toolCalls: typeof msg.toolCalls === 'string' ? JSON.parse(msg.toolCalls) : msg.toolCalls
-    }))
+    const parsedMessages = reversed.map((msg) => {
+      const toolCalls = parseStoredToolCalls(msg.toolCalls)
+      return { ...msg, toolCalls: toolCalls.length > 0 ? toolCalls : null }
+    })
 
     logger.info({ userId, chatId, messageCount: parsedMessages.length, hasMore }, 'Messages fetched with pagination')
     return NextResponse.json(success({

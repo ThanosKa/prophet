@@ -16,11 +16,19 @@ _Avoid_: Step, tool call, message
 The most Turns a Run may take before the agent pauses and waits for the user to say "continue".
 _Avoid_: Max steps
 
+**Run budget**:
+The estimated prompt size at which a Run's next Turn becomes its last: 90K by the Hold's deliberately high estimate, roughly 50-80K real tokens.
+_Avoid_: Context limit, prompt budget
+
 ## Billing
 
 **Credit**:
 The unit of a user's prepaid balance, worth one US cent.
 _Avoid_: Token, point
+
+**Hold**:
+The Credits set aside from a user's balance before a Turn starts, sized to the most the Turn could cost. When the Turn ends, the unused part is returned and anything above it is charged.
+_Avoid_: Reservation, pre-auth
 
 **Margin**:
 The percentage Prophet adds on top of Anthropic's cost when converting a Turn's cost into Credits. It applies to every Turn, whichever kind of Credits pays for it.

@@ -1,3 +1,4 @@
+import { AGENT_SIZE_LIMITS } from '@prophet/shared'
 import { cdpCommander, type EvaluateResult } from '../cdp-commander'
 import { type ToolExecutionResult, type ScrollDirection, type PageContent } from '../types'
 
@@ -69,18 +70,19 @@ export async function scrollPage(input: {
       }
     }
 
+    // Negative pixels scroll the other way. Negate the number, not the text: `-${-500}` is `--500`, a syntax error.
     const pixels = input.pixels ?? 500
     let scrollExpression: string
 
     switch (input.direction) {
       case 'up':
-        scrollExpression = `window.scrollBy(0, -${pixels})`
+        scrollExpression = `window.scrollBy(0, ${-pixels})`
         break
       case 'down':
         scrollExpression = `window.scrollBy(0, ${pixels})`
         break
       case 'left':
-        scrollExpression = `window.scrollBy(-${pixels}, 0)`
+        scrollExpression = `window.scrollBy(${-pixels}, 0)`
         break
       case 'right':
         scrollExpression = `window.scrollBy(${pixels}, 0)`
@@ -133,7 +135,7 @@ export async function getPageContent(): Promise<ToolExecutionResult> {
       }
     }
 
-    // Reduced from 50k to 15k chars to prevent token explosion (~50k chars = ~12-15k tokens)
+    // Capped at the shared page-content limit, so one page can't swell every later Turn's prompt
     // Also filter out obvious JavaScript/CSS noise
     const result = await cdpCommander.sendCommand<EvaluateResult>(
       tab.id,
@@ -141,7 +143,7 @@ export async function getPageContent(): Promise<ToolExecutionResult> {
       {
         expression: `
           (function() {
-            const MAX_CONTENT_LENGTH = 15000;
+            const MAX_CONTENT_LENGTH = ${AGENT_SIZE_LIMITS.pageContentChars};
             const walker = document.createTreeWalker(
               document.body,
               NodeFilter.SHOW_TEXT,

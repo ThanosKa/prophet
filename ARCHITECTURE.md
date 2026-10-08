@@ -88,11 +88,26 @@ User: "Click the login button"
 Backend → Anthropic API → Backend → Sidepanel
 
 SSE Events:
+  data: {"type": "session_created", "sessionId": "<chatId>", "runId": "<opening message id>"}
   data: {"type": "content_delta", "delta": "I'll click..."}
+  data: {"type": "metrics_update", ...}
   data: {"type": "tool_use", "toolUse": {"name": "take_snapshot", ...}}
   data: {"type": "tool_use", "toolUse": {"name": "click_element_by_uid", ...}}
+  data: {"type": "execution_complete", ...}
   data: {"type": "done", ...}
 ```
+
+`tool_use` events are sent after the Turn ends, and only when it stopped with
+`stop_reason: "tool_use"`: after `finalMessage()`, before `citations`,
+`execution_complete` and `done`. A Turn that ends any other way (Stop, error,
+`max_tokens`, `refusal`) releases no tool calls, so none of them run. On
+`max_tokens`, `done.contentBlocks` leaves out the cut-off tool call. Server-tool
+events (`web_search_*`) still stream as they happen.
+
+`session_created` carries `runId`, the id of the Run's opening user message, on a
+first Turn and on every continuation that sends it. A continuation sends `runId`
+back; once another panel has started a newer Run in the chat, the server answers
+409 `RUN_SUPERSEDED` before taking a Hold.
 
 ### 3. Tool Execution (Client-Side)
 

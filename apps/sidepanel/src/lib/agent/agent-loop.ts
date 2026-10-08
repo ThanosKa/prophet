@@ -1,6 +1,14 @@
 import { z } from "zod";
 import { executeToolViaBackground } from "./background-bridge";
-import { DEFAULT_AGENT_MODEL, MAX_AGENT_TURNS } from "@prophet/shared";
+import {
+  AGENT_ERROR_CODES,
+  AGENT_SIZE_LIMITS,
+  DEFAULT_AGENT_MODEL,
+  MAX_AGENT_TURNS,
+  runEndSchema,
+  toolInputSchemas,
+  type RunEnd,
+} from "@prophet/shared";
 import {
   USER_FACING_TEXT,
   describeHttpFailure,
@@ -24,33 +32,65 @@ interface StreamAgentChatOptions {
   model: AgentModel;
   userMessage?: string;
   previousTurns?: AgentTurn[];
+  runId?: string;
   image?: ImageData;
   enableThinking?: boolean;
 }
 
 export type AgentRunErrorEvent = { type: "error"; error: string; code?: string; details?: ErrorDetails };
 
+/** Why a Run stopped before Claude finished: shown as a notice after the reply, not as an error. */
+export type RunNoticeReason = RunEnd | "superseded" | "request_too_large";
+
 export type AgentRunEvent =
   | Exclude<AgentLoopEvent, { type: "error" }>
   | AgentRunErrorEvent
   | { type: "output_truncated"; reducedForBalance: boolean }
-  | { type: "turn_limit_reached"; message: string };
+  | { type: "run_notice"; reason: RunNoticeReason; message: string };
+
+const RUN_END_NOTICES: Record<RunEnd, string> = {
+  turn_limit: USER_FACING_TEXT.turnLimit,
+  run_budget: USER_FACING_TEXT.runBudget,
+};
+
+const REQUEST_TOO_LARGE_NOTICE: AgentRunEvent = {
+  type: "run_notice",
+  reason: "request_too_large",
+  message: USER_FACING_TEXT.requestTooLarge,
+};
 
 // Older servers omit the flag; only an explicit true means max_tokens was lowered to fit the balance.
 const reducedForBalanceSchema = z.object({ maxTokensReducedForBalance: z.literal(true) });
+// The Run's id (its opening message). Only a first Turn's session_created is sure to carry it.
+const runIdSchema = z.object({ runId: z.string().uuid() });
+// On a Run's last Turn the server says why it is the last; it released no tool calls on it.
+const runEndFieldSchema = z.object({ runEnd: runEndSchema });
 
 const CANCELLED_EVENT: AgentRunEvent = {
   type: "error",
   error: "Agent execution cancelled by user",
 };
 
+type ToolInputCheck = { ok: true; input: Record<string, unknown> } | { ok: false; error: string };
+
+/** Checks a tool call against its tool's input schema; a tool without one gets its input as is. */
+function checkToolInput({ name, input }: { name: ToolName; input: Record<string, unknown> }): ToolInputCheck {
+  const schema = toolInputSchemas[name];
+  if (!schema) return { ok: true, input };
+  const parsed = schema.safeParse(input);
+  if (parsed.success) return { ok: true, input: parsed.data };
+  const fields = parsed.error.issues.map((issue) => `${issue.path.join(".") || "input"}: ${issue.message}`);
+  return { ok: false, error: `Invalid input for ${name}, so it did not run. ${fields.join("; ")}` };
+}
+
 async function* streamAgentChat({
   baseUrl,
-  options,
+  body,
   signal,
 }: {
   baseUrl: string;
-  options: StreamAgentChatOptions;
+  /** The JSON request body, already checked against the request size limit. */
+  body: string;
   signal?: AbortSignal;
 }): AsyncGenerator<AgentStreamEvent> {
   const tokenResponse = await chrome.runtime.sendMessage({
@@ -72,20 +112,12 @@ async function* streamAgentChat({
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  /*
-  console.log(`[Turn Debug] Sending Turn Request for ${options.chatId}:`, {
-    hasUserMessage: !!options.userMessage,
-    previousTurnsCount: options.previousTurns?.length || 0,
-    payload: sanitizeForLog(options)
-  });
-  */
-
   let response: Response;
   try {
     response = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify(options),
+      body,
       signal,
     });
   } catch (error) {
@@ -124,7 +156,8 @@ async function* streamAgentChat({
       yield {
         type: "error",
         error: describeHttpFailure({ status: response.status, body: errorData }),
-        code: errorData.code,
+        // Vercel's own 413 has no JSON body, so the status alone names it.
+        code: errorData.code ?? (response.status === 413 ? AGENT_ERROR_CODES.requestTooLarge : undefined),
         details,
       };
     }
@@ -199,27 +232,40 @@ async function* streamAgentChat({
   }
 }
 
-export async function* runAgentLoop(
-  baseUrl: string,
-  chatId: string,
-  userMessage: string,
-  model: AgentModel = DEFAULT_AGENT_MODEL,
-  image?: ImageData,
-  signal?: AbortSignal,
-  enableThinking?: boolean
-): AsyncGenerator<AgentRunEvent> {
+export interface RunAgentLoopOptions {
+  baseUrl: string;
+  chatId: string;
+  userMessage: string;
+  model?: AgentModel;
+  image?: ImageData;
+  signal?: AbortSignal;
+  enableThinking?: boolean;
+}
+
+export async function* runAgentLoop({
+  baseUrl,
+  chatId,
+  userMessage,
+  model = DEFAULT_AGENT_MODEL,
+  image,
+  signal,
+  enableThinking,
+}: RunAgentLoopOptions): AsyncGenerator<AgentRunEvent> {
   // Append-only: each request resends the previous one's turns unchanged, so the
   // server's prompt cache hits and the model keeps every earlier tool observation.
   const previousTurns: AgentTurn[] = [];
   let turnCount = 0;
   let toolResults: ToolResult[] = [];
   let isFirstRequest = true;
+  // Sent on every continuation so the server can tell this Run from a newer one in the same chat.
+  let runId: string | undefined;
   const maxTurns = MAX_AGENT_TURNS;
 
   // Track tool calls to detect repetitive patterns (like Manus does)
   const toolCallHistory: Array<{ name: string; inputHash: string }> = [];
 
-  while (turnCount < maxTurns) {
+  // Every path through Turn `maxTurns` returns: it runs no tools and never resumes.
+  while (true) {
     if (signal?.aborted) {
       yield CANCELLED_EVENT;
       return;
@@ -240,16 +286,29 @@ export async function* runAgentLoop(
       isFirstRequest = false;
     } else {
       streamOptions.previousTurns = [...previousTurns];
+      if (runId) streamOptions.runId = runId;
     }
 
+    // Measured in UTF-8 bytes, as the server counts them: string length undercounts non-ASCII text.
+    const body = JSON.stringify(streamOptions);
+    if (new TextEncoder().encode(body).length > AGENT_SIZE_LIMITS.requestBytes) {
+      yield REQUEST_TOO_LARGE_NOTICE;
+      return;
+    }
+
+    const isContinuation = streamOptions.previousTurns !== undefined;
+    const isLastTurn = turnCount === maxTurns;
     let hasToolUse = false;
-    let sawDone = false;
+    let skippedToolCall = false;
+    let doneEvent: AgentStreamEvent | undefined;
+    // Held until done says whether the Run ends on this Turn: only a Run's last Turn is its final answer.
+    let finalAnswer: AgentRunEvent | undefined;
     let serverContent: ContentBlock[] | undefined;
     toolResults = []; // Reset for the CURRENT turn only
     const assistantContent: ContentBlock[] = [];
     let turnTextContent = ""; // Text content for this turn only
 
-    for await (const event of streamAgentChat({ baseUrl, options: streamOptions, signal })) {
+    for await (const event of streamAgentChat({ baseUrl, body, signal })) {
       // Checked per event so a stopped run never executes the remaining tool_use blocks of its turn.
       if (signal?.aborted) {
         yield CANCELLED_EVENT;
@@ -257,12 +316,15 @@ export async function* runAgentLoop(
       }
 
       switch (event.type) {
-        case "session_created":
+        case "session_created": {
+          const sessionRun = runIdSchema.safeParse(event);
+          if (sessionRun.success && !runId) runId = sessionRun.data.runId;
           yield {
             type: "session_created",
             sessionId: event.sessionId || chatId,
           };
           break;
+        }
 
         case "content_delta": {
           const delta = event.delta || event.content || "";
@@ -305,7 +367,10 @@ export async function* runAgentLoop(
                 }
               : null);
 
-          if (toolUse) {
+          // The Run ends on its last Turn, so Claude would never see what a tool run there did.
+          if (toolUse && isLastTurn) {
+            skippedToolCall = true;
+          } else if (toolUse) {
             // Ensure the type property is set for message history persistence
             if (!toolUse.type) {
               toolUse = { ...toolUse, type: "tool_use" };
@@ -330,12 +395,25 @@ export async function* runAgentLoop(
               toolCallId: toolUse.id,
             };
 
-            // Execute the tool immediately via background script
+            const checked = checkToolInput({ name: toolUse.name, input: toolUse.input });
+            if (!checked.ok) {
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: toolUse.id,
+                content: checked.error,
+                is_error: true,
+              });
+              yield {
+                type: "tool_call_error",
+                toolName: toolUse.name,
+                error: checked.error,
+                toolCallId: toolUse.id,
+              };
+              break;
+            }
+
             try {
-              const toolResult = await executeToolViaBackground(
-                toolUse.name,
-                toolUse.input as Record<string, unknown>
-              );
+              const toolResult = await executeToolViaBackground(toolUse.name, checked.input);
 
               let resultContent: string;
               if (toolResult.success) {
@@ -369,12 +447,19 @@ export async function* runAgentLoop(
 
               toolResults.push(result);
 
-              yield {
-                type: "tool_call_complete",
-                toolName: toolUse.name,
-                result: resultContent,
-                toolCallId: toolUse.id,
-              };
+              yield toolResult.success
+                ? {
+                    type: "tool_call_complete",
+                    toolName: toolUse.name,
+                    result: resultContent,
+                    toolCallId: toolUse.id,
+                  }
+                : {
+                    type: "tool_call_error",
+                    toolName: toolUse.name,
+                    error: resultContent,
+                    toolCallId: toolUse.id,
+                  };
             } catch (error) {
               const message = error instanceof Error ? error.message : String(error);
               // Anthropic rejects the next turn if any tool_use lacks a matching tool_result.
@@ -402,39 +487,33 @@ export async function* runAgentLoop(
           break;
 
         case "execution_complete":
-          // The backend emits execution_complete at the end of EVERY streamed request/turn.
-          // But for tool-use turns, this is not the final assistant answer yet (the loop continues).
-          // Emitting execution_complete mid-run causes the UI to "finalize" and then reset on the next turn.
-          if (!hasToolUse) {
-            yield {
-              type: "execution_complete",
-              finalOutput: event.finalOutput || turnTextContent,
-              metrics: event.metrics || { inputTokens: 0, outputTokens: 0 },
-            };
-          }
+          // The backend emits execution_complete at the end of every Turn. Yielding it on a Turn the
+          // Run continues past would make the UI finalize the reply and then reset on the next Turn.
+          finalAnswer = {
+            type: "execution_complete",
+            finalOutput: event.finalOutput || turnTextContent,
+            metrics: event.metrics || { inputTokens: 0, outputTokens: 0 },
+          };
           break;
 
         case "done":
-          sawDone = true;
+          doneEvent = event;
           if (event.contentBlocks && event.contentBlocks.length > 0) {
             serverContent = event.contentBlocks;
-          }
-          if (!hasToolUse) {
-            if (event.stopReason === "max_tokens") {
-              yield {
-                type: "output_truncated",
-                reducedForBalance: reducedForBalanceSchema.safeParse(event).success,
-              };
-            }
-            yield {
-              type: "done",
-              usage: event.usage,
-            };
-            return;
           }
           break;
 
         case "error":
+          // A 409 with this code means a newer Run took over the chat; BALANCE_HELD is a 409 too.
+          if (event.code === AGENT_ERROR_CODES.runSuperseded) {
+            yield { type: "run_notice", reason: "superseded", message: USER_FACING_TEXT.runSuperseded };
+            return;
+          }
+          // A first request's 413 is about the message or image; a continuation's is the Run's history.
+          if (event.code === AGENT_ERROR_CODES.requestTooLarge && isContinuation) {
+            yield REQUEST_TOO_LARGE_NOTICE;
+            return;
+          }
           yield {
             type: "error",
             error: event.error || USER_FACING_TEXT.generic,
@@ -451,13 +530,33 @@ export async function* runAgentLoop(
     }
 
     // The server always ends a turn with done or error; anything else means a function timeout or proxy cut.
-    if (!sawDone) {
+    if (!doneEvent) {
       console.error("[agent-loop] Stream ended without done or error", { chatId, turnCount });
       yield { type: "error", error: USER_FACING_TEXT.streamCut };
       return;
     }
 
-    if (!hasToolUse) {
+    // Claude paused mid-Turn (a long server-side search): resend its content as is to let it go on.
+    const paused = doneEvent.stopReason === "pause_turn";
+    const serverRunEnd = runEndFieldSchema.safeParse(doneEvent);
+    // An older server doesn't say runEnd; a Turn that still wanted to go on ends the Run here anyway.
+    const wantedMore = paused || skippedToolCall || doneEvent.stopReason === "tool_use";
+    const runEnd = serverRunEnd.success
+      ? serverRunEnd.data.runEnd
+      : isLastTurn && wantedMore
+        ? "turn_limit"
+        : null;
+
+    if (runEnd || (!hasToolUse && !paused)) {
+      if (finalAnswer) yield finalAnswer;
+      if (doneEvent.stopReason === "max_tokens") {
+        yield {
+          type: "output_truncated",
+          reducedForBalance: reducedForBalanceSchema.safeParse(doneEvent).success,
+        };
+      }
+      yield { type: "done", usage: doneEvent.usage };
+      if (runEnd) yield { type: "run_notice", reason: runEnd, message: RUN_END_NOTICES[runEnd] };
       return;
     }
 
@@ -472,6 +571,4 @@ export async function* runAgentLoop(
     // tool-use turn must replay. Fall back to the streamed blocks if none came.
     previousTurns.push({ content: serverContent ?? assistantContent, toolResults });
   }
-
-  yield { type: "turn_limit_reached", message: USER_FACING_TEXT.turnLimit };
 }

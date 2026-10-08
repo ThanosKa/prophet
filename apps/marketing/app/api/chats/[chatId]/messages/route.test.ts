@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET } from './route'
+import type { Message } from '@/lib/db/schema'
 
 // Mock modules
 vi.mock('@clerk/nextjs/server', () => ({
@@ -35,8 +36,22 @@ const { auth } = await import('@clerk/nextjs/server')
 const { db } = await import('@/lib/db')
 const { checkRateLimit } = await import('@/lib/ratelimit')
 
+const chatId = '550e8400-e29b-41d4-a716-446655440000'
+
+/** An assistant row as the database returns it. */
+function storedMessage(fields: Pick<Message, 'id' | 'content' | 'createdAt' | 'toolCalls'>): Message {
+  return {
+    chatId,
+    role: 'assistant',
+    model: null,
+    inputTokens: null,
+    outputTokens: null,
+    costCents: null,
+    ...fields,
+  }
+}
+
 describe('GET /api/chats/[chatId]/messages', () => {
-  const chatId = '550e8400-e29b-41d4-a716-446655440000'
   const userId = 'user_123'
 
   beforeEach(() => {
@@ -68,6 +83,43 @@ describe('GET /api/chats/[chatId]/messages', () => {
     // Messages should be reversed (chronological order)
     expect(data.data.messages[0].id).toBe('msg_4')
     expect(data.data.messages[4].id).toBe('msg_0')
+  })
+
+  it('returns stored tool calls through the shared schema and drops a column that fails it', async () => {
+    vi.mocked(db.query.messages.findMany).mockResolvedValue([
+      storedMessage({
+        id: 'msg_valid',
+        content: 'Opened it.',
+        createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, 2)),
+        toolCalls: JSON.stringify([
+          {
+            type: 'tool_use',
+            id: 'toolu_1',
+            name: 'navigate',
+            input: { url: 'https://a.com' },
+            isError: true,
+            caller: { type: 'direct' },
+          },
+        ]),
+      }),
+      storedMessage({
+        id: 'msg_invalid',
+        content: 'Broken.',
+        createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, 1)),
+        toolCalls: '{not json',
+      }),
+    ])
+
+    const request = new Request(`http://localhost:3000/api/chats/${chatId}/messages`)
+    const data = await (await GET(request, { params: Promise.resolve({ chatId }) })).json()
+
+    expect(data.data.messages.map((message: { id: string; toolCalls: unknown }) => [message.id, message.toolCalls])).toEqual([
+      ['msg_invalid', null],
+      [
+        'msg_valid',
+        [{ type: 'tool_use', id: 'toolu_1', name: 'navigate', input: { url: 'https://a.com' }, isError: true }],
+      ],
+    ])
   })
 
   it('respects the limit parameter', async () => {

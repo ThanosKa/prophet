@@ -42,7 +42,7 @@ interface FakeRun {
 // Each runAgentLoop call emits `before`, parks until released (a tool or stream still in flight), then emits `after`.
 function scriptRuns(script: Array<{ before: AgentRunEvent[]; after: AgentRunEvent[] }>) {
   const runs: FakeRun[] = []
-  vi.mocked(runAgentLoop).mockImplementation(async function* (_url, _chatId, _message, _model, _image, signal) {
+  vi.mocked(runAgentLoop).mockImplementation(async function* ({ signal }) {
     const step = script[runs.length]
     const gate = deferred()
     runs.push({ signal, release: gate.resolve })
@@ -210,17 +210,30 @@ describe('useAgentChat run isolation', () => {
     })
   })
 
-  it('shows a neutral notice when the run pauses at the Turn limit', async () => {
-    const pause = 'Prophet paused after 20 turns. Send "continue" to keep going.'
-    const runs = scriptRuns([{ before: [], after: [{ type: 'turn_limit_reached', message: pause }] }])
+  it.each([
+    ['turn_limit', 'Prophet paused after 20 turns. Send "continue" to keep going.'],
+    ['run_budget', 'Prophet paused because this task grew too long for one run. Send "continue" to keep going.'],
+    ['superseded', 'This chat continued in another panel, so this task stopped here.'],
+    ['request_too_large', 'This task grew too large to send, so Prophet stopped here. Send "continue" to keep going.'],
+  ] as const)('shows the %s notice after the reply, not an error', async (reason, message) => {
+    const runs = scriptRuns([
+      {
+        before: [{ type: 'content_delta', delta: 'I opened the invoice.' }],
+        after: [{ type: 'done' }, { type: 'run_notice', reason, message }],
+      },
+    ])
 
     await act(async () => {
       void current().sendMessage('chat-1', 'hi')
     })
+    expect(current().notice).toBeNull()
     await act(async () => runs[0].release())
 
-    expect(current().notice).toBe(pause)
+    const assistant = (useChatStore.getState().messages['chat-1'] ?? []).find((m) => m.role === 'assistant')
+    expect(assistant?.content).toBe('I opened the invoice.')
+    expect(current().notice).toBe(message)
     expect(current().error).toBeNull()
+    expect(useChatStore.getState().isStreaming).toBe(false)
   })
 
   it.each([
@@ -313,6 +326,28 @@ describe('useAgentChat run isolation', () => {
     expect(current().error).toBe('AI service is temporarily busy.')
     expect(assistant?.content).toBe('Partial answer')
     expect(JSON.stringify(assistant?.parts)).not.toContain('temporarily busy')
+  })
+
+  it("keeps a failed tool call's error state on the assistant message", async () => {
+    const runs = scriptRuns([
+      {
+        before: [
+          { type: 'tool_call_start', toolName: 'take_snapshot', params: {}, toolCallId: 't1' },
+          { type: 'tool_call_error', toolName: 'take_snapshot', error: 'No active tab found', toolCallId: 't1' },
+        ],
+        after: [{ type: 'content_delta', delta: 'No tab.' }, { type: 'done' }],
+      },
+    ])
+
+    await act(async () => {
+      void current().sendMessage('chat-1', 'snap it')
+    })
+    await act(async () => runs[0].release())
+
+    const assistant = (useChatStore.getState().messages['chat-1'] ?? []).find((m) => m.role === 'assistant')
+    expect(assistant?.toolCalls).toEqual([
+      expect.objectContaining({ id: 't1', name: 'take_snapshot', isError: true, result: 'No active tab found' }),
+    ])
   })
 
   it('clears the error banner and notice when the user switches to another chat', async () => {

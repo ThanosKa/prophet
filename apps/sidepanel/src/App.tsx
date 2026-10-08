@@ -16,11 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { apiClient } from '@/lib/api'
 import { describeThrownError } from '@/lib/user-facing-errors'
-
-interface ImageData {
-  base64: string
-  mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
-}
+import type { ImageData } from '@prophet/shared'
 
 export default function App() {
   const queryClient = useQueryClient()

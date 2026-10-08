@@ -2,6 +2,7 @@
 // Add utilities here as the project grows
 
 export * from './balance'
+export * from './text'
 
 /**
  * Rough token count estimation (1 token ≈ 4 characters)

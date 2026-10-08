@@ -14,7 +14,7 @@ import {
   ContextReasoningUsage,
   ContextTrigger,
 } from "@/components/ai-elements/context";
-import { useUIStore } from "@/store/uiStore";
+import { selectMaxContextTokens, useUIStore } from "@/store/uiStore";
 import {
   PromptInput,
   PromptInputActionAddAttachments,
@@ -30,15 +30,43 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
+  type FileCheck,
 } from "@/components/ai-elements/prompt-input";
-
-interface ImageData {
-  base64: string;
-  mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
-}
+import { AGENT_SIZE_LIMITS, imageDataSchema, type ImageData } from "@prophet/shared";
+import { USER_FACING_TEXT } from "@/lib/user-facing-errors";
 
 // Resolving to false means the message was not sent, so the input keeps the draft.
 export type OnSend = (message: string, image?: ImageData) => void | Promise<boolean | void>;
+
+/** Refuses an image at attach time rather than starting a Run the server would reject. */
+function checkAttachedImage(file: File): FileCheck {
+  if (!imageDataSchema.shape.mediaType.safeParse(file.type).success) {
+    return { ok: false, message: USER_FACING_TEXT.imageTypeUnsupported };
+  }
+  // Base64 turns every 3 bytes (rounded up) into 4 characters
+  const base64Chars = Math.ceil(file.size / 3) * 4;
+  if (base64Chars > AGENT_SIZE_LIMITS.attachedImageChars) {
+    return { ok: false, message: USER_FACING_TEXT.imageTooLargeToAttach };
+  }
+  return { ok: true };
+}
+
+async function fileToImageData(file: File): Promise<ImageData | null> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () =>
+      typeof reader.result === "string"
+        ? resolve(reader.result)
+        : reject(new Error("Failed to read file"));
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+  const parsed = imageDataSchema.safeParse({
+    base64: dataUrl.split(",")[1] ?? "",
+    mediaType: file.type,
+  });
+  return parsed.success ? parsed.data : null;
+}
 
 interface EnhancedChatInputProps {
   onSend: OnSend;
@@ -61,30 +89,17 @@ export function EnhancedChatInput({
     contextOutputTokens,
     contextReasoningTokens,
     contextCachedInputTokens,
-    maxContextTokens,
     selectedModel,
     enableThinking,
     toggleThinking,
   } = useUIStore();
 
-  const fileToImageData = async (file: File): Promise<ImageData> => {
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsDataURL(file);
-    });
-    const base64 = dataUrl.split(",")[1] ?? "";
-    return {
-      base64,
-      mediaType: file.type as ImageData["mediaType"],
-    };
-  };
-
   const handleSubmit = async (message: PromptInputMessage) => {
     if (disabled) return;
     const file = message.files?.[0];
     const imageForApi = file ? await fileToImageData(file) : undefined;
+    // Attach-time checks make this rare; keep the draft rather than send without the image
+    if (imageForApi === null) return false;
     const text =
       message.text && message.text.trim().length > 0
         ? message.text
@@ -102,6 +117,7 @@ export function EnhancedChatInput({
         submitDisabled={disabled || isRunning}
         globalDrop
         multiple={false}
+        validateFile={checkAttachedImage}
       >
         <PromptInputHeader>
           <PromptInputAttachments>
@@ -164,7 +180,7 @@ export function EnhancedChatInput({
               </AnimatePresence>
             </button>
             <Context
-              maxTokens={maxContextTokens}
+              maxTokens={selectMaxContextTokens({ selectedModel })}
               modelId={selectedModel}
               usage={{
                 inputTokens: contextInputTokens,

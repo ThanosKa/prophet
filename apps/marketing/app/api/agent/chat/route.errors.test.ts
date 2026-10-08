@@ -1,58 +1,20 @@
-import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import { APIError } from '@anthropic-ai/sdk'
-import { generateDrizzleJson, generateMigration } from 'drizzle-kit/api'
-import { sql } from 'drizzle-orm'
 import * as schema from '@/lib/db/schema'
-import { POST } from './route'
-
-vi.mock('@/lib/db', async () => {
-  const { PGlite } = await import('@electric-sql/pglite')
-  const { drizzle } = await import('drizzle-orm/pglite')
-  const dbSchema = await import('@/lib/db/schema')
-  return { db: drizzle(new PGlite(), { schema: dbSchema }) }
-})
-
-vi.mock('@clerk/nextjs/server', () => ({ auth: vi.fn() }))
-vi.mock('@/lib/ratelimit', () => ({ checkRateLimit: vi.fn() }))
-vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { stream: vi.fn() } } }))
-vi.mock('@/lib/logger', () => ({
-  logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-}))
-vi.mock('@/lib/dev-logger', () => ({
-  devLogger: { logRequest: vi.fn(), logResponse: vi.fn() },
-}))
-
-const { db } = await import('@/lib/db')
-const { auth } = await import('@clerk/nextjs/server')
-const { checkRateLimit } = await import('@/lib/ratelimit')
-const { anthropic } = await import('@/lib/anthropic')
+import { createTables, db, postAgentChat, resetAs, seedUserWithChat, streamMock } from './route-test-harness'
 
 const USER_ID = 'user_errors'
 const CHAT_ID = '550e8400-e29b-41d4-a716-446655440000'
 
-beforeAll(async () => {
-  const statements = await generateMigration(generateDrizzleJson({}), generateDrizzleJson(schema))
-  for (const statement of statements) {
-    await db.execute(sql.raw(statement))
-  }
-  await db.insert(schema.users).values({ id: USER_ID, email: 'errors@example.com', creditsRemaining: 1000 })
-  await db.insert(schema.chats).values({ id: CHAT_ID, userId: USER_ID, title: 'Chat' })
-})
+beforeAll(createTables)
 
-beforeEach(() => {
-  vi.clearAllMocks()
-  vi.mocked(auth).mockResolvedValue({ userId: USER_ID } as never)
-  vi.mocked(checkRateLimit).mockResolvedValue({ success: true, limit: 60, remaining: 59, reset: 60 })
+beforeEach(async () => {
+  await resetAs(USER_ID)
+  await seedUserWithChat({ userId: USER_ID, chatId: CHAT_ID, credits: 1000 })
 })
 
 function post(body: Record<string, unknown>) {
-  return POST(
-    new Request('http://localhost:3000/api/agent/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId: CHAT_ID, ...body }),
-    })
-  )
+  return postAgentChat({ chatId: CHAT_ID, ...body })
 }
 
 /** The SDK's own factory, so the error has the exact class and message a real 400 has. */
@@ -75,8 +37,8 @@ function errorEvent(events: string): unknown {
 
 describe('Anthropic 400 invalid_request errors in POST /api/agent/chat', () => {
   it('tells the user to start a new chat when the prompt is too long', async () => {
-    vi.mocked(anthropic.messages.stream).mockRejectedValue(
-      anthropicBadRequest('prompt is too long: 215000 tokens > 200000 maximum') as never
+    streamMock.mockRejectedValue(
+      anthropicBadRequest('prompt is too long: 215000 tokens > 200000 maximum')
     )
 
     const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
@@ -89,8 +51,8 @@ describe('Anthropic 400 invalid_request errors in POST /api/agent/chat', () => {
   })
 
   it('tells the user to try a smaller image when Anthropic rejects the image', async () => {
-    vi.mocked(anthropic.messages.stream).mockRejectedValue(
-      anthropicBadRequest('messages.0.content.0.image.source.base64: image exceeds 5 MB maximum: 7340032 bytes > 5242880 bytes') as never
+    streamMock.mockRejectedValue(
+      anthropicBadRequest('messages.0.content.0.image.source.base64: image exceeds 5 MB maximum: 7340032 bytes > 5242880 bytes')
     )
 
     const response = await post({ userMessage: 'What is this?', model: 'claude-haiku-5-5' })
@@ -103,8 +65,8 @@ describe('Anthropic 400 invalid_request errors in POST /api/agent/chat', () => {
   })
 
   it('falls back to a start-a-new-chat message for any other invalid request', async () => {
-    vi.mocked(anthropic.messages.stream).mockRejectedValue(
-      anthropicBadRequest('messages.1: tool_use ids were found without tool_result blocks immediately after') as never
+    streamMock.mockRejectedValue(
+      anthropicBadRequest('messages.1: tool_use ids were found without tool_result blocks immediately after')
     )
 
     const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })
@@ -135,7 +97,7 @@ describe('safety-classifier refusals in POST /api/agent/chat', () => {
   }
 
   it('ends the run with an error instead of a blank reply, and still bills the tokens', async () => {
-    vi.mocked(anthropic.messages.stream).mockReturnValue(refusedTurn() as never)
+    streamMock.mockReturnValue(refusedTurn())
     const [before] = await db.select().from(schema.users)
 
     const events = await (await post({ userMessage: 'Hello', model: 'claude-haiku-5-5' })).text()
