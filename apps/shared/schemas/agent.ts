@@ -269,6 +269,24 @@ export const openNewTabInputSchema = z.object({
   active: z.boolean().optional().default(true),
 });
 
+// The extension's check before a tool runs. Tools without an entry take no input worth checking.
+export const toolInputSchemas: Partial<
+  Record<z.infer<typeof toolNameSchema>, z.ZodType<Record<string, unknown>, z.ZodTypeDef, unknown>>
+> = {
+  click_element_by_uid: clickElementInputSchema,
+  fill_element_by_uid: fillElementInputSchema,
+  hover_element_by_uid: hoverElementInputSchema,
+  navigate: navigateInputSchema,
+  scroll_page: scrollPageInputSchema,
+  search_snapshot: searchSnapshotInputSchema,
+  wait_for_selector: waitForSelectorInputSchema,
+  wait_for_navigation: waitForNavigationInputSchema,
+  wait_for_timeout: waitForTimeoutInputSchema,
+  switch_tab: switchTabInputSchema,
+  close_tab: closeTabInputSchema,
+  open_new_tab: openNewTabInputSchema,
+};
+
 // Who made a tool call: `{type: "direct"}`, or a server tool such as code execution.
 // Open on purpose: an echoed block must reach Anthropic exactly as Claude returned it,
 // and a caller type added later must not become a 400 mid-Run.

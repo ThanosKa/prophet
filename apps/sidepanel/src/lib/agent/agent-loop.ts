@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { executeToolViaBackground } from "./background-bridge";
-import { DEFAULT_AGENT_MODEL, MAX_AGENT_TURNS } from "@prophet/shared";
+import { DEFAULT_AGENT_MODEL, MAX_AGENT_TURNS, toolInputSchemas } from "@prophet/shared";
 import {
   USER_FACING_TEXT,
   describeHttpFailure,
@@ -43,6 +43,18 @@ const CANCELLED_EVENT: AgentRunEvent = {
   type: "error",
   error: "Agent execution cancelled by user",
 };
+
+type ToolInputCheck = { ok: true; input: Record<string, unknown> } | { ok: false; error: string };
+
+/** Checks a tool call against its tool's input schema; a tool without one gets its input as is. */
+function checkToolInput({ name, input }: { name: ToolName; input: Record<string, unknown> }): ToolInputCheck {
+  const schema = toolInputSchemas[name];
+  if (!schema) return { ok: true, input };
+  const parsed = schema.safeParse(input);
+  if (parsed.success) return { ok: true, input: parsed.data };
+  const fields = parsed.error.issues.map((issue) => `${issue.path.join(".") || "input"}: ${issue.message}`);
+  return { ok: false, error: `Invalid input for ${name}, so it did not run. ${fields.join("; ")}` };
+}
 
 async function* streamAgentChat({
   baseUrl,
@@ -340,12 +352,25 @@ export async function* runAgentLoop({
               toolCallId: toolUse.id,
             };
 
-            // Execute the tool immediately via background script
+            const checked = checkToolInput({ name: toolUse.name, input: toolUse.input });
+            if (!checked.ok) {
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: toolUse.id,
+                content: checked.error,
+                is_error: true,
+              });
+              yield {
+                type: "tool_call_error",
+                toolName: toolUse.name,
+                error: checked.error,
+                toolCallId: toolUse.id,
+              };
+              break;
+            }
+
             try {
-              const toolResult = await executeToolViaBackground(
-                toolUse.name,
-                toolUse.input as Record<string, unknown>
-              );
+              const toolResult = await executeToolViaBackground(toolUse.name, checked.input);
 
               let resultContent: string;
               if (toolResult.success) {

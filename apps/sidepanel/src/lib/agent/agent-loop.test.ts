@@ -172,6 +172,38 @@ describe('runAgentLoop', () => {
 
   })
 
+  describe('Tool input check', () => {
+    it("doesn't run a tool call whose input breaks its schema, and names each invalid field to Claude", async () => {
+      const badScroll = { type: 'tool_use', id: 't1', name: 'scroll_page', input: { direction: 'sideways', pixels: 'lots' } }
+      const { fetchMock, bodies } = serveTurns([
+        [{ type: 'tool_use', toolUse: badScroll }, { type: 'done', stopReason: 'tool_use' }],
+        [{ type: 'content_delta', delta: 'Scrolling down instead.' }, { type: 'done', stopReason: 'end_turn' }],
+      ])
+
+      const events = await collect()
+
+      expect(executeToolViaBackground).not.toHaveBeenCalled()
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      const [result] = bodies()[1].previousTurns[0].toolResults
+      expect(result).toMatchObject({ type: 'tool_result', tool_use_id: 't1', is_error: true })
+      expect(result.content).toContain('direction')
+      expect(result.content).toContain('pixels')
+      expect(events).toContainEqual(expect.objectContaining({ type: 'tool_call_error', toolCallId: 't1' }))
+    })
+
+    it('runs a valid tool call with the schema defaults filled in', async () => {
+      serveTurns([
+        [{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'scroll_page', input: { direction: 'down' } } }, { type: 'done', stopReason: 'tool_use' }],
+        [{ type: 'done', stopReason: 'end_turn' }],
+      ])
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'Scrolled', durationMs: 1 })
+
+      await collect()
+
+      expect(executeToolViaBackground).toHaveBeenCalledWith('scroll_page', { direction: 'down', pixels: 500 })
+    })
+  })
+
   describe('History / Continuation', () => {
     it('includes the first turn and its tool results on the second turn', async () => {
       const turn1 = `data: {"type":"tool_use","toolUse":{"type":"tool_use","id":"tool_1","name":"navigate","input":{"url":"https://example.com"}}}\n\ndata: {"type":"done"}\n\n`
