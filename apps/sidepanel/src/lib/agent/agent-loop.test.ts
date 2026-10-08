@@ -511,7 +511,7 @@ describe('runAgentLoop', () => {
       const details = {
         pricingUrl: '/pricing',
         isContinuation: true,
-        suggestedModel: 'claude-haiku-4-5',
+        suggestedModel: 'claude-haiku-5-5',
         suggestDisableThinking: true,
         canUpgrade: false,
       }
