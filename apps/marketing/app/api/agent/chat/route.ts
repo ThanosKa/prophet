@@ -277,13 +277,31 @@ export async function POST(req: Request) {
           messages: withLastTurnNotice(estimatedMessages),
         })
       : estimatedPromptTokens;
+    // The Hold expects the cache: a `previousTurns` continuation's previous Turn already
+    // sent (and cached) this prompt minus its newest Turn, so that prefix is priced as a
+    // cache read and the rest, the last-Turn notice included, as a cache write. First
+    // Turns and the legacy form write their whole prompt. A miss settles as overage.
+    const cachedPrefixTokens =
+      isContinuationTurn && previousTurns
+        ? estimateInputTokens({
+            system: AGENT_SYSTEM_PROMPT,
+            tools,
+            messages: buildAgentMessages({
+              history: runHistory,
+              userMessage,
+              image,
+              runTurns: runTurns.slice(0, -1),
+            }),
+          })
+        : 0;
+    const restTokens = Math.max(0, estimatedInputTokens - cachedPrefixTokens);
     const balanceCents = totalCredits(user);
     const planFor = (option: { model: ModelName; enableThinking: boolean }) =>
       planCreditReservation({
         model: option.model,
         balanceCents,
-        cachedPrefixTokens: 0,
-        restTokens: estimatedInputTokens,
+        cachedPrefixTokens,
+        restTokens,
         maxTokens: AGENT_TURN_MAX_TOKENS,
         minTokens: getAgentMinTokens(option.enableThinking),
         webSearchMaxUses: webSearchEnabled ? WEB_SEARCH_MAX_USES : 0,
@@ -747,7 +765,7 @@ export async function POST(req: Request) {
           if (costCents > reserveCents) {
             logger.warn(
               { userId, chatId, model, reserveCents, costCents, inputTokens },
-              "Turn cost exceeded its credit reservation (input estimate miss)"
+              "Turn cost exceeded its Hold (cache miss or input estimate miss)"
             );
           }
 
