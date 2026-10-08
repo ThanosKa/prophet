@@ -16,7 +16,7 @@ Prophet operates in two modes:
 
 1. **Conversational AI** -- Chat with Claude directly from any tab. Ask questions, get writing help, analyze content, brainstorm. Standard AI chat, but always one click away in the side panel.
 
-2. **Browser Automation Agent** -- Give Prophet a task ("fill out this form", "search for X on this page", "navigate to my account settings and find my billing date") and the AI agent autonomously observes the page via the accessibility tree, decides which actions to take, and executes them using the Chrome DevTools Protocol. It can click, type, scroll, navigate, manage tabs, and wait for dynamic content -- up to 10 tool calls per conversation turn.
+2. **Browser Automation Agent** -- Give Prophet a task ("fill out this form", "search for X on this page", "navigate to my account settings and find my billing date") and the AI agent autonomously observes the page via the accessibility tree, decides which actions to take, and executes them using the Chrome DevTools Protocol. It can click, type, scroll, navigate, manage tabs, and wait for dynamic content -- up to 20 Turns per Run before it pauses for the user to say "continue".
 
 ### How It Works (Technical Differentiator)
 
@@ -355,7 +355,7 @@ Prophet's voice is **competent, direct, and approachable** -- like a sharp cowor
 - Don't claim "revolutionary" or "groundbreaking" -- let the architecture speak for itself
 - Don't hide the fact that this is a proxy to Anthropic's Claude -- transparency is a brand value
 - Don't use fear-based marketing ("You're losing productivity without AI!")
-- Don't promise the agent can do everything -- the 10 tool-call limit and known limitations are features of responsible design
+- Don't promise the agent can do everything -- the 20-Turn limit and known limitations are features of responsible design
 - Don't use emojis in product copy (matches codebase standards)
 - Don't compare to competitors by name in negative terms -- show Prophet's approach and let users draw conclusions
 - Don't use "AI-powered" as a standalone descriptor -- always pair it with what the AI actually does

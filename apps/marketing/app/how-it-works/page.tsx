@@ -205,7 +205,7 @@ export default function HowItWorksPage() {
               ))}
             </div>
             <p className="text-sm text-muted-foreground">
-              The agent can execute up to 10 tool calls per conversation to prevent runaway behavior. Each action is logged in the chat for full transparency.
+              The agent takes up to 20 turns per task, then pauses until you say &quot;continue&quot;, to prevent runaway behavior. Each action is logged in the chat for full transparency.
             </p>
           </div>
         </div>

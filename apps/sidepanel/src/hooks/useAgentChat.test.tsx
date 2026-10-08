@@ -210,15 +210,16 @@ describe('useAgentChat run isolation', () => {
     })
   })
 
-  it('shows a neutral notice when the run pauses at the step cap', async () => {
-    const runs = scriptRuns([{ before: [], after: [{ type: 'turn_limit_reached' }] }])
+  it('shows a neutral notice when the run pauses at the Turn limit', async () => {
+    const pause = 'Prophet paused after 20 turns. Send "continue" to keep going.'
+    const runs = scriptRuns([{ before: [], after: [{ type: 'turn_limit_reached', message: pause }] }])
 
     await act(async () => {
       void current().sendMessage('chat-1', 'hi')
     })
     await act(async () => runs[0].release())
 
-    expect(current().notice).toBe('Prophet paused after 10 steps. Send "continue" to keep going.')
+    expect(current().notice).toBe(pause)
     expect(current().error).toBeNull()
   })
 

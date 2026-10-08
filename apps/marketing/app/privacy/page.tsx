@@ -137,7 +137,7 @@ export default function PrivacyPage() {
                 <section>
                   <h2 className="text-xl font-semibold mb-3">Security Controls</h2>
                   <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-                    <li>Maximum 10 tool calls per conversation to prevent runaway behavior</li>
+                    <li>Maximum 20 turns per task before the agent pauses for your go-ahead, to prevent runaway behavior</li>
                     <li>Debugger connection auto-closes after 30 seconds of inactivity</li>
                     <li>Visual border indicator when agent is actively controlling the browser</li>
                     <li>Stop button always available during execution</li>
