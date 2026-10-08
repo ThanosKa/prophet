@@ -24,20 +24,27 @@ interface StreamAgentChatOptions {
   model: AgentModel;
   userMessage?: string;
   previousTurns?: AgentTurn[];
+  runId?: string;
   image?: ImageData;
   enableThinking?: boolean;
 }
 
 export type AgentRunErrorEvent = { type: "error"; error: string; code?: string; details?: ErrorDetails };
 
+/** Why a Run stopped before Claude finished: shown as a notice after the reply, not as an error. */
+export type RunNoticeReason = "superseded";
+
 export type AgentRunEvent =
   | Exclude<AgentLoopEvent, { type: "error" }>
   | AgentRunErrorEvent
   | { type: "output_truncated"; reducedForBalance: boolean }
-  | { type: "turn_limit_reached"; message: string };
+  | { type: "turn_limit_reached"; message: string }
+  | { type: "run_notice"; reason: RunNoticeReason; message: string };
 
 // Older servers omit the flag; only an explicit true means max_tokens was lowered to fit the balance.
 const reducedForBalanceSchema = z.object({ maxTokensReducedForBalance: z.literal(true) });
+// The Run's id (its opening message). Only a first Turn's session_created is sure to carry it.
+const runIdSchema = z.object({ runId: z.string().uuid() });
 
 const CANCELLED_EVENT: AgentRunEvent = {
   type: "error",
@@ -236,6 +243,8 @@ export async function* runAgentLoop({
   let turnCount = 0;
   let toolResults: ToolResult[] = [];
   let isFirstRequest = true;
+  // Sent on every continuation so the server can tell this Run from a newer one in the same chat.
+  let runId: string | undefined;
   const maxTurns = MAX_AGENT_TURNS;
 
   // Track tool calls to detect repetitive patterns (like Manus does)
@@ -262,6 +271,7 @@ export async function* runAgentLoop({
       isFirstRequest = false;
     } else {
       streamOptions.previousTurns = [...previousTurns];
+      if (runId) streamOptions.runId = runId;
     }
 
     let hasToolUse = false;
@@ -279,12 +289,15 @@ export async function* runAgentLoop({
       }
 
       switch (event.type) {
-        case "session_created":
+        case "session_created": {
+          const sessionRun = runIdSchema.safeParse(event);
+          if (sessionRun.success && !runId) runId = sessionRun.data.runId;
           yield {
             type: "session_created",
             sessionId: event.sessionId || chatId,
           };
           break;
+        }
 
         case "content_delta": {
           const delta = event.delta || event.content || "";
@@ -470,6 +483,11 @@ export async function* runAgentLoop({
           break;
 
         case "error":
+          // A 409 with this code means a newer Run took over the chat; BALANCE_HELD is a 409 too.
+          if (event.code === "RUN_SUPERSEDED") {
+            yield { type: "run_notice", reason: "superseded", message: USER_FACING_TEXT.runSuperseded };
+            return;
+          }
           yield {
             type: "error",
             error: event.error || USER_FACING_TEXT.generic,

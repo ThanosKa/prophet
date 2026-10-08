@@ -224,6 +224,29 @@ describe('useAgentChat run isolation', () => {
   })
 
   it.each([
+    ['superseded', 'This chat continued in another panel, so this task stopped here.'],
+  ] as const)('shows the %s notice after the reply, not an error', async (reason, message) => {
+    const runs = scriptRuns([
+      {
+        before: [{ type: 'content_delta', delta: 'I opened the invoice.' }],
+        after: [{ type: 'run_notice', reason, message }],
+      },
+    ])
+
+    await act(async () => {
+      void current().sendMessage('chat-1', 'hi')
+    })
+    expect(current().notice).toBeNull()
+    await act(async () => runs[0].release())
+
+    const assistant = (useChatStore.getState().messages['chat-1'] ?? []).find((m) => m.role === 'assistant')
+    expect(assistant?.content).toBe('I opened the invoice.')
+    expect(current().notice).toBe(message)
+    expect(current().error).toBeNull()
+    expect(useChatStore.getState().isStreaming).toBe(false)
+  })
+
+  it.each([
     [new TypeError('Failed to fetch'), "Can't reach Prophet. Check your connection and try again."],
     [new TypeError('NetworkError when attempting to fetch resource.'), "Can't reach Prophet. Check your connection and try again."],
     [new Error('net::ERR_INTERNET_DISCONNECTED network error'), "Can't reach Prophet. Check your connection and try again."],

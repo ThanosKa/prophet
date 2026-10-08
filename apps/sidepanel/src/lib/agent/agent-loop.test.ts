@@ -204,6 +204,44 @@ describe('runAgentLoop', () => {
     })
   })
 
+  describe('Run id', () => {
+    const runId = '5f0c6f9e-2b7a-4c1e-9d3a-8e2f1b6c4a70'
+    const snapshotTurn = (id: string) => [
+      { type: 'tool_use', toolUse: { type: 'tool_use', id, name: 'take_snapshot', input: {} } },
+      { type: 'done', stopReason: 'tool_use' },
+    ]
+
+    beforeEach(() => {
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'uid=1 button "Send"', durationMs: 1 })
+    })
+
+    it('sends the runId from session_created on every continuation, even when a later frame lacks it', async () => {
+      const { bodies } = serveTurns([
+        [{ type: 'session_created', sessionId: 'chat-1', runId }, ...snapshotTurn('t1')],
+        [{ type: 'session_created', sessionId: 'chat-1' }, ...snapshotTurn('t2')],
+        [{ type: 'session_created', sessionId: 'chat-1', runId }, { type: 'done', stopReason: 'end_turn' }],
+      ])
+
+      await collect()
+
+      expect(bodies().map((body) => body.runId)).toEqual([undefined, runId, runId])
+    })
+
+    it('ends the Run with a notice when the chat continued in another panel', async () => {
+      const superseded = 'This chat continued in another panel, so this task stopped here.'
+      const { fetchMock } = serveTurns([[{ type: 'session_created', sessionId: 'chat-1', runId }, ...snapshotTurn('t1')]])
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: superseded, code: 'RUN_SUPERSEDED' }), { status: 409 })
+      )
+
+      const events = await collect()
+
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(events.map((event) => event.type)).not.toContain('error')
+      expect(events.at(-1)).toEqual({ type: 'run_notice', reason: 'superseded', message: superseded })
+    })
+  })
+
   describe('History / Continuation', () => {
     it('includes the first turn and its tool results on the second turn', async () => {
       const turn1 = `data: {"type":"tool_use","toolUse":{"type":"tool_use","id":"tool_1","name":"navigate","input":{"url":"https://example.com"}}}\n\ndata: {"type":"done"}\n\n`

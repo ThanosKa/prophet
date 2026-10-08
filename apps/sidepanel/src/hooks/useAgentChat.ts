@@ -175,6 +175,7 @@ export function useAgentChat() {
         let finishedCleanly = false
         let sawError = false
         let truncated = false
+        let stoppedEarly = false
 
         for await (const event of eventStream) {
           if (signal.aborted) break
@@ -186,6 +187,13 @@ export function useAgentChat() {
           }
 
           if (event.type === 'turn_limit_reached') {
+            setNotice(event.message)
+            continue
+          }
+
+          // The loop sends it once the reply is in, so the notice shows after the reply.
+          if (event.type === 'run_notice') {
+            stoppedEarly = true
             setNotice(event.message)
             continue
           }
@@ -259,7 +267,7 @@ export function useAgentChat() {
           }
         }
 
-        if (finishedCleanly && !sawError && !truncated && !signal.aborted) {
+        if (finishedCleanly && !sawError && !truncated && !stoppedEarly && !signal.aborted) {
           void useReviewPromptStore.getState().recordSuccessfulRun()
         }
       } catch (err) {
