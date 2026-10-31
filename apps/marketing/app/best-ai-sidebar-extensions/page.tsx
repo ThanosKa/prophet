@@ -376,6 +376,11 @@ export default function BestAISidebarExtensionsPage() {
                 context: 'the wider category including popup, autocomplete and highlighter extensions, not just side panels.',
               },
               {
+                href: '/blog/summarize-web-page-with-ai',
+                anchor: 'How to summarize the current webpage with AI',
+                context: 'the prompts that give useful summaries once a side panel can read the tab you are on.',
+              },
+              {
                 href: '/blog/accessibility-tree-vs-screenshots-browser-ai',
                 anchor: 'Accessibility tree vs screenshots for browser AI',
                 context: 'the technical reason some sidebars automate reliably and others do not.',

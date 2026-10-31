@@ -139,21 +139,20 @@ const extensions = [
   {
     rank: 7,
     name: 'Claude in Chrome',
-    tagline: 'Anthropic\'s official Chrome extension for claude.ai',
-    bestFor: 'Users already paying for Claude Pro who want a one-click shortcut to claude.ai.',
+    tagline: 'Anthropic\'s official browser agent for paid Claude plans',
+    bestFor: 'Users already paying for a Claude plan who want Anthropic\'s own agent to act on pages.',
     url: 'https://claude.ai',
-    pricing: 'Free with a Claude account; Claude Pro $20/month or Team $30/user/month for consistent access',
-    description: 'Anthropic\'s first-party Chrome extension brings claude.ai into a popup window accessible from any tab. It supports Artifacts, file uploads, and project-based conversations. The key limitation: it does not read the current page. There is no on-page summarization, no element interaction, and no automation — the extension is essentially a keyboard shortcut to claude.ai rather than a true browser integration. For users already paying for Claude Pro who just want faster access to the chat UI, that is enough. For users who want Claude to actually act on the page they are looking at, it is not.',
+    pricing: 'No separate price; needs a paid Claude plan (Pro $20/month and up). Not available on the Free plan',
+    description: 'Anthropic\'s first-party extension puts Claude in Chrome\'s side panel and lets it read the page, click, type, navigate and fill forms. It is included with paid Claude plans and is not available on the Free plan (Anthropic help center, as of October 2026). It perceives pages through screenshots, which handles charts and visual layouts that have no accessibility data, at the cost of an image round-trip on every step. Usage counts against your Claude plan\'s limits. If you already pay for Claude, it is the obvious first thing to try; if you do not, the $20/month floor is the entry price for automation you could get pay-per-use elsewhere.',
     pros: [
-      'Direct access to Claude with Artifacts, file uploads, and Projects',
-      'No additional subscription if you already pay for Claude Pro',
-      'First-party reliability and privacy guarantees from Anthropic',
+      'Official Anthropic agent that reads and acts on the current page',
+      'No additional charge if you already pay for a Claude plan',
+      'Screenshot-based perception copes with charts, canvas and visual layouts',
     ],
     cons: [
-      'Cannot read or interact with the current web page',
-      'No browser automation, form filling, or extraction',
-      'Opens as a popup, not a persistent side panel — context is lost on tab switch',
-      'Requires Claude Pro ($20/mo) for consistent access without rate limits',
+      'Not available on the free Claude plan; entry cost is Claude Pro at $20/month',
+      'Every step is a screenshot round-trip, which is slower and costs more tokens than reading the page as text',
+      'Usage shares your Claude plan\'s limits with claude.ai chat',
     ],
   },
   {
@@ -221,7 +220,7 @@ const faqItems = [
   },
   {
     question: 'What is the difference between AI chat extensions and AI automation extensions?',
-    answer: 'AI chat extensions (like Monica, Sider, and MaxAI) let you talk to an AI model and get text responses. They can read page content but cannot interact with the page. AI automation extensions (like Prophet and Harpa) can also control the browser: clicking buttons, filling forms, navigating between pages, and extracting structured data. If you need the AI to actually do things on web pages rather than just talk about them, you need an automation-capable extension.',
+    answer: 'AI chat extensions (like Monica, Sider, and MaxAI) let you talk to an AI model and get text responses. They can read page content but cannot interact with the page. AI automation extensions (like Prophet, Claude in Chrome and Harpa) can also control the browser: clicking buttons, filling forms, navigating between pages, and extracting structured data. If you need the AI to actually do things on web pages rather than just talk about them, you need an automation-capable extension.',
   },
   {
     question: 'Does Google Chrome have built-in AI features in 2026?',
@@ -230,7 +229,7 @@ const faqItems = [
   {
     question: 'What is the best AI Chrome extension in 2026?',
     answer:
-      'It depends on whether you want the AI to talk about the page or act on it. For browser automation, Prophet is the only extension in this list that can click, fill forms, navigate and extract data, and it does so with all three Claude models on pay-per-use pricing. For a polished multi-model daily assistant, Monica is the strongest all-rounder. For comparing several models on the same prompt, Sider\'s group chat is unmatched. For search-grounded answers, Merlin. Most people are best served by one automation-capable extension plus one lightweight reading tool.',
+      'It depends on whether you want the AI to talk about the page or act on it. For browser automation, two extensions in this list can click, fill forms and navigate for you: Prophet, which reads the accessibility tree and runs all three Claude models on pay-per-use pricing, and Anthropic\'s Claude in Chrome, which works from screenshots and needs a paid Claude plan. For a polished multi-model daily assistant, Monica is the strongest all-rounder. For comparing several models on the same prompt, Sider\'s group chat is unmatched. For search-grounded answers, Merlin. Most people are best served by one automation-capable extension plus one lightweight reading tool.',
   },
   {
     question: 'What are the best free AI Chrome extensions?',
@@ -240,7 +239,7 @@ const faqItems = [
   {
     question: 'Which AI Chrome extension can actually automate browser tasks?',
     answer:
-      'Only two of the nine come close. Prophet includes 18 tools driven through the Chrome DevTools Protocol that let Claude click buttons, fill form fields, navigate between pages, scroll and manage tabs, using the accessibility tree to target elements deterministically. Harpa AI offers macro recording, page-change monitoring and scraping, which is automation of a different kind — scheduled and rule-based rather than AI-driven. Monica, Merlin, Sider, MaxAI, Glasp, Compose AI and Anthropic\'s Claude in Chrome are all read-and-respond tools with no ability to interact with page elements.',
+      'Three of the nine can act on a page. Prophet includes 18 tools driven through the Chrome DevTools Protocol that let Claude click buttons, fill form fields, navigate between pages, scroll and manage tabs, using the accessibility tree to target elements deterministically. Harpa AI offers macro recording, page-change monitoring and scraping, which is automation of a different kind — scheduled and rule-based rather than AI-driven. Anthropic\'s Claude in Chrome is a full AI agent too: it clicks, types and fills forms from screenshots of the page, and needs a paid Claude plan. Monica, Merlin, Sider, MaxAI, Glasp and Compose AI are read-and-respond tools with no ability to interact with page elements.',
   },
   {
     question: 'How much do AI Chrome extensions cost per month?',
@@ -249,7 +248,7 @@ const faqItems = [
   },
   {
     question: 'Does Anthropic have an official Chrome extension for Claude?',
-    answer: 'Yes. Anthropic ships "Claude in Chrome," an official first-party extension that opens claude.ai in a popup from any tab. It supports Artifacts, file uploads, and Projects, but it cannot read or interact with the page you are on — there is no on-page summarization, no element clicking, and no automation. For users who want Claude to act on the current page, third-party extensions like Prophet are still required.',
+    answer: 'Yes. Anthropic ships "Claude in Chrome," an official extension that runs Claude in the side panel and can read the page, click, type and fill forms. It is included with paid Claude plans (Pro and up) and is not available on the Free plan. It works from screenshots of the page. Third-party extensions like Prophet read the accessibility tree instead and bill per use, so you can automate the browser without a Claude subscription.',
   },
 ]
 
@@ -316,13 +315,13 @@ export default function BestAIChromeExtensionsPage() {
               If you want the answer without the detail, here is how the nine AI Chrome extensions rank by what you are actually trying to do:
             </p>
             <ul className="space-y-2 text-muted-foreground">
-              <li><strong className="text-foreground">Best overall and only real browser automation:</strong> Prophet (Claude Haiku 5.5, Sonnet 5.5 and Opus 5.5, 18 automation tools, pay-per-use credits)</li>
+              <li><strong className="text-foreground">Best overall for pay-per-use browser automation:</strong> Prophet (Claude Haiku 5.5, Sonnet 5.5 and Opus 5.5, 18 automation tools, pay-per-use credits)</li>
               <li><strong className="text-foreground">Best multi-model assistant:</strong> Monica (GPT-4o, Claude and Gemini plus image generation in one sidebar)</li>
               <li><strong className="text-foreground">Best for comparing model answers:</strong> Sider (group chat queries several models on the same prompt)</li>
               <li><strong className="text-foreground">Best with live web search:</strong> Merlin (search-grounded answers and document analysis)</li>
               <li><strong className="text-foreground">Best quick actions on selected text:</strong> MaxAI (highlight to summarise, explain, translate or rewrite)</li>
               <li><strong className="text-foreground">Best for monitoring and scraping:</strong> Harpa AI (page-change alerts and macros, bring your own key)</li>
-              <li><strong className="text-foreground">Best if you already pay for Claude Pro:</strong> Claude in Chrome (official, but cannot read the current page)</li>
+              <li><strong className="text-foreground">Best if you already pay for Claude Pro:</strong> Claude in Chrome (official browser agent, included with paid Claude plans)</li>
               <li><strong className="text-foreground">Best for research and highlighting:</strong> Glasp (free, social highlights and YouTube summaries)</li>
               <li><strong className="text-foreground">Best writing autocomplete:</strong> Compose AI (works in every text field on the web)</li>
             </ul>
@@ -449,7 +448,7 @@ export default function BestAIChromeExtensionsPage() {
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Sider</td><td className="py-3 px-3">GPT-4, Claude, Gemini</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$8.99/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">MaxAI</td><td className="py-3 px-3">GPT-4o, Claude, Gemini, Llama</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$9.99/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Harpa AI</td><td className="py-3 px-3">GPT-4, Claude, local models</td><td className="py-3 px-3">Monitoring only</td><td className="py-3 px-3">Yes (BYOK)</td><td className="py-3 px-3">$15/mo</td></tr>
-                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Claude in Chrome</td><td className="py-3 px-3">Claude (Sonnet)</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes (Claude account)</td><td className="py-3 px-3">$20/mo (Claude Pro)</td></tr>
+                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Claude in Chrome</td><td className="py-3 px-3">Claude (Sonnet)</td><td className="py-3 px-3">Yes (screenshots)</td><td className="py-3 px-3">No (paid Claude plans only)</td><td className="py-3 px-3">$20/mo (Claude Pro)</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Glasp</td><td className="py-3 px-3">Built-in (limited)</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">Free</td></tr>
                   <tr><td className="py-3 px-3 font-medium text-foreground">Compose AI</td><td className="py-3 px-3">Built-in</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$9.99/mo</td></tr>
                 </tbody>
@@ -467,7 +466,7 @@ export default function BestAIChromeExtensionsPage() {
               <li><strong className="text-foreground">If you want to compare multiple AI models on the same prompt:</strong> Sider&apos;s group chat queries GPT-4, Claude, and Gemini at once and shows the answers side by side. Useful when you don&apos;t yet know which model is best for a given task.</li>
               <li><strong className="text-foreground">If you want a polished daily assistant with image generation:</strong> Monica covers writing, translation, and image generation in one interface. Best fit for users who don&apos;t need automation but want one tool for many small jobs.</li>
               <li><strong className="text-foreground">If you mostly read and research:</strong> MaxAI&apos;s highlight-to-explain workflow and Glasp&apos;s social highlighting are purpose-built for reading and note-taking, not chat. Skip the chat-heavy options.</li>
-              <li><strong className="text-foreground">If you already pay for Claude Pro:</strong> Anthropic&apos;s own Claude in Chrome is the cheapest way to keep using claude.ai — but it cannot act on the page. Pair it with Prophet (free tier) if you want both.</li>
+              <li><strong className="text-foreground">If you already pay for Claude Pro:</strong> Anthropic&apos;s own Claude in Chrome comes with your plan at no extra cost and can act on the page. Prophet is the pay-per-use option if you would rather not keep a $20/month subscription for browser automation.</li>
               <li><strong className="text-foreground">If you write a lot in browser text fields:</strong> Compose AI&apos;s autocomplete is the specialist. Everything else is overkill.</li>
             </ul>
           </section>
@@ -512,7 +511,12 @@ export default function BestAIChromeExtensionsPage() {
               {
                 href: '/compare/prophet-vs-claude-in-chrome',
                 anchor: 'Prophet vs Claude in Chrome',
-                context: 'why Anthropic’s official extension cannot read the page you are on, and what that costs you.',
+                context: 'screenshots against the accessibility tree, and a $20/month plan against pay-per-use credits.',
+              },
+              {
+                href: '/compare/prophet-vs-copilot',
+                anchor: 'Prophet vs Microsoft Copilot',
+                context: 'for people who already have Copilot in Edge and want to know what a Claude side panel adds.',
               },
               {
                 href: '/compare/prophet-vs-harpa-ai',
