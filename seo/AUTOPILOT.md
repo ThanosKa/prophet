@@ -13,7 +13,7 @@ Language:      write everything in seo/ and the report in Greek; site copy stays
 
 ## Data sources in this repo
 
-- **Search Console:** the `gsc` MCP server, property `https://prophetchrome.com/`.
+- **Search Console:** the `gsc` MCP server, property `https://prophetchrome.com/`. In a cloud run, where that server is not available, use `node seo/gsc.mjs <command> --site https://prophetchrome.com/` instead (commands: `queries`, `pages`, `page-queries`, `striking`, `compare`, `sitemaps`, `inspect --url <url>`; see the top of the file). It reads the key from the `GSC_SA_KEY_B64` env var and prints JSON. Never print, log or commit that variable. If the script says the key is not set, treat Search Console as not connected.
 - **Sign-ups and revenue:** `cd apps/marketing && node --env-file=.env.local scripts/seo-conversions.mjs`. It is read-only and prints aggregate counts only. Never query user rows, emails or names, and never write to the database or Stripe. Report sign-ups from the `weekly` baseline. Hours in `bursts` are not search traffic; report them separately. **The repo is public: never write these numbers into seo/, a commit or a PR.** There is no per-page attribution: sign-ups are not stored with a landing page or referrer, so connect them to SEO only through the trend, never per page.
 - **Product facts:** `seo/context.md`, which points at the code that holds each fact.
 - **After a deploy:** `node apps/marketing/scripts/indexnow.mjs` submits the sitemap to Bing and Yandex.
