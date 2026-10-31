@@ -16,7 +16,7 @@ const chatgptVsClaudeExtension: BlogPost = {
   title: 'ChatGPT vs Claude Chrome Extensions: We Tested Both (2026)',
   description: 'Side by side on speed, price and privacy. Claude extensions read pages 2-4x faster; ChatGPT\'s official one cannot read your page at all.',
   date: '2026-03-05',
-  lastModified: '2026-05-19',
+  lastModified: '2026-10-31',
   readingTime: '12 min read',
   category: 'Comparisons',
   keywords: ['chatgpt vs claude chrome extension', 'chatgpt chrome extension', 'claude chrome extension', 'chatgpt vs claude', 'ai browser extension comparison'],
@@ -27,7 +27,7 @@ const chatgptVsClaudeExtension: BlogPost = {
     },
     {
       question: 'What is the best Claude Chrome extension in 2026?',
-      answer: 'Anthropic\'s official Claude in Chrome is a convenience shortcut to claude.ai with no page-reading. Third-party options like Prophet add full side-panel integration, all three Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5), and 18 built-in browser-automation tools. Pick first-party for casual chat, Prophet for automation and pay-per-use ($0.07 free credits to try Haiku, no card).',
+      answer: 'Anthropic\'s official Claude in Chrome reads pages, clicks, types and fills forms, but it is only available on paid Claude plans (Pro and up), not on the Free plan, and it perceives pages through screenshots. Prophet reads the accessibility tree instead, offers all three Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5) with 18 browser tools, and bills pay-per-use ($0.07 free credits to try Haiku, no card). Pick Claude in Chrome if you already pay for Claude, Prophet if you want to pay per use.',
     },
     {
       question: 'Do ChatGPT extensions read the current page?',
@@ -71,7 +71,7 @@ const chatgptVsClaudeExtension: BlogPost = {
 <p>For browser automation, ChatGPT-based extensions generally rely on screenshot-based approaches: the extension captures a screenshot of the page, sends it to GPT-4o's vision capabilities, and the model identifies elements to interact with. This works but is slow (each screenshot analysis takes 2-4 seconds), expensive (vision API calls cost more than text), and fragile (UI changes or overlays can confuse the model).</p>
 
 <h3>Claude Extensions</h3>
-<p>Anthropic's official Chrome extension is similar to OpenAI's: a convenient shortcut to claude.ai without page-reading capabilities. However, third-party Claude extensions like Prophet take a fundamentally different approach to browser integration.</p>
+<p>Anthropic's official extension, Claude in Chrome, is a real browser agent: it reads the text on the page and can click buttons, type, navigate and fill forms from the side panel. It is included with paid Claude plans (Pro and above) and is not available on the Free plan (<a href="https://support.claude.com/en/articles/12012173" rel="nofollow noopener" target="_blank">Anthropic help center</a>, as of October 2026). It perceives the page through screenshots, as the <a href="/compare/prophet-vs-claude-in-chrome">Prophet vs Claude in Chrome comparison</a> explains in detail. Prophet takes a different approach to the same job.</p>
 <p>Prophet uses the accessibility tree &mdash; the structured representation of the page that screen readers use &mdash; instead of screenshots. This approach is faster because it avoids image processing overhead, more reliable because element identification is deterministic, and cheaper because it sends text rather than images to the API. The accessibility tree also captures interactive elements, form states, and ARIA labels that screenshots miss.</p>
 <p>Prophet's 18 built-in browser tools cover clicking, typing, scrolling, extracting data, navigating, and more. These tools operate programmatically through Chrome's extension APIs rather than simulating mouse movements, which makes them faster and more reliable.</p>
 
@@ -83,7 +83,7 @@ const chatgptVsClaudeExtension: BlogPost = {
 <p>The total cost for a ChatGPT-based browser AI setup ranges from $10/month (third-party only, with query limits) to $40/month (ChatGPT Plus plus a premium third-party extension).</p>
 
 <h3>Claude Ecosystem</h3>
-<p>Claude Pro costs $20/month for access to claude.ai with higher limits. Anthropic's official extension is free with a Claude account. Third-party Claude extensions vary: Prophet starts with a free tier ($0.07 in credits) and scales from $9.99/month (Pro, $10 in credits) to $59.99/month (Ultra, $60 in credits).</p>
+<p>Claude Pro costs $20/month for access to claude.ai with higher limits. Anthropic's Claude in Chrome has no separate price, but it needs a paid Claude plan; the Free plan cannot use it. Third-party Claude extensions vary: Prophet starts with a free tier ($0.07 in credits) and scales from $9.99/month (Pro, $10 in credits) to $59.99/month (Ultra, $60 in credits).</p>
 <p>Prophet's pay-per-use model means you only pay for tokens consumed. A typical user sending 50 messages per day with Claude Haiku 5.5 spends roughly $3-5/month. The same usage with Sonnet 5.5 costs $8-15/month. With Opus 5.5, expect $15-30/month. This granularity lets you match costs to your actual usage rather than paying a flat rate that may be too high or too low.</p>
 
 <h3>Cost Efficiency</h3>
@@ -579,17 +579,35 @@ const useClaudeWithoutSubscription: BlogPost = {
 
 const summarizeWebPageWithAi: BlogPost = {
   slug: 'summarize-web-page-with-ai',
-  title: 'Summarize Any Web Page With AI in Under 10 Seconds',
-  description: 'The exact prompts that turn a 4,000-word page into five bullets. Works on articles, docs and PDFs, with no copy-pasting into another tab.',
+  title: 'How to Summarize the Current Webpage With AI (No Copy-Paste)',
+  description: 'Open a side panel that reads the active tab and type "Summarize this page in 5 bullets". The prompts that work on articles and docs, and where it fails.',
   date: '2026-02-10',
+  lastModified: '2026-10-31',
   readingTime: '8 min read',
   category: 'Tutorials',
-  keywords: ['summarize web page with ai', 'ai page summarizer', 'summarize article ai', 'web page summary tool', 'ai summarization chrome extension'],
+  keywords: ['summarize the current webpage', 'summarize this page', 'summarize web page with ai', 'ai page summarizer', 'summarize article ai', 'ai summarization chrome extension'],
+  faq: [
+    {
+      question: 'How do I summarize the current webpage with AI?',
+      answer: 'Use an AI side panel that can read the active tab, so you never copy the text out. In Prophet: open the page, click the Prophet icon to open the Chrome side panel, and type "Summarize this page in 5 bullet points." Prophet reads the page through its accessibility tree and answers in the panel next to the page.',
+    },
+    {
+      question: 'Can AI summarize a page I am logged into?',
+      answer: 'Yes, if the extension reads the page in your own browser. Prophet reads the tab you already have open, in your logged-in session, so it sees what you see on dashboards, internal docs and member-only articles. It cannot read content you do not have access to and does not bypass paywalls.',
+    },
+    {
+      question: 'How much does it cost to summarize a page with Prophet?',
+      answer: 'Prophet bills credits by the tokens each Turn uses, and every Turn costs at least 1 credit (1 cent). New accounts get a one-time $0.07 in credits, enough to try a few summaries on Claude Haiku 5.5. The usage dashboard shows the credits each request used.',
+    },
+  ],
   content: `
-<p>Reading every article, report, and documentation page in full is not realistic when you are processing dozens of sources per day. AI-powered summarization has matured to the point where you can get accurate, structured summaries of any web page in seconds. This tutorial walks through how to summarize web pages using Prophet's Chrome extension, with practical prompts, tips for getting better results, and real use cases.</p>
+<aside class="quick-answer" aria-label="Quick answer">
+  <strong>Quick answer:</strong> To summarize the current webpage, open an AI side panel that can read the active tab, then type <code>Summarize this page in 5 bullet points.</code> With Prophet, the AI reads the page you are on through its accessibility tree, so there is nothing to copy, paste or upload.
+</aside>
+<p>The fastest way to summarize the current webpage is to ask an assistant that already sees it. Prophet opens in Chrome's side panel next to the page, reads the active tab when you send a message, and returns the summary beside the text it came from. The rest of this guide covers the prompts that give useful summaries, how to pick a model, and the pages where summarizing fails.</p>
 
 <h2>Why Summarize with AI Instead of Skim Reading</h2>
-<p>Skim reading is fast but unreliable. Studies consistently show that skimmers miss key details, misinterpret conclusions, and overestimate their comprehension. AI summarization offers several advantages:</p>
+<p>Skimming is fast, but it is easy to miss the one paragraph that changes the conclusion. Asking an AI to summarize the page gives you:</p>
 <ul>
 <li><strong>Consistency.</strong> The AI reads every sentence. It does not skip paragraphs or lose focus.</li>
 <li><strong>Structured output.</strong> You can request summaries in specific formats: bullet points, executive summaries, key takeaways, or question-and-answer format.</li>
@@ -601,7 +619,7 @@ const summarizeWebPageWithAi: BlogPost = {
 <p>Prophet is a Chrome extension that opens in the browser side panel and connects to Claude AI. It reads the current web page through the accessibility tree, which means it can access the full text content of any page you are viewing.</p>
 <ol>
 <li>Install Prophet from the Chrome Web Store or load it as an unpacked extension.</li>
-<li>Create an account or sign in. The free tier includes a one-time $0.07 in credits, enough to try a few summaries with Haiku.</li>
+<li>Create an account or sign in. New accounts get a one-time $0.07 in credits, enough to try a few summaries with Haiku.</li>
 <li>Navigate to any web page you want to summarize.</li>
 <li>Open the Prophet side panel by clicking the extension icon.</li>
 <li>Type your summarization prompt and press enter.</li>
@@ -671,12 +689,12 @@ const summarizeWebPageWithAi: BlogPost = {
 <li>Continue across additional sources.</li>
 <li>Ask: <code>Based on all the articles we have discussed, what are the consensus points and where do the sources disagree?</code></li>
 </ol>
-<p>Prophet maintains chat history within a conversation, so the AI remembers previous summaries and can synthesize across sources.</p>
+<p>Prophet maintains chat history within a conversation, so the AI remembers previous summaries and can synthesize across sources. Summarizing is only the start; <a href="/blog/10-ways-to-use-ai-while-browsing">ten more ways to use AI while browsing</a> covers what to hand the side panel next.</p>
 
 <h2>Use Cases</h2>
 
 <h3>Research and Academic Work</h3>
-<p>Graduate students and researchers regularly process dozens of papers per week. Summarizing each paper before deciding whether to read it in full can cut research time by 60-70%. Use the argument mapping prompt to quickly assess whether a paper's methodology and conclusions are relevant to your work.</p>
+<p>Graduate students and researchers regularly process dozens of papers per week. Summarizing each paper before deciding whether to read it in full means you only read the ones that matter. Use the argument mapping prompt to quickly assess whether a paper's methodology and conclusions are relevant to your work.</p>
 
 <h3>News and Current Events</h3>
 <p>Staying informed across multiple news sources is time-consuming. Summarize articles from different outlets on the same topic to get a balanced view in minutes instead of hours. The comparison extraction prompt works well for identifying where sources agree and disagree.</p>
@@ -688,7 +706,7 @@ const summarizeWebPageWithAi: BlogPost = {
 <p>Monitoring competitor websites, blog posts, and product updates is a common business task. Summarize competitor content to track feature launches, pricing changes, and strategic direction without spending hours reading every press release.</p>
 
 <h3>Email Newsletters and Reports</h3>
-<p>Long email newsletters and PDF reports viewed in the browser are ideal candidates for AI summarization. Open the report in a browser tab and ask Prophet to extract the key metrics, recommendations, or action items.</p>
+<p>Long email newsletters and web reports are ideal candidates for AI summarization. Open the report in a browser tab and ask Prophet to extract the key metrics, recommendations, or action items.</p>
 
 <h2>Limitations to Keep in Mind</h2>
 <p>AI summarization is powerful but not perfect:</p>
@@ -701,7 +719,7 @@ const summarizeWebPageWithAi: BlogPost = {
 
 <h2>Getting Started</h2>
 <p>Page summarization is one of the most immediately useful AI capabilities and one of the easiest to adopt. Install Prophet, open a page you would normally spend 10 minutes reading, and ask for a summary. The time savings compound quickly: summarizing just five articles per day at five minutes saved each reclaims over two hours per week.</p>
-<p>Prophet's free tier includes enough credits for dozens of summaries, so you can build the habit before committing to a paid plan. See <a href="/how-it-works">how it works</a> for a walkthrough of Prophet's browser integration features.</p>
+<p>New accounts get a one-time $0.07 in credits, enough to try a few summaries on Haiku before you pick a plan. See <a href="/pricing">pricing</a> for what each plan includes, and <a href="/how-it-works">how it works</a> for a walkthrough of Prophet's browser integration features.</p>
 `
 }
 
@@ -1759,7 +1777,7 @@ const aiPoweredResearchFaster: BlogPost = {
 <h2>Optimizing the Research Workflow</h2>
 <p>Several practices maximize the effectiveness of AI-assisted research:</p>
 <p><strong>Front-load context.</strong> The more clearly you define the research objective at the start, the more relevant the AI's extraction and analysis will be throughout the session. Spend 60 seconds framing the task well and save minutes on every subsequent page.</p>
-<p><strong>Use consistent extraction prompts.</strong> Ask for the same data points from each competitor (positioning, pricing, features, target market) so the AI produces comparable data that is easy to synthesize into a matrix.</p>
+<p><strong>Use consistent extraction prompts.</strong> Ask for the same data points from each competitor (positioning, pricing, features, target market) so the AI produces comparable data that is easy to synthesize into a matrix. For a single source, start with a <a href="/blog/summarize-web-page-with-ai">summary of the current webpage</a> before you extract anything. Researchers who do this daily will find more workflows on <a href="/for/researchers">Prophet for researchers</a>.</p>
 <p><strong>Navigate deliberately.</strong> Visit pages in a logical order: all competitor homepages first, then all pricing pages, then supplementary sources. This helps the AI build a coherent picture incrementally.</p>
 <p><strong>Request intermediate summaries.</strong> After every two or three sources, ask the AI to summarize what has been learned so far. This catches errors early and ensures the analysis is tracking toward your research objective.</p>
 <p><strong>Choose the right model.</strong> For research workflows, Claude Sonnet 5.5 provides the best balance of analytical depth and speed. Use Opus 5.5 only when synthesizing particularly complex or contradictory findings. Haiku 5.5 works well for simple data extraction from structured pages like pricing tables. See the <a href="/blog/claude-haiku-vs-sonnet-vs-opus">model comparison guide</a> for detailed recommendations.</p>
@@ -2594,7 +2612,7 @@ const tenWaysToUseAi: BlogPost = {
 
 <h2>1. Summarize Long Articles Before You Commit to Reading Them</h2>
 <p>You encounter dozens of articles, reports, and documents every day through email, social media, and search results. Most of them are not worth the full read. Before investing 10-20 minutes in an article, open it and ask your AI extension: "Give me a three-sentence summary of this article and tell me whether it contains any new information or original research." In 10 seconds, you know whether it is worth your time. This single habit saves most knowledge workers 30-60 minutes per day by eliminating low-value reading.</p>
-<p>For technical content, go further: "Summarize this article and highlight any claims that are not supported by cited evidence." This critical reading filter catches the difference between well-researched content and opinion dressed up as fact.</p>
+<p>For technical content, go further: "Summarize this article and highlight any claims that are not supported by cited evidence." This critical reading filter catches the difference between well-researched content and opinion dressed up as fact. The full set of prompts is in our guide to <a href="/blog/summarize-web-page-with-ai">summarizing the current webpage with AI</a>.</p>
 
 <h2>2. Extract Specific Data from Complex Pages</h2>
 <p>Web pages are designed for human scanning, not data extraction. Finding specific numbers, dates, or facts buried in long pages is tedious. Instead of scrolling and scanning, ask: "What is the pricing for the enterprise plan on this page?" or "Find all the dates mentioned on this page and list them chronologically." The AI reads the full page instantly and returns exactly what you need.</p>
@@ -2765,7 +2783,7 @@ const freeAiTools2026: BlogPost = {
 
 <h2>3. Prophet Free</h2>
 <p><strong>What you get:</strong> a one-time $0.07 in credits, enough to try Claude Haiku 5.5. Access to all three Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5), though the free credits are meant for trying Haiku. Full browser automation capabilities. Chat history. All 18 browser tools.</p>
-<p><strong>What you do not get:</strong> The free credits do not last long with heavy use. No credit replenishment without upgrading or buying credits. Rate limits are more restrictive (5 requests per minute).</p>
+<p><strong>What you do not get:</strong> The free credits do not last long with heavy use. No credit replenishment without upgrading or buying credits. Rate limits are lower than on paid plans: 60 agent requests per minute, against 120 on Pro and 240 on Premium and Ultra.</p>
 <p><strong>When to upgrade:</strong> As soon as you exhaust the $0.07 in credits and want to continue using the tool. Prophet Pro at $9.99/month gives you $10 in credits. See the full breakdown on our <a href="/pricing">pricing page</a>.</p>
 
 <h2>4. Google Gemini Free</h2>

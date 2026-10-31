@@ -220,7 +220,7 @@ Prophet sits at the intersection of:
 | **Credits-based pricing** | Pay for exactly what you use | 1 credit = 1 cent; every Turn costs at least 1 credit; daily usage per model in the dashboard |
 | **Plans with price-equal credits** | No guesswork about what a plan buys | Pro $9.99 → $10, Premium $29.99 → $30, Ultra $59.99 → $60 in credits every month |
 | **One-time credit top-up ($10)** | Flexibility for variable usage | Buy $10 of credits anytime; they never expire and survive renewals, plan changes and cancellation |
-| **Tier-based rate limiting** | Fair resource allocation | Free: 5 req/min, Pro: 20, Premium/Ultra: 60 |
+| **Tier-based rate limiting** | Fair resource allocation | Agent chat: Free 60 req/min, Pro 120, Premium/Ultra 240 (`apps/marketing/lib/ratelimit.ts`) |
 | **Secure authentication (Clerk)** | Enterprise-grade account security | OAuth integration, session sync between web and extension |
 | **Agent overlay with stop button** | Stay in control during automation | Blue glow border shows agent is active; red stop button cancels instantly |
 | **Auto-generated chat titles** | Easy conversation management | AI summarizes your first message into a title |
