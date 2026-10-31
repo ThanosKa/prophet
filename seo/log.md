@@ -6,4 +6,5 @@
 - 2026-10-31 · https://prophetchrome.com/blog/chatgpt-vs-claude-chrome-extension · Ίδια διόρθωση για το Claude in Chrome (FAQ, κείμενο, τιμές), με πηγή το support.claude.com.
 - 2026-10-31 · https://prophetchrome.com/blog/summarize-web-page-with-ai · Νέος title/description/intro για το "summarize the current webpage", quick answer, 3 FAQ (FAQPage), βγήκαν στατιστικά χωρίς πηγή και ο ισχυρισμός για PDF, και διορθώθηκε το "dozens of summaries" σε "a few summaries" (σωστό για το free των $0.07).
 - 2026-10-31 · https://prophetchrome.com/best-ai-sidebar-extensions, /blog/10-ways-to-use-ai-while-browsing, /blog/ai-powered-research-faster · Εσωτερικά links προς το summarize post (3), το /for/researchers και το /blog/10-ways-to-use-ai-while-browsing.
+- 2026-11-01 · seo/AUTOPILOT.md, apps/marketing/scripts/seo-conversions.mjs · Runbook μέσα στο repo και read-only script για sign-ups και έσοδα.
 - 2026-10-31 · https://prophetchrome.com/blog/free-ai-tools-2026 · Το rate limit του free διορθώθηκε από 5/λεπτό σε 60/λεπτό (`lib/ratelimit.ts`).

@@ -68,6 +68,7 @@ Snapshots των sitemaps στο `seo/competitors/<domain>.txt` (ένα URL αν
 
 - Google Search Console: συνδεδεμένο (`https://prophetchrome.com/`, siteRestrictedUser).
 - Ahrefs ή κάποιο παρόμοιο εργαλείο: δεν είναι συνδεδεμένο. Χωρίς αυτό δεν έχουμε μηνιαίο όγκο αναζητήσεων, δυσκολία ούτε backlinks. Στο keyword map, ο όγκος και η δυσκολία μένουν κενά.
-- Analytics και μετρήσεις sign-ups: δεν είναι συνδεδεμένα. Χωρίς αυτά δεν βλέπουμε ποια σελίδα φέρνει sign-ups.
+- Sign-ups και έσοδα: `apps/marketing/scripts/seo-conversions.mjs` (production DB + Stripe, read-only, μόνο συνολικά νούμερα). Πώς τρέχει: `seo/AUTOPILOT.md`.
+- Από ποια σελίδα έρχεται κάθε sign-up: δεν αποθηκεύεται πουθενά (ούτε landing page ούτε referrer). Γι' αυτό συνδέουμε τα sign-ups με το SEO μόνο μέσα από την τάση, όχι ανά σελίδα.
 - ChatGPT, Perplexity, Google AI Overviews: δεν υπάρχει connector, οπότε οι έλεγχοι στο `ai-prompts.md` δεν μπορούν να γίνουν αυτόματα.
 - Web search και web fetch: διαθέσιμα.
