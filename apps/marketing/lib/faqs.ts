@@ -12,7 +12,7 @@ export const homeFaqs: FAQ[] = [
   {
     question: 'How is Prophet different from ChatGPT or Claude.ai?',
     answer:
-      'Prophet lives inside your browser as a side panel. It can see and interact with the webpage you are on — filling forms, clicking buttons, extracting data, and navigating pages using 18 built-in tools. It is not just a chatbot; it is a browser automation agent powered by Claude AI.',
+      'Prophet lives inside your browser as a side panel. It can see and interact with the webpage you are on — filling forms, clicking buttons, extracting data, and navigating pages using 19 built-in tools. It is not just a chatbot; it is a browser automation agent powered by Claude AI.',
   },
   {
     question: 'How do credits work?',

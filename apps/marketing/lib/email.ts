@@ -194,7 +194,7 @@ You just unlocked a powerful AI assistant that lives right inside your browser. 
 </td>
 <td valign="top" style="padding-left:12px;">
 <p style="margin:0 0 4px 0;font-size:15px;font-weight:600;color:${TEXT_PRIMARY};">Chat with Claude AI</p>
-<p style="margin:0;font-size:14px;color:${TEXT_SECONDARY};line-height:1.5;">Ask questions, analyze pages, automate tasks — Claude is at your fingertips with 18 built-in tools.</p>
+<p style="margin:0;font-size:14px;color:${TEXT_SECONDARY};line-height:1.5;">Ask questions, analyze pages, automate tasks — Claude is at your fingertips with 19 built-in tools.</p>
 </td>
 </tr>
 </table>

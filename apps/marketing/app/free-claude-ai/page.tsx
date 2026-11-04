@@ -366,7 +366,7 @@ export default function FreeClaudeAIPage() {
 
       <InstallCta
         title="Try Claude free in your browser"
-        description="A one-time $0.07 in credits to try Haiku 5.5, no card required, with all 18 browser tools on the free tier."
+        description="A one-time $0.07 in credits to try Haiku 5.5, no card required, with all 19 browser tools on the free tier."
         secondary={{ href: '/pricing', label: 'See credit pricing' }}
       >
         <p className="text-sm text-muted-foreground mb-6">

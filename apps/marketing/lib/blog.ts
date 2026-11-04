@@ -27,7 +27,7 @@ const chatgptVsClaudeExtension: BlogPost = {
     },
     {
       question: 'What is the best Claude Chrome extension in 2026?',
-      answer: 'Anthropic\'s official Claude in Chrome reads pages, clicks, types and fills forms, but it is only available on paid Claude plans (Pro and up), not on the Free plan, and it perceives pages through screenshots. Prophet reads the accessibility tree instead, offers all three Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5) with 18 browser tools, and bills pay-per-use ($0.07 free credits to try Haiku, no card). Pick Claude in Chrome if you already pay for Claude, Prophet if you want to pay per use.',
+      answer: 'Anthropic\'s official Claude in Chrome reads pages, clicks, types and fills forms, but it is only available on paid Claude plans (Pro and up), not on the Free plan, and it perceives pages through screenshots. Prophet reads the accessibility tree instead, offers all three Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5) with 19 browser tools, and bills pay-per-use ($0.07 free credits to try Haiku, no card). Pick Claude in Chrome if you already pay for Claude, Prophet if you want to pay per use.',
     },
     {
       question: 'Do ChatGPT extensions read the current page?',
@@ -73,7 +73,7 @@ const chatgptVsClaudeExtension: BlogPost = {
 <h3>Claude Extensions</h3>
 <p>Anthropic's official extension, Claude in Chrome, is a real browser agent: it reads the text on the page and can click buttons, type, navigate and fill forms from the side panel. It is included with paid Claude plans (Pro and above) and is not available on the Free plan (<a href="https://support.claude.com/en/articles/12012173" rel="nofollow noopener" target="_blank">Anthropic help center</a>, as of October 2026). It perceives the page through screenshots, as the <a href="/compare/prophet-vs-claude-in-chrome">Prophet vs Claude in Chrome comparison</a> explains in detail. Prophet takes a different approach to the same job.</p>
 <p>Prophet uses the accessibility tree &mdash; the structured representation of the page that screen readers use &mdash; instead of screenshots. This approach is faster because it avoids image processing overhead, more reliable because element identification is deterministic, and cheaper because it sends text rather than images to the API. The accessibility tree also captures interactive elements, form states, and ARIA labels that screenshots miss.</p>
-<p>Prophet's 18 built-in browser tools cover clicking, typing, scrolling, extracting data, navigating, and more. These tools operate programmatically through Chrome's extension APIs rather than simulating mouse movements, which makes them faster and more reliable.</p>
+<p>Prophet's 19 built-in browser tools cover clicking, typing, scrolling, extracting data, navigating, and more. These tools operate programmatically through Chrome's extension APIs rather than simulating mouse movements, which makes them faster and more reliable.</p>
 
 <h2>Pricing Comparison</h2>
 <p>Pricing structures differ enough between the ecosystems that direct comparison requires understanding each model.</p>
@@ -822,7 +822,7 @@ const aiChromeExtensionForDevelopers: BlogPost = {
 <p><code>Based on these issues, group them into themes and suggest a priority order for the next sprint. Flag any issues that appear to be blockers for others.</code></p>
 
 <h2>Browser Automation for Developer Workflows</h2>
-<p>Prophet includes 18 built-in tools for browser automation that developers can leverage for repetitive tasks.</p>
+<p>Prophet includes 19 built-in tools for browser automation that developers can leverage for repetitive tasks.</p>
 
 <h3>Form Filling for Testing</h3>
 <p>When testing web applications, filling out forms with test data is tedious. Prophet can automate this:</p>
@@ -1543,7 +1543,7 @@ const mcpServersVsProphetBrowserAutomation: BlogPost = {
   title: 'Playwright MCP vs Accessibility-Tree Browser Automation',
   description: 'Two ways to give an AI a browser. One spins up a headless instance, one drives the tab you are in. Architecture, speed and when each wins.',
   date: '2026-05-12',
-  lastModified: '2026-05-19',
+  lastModified: '2026-11-04',
   readingTime: '12 min read',
   category: 'Comparisons',
   keywords: ['playwright mcp browser automation', 'mcp server browser', 'playwright vs prophet', 'browser automation ai', 'model context protocol browser'],
@@ -1594,7 +1594,7 @@ const mcpServersVsProphetBrowserAutomation: BlogPost = {
 <h2>Tool Capabilities</h2>
 <p>Both approaches offer comprehensive browser interaction tools, but with different strengths.</p>
 <p><strong>Playwright MCP tools</strong> typically include navigation, clicking, typing, selecting, scrolling, screenshot capture, PDF generation, network interception, and multi-tab management. Playwright's selector engine is powerful, supporting CSS selectors, XPath, text content matching, and chained selectors. Network interception allows monitoring and modifying API calls, which is valuable for testing and debugging.</p>
-<p><strong>Prophet's <a href="/tools">18 built-in tools</a></strong> cover clicking, typing, scrolling, navigation, data extraction, tab management, and more. These tools operate through Chrome's extension APIs, which provide direct access to browser functionality without the abstraction layer that Playwright introduces. Prophet's tools are optimized for the accessibility tree paradigm, meaning they identify elements by their semantic role and label rather than CSS selectors.</p>
+<p><strong>Prophet's <a href="/blog/ai-agent-browser-tools-explained">19 built-in tools</a></strong> cover clicking, typing, scrolling, navigation, data extraction, tab management, and more. These tools operate through Chrome's extension APIs, which provide direct access to browser functionality without the abstraction layer that Playwright introduces. Prophet's tools are optimized for the accessibility tree paradigm, meaning they identify elements by their semantic role and label rather than CSS selectors.</p>
 
 <h2>Use Case Comparison</h2>
 
@@ -1625,8 +1625,8 @@ const mcpServersVsProphetBrowserAutomation: BlogPost = {
 
 const aiAgentBrowserToolsExplained: BlogPost = {
   slug: 'ai-agent-browser-tools-explained',
-  title: 'What AI Browser Agents Do: The 18 Tools Behind a Click',
-  description: 'Click, type, extract, navigate. The 18 primitives every browser agent is built from, and why the way it reads the page decides its speed.',
+  title: 'What AI Browser Agents Do: The 19 Tools Behind a Click',
+  description: 'Click, type, extract, navigate. The 19 primitives every browser agent is built from, and why the way it reads the page decides its speed.',
   date: '2026-05-14',
   lastModified: '2026-05-19',
   readingTime: '12 min read',
@@ -1635,7 +1635,7 @@ const aiAgentBrowserToolsExplained: BlogPost = {
   faq: [
     {
       question: 'What tools does an AI browser agent need?',
-      answer: 'A complete browser agent needs four tool categories: navigation (visit URL, back, forward, open/switch tab), interaction (click, type, select, check, hover), scrolling (up, down, to element), and extraction (read page, get element text, extract structured data, get URL). Prophet ships 18 such tools, enough to script virtually any single-page or multi-page workflow.',
+      answer: 'A complete browser agent needs four tool categories: navigation (visit URL, back, forward, open/switch tab), interaction (click, type, select, check, hover), scrolling (up, down, to element), and extraction (read page, get element text, extract structured data, get URL). Prophet ships 19 such tools, enough to script virtually any single-page or multi-page workflow.',
     },
     {
       question: 'How does an AI agent decide which browser tool to use?',
@@ -1655,7 +1655,7 @@ const aiAgentBrowserToolsExplained: BlogPost = {
     },
   ],
   content: `
-<p>When you ask an AI assistant to "fill out this form" or "find the pricing on this page," the AI needs concrete capabilities to translate your instruction into browser actions. These capabilities are called tools: discrete functions that the AI agent can invoke to interact with the web page. Prophet ships with 18 built-in tools that cover the full range of browser interactions, from simple clicks to complex data extraction.</p>
+<p>When you ask an AI assistant to "fill out this form" or "find the pricing on this page," the AI needs concrete capabilities to translate your instruction into browser actions. These capabilities are called tools: discrete functions that the AI agent can invoke to interact with the web page. Prophet ships with 19 built-in tools that cover the full range of browser interactions, from simple clicks to complex data extraction.</p>
 <p>Understanding what these tools do and how they work helps you give better instructions and get more reliable results. This guide explains each category of tools, how the AI decides which one to use, and how to prompt for the best outcomes.</p>
 
 <h2>How AI Agent Tools Work</h2>
@@ -2272,6 +2272,7 @@ const whatIsAiWebAgent: BlogPost = {
   title: 'What Is an AI Web Agent? How It Sees, Thinks and Acts',
   description: 'An agent is a loop: read the page, pick a tool, act, repeat. What happens on each pass, and why perception decides everything downstream.',
   date: '2026-04-06',
+  lastModified: '2026-11-04',
   readingTime: '12 min read',
   category: 'Guides',
   keywords: ['ai web agent', 'browser ai agent', 'ai agent tool calling', 'ai automation agent', 'how ai agents work'],
@@ -2314,14 +2315,14 @@ const whatIsAiWebAgent: BlogPost = {
 <p>Tool calling is the mechanism that bridges the gap between language model reasoning and real-world action. The agent's "brain" (the language model) produces a structured instruction. The agent's "body" (the browser extension) executes that instruction in the actual browser environment.</p>
 
 <h3>The Tool Set</h3>
-<p>An AI web agent's capabilities are defined by its available tools. Prophet provides 18 browser tools that cover the full range of web interactions:</p>
+<p>An AI web agent's capabilities are defined by its available tools. Prophet provides 19 browser tools that cover the full range of web interactions:</p>
 <ul>
-<li><strong>Navigation:</strong> go to URL, go back, go forward, refresh</li>
-<li><strong>Interaction:</strong> click element, type text, select dropdown option, check/uncheck checkbox</li>
-<li><strong>Reading:</strong> get page content, get element text, get page title, get current URL</li>
-<li><strong>Data extraction:</strong> extract structured data from tables, lists, or repeated elements</li>
-<li><strong>Scrolling:</strong> scroll up, scroll down, scroll to element</li>
-<li><strong>Waiting:</strong> wait for element to appear, wait for navigation</li>
+<li><strong>Observation:</strong> take a snapshot of the accessibility tree, search the snapshot</li>
+<li><strong>Interaction:</strong> click element, fill element, hover element</li>
+<li><strong>Navigation:</strong> go to URL, go back, go forward, reload</li>
+<li><strong>Page:</strong> scroll, get page content, get page info (URL and title)</li>
+<li><strong>Waiting:</strong> wait for an element, wait for navigation, wait a set time</li>
+<li><strong>Tabs:</strong> list tabs, switch tab, open new tab, close tab</li>
 </ul>
 <p>Each tool has a defined input schema (what parameters it accepts) and output format (what it returns). The language model learns to use these tools from their descriptions, just as a person learns to use a new app by reading its interface labels.</p>
 
@@ -2782,7 +2783,7 @@ const freeAiTools2026: BlogPost = {
 <p><strong>When to upgrade:</strong> If you hit the 5-hour limit regularly or need Opus. Claude Pro is $20/month billed monthly ($17/month billed annually); Max starts at $100/month. Source: <a href="https://claude.com/pricing" rel="nofollow noopener" target="_blank">claude.com/pricing</a>. For every free way to use Claude, see <a href="/free-claude-ai">Free Claude AI</a>.</p>
 
 <h2>3. Prophet Free</h2>
-<p><strong>What you get:</strong> a one-time $0.07 in credits, enough to try Claude Haiku 5.5 inside Chrome. Access to all three Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5), though the free credits are meant for trying Haiku. Full browser automation: the agent reads the page, clicks, types, fills forms and moves between tabs. Chat history. All 18 browser tools.</p>
+<p><strong>What you get:</strong> a one-time $0.07 in credits, enough to try Claude Haiku 5.5 inside Chrome. Access to all three Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5), though the free credits are meant for trying Haiku. Full browser automation: the agent reads the page, clicks, types, fills forms and moves between tabs. Chat history. All 19 browser tools.</p>
 <p><strong>What you do not get:</strong> The free credits do not last long with heavy use. No credit replenishment without upgrading or buying credits. Rate limits are lower than on paid plans: 60 agent requests per minute, against 120 on Pro and 240 on Premium and Ultra.</p>
 <p><strong>When to upgrade:</strong> As soon as you exhaust the $0.07 in credits and want to continue using the tool. Prophet Pro at $9.99/month gives you $10 in credits. See the full breakdown on our <a href="/pricing">pricing page</a>.</p>
 
@@ -3050,7 +3051,7 @@ const accessibilityTreeVsScreenshots: BlogPost = {
 
 <h2>See the tradeoff in real products</h2>
 <p>The clearest live example of this architectural split is <a href="/compare/prophet-vs-claude-in-chrome">Prophet vs Claude in Chrome</a>: Anthropic's own extension uses screenshot-based Computer Use, while Prophet reads the accessibility tree, and the comparison quantifies what that costs in latency and tokens on a multi-step task. <a href="/compare/prophet-vs-harpa-ai">Prophet vs HARPA AI</a> covers a third approach again &mdash; CSS-selector macros &mdash; and why they break on site redesigns where semantic targeting survives.</p>
-<p>For the practical consequences rather than the theory, <a href="/blog/ai-agent-browser-tools-explained">AI agent browser tools explained</a> walks through what the 18 tools actually do, <a href="/blog/natural-language-browser-automation">natural language browser automation</a> shows the instruction style that works best with tree-based targeting, and <a href="/use-cases/form-filling">automated form filling</a> is the task where the difference is most visible. If you are choosing an extension on this basis, the <a href="/best-ai-chrome-extensions">ranked list of AI Chrome extensions</a> notes which perception method each one uses.</p>
+<p>For the practical consequences rather than the theory, <a href="/blog/ai-agent-browser-tools-explained">AI agent browser tools explained</a> walks through what the 19 tools actually do, <a href="/blog/natural-language-browser-automation">natural language browser automation</a> shows the instruction style that works best with tree-based targeting, and <a href="/use-cases/form-filling">automated form filling</a> is the task where the difference is most visible. If you are choosing an extension on this basis, the <a href="/best-ai-chrome-extensions">ranked list of AI Chrome extensions</a> notes which perception method each one uses.</p>
 `
 }
 

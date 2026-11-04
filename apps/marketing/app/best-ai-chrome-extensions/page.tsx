@@ -22,9 +22,9 @@ const extensions = [
     bestFor: 'Power users who want Claude with full browser automation and pay-per-use pricing.',
     url: 'https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif',
     pricing: 'Free tier ($0.07 credits to try Haiku), Pro $9.99/mo with $10 credits, Premium $29.99/mo with $30 credits, Ultra $59.99/mo with $60 credits. 1 credit = 1 cent, charged per use, so you see the real per-message cost and stop paying the moment you stop using it. No "unused capacity" charge — light months cost almost nothing.',
-    description: 'Prophet brings Anthropic\'s Claude AI directly into the Chrome side panel with a focus on browser automation. Unlike most AI extensions that only offer chat, Prophet includes 18 built-in tools for interacting with web pages: clicking buttons, filling forms, navigating between pages, and extracting data. It uses the accessibility tree instead of screenshots, which makes automation faster and more reliable. The pay-per-use credit system means you only pay for what you actually use, and the full source code is available on GitHub.',
+    description: 'Prophet brings Anthropic\'s Claude AI directly into the Chrome side panel with a focus on browser automation. Unlike most AI extensions that only offer chat, Prophet includes 19 built-in tools for interacting with web pages: clicking buttons, filling forms, navigating between pages, and extracting data. It uses the accessibility tree instead of screenshots, which makes automation faster and more reliable. The pay-per-use credit system means you only pay for what you actually use, and the full source code is available on GitHub.',
     pros: [
-      'Browser automation with 18 tools (click, fill, navigate, extract)',
+      'Browser automation with 19 tools (click, fill, navigate, extract)',
       'Accessibility tree approach is faster and cheaper than screenshot-based AI',
       'Pay-per-use credits instead of flat monthly fees for unused capacity',
       'Open source with full transparency into how it works',
@@ -239,7 +239,7 @@ const faqItems = [
   {
     question: 'Which AI Chrome extension can actually automate browser tasks?',
     answer:
-      'Three of the nine can act on a page. Prophet includes 18 tools driven through the Chrome DevTools Protocol that let Claude click buttons, fill form fields, navigate between pages, scroll and manage tabs, using the accessibility tree to target elements deterministically. Harpa AI offers macro recording, page-change monitoring and scraping, which is automation of a different kind — scheduled and rule-based rather than AI-driven. Anthropic\'s Claude in Chrome is a full AI agent too: it clicks, types and fills forms from screenshots of the page, and needs a paid Claude plan. Monica, Merlin, Sider, MaxAI, Glasp and Compose AI are read-and-respond tools with no ability to interact with page elements.',
+      'Three of the nine can act on a page. Prophet includes 19 tools driven through the Chrome DevTools Protocol that let Claude click buttons, fill form fields, navigate between pages, scroll and manage tabs, using the accessibility tree to target elements deterministically. Harpa AI offers macro recording, page-change monitoring and scraping, which is automation of a different kind — scheduled and rule-based rather than AI-driven. Anthropic\'s Claude in Chrome is a full AI agent too: it clicks, types and fills forms from screenshots of the page, and needs a paid Claude plan. Monica, Merlin, Sider, MaxAI, Glasp and Compose AI are read-and-respond tools with no ability to interact with page elements.',
   },
   {
     question: 'How much do AI Chrome extensions cost per month?',
@@ -315,7 +315,7 @@ export default function BestAIChromeExtensionsPage() {
               If you want the answer without the detail, here is how the nine AI Chrome extensions rank by what you are actually trying to do:
             </p>
             <ul className="space-y-2 text-muted-foreground">
-              <li><strong className="text-foreground">Best overall for pay-per-use browser automation:</strong> Prophet (Claude Haiku 5.5, Sonnet 5.5 and Opus 5.5, 18 automation tools, pay-per-use credits)</li>
+              <li><strong className="text-foreground">Best overall for pay-per-use browser automation:</strong> Prophet (Claude Haiku 5.5, Sonnet 5.5 and Opus 5.5, 19 automation tools, pay-per-use credits)</li>
               <li><strong className="text-foreground">Best multi-model assistant:</strong> Monica (GPT-4o, Claude and Gemini plus image generation in one sidebar)</li>
               <li><strong className="text-foreground">Best for comparing model answers:</strong> Sider (group chat queries several models on the same prompt)</li>
               <li><strong className="text-foreground">Best with live web search:</strong> Merlin (search-grounded answers and document analysis)</li>
@@ -442,7 +442,7 @@ export default function BestAIChromeExtensionsPage() {
                   </tr>
                 </thead>
                 <tbody className="text-muted-foreground">
-                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Prophet</td><td className="py-3 px-3">Claude (Haiku, Sonnet, Opus)</td><td className="py-3 px-3">Yes (18 tools)</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$9.99/mo</td></tr>
+                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Prophet</td><td className="py-3 px-3">Claude (Haiku, Sonnet, Opus)</td><td className="py-3 px-3">Yes (19 tools)</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$9.99/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Monica</td><td className="py-3 px-3">GPT-4o, Claude, Gemini</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$9.90/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Merlin</td><td className="py-3 px-3">GPT-4o, Claude, Llama</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$14.25/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Sider</td><td className="py-3 px-3">GPT-4, Claude, Gemini</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$8.99/mo</td></tr>
@@ -462,7 +462,7 @@ export default function BestAIChromeExtensionsPage() {
               The right choice depends on what you actually want the AI to do. Match the use case to the tool:
             </p>
             <ul className="space-y-3 text-muted-foreground">
-              <li><strong className="text-foreground">If you want browser automation and Claude access:</strong> Prophet is the only option that combines all three Claude tiers (Haiku, Sonnet, Opus) with 18 real browser tools and pay-per-use pricing. Light users pay closer to $1/month than $20.</li>
+              <li><strong className="text-foreground">If you want browser automation and Claude access:</strong> Prophet is the only option that combines all three Claude tiers (Haiku, Sonnet, Opus) with 19 real browser tools and pay-per-use pricing. Light users pay closer to $1/month than $20.</li>
               <li><strong className="text-foreground">If you want to compare multiple AI models on the same prompt:</strong> Sider&apos;s group chat queries GPT-4, Claude, and Gemini at once and shows the answers side by side. Useful when you don&apos;t yet know which model is best for a given task.</li>
               <li><strong className="text-foreground">If you want a polished daily assistant with image generation:</strong> Monica covers writing, translation, and image generation in one interface. Best fit for users who don&apos;t need automation but want one tool for many small jobs.</li>
               <li><strong className="text-foreground">If you mostly read and research:</strong> MaxAI&apos;s highlight-to-explain workflow and Glasp&apos;s social highlighting are purpose-built for reading and note-taking, not chat. Skip the chat-heavy options.</li>

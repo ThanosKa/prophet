@@ -21,7 +21,7 @@ const extensions = [
     tagline: 'Claude AI side panel with browser automation',
     url: 'https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif',
     pricing: 'Free tier, Pro $9.99/mo, Premium $29.99/mo, Ultra $59.99/mo',
-    description: 'Prophet is purpose-built for the Chrome side panel. It opens alongside any web page and provides Claude AI chat with full browser automation capabilities. The key differentiator is that Prophet does not just read pages; it can interact with them. Using 18 built-in browser tools powered by the accessibility tree and Chrome DevTools Protocol, Prophet can click buttons, fill forms, navigate between pages, extract structured data, and manage tabs. This makes it the only sidebar extension that functions as a true AI agent capable of completing multi-step web tasks on your behalf. The pay-per-use credit system charges only for actual API usage, and the open-source codebase provides full transparency into how your data is handled. Prophet supports Claude Haiku 5.5 for fast simple tasks, Sonnet 5.5 for balanced workloads, and Opus 5.5 for complex reasoning.',
+    description: 'Prophet is purpose-built for the Chrome side panel. It opens alongside any web page and provides Claude AI chat with full browser automation capabilities. The key differentiator is that Prophet does not just read pages; it can interact with them. Using 19 built-in browser tools powered by the accessibility tree and Chrome DevTools Protocol, Prophet can click buttons, fill forms, navigate between pages, extract structured data, and manage tabs. This makes it the only sidebar extension that functions as a true AI agent capable of completing multi-step web tasks on your behalf. The pay-per-use credit system charges only for actual API usage, and the open-source codebase provides full transparency into how your data is handled. Prophet supports Claude Haiku 5.5 for fast simple tasks, Sonnet 5.5 for balanced workloads, and Opus 5.5 for complex reasoning.',
     pros: [
       'True browser automation from the sidebar (click, fill, navigate, extract)',
       'Accessibility tree approach is faster and more reliable than screenshot-based methods',
@@ -218,7 +218,7 @@ export default function BestAISidebarExtensionsPage() {
               If you only want the short list, here is how the six tested AI sidebar Chrome extensions rank for the most common use cases in 2026:
             </p>
             <ul className="space-y-2 text-muted-foreground">
-              <li><strong className="text-foreground">Best overall + browser automation:</strong> Prophet (Claude AI, 18 automation tools, pay-per-use)</li>
+              <li><strong className="text-foreground">Best overall + browser automation:</strong> Prophet (Claude AI, 19 automation tools, pay-per-use)</li>
               <li><strong className="text-foreground">Best multi-model chat:</strong> Monica (GPT-4o, Claude, Gemini in one sidebar)</li>
               <li><strong className="text-foreground">Best for reading and writing:</strong> Sider (context-aware tools, group chat)</li>
               <li><strong className="text-foreground">Best quick actions:</strong> MaxAI (selection-based summarize, rewrite, translate)</li>
@@ -286,7 +286,7 @@ export default function BestAISidebarExtensionsPage() {
                   </tr>
                 </thead>
                 <tbody className="text-muted-foreground">
-                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Prophet</td><td className="py-3 px-3">Yes (18 tools)</td><td className="py-3 px-3">Claude only</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$9.99/mo</td></tr>
+                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Prophet</td><td className="py-3 px-3">Yes (19 tools)</td><td className="py-3 px-3">Claude only</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$9.99/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Monica</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$9.90/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Sider</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$8.99/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">MaxAI</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$9.99/mo</td></tr>

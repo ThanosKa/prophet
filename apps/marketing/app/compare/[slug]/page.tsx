@@ -168,7 +168,7 @@ export default async function ComparisonPage({ params }: Props) {
                 <strong className="text-foreground">Choose Prophet if</strong> you
                 need an AI that can actually interact with web pages -- clicking
                 buttons, filling forms, navigating between pages, and managing
-                tabs. Prophet&apos;s 18 automation tools go far beyond reading
+                tabs. Prophet&apos;s 19 automation tools go far beyond reading
                 and summarizing text. Its pay-per-use pricing also makes it the
                 better choice for users whose AI usage varies month to month.
                 If you value open source transparency and want to verify exactly

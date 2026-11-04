@@ -50,7 +50,7 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Speed', prophet: 'Fast - direct element targeting via UIDs', competitor: 'Slower - screenshot/analyze cycle each step' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits (no subscription required)', competitor: 'Claude Pro/Team/Enterprise subscription' },
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: '$20/month (Claude Pro)' },
-      { feature: 'Browser Automation', prophet: '18 tools via Chrome DevTools Protocol', competitor: 'Computer Use (coordinate-based clicks)' },
+      { feature: 'Browser Automation', prophet: '19 tools via Chrome DevTools Protocol', competitor: 'Computer Use (coordinate-based clicks)' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'Claude Sonnet, Opus (depends on subscription)' },
       { feature: 'Data Privacy', prophet: 'Page content stays local; only messages sent to API', competitor: 'Screenshots sent to Anthropic servers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
@@ -111,13 +111,13 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Speed', prophet: 'Fast - structured data, no vision model', competitor: 'Fast for chat; limited automation speed' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Monthly subscription tiers' },
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free tier with daily limits, Pro from $10/month' },
-      { feature: 'Browser Automation', prophet: '18 tools (click, fill, navigate, tab management)', competitor: 'Limited - mainly text selection and summarization' },
+      { feature: 'Browser Automation', prophet: '19 tools (click, fill, navigate, tab management)', competitor: 'Limited - mainly text selection and summarization' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, and others' },
       { feature: 'Data Privacy', prophet: 'Page content processed locally; messages only to API', competitor: 'Page content sent to multiple third-party AI providers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
     prophetAdvantages: [
-      'Full browser automation with 18 tools that can click, type, navigate, and manage tabs - not just read page text',
+      'Full browser automation with 19 tools that can click, type, navigate, and manage tabs - not just read page text',
       'Pay-per-use pricing so light users save significantly compared to a flat monthly fee',
       'Open source codebase allows inspection of exactly what data is sent and where',
       'Accessibility tree approach provides deterministic element targeting for reliable automation',
@@ -127,14 +127,14 @@ export const comparisons: ComparisonEntry[] = [
       'Mature product with a large user base, polished UI, and features like AI reading lists and group chat with multiple models',
     ],
     verdict:
-      'Sider and Prophet are both side panels, and that is roughly where the similarity ends. Sider is a reading and writing companion: it is excellent at taking the page in front of you and doing something textual with it — summarise, rewrite, translate, explain, draft a reply. Its standout feature, group chat, fires one prompt at GPT, Claude and Gemini simultaneously and shows the answers side by side, which is genuinely useful when you do not yet know which model handles a task best. What Sider does not do is act. It can tell you what the form says; it cannot fill it in. Prophet inverts the priorities: one model family, three tiers of it, and 18 tools that click, type, navigate, scroll and manage tabs through the Chrome DevTools Protocol. The practical test is simple. If your sentence ends in "...and summarise it", Sider is the better and cheaper tool. If it ends in "...and then submit it", Sider cannot complete the sentence at all.',
+      'Sider and Prophet are both side panels, and that is roughly where the similarity ends. Sider is a reading and writing companion: it is excellent at taking the page in front of you and doing something textual with it — summarise, rewrite, translate, explain, draft a reply. Its standout feature, group chat, fires one prompt at GPT, Claude and Gemini simultaneously and shows the answers side by side, which is genuinely useful when you do not yet know which model handles a task best. What Sider does not do is act. It can tell you what the form says; it cannot fill it in. Prophet inverts the priorities: one model family, three tiers of it, and 19 tools that click, type, navigate, scroll and manage tabs through the Chrome DevTools Protocol. The practical test is simple. If your sentence ends in "...and summarise it", Sider is the better and cheaper tool. If it ends in "...and then submit it", Sider cannot complete the sentence at all.',
     pricingReality: {
       heading: 'Four tiers versus no tier',
       body:
         'Sider prices in the normal SaaS way: a capped free tier, then Basic at $8.99/month, Pro at $12.99/month, and Unlimited at $24.99/month, with the better models and higher quotas gated to the upper tiers. The friction point users report most often is that "Unlimited" still meters advanced-model queries, so the top tier does not remove the thing you were paying to remove. Prophet has no tiers in that sense — credits are credits, every model is available at every level including free, and 1 credit is 1 cent, charged by the tokens each Turn actually uses. The comparison that matters: Sider Pro costs $155.88 a year whether you use it or not. Prophet at 20-30 Sonnet messages a day runs roughly $12-18 a month, light use runs a couple of dollars, and a month where you forget the extension exists costs exactly nothing. Sider wins on price only if you are a heavy multi-model user who would otherwise be buying two subscriptions.',
     },
     switchingNotes:
-      'Sider stores conversations and reading lists in its own account and offers no export, so history does not come with you — most people treat the switch as a clean start rather than a migration. Both extensions can be installed simultaneously, and because Sider is popup-and-sidebar while Prophet is a true Chrome side panel, they do not fight over screen space. The habit that takes longest to unlearn is Sider\'s selection-first workflow: you highlight text, then choose an action. Prophet is instruction-first — you describe the outcome and Claude decides which of the 18 tools to use. Users switching over typically spend their first week still highlighting things before realising they can just ask.',
+      'Sider stores conversations and reading lists in its own account and offers no export, so history does not come with you — most people treat the switch as a clean start rather than a migration. Both extensions can be installed simultaneously, and because Sider is popup-and-sidebar while Prophet is a true Chrome side panel, they do not fight over screen space. The habit that takes longest to unlearn is Sider\'s selection-first workflow: you highlight text, then choose an action. Prophet is instruction-first — you describe the outcome and Claude decides which of the 19 tools to use. Users switching over typically spend their first week still highlighting things before realising they can just ask.',
     chooseCompetitorIf:
       'You want GPT, Claude and Gemini in one panel, you actively use group chat to compare model outputs, your work is overwhelmingly reading and writing rather than acting on pages, or you want a mature product with a large user base and years of polish. Sider is a better reading companion than Prophet and we would not pretend otherwise — Prophet has no equivalent of its context-adaptive reading tools or its AI reading list.',
     faq: [
@@ -146,7 +146,7 @@ export const comparisons: ComparisonEntry[] = [
       {
         question: 'Does Sider have browser automation?',
         answer:
-          'No. Sider reads page text and acts on selections — summarising, rewriting, translating and drafting. It cannot click elements, fill form fields, navigate between pages or manage tabs. Prophet does all four through 18 Chrome DevTools Protocol tools.',
+          'No. Sider reads page text and acts on selections — summarising, rewriting, translating and drafting. It cannot click elements, fill form fields, navigate between pages or manage tabs. Prophet does all four through 19 Chrome DevTools Protocol tools.',
       },
       {
         question: 'Is Prophet cheaper than Sider?',
@@ -177,13 +177,13 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Speed', prophet: 'Fast - direct element targeting', competitor: 'Fast for chat, slower for complex page tasks' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Daily free queries + subscription plans' },
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with daily limits, Pro from $9.90/month' },
-      { feature: 'Browser Automation', prophet: '18 tools via Chrome DevTools Protocol', competitor: 'Page summarization, writing, translation; no deep automation' },
+      { feature: 'Browser Automation', prophet: '19 tools via Chrome DevTools Protocol', competitor: 'Page summarization, writing, translation; no deep automation' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, Llama, and more' },
       { feature: 'Data Privacy', prophet: 'Page data stays local; only chat messages leave your machine', competitor: 'Page content processed by multiple third-party providers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
     prophetAdvantages: [
-      'True browser automation with 18 tools that interact with page elements, not just read and summarize text',
+      'True browser automation with 19 tools that interact with page elements, not just read and summarize text',
       'Pay only for what you use - no wasted subscription fees during low-usage months',
       'Open source transparency lets you verify exactly what data is collected and transmitted',
       'Focused on Claude models with deep integration rather than spreading thin across many providers',
@@ -200,7 +200,7 @@ export const comparisons: ComparisonEntry[] = [
         'Monica free gives you a daily quota that resets, which sounds generous until you hit it mid-task and lose the thread. Pro is $9.90/month and Unlimited is $19.90/month, and the well-known catch is that Unlimited still applies daily limits to advanced models — you are buying a bigger allowance, not the removal of the allowance. Prophet has no daily reset and no per-model gate: your credit balance is the only constraint, and every model is available on every tier including free. At $9.90/month Monica costs $118.80 a year. Prophet at a comparable 20-30 messages a day on Sonnet runs roughly $12-18 a month, and a couple of dollars at light use. Monica becomes the better deal specifically when you are using the image generation and translation features heavily, because buying those separately would cost more than the subscription.',
     },
     switchingNotes:
-      'Monica conversations live in Monica\'s account with no export path, so treat this as a fresh start. The bigger adjustment is conceptual rather than technical: Monica trains you to pick a tool first (Summarise, Translate, Rewrite) and then supply content. Prophet has no tool menu — you describe the outcome in a sentence and Claude selects from its 18 tools itself. Users moving from Monica often spend a few days looking for buttons that do not exist before the instruction-first model clicks. If you rely on Monica for image generation, note that Prophet has no equivalent at all and you will want to keep Monica installed for that alone.',
+      'Monica conversations live in Monica\'s account with no export path, so treat this as a fresh start. The bigger adjustment is conceptual rather than technical: Monica trains you to pick a tool first (Summarise, Translate, Rewrite) and then supply content. Prophet has no tool menu — you describe the outcome in a sentence and Claude selects from its 19 tools itself. Users moving from Monica often spend a few days looking for buttons that do not exist before the instruction-first model clicks. If you rely on Monica for image generation, note that Prophet has no equivalent at all and you will want to keep Monica installed for that alone.',
     chooseCompetitorIf:
       'You want one extension covering many small jobs, you use image generation or translation regularly, you prefer GPT-4o or Gemini over Claude for your work, or you value a large user base and a long track record. Monica is a better generalist than Prophet by a clear margin, and Prophet has no answer to its image generation or its prompt library.',
     faq: [
@@ -238,7 +238,7 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Speed', prophet: 'Fast - structured snapshots, no vision overhead', competitor: 'Fast for text tasks; no deep page interaction' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Free tier + subscription plans' },
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with limits, Pro from $9.99/month' },
-      { feature: 'Browser Automation', prophet: '18 tools (click, fill, navigate, scroll, tab management)', competitor: 'Context-menu actions: summarize, explain, translate; no form automation' },
+      { feature: 'Browser Automation', prophet: '19 tools (click, fill, navigate, scroll, tab management)', competitor: 'Context-menu actions: summarize, explain, translate; no form automation' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, Llama' },
       { feature: 'Data Privacy', prophet: 'Browsing data stays local; only messages sent to API', competitor: 'Selected text sent to third-party model providers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
@@ -273,7 +273,7 @@ export const comparisons: ComparisonEntry[] = [
       {
         question: 'Can MaxAI automate browser tasks?',
         answer:
-          'No. MaxAI operates on selected text and returns text. It cannot click, fill fields, navigate or manage tabs. Prophet has 18 tools for exactly those actions.',
+          'No. MaxAI operates on selected text and returns text. It cannot click, fill fields, navigate or manage tabs. Prophet has 19 tools for exactly those actions.',
       },
       {
         question: 'Do MaxAI and Prophet conflict if both are installed?',
@@ -294,14 +294,14 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Speed', prophet: 'Fast - structured data parsing', competitor: 'Moderate - depends on OpenAI API latency' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Free tier + ChatGPT Plus subscription' },
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with limits, Plus $20/month' },
-      { feature: 'Browser Automation', prophet: '18 tools via Chrome DevTools Protocol', competitor: 'Text summarization and Q&A; no element interaction' },
+      { feature: 'Browser Automation', prophet: '19 tools via Chrome DevTools Protocol', competitor: 'Text summarization and Q&A; no element interaction' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4o, GPT-4, GPT-3.5' },
       { feature: 'Data Privacy', prophet: 'Page content stays on your machine', competitor: 'Page content sent to OpenAI servers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
     prophetAdvantages: [
       'Powered by Claude which excels at nuanced reasoning, long documents, and following complex instructions',
-      'Genuine browser automation with 18 tools versus text-only sidebar functionality',
+      'Genuine browser automation with 19 tools versus text-only sidebar functionality',
       'Pay-per-use pricing is cheaper for moderate users compared to $20/month ChatGPT Plus',
       'Open source with transparent data handling and community-driven development',
     ],
@@ -310,7 +310,7 @@ export const comparisons: ComparisonEntry[] = [
       'GPT-4o offers fast multimodal capabilities including image understanding in chat',
     ],
     verdict:
-      'This comparison is really two arguments stacked on top of each other, and it helps to separate them. The first is Claude against GPT, which is a genuine toss-up that depends on your work: GPT-4o is faster to first token, better at multilingual output and stronger on image understanding; Claude 5 is more reliable on long-document reasoning, produces more complete code with better edge-case handling, and follows multi-part instructions with fewer omissions. Neither is universally better. The second argument is architectural, and it is not close: "ChatGPT Sidebar" is a category of third-party wrappers that extract page text and pass it to the OpenAI API, and none of them can act on the page. Prophet reads the accessibility tree and drives 18 tools through the DevTools Protocol. So if you prefer GPT and only want chat, a ChatGPT sidebar is a perfectly reasonable choice. If you want the AI to operate the page, model preference becomes irrelevant, because only one of the two options can do it at all.',
+      'This comparison is really two arguments stacked on top of each other, and it helps to separate them. The first is Claude against GPT, which is a genuine toss-up that depends on your work: GPT-4o is faster to first token, better at multilingual output and stronger on image understanding; Claude 5 is more reliable on long-document reasoning, produces more complete code with better edge-case handling, and follows multi-part instructions with fewer omissions. Neither is universally better. The second argument is architectural, and it is not close: "ChatGPT Sidebar" is a category of third-party wrappers that extract page text and pass it to the OpenAI API, and none of them can act on the page. Prophet reads the accessibility tree and drives 19 tools through the DevTools Protocol. So if you prefer GPT and only want chat, a ChatGPT sidebar is a perfectly reasonable choice. If you want the AI to operate the page, model preference becomes irrelevant, because only one of the two options can do it at all.',
     pricingReality: {
       heading: 'Two subscriptions, or none',
       body:
@@ -334,7 +334,7 @@ export const comparisons: ComparisonEntry[] = [
       {
         question: 'Can ChatGPT sidebar extensions fill forms?',
         answer:
-          'No. They extract page text and return responses. Filling a form requires the Chrome DevTools Protocol permissions and element targeting that these wrappers do not implement. Prophet does this with 18 dedicated tools.',
+          'No. They extract page text and return responses. Filling a form requires the Chrome DevTools Protocol permissions and element targeting that these wrappers do not implement. Prophet does this with 19 dedicated tools.',
       },
     ],
   },
@@ -350,13 +350,13 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Speed', prophet: 'Fast - direct DOM interaction via UIDs', competitor: 'Fast for chat and summaries' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Daily free queries + subscription plans' },
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with daily query limits, Pro from $14.25/month' },
-      { feature: 'Browser Automation', prophet: '18 tools (click, type, navigate, scroll, tab management)', competitor: 'Text actions (summarize, reply, rewrite); no form/button automation' },
+      { feature: 'Browser Automation', prophet: '19 tools (click, type, navigate, scroll, tab management)', competitor: 'Text actions (summarize, reply, rewrite); no form/button automation' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, Llama, Mistral' },
       { feature: 'Data Privacy', prophet: 'Page data stays local; messages only to Anthropic API', competitor: 'Page content processed by multiple third-party AI services' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
     prophetAdvantages: [
-      'Deep browser automation with 18 tools versus Merlin\'s text-focused summarize/reply actions',
+      'Deep browser automation with 19 tools versus Merlin\'s text-focused summarize/reply actions',
       'Pay only for what you use instead of a fixed monthly fee with daily query limits',
       'Fully open source - audit exactly how your data is processed and what is transmitted',
       'Deterministic element targeting through the accessibility tree for reliable automation',
@@ -406,7 +406,7 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Speed', prophet: 'Fast - structured semantic data', competitor: 'Fast for macros; slower for AI-driven tasks' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Free with BYOK, Pro subscription for premium features' },
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free (bring your own API key), Pro from $15/month' },
-      { feature: 'Browser Automation', prophet: '18 AI-driven tools via Chrome DevTools Protocol', competitor: 'Macro recorder, page monitoring, web scraping' },
+      { feature: 'Browser Automation', prophet: '19 AI-driven tools via Chrome DevTools Protocol', competitor: 'Macro recorder, page monitoring, web scraping' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini (via own API keys)' },
       { feature: 'Data Privacy', prophet: 'Page content processed locally; only chat messages leave browser', competitor: 'BYOK option keeps data between you and the provider directly' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
@@ -422,7 +422,7 @@ export const comparisons: ComparisonEntry[] = [
       'Built-in page monitoring and change detection features for tracking competitor prices, stock alerts, and content updates',
     ],
     verdict:
-      'HARPA is the closest thing to a genuine competitor Prophet has, because it is the only other extension in this comparison set that actually automates rather than merely reads. The difference is in who does the thinking. HARPA is macro-first: you define the steps, usually anchored to CSS selectors, and the automation replays them reliably and cheaply forever. Prophet is agent-first: you describe the outcome, and Claude decides which of its 18 tools to invoke and in what order, re-reading the accessibility tree between steps. Each approach has a failure mode that the other does not. HARPA breaks silently when a site ships a redesign and its selectors stop matching — and it breaks on every run until you rebuild it. Prophet costs tokens on every run and is non-deterministic, so the same instruction can take a slightly different path twice. The rule of thumb: recurring identical tasks on stable sites favour HARPA\'s macros; varied or one-off tasks, and anything on a site that changes often, favour Prophet\'s agent. HARPA\'s page monitoring and change detection have no Prophet equivalent at all.',
+      'HARPA is the closest thing to a genuine competitor Prophet has, because it is the only other extension in this comparison set that actually automates rather than merely reads. The difference is in who does the thinking. HARPA is macro-first: you define the steps, usually anchored to CSS selectors, and the automation replays them reliably and cheaply forever. Prophet is agent-first: you describe the outcome, and Claude decides which of its 19 tools to invoke and in what order, re-reading the accessibility tree between steps. Each approach has a failure mode that the other does not. HARPA breaks silently when a site ships a redesign and its selectors stop matching — and it breaks on every run until you rebuild it. Prophet costs tokens on every run and is non-deterministic, so the same instruction can take a slightly different path twice. The rule of thumb: recurring identical tasks on stable sites favour HARPA\'s macros; varied or one-off tasks, and anything on a site that changes often, favour Prophet\'s agent. HARPA\'s page monitoring and change detection have no Prophet equivalent at all.',
     pricingReality: {
       heading: 'BYOK versus managed billing',
       body:
@@ -467,13 +467,13 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Speed', prophet: 'Fast - direct element targeting', competitor: 'Moderate - cloud processing through Microsoft infrastructure' },
       { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Free tier + Copilot Pro subscription' },
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with limits, Pro $20/month' },
-      { feature: 'Browser Automation', prophet: '18 tools (click, fill, navigate, scroll, tab management)', competitor: 'No direct browser automation; text-based assistance only' },
+      { feature: 'Browser Automation', prophet: '19 tools (click, fill, navigate, scroll, tab management)', competitor: 'No direct browser automation; text-based assistance only' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, GPT-4o (Microsoft-hosted)' },
       { feature: 'Data Privacy', prophet: 'Page data stays local; open source for full transparency', competitor: 'Data processed through Microsoft cloud services' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
     prophetAdvantages: [
-      'True browser automation with 18 tools - Copilot is a chat assistant with no ability to interact with page elements',
+      'True browser automation with 19 tools - Copilot is a chat assistant with no ability to interact with page elements',
       'Pay-per-use pricing avoids the $20/month Copilot Pro cost for users who need occasional AI help',
       'Powered by Claude which consistently outperforms GPT-4 on reasoning benchmarks and instruction following',
       'Open source and independent - no vendor lock-in to the Microsoft ecosystem',
@@ -497,7 +497,7 @@ export const comparisons: ComparisonEntry[] = [
       {
         question: 'Can Microsoft Copilot automate browser tasks?',
         answer:
-          'No. Copilot in the browser is a chat assistant with Bing search grounding. It can discuss and summarise a page but cannot click elements, fill form fields, navigate or manage tabs. Prophet does all of these through 18 Chrome DevTools Protocol tools.',
+          'No. Copilot in the browser is a chat assistant with Bing search grounding. It can discuss and summarise a page but cannot click elements, fill form fields, navigate or manage tabs. Prophet does all of these through 19 Chrome DevTools Protocol tools.',
       },
       {
         question: 'Should I use Prophet instead of Copilot?',
@@ -519,7 +519,7 @@ export const alternatives: AlternativeEntry[] = [
     competitor: 'Sider',
     h1: 'Looking for a Sider Alternative? Try Prophet',
     title: 'Sider Alternative: Prophet Compared (2026)',
-    description: 'Sider caps its free tier and has no automation. Prophet gives all three Claude models plus 18 browser tools on pay-per-use credits.',
+    description: 'Sider caps its free tier and has no automation. Prophet gives all three Claude models plus 19 browser tools on pay-per-use credits.',
     painPoints: [
       'Sider\'s subscription costs add up quickly even during months when you barely use AI assistance',
       'Limited browser automation - Sider reads page text but cannot click buttons, fill forms, or navigate for you',
@@ -527,7 +527,7 @@ export const alternatives: AlternativeEntry[] = [
     ],
     solutions: [
       'Prophet\'s pay-per-use model charges only for the tokens you actually consume, so quiet months cost near zero',
-      'Prophet includes 18 browser automation tools that click, type, scroll, navigate, and manage tabs via Chrome DevTools Protocol',
+      'Prophet includes 19 browser automation tools that click, type, scroll, navigate, and manage tabs via Chrome DevTools Protocol',
       'Prophet is fully open source on GitHub - audit the code yourself to verify exactly what data leaves your browser',
     ],
   },
@@ -544,7 +544,7 @@ export const alternatives: AlternativeEntry[] = [
     ],
     solutions: [
       'Prophet gives you $0.07 in free credits with no daily limits - use them whenever you want',
-      'Prophet\'s 18 automation tools let the AI click buttons, fill forms, navigate pages, and manage tabs on your behalf',
+      'Prophet\'s 19 automation tools let the AI click buttons, fill forms, navigate pages, and manage tabs on your behalf',
       'Prophet is open source and routes data only through your chosen Claude model via Anthropic\'s API - nothing hidden',
     ],
   },
@@ -553,7 +553,7 @@ export const alternatives: AlternativeEntry[] = [
     competitor: 'Claude in Chrome',
     h1: 'Looking for a Claude in Chrome Alternative? Try Prophet',
     title: 'Claude in Chrome Alternative: No $20/mo Plan Needed',
-    description: 'Anthropic\'s extension needs a $20/mo Claude Pro plan. Prophet runs the same models from $0 with 18 browser tools. Full comparison.',
+    description: 'Anthropic\'s extension needs a $20/mo Claude Pro plan. Prophet runs the same models from $0 with 19 browser tools. Full comparison.',
     painPoints: [
       'Claude in Chrome requires a $20+/month Claude Pro subscription just to use browser automation features',
       'Screenshot-based page understanding is slow and expensive - each action requires a full screenshot/analyze cycle',
@@ -577,7 +577,7 @@ export const alternatives: AlternativeEntry[] = [
       'Closed-source with limited transparency about how selected text and page content are processed by various AI providers',
     ],
     solutions: [
-      'Prophet automates entire workflows: fill forms, click buttons, navigate between pages, and manage tabs with 18 built-in tools',
+      'Prophet automates entire workflows: fill forms, click buttons, navigate between pages, and manage tabs with 19 built-in tools',
       'Pay-per-use credits mean you spend nothing during weeks you do not use AI, and scale up naturally when you need more',
       'Prophet is open source on GitHub - inspect the code, contribute features, or self-host for complete control',
     ],
@@ -595,7 +595,7 @@ export const alternatives: AlternativeEntry[] = [
     ],
     solutions: [
       'Prophet has no daily query limits - your credit balance is the only constraint and it rolls based on actual usage',
-      'Prophet\'s 18 automation tools go beyond text: click elements, fill inputs, scroll pages, and manage browser tabs via CDP',
+      'Prophet\'s 19 automation tools go beyond text: click elements, fill inputs, scroll pages, and manage browser tabs via CDP',
       'Prophet sends data only to Anthropic\'s API and is open source, so you can verify every data path in the codebase',
     ],
   },

@@ -11,7 +11,7 @@ const features = [
   },
   {
     title: 'Browser Automation with AI',
-    description: 'Prophet can fill forms, click buttons, extract data, and navigate pages using 18 built-in browser tools.',
+    description: 'Prophet can fill forms, click buttons, extract data, and navigate pages using 19 built-in browser tools.',
     icon: MousePointerClick,
   },
   {
