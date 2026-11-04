@@ -16,7 +16,7 @@ export const organizationNode = {
     url: `${BASE_URL}/logo.png`,
   },
   description:
-    "Prophet is an open-source Chrome extension that runs Claude Haiku, Sonnet and Opus in the browser side panel with 18 browser-automation tools and pay-per-use credits.",
+    "Prophet is an open-source Chrome extension that runs Claude Haiku, Sonnet and Opus in the browser side panel with 19 browser-automation tools and pay-per-use credits.",
   foundingDate: '2025',
   founder: {
     '@type': 'Person',
@@ -37,7 +37,7 @@ export const websiteNode = {
   name: 'Prophet',
   url: BASE_URL,
   description:
-    'Claude AI in the Chrome side panel: streaming chat, 18 browser-automation tools, and pay-per-use credits.',
+    'Claude AI in the Chrome side panel: streaming chat, 19 browser-automation tools, and pay-per-use credits.',
   publisher: organizationRef,
   inLanguage: 'en-US',
 }
@@ -54,7 +54,7 @@ export const softwareApplicationNode = {
   name: 'Prophet',
   alternateName: 'Prophet Chrome Extension',
   description:
-    'Chrome side panel extension that runs Claude Haiku 5.5, Sonnet 5.5 and Opus 5.5 against the page you are on, with 18 browser-automation tools and pay-per-use credits.',
+    'Chrome side panel extension that runs Claude Haiku 5.5, Sonnet 5.5 and Opus 5.5 against the page you are on, with 19 browser-automation tools and pay-per-use credits.',
   applicationCategory: 'BrowserApplication',
   applicationSubCategory: 'AI Assistant',
   operatingSystem: 'Chrome OS, Windows, macOS, Linux',
@@ -70,7 +70,7 @@ export const softwareApplicationNode = {
   featureList: [
     'Chrome side panel integration',
     'Streaming Claude responses',
-    '18 browser-automation tools (click, type, navigate, extract)',
+    '19 browser-automation tools (click, type, navigate, extract)',
     'Claude Haiku 5.5, Sonnet 5.5 and Opus 5.5',
     'Accessibility-tree page reading instead of screenshots',
     'Pay-per-use credits',

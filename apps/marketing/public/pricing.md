@@ -1,6 +1,6 @@
 # Pricing — Prophet
 
-> AI-powered Chrome extension with Claude AI in the browser side panel and 18 browser-automation tools. Pay-per-use credits where 1 credit = 1 cent; every plan's monthly credits equal its price.
+> AI-powered Chrome extension with Claude AI in the browser side panel and 19 browser-automation tools. Pay-per-use credits where 1 credit = 1 cent; every plan's monthly credits equal its price.
 
 Last updated: 2026-10-08
 
@@ -10,7 +10,7 @@ Last updated: 2026-10-08
 - Price: $0/month
 - Credits included: $0.07 (one-time Free grant on sign-up, does not renew)
 - Models: Claude Haiku 5.5, Sonnet 5.5, Opus 5.5 (no model is locked behind a plan)
-- Browser automation: Yes — full 18 tools
+- Browser automation: Yes — full 19 tools
 - Rate limit: 60 chat req/min
 - Card required: No
 - Enough to try Prophet on Claude Haiku 5.5; Sonnet and Opus need credits from a plan or a purchase
@@ -18,7 +18,7 @@ Last updated: 2026-10-08
 ### Pro — $9.99/month
 - Credits included: $10/month
 - Models: All Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5)
-- Browser automation: Yes — full 18 tools
+- Browser automation: Yes — full 19 tools
 - Rate limit: 120 chat req/min
 - Persistent chat history
 - Cancel anytime; credits reset monthly (no rollover)
@@ -26,7 +26,7 @@ Last updated: 2026-10-08
 ### Premium — $29.99/month
 - Credits included: $30/month
 - Models: All Claude models
-- Browser automation: Yes — full 18 tools
+- Browser automation: Yes — full 19 tools
 - Rate limit: 240 chat req/min
 - Persistent chat history
 - Cancel anytime; credits reset monthly (no rollover)
@@ -34,7 +34,7 @@ Last updated: 2026-10-08
 ### Ultra — $59.99/month
 - Credits included: $60/month
 - Models: All Claude models
-- Browser automation: Yes — full 18 tools
+- Browser automation: Yes — full 19 tools
 - Rate limit: 240 chat req/min
 - Persistent chat history
 - Cancel anytime; credits reset monthly (no rollover)

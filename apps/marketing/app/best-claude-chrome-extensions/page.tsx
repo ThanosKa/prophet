@@ -22,10 +22,10 @@ const extensions = [
     url: 'https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif',
     claudeModels: 'Haiku 5.5, Sonnet 5.5, Opus 5.5',
     pricing: 'Free tier ($0.07 credits to try Haiku), Pro $9.99/mo, Premium $29.99/mo, Ultra $59.99/mo',
-    description: 'Prophet is a Chrome extension built specifically around Claude AI. It lives in the Chrome side panel and provides three Claude model options: Haiku 5.5 for fast, affordable tasks; Sonnet 5.5 for balanced performance; and Opus 5.5 for the most complex reasoning. What makes Prophet unique among Claude extensions is its browser automation layer. Using 18 built-in tools, Prophet can interact with web pages on your behalf: clicking buttons, filling forms, navigating between pages, extracting data, and managing browser tabs. This is powered by the accessibility tree rather than screenshots, making it faster and more reliable than vision-based approaches. The pay-per-use credit system means you pay only for the tokens you consume, and every plan includes credits equal to its price. For Claude power users who want the AI to not just analyze web pages but take action on them, Prophet is the most capable option. The entire codebase is open source on GitHub, providing full transparency into how Claude is integrated and how your data flows through the system.',
+    description: 'Prophet is a Chrome extension built specifically around Claude AI. It lives in the Chrome side panel and provides three Claude model options: Haiku 5.5 for fast, affordable tasks; Sonnet 5.5 for balanced performance; and Opus 5.5 for the most complex reasoning. What makes Prophet unique among Claude extensions is its browser automation layer. Using 19 built-in tools, Prophet can interact with web pages on your behalf: clicking buttons, filling forms, navigating between pages, extracting data, and managing browser tabs. This is powered by the accessibility tree rather than screenshots, making it faster and more reliable than vision-based approaches. The pay-per-use credit system means you pay only for the tokens you consume, and every plan includes credits equal to its price. For Claude power users who want the AI to not just analyze web pages but take action on them, Prophet is the most capable option. The entire codebase is open source on GitHub, providing full transparency into how Claude is integrated and how your data flows through the system.',
     pros: [
       'All three major Claude models available (Haiku 5.5, Sonnet 5.5, Opus 5.5)',
-      'Browser automation with 18 tools for real page interaction',
+      'Browser automation with 19 tools for real page interaction',
       'Pay-per-use credits charged by the Claude tokens you use',
       'Open source for full transparency',
       'Accessibility tree approach is faster and cheaper than screenshot methods',
@@ -146,7 +146,7 @@ const faqItems = [
   },
   {
     question: 'Which is the best Claude Chrome extension for 2026?',
-    answer: 'For most users in 2026, Prophet is the best Claude Chrome extension. It is the only sidebar that offers all three production Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5), pairs them with 18 browser automation tools, and bills pay-per-use against your actual Anthropic API spend instead of a flat monthly fee. If you already pay for Claude Pro, Anthropic\'s own Claude in Chrome is the safer pick for first-party support, though it costs more per browser-automation task because Computer Use sends screenshots on every step.',
+    answer: 'For most users in 2026, Prophet is the best Claude Chrome extension. It is the only sidebar that offers all three production Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5), pairs them with 19 browser automation tools, and bills pay-per-use against your actual Anthropic API spend instead of a flat monthly fee. If you already pay for Claude Pro, Anthropic\'s own Claude in Chrome is the safer pick for first-party support, though it costs more per browser-automation task because Computer Use sends screenshots on every step.',
   },
   {
     question: 'Is there a Claude AI Chrome extension in 2026?',
@@ -281,7 +281,7 @@ export default function BestClaudeChromeExtensionsPage() {
                   </tr>
                 </thead>
                 <tbody className="text-muted-foreground">
-                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Prophet</td><td className="py-3 px-3">Haiku, Sonnet, Opus</td><td className="py-3 px-3">Yes (18 tools)</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">Free / $9.99</td></tr>
+                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Prophet</td><td className="py-3 px-3">Haiku, Sonnet, Opus</td><td className="py-3 px-3">Yes (19 tools)</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">Free / $9.99</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Claude in Chrome</td><td className="py-3 px-3">Sonnet (default)</td><td className="py-3 px-3">Computer Use</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$20/mo sub</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Monica</td><td className="py-3 px-3">Claude 3.5 Sonnet</td><td className="py-3 px-3">No</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$9.90/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Sider</td><td className="py-3 px-3">Claude 3.5 Sonnet</td><td className="py-3 px-3">No</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$8.99/mo</td></tr>

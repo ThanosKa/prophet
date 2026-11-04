@@ -10,7 +10,7 @@ import { alternatives } from '@/lib/seo/comparisons'
 export const metadata: Metadata = {
   title: { absolute: 'Alternatives to Sider, Monica, MaxAI & Claude in Chrome' },
   description:
-    'Leaving a flat-fee AI sidebar? Compare each one against pay-per-use credits, 18 browser tools and open-source code. Six swaps covered.',
+    'Leaving a flat-fee AI sidebar? Compare each one against pay-per-use credits, 19 browser tools and open-source code. Six swaps covered.',
   alternates: { canonical: '/alternatives' },
 }
 
