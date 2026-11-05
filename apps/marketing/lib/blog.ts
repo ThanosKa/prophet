@@ -1197,12 +1197,12 @@ const aiExtensionsThatSellYourData: BlogPost = {
   title: 'AI Extensions That Sell Your Data: 7 Red Flags to Check',
   description: 'The permission requests, policy phrases and ownership changes that mean an extension is monetising you. Audit any extension in five minutes.',
   date: '2026-05-04',
-  lastModified: '2026-05-19',
+  lastModified: '2026-11-05',
   readingTime: '12 min read',
   category: 'Guides',
   keywords: ['ai extension data privacy', 'browser extension privacy', 'ai extensions selling data', 'chrome extension permissions', 'open source ai extension'],
   content: `
-<p>The AI browser extension market has exploded over the past two years, and the rapid growth has attracted companies whose primary business model is not selling AI features to you. It is selling your data to someone else. A 2025 study by a university research group found that 34% of AI-powered Chrome extensions transmitted browsing data to servers unrelated to their core AI functionality. Many of these extensions had millions of users and strong ratings in the Chrome Web Store.</p>
+<p>The AI browser extension market has exploded over the past two years, and the rapid growth has attracted companies whose primary business model is not selling AI features to you. It is selling your data to someone else. A high install count or a strong Chrome Web Store rating does not tell you which kind of company you are dealing with.</p>
 <p>This is not a call to avoid AI extensions entirely. They provide genuine productivity benefits that are hard to replicate any other way. But you need to be able to distinguish between extensions that respect your data and those that treat it as a revenue stream. Here is how to spot the difference.</p>
 
 <h2>Red Flag 1: The Extension Is Free With No Clear Business Model</h2>
@@ -1264,6 +1264,18 @@ const aiExtensionsThatSellYourData: BlogPost = {
 <p>An AI extension that helps you with the page you are viewing needs access to that page. An AI extension that collects data from pages you are not viewing, tabs you have not activated it on, or browsing sessions where you never invoked the extension is overreaching.</p>
 <p>Check whether the extension uses content scripts that run on all pages versus only on the active tab when invoked. This information is in the extension's manifest file, which you can inspect by navigating to the extension's directory on your system or by using a manifest viewer tool.</p>
 
+<h2>Red Flag 7: A Quiet Change of Ownership</h2>
+<p>The extension you installed years ago may no longer be run by the people who built it. Extensions can be sold, and the buyer inherits the install base along with every permission users already granted. Updates install automatically, so a new owner can change what the extension does without you doing anything.</p>
+<p>The Great Suspender is the best-known example. Its developer <a href="https://www.bleepingcomputer.com/news/security/the-great-suspender-chrome-extensions-fall-from-grace/">sold it to an unknown entity in June 2020</a>. An October 2020 release added scripts that tracked user behavior and ran code from a remote server. In February 2021, Google removed the extension, which had over 2 million users, from the Chrome Web Store and uninstalled it from Chrome with the message "This extension contains malware."</p>
+<p><strong>Signs that an extension may have changed hands:</strong></p>
+<ul>
+<li>The developer name or contact email on the Chrome Web Store listing has changed</li>
+<li>The privacy policy now names a different company</li>
+<li>The source repository has gone quiet while new versions keep shipping to the store</li>
+<li>Chrome disables the extension after an update and asks you to approve new permissions</li>
+<li>Recent reviews mention new ads, redirects or behavior nobody asked for</li>
+</ul>
+
 <h2>How to Audit an Extension You Already Have Installed</h2>
 <p>If you are already using AI extensions and want to evaluate their data practices, here is a step-by-step audit process:</p>
 <ol>
@@ -1290,7 +1302,7 @@ const aiExtensionsThatSellYourData: BlogPost = {
 </ul>
 
 <h2>The Bottom Line</h2>
-<p>AI browser extensions are powerful tools, but that power comes with access to your browsing data. The extensions worth trusting are the ones with clear business models, minimal permissions, specific privacy policies, transparent AI provider relationships, and ideally open-source codebases. Before installing any AI extension, spend five minutes checking these criteria. It is a small investment that protects your data from becoming someone else's product.</p>
+<p>AI browser extensions are powerful tools, but that power comes with access to your browsing data. The extensions worth trusting are the ones with clear business models, minimal permissions, specific privacy policies, transparent AI provider relationships, stable ownership, and ideally open-source codebases. Before installing any AI extension, spend five minutes checking these criteria. It is a small investment that protects your data from becoming someone else's product.</p>
 `
 }
 
