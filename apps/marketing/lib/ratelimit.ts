@@ -1,15 +1,16 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import { getUserTier } from '@/lib/cache'
+import { logger } from '@/lib/logger'
 
 const isFakeCredentials =
   process.env.UPSTASH_REDIS_REST_URL?.includes('fake') ||
   process.env.UPSTASH_REDIS_REST_TOKEN === 'faketoken123'
 
 if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-  console.warn('UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN not set. Rate limiting will be disabled.')
+  logger.warn('UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN not set. Rate limiting will be disabled.')
 } else if (isFakeCredentials) {
-  console.warn('Fake Upstash credentials detected. Rate limiting will be disabled.')
+  logger.warn('Fake Upstash credentials detected. Rate limiting will be disabled.')
 }
 
 const redis =

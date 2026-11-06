@@ -34,3 +34,31 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+
+      - name: Test
+        run: pnpm test:run
+
+      - name: Build
+        run: pnpm build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          # Placeholder values only, so builds can evaluate modules that read env
+          # vars at import time. Not real credentials; CI uses no secrets.
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          ANTHROPIC_API_KEY: sk-ant-ci-placeholder
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk
+          CLERK_SECRET_KEY: sk_test_ci_placeholder
+          CLERK_WEBHOOK_SECRET: whsec_ci_placeholder
+          UPSTASH_REDIS_REST_URL: https://ci-placeholder.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: ci-placeholder-token
+          STRIPE_SECRET_KEY: sk_test_ci_placeholder
+          STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+          STRIPE_PRICE_PRO: price_ci_pro
+          STRIPE_PRICE_PREMIUM: price_ci_premium
+          STRIPE_PRICE_ULTRA: price_ci_ultra
+          STRIPE_PRICE_EXTRA_CREDITS: price_ci_extra
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          RESEND_API_KEY: re_ci_placeholder
+          VITE_CLERK_PUBLISHABLE_KEY: pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk
+          VITE_API_URL: http://localhost:3000
+          VITE_USE_DEV_API: mock

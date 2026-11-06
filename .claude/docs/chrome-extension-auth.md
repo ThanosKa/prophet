@@ -20,43 +20,23 @@ In `apps/sidepanel/src/main.tsx`:
 
 ## User Authentication Flow
 
-1. User clicks "Sign in via Prophet Website" in sidepanel
-2. Loading state appears in sidepanel ("Waiting for authentication...")
-3. Opens marketing site `/sign-in` page in new tab
-4. User completes authentication (OAuth)
-5. Redirects to `/auth-success` page with success message
-6. **If sidepanel stayed open:** Auto-reloads and syncs session (seamless)
-7. **If sidepanel was closed:** User must reopen to see logged-in state
-8. User closes the auth success tab manually
+1. User clicks "Login" in the sidepanel (`SignInButton.tsx`) or in the options page
+2. The marketing site's `/sign-in` page opens in a new tab, and the sidepanel closes itself (`window.close()`)
+3. User completes authentication (OAuth)
+4. Clerk redirects to `/auth-success`, which shows an "Open Prophet" button
+5. The content script (`src/content.ts`) finds `[data-open-prophet]` and sends `OPEN_SIDE_PANEL`; the background script opens the sidepanel
+6. If nothing happens, the page tells the user to open the extension from the toolbar
 
 ## Auto-Reload Mechanism
 
-The sidepanel listens for Clerk's session token (`__clerk_client_jwt`) in `chrome.storage.local`. When authentication state changes (sign-in or sign-out), the sidepanel automatically reloads to sync the session.
-
-**How it works:**
-- **Sign-in:** Clerk stores session token in `chrome.storage.local` after successful auth
-- **Sign-out:** Clerk removes session token from `chrome.storage.local`
-- `chrome.storage.local.onChanged` event is received by the sidepanel
-- Sidepanel detects the token change → triggers `window.location.reload()`
-- ClerkProvider re-initializes with the updated session state on reload
-
-**Limitation:** Auto-reload only works if the sidepanel remains open during authentication. If the user closes the sidepanel before auth completes, they must manually reopen it.
+An open sidepanel listens for Clerk's session token (`__clerk_client_jwt`) in `chrome.storage.local` (`App.tsx`). When it changes (sign-in or sign-out), the sidepanel calls `window.location.reload()` and ClerkProvider re-initializes with the new session state.
 
 ## Sign-Out Flow
 
-1. User clicks "Sign out" in the user avatar dropdown menu
-2. Clerk's `signOut()` function is called
-3. Session token is removed from `chrome.storage.local`
-4. Sidepanel detects token removal → auto-reloads
-5. App shows sign-in screen (clean state)
-
-The auto-reload ensures a clean sign-out experience with no stale data or UI inconsistencies.
-
-## Known Limitations
-
-**⚠️ Sidepanel Auto-Sync**: If the sidepanel is closed before authentication completes, the user must manually reopen it to see the logged-in state. This is a Clerk SDK v2.0 limitation combined with Chrome's sidepanel lifecycle.
-
-**Workaround**: The auth UI prompts users to keep the sidepanel open during authentication for seamless auto-reload.
+1. The user avatar menu's settings item opens `options.html`
+2. User clicks "Sign Out" in the options page (`src/options.tsx`)
+3. The options page sends a `SIGN_OUT` message, which reloads an open sidepanel, then calls Clerk's `signOut()`
+4. Clerk removes the session token, and the sidepanel shows the sign-in screen
 
 ## Environment Variables
 
@@ -94,8 +74,4 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/auth-success
 NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/auth-success
 ```
 
-The `/auth-success` page:
-- Shows success message with check icon
-- Provides manual "Close Tab" button (no auto-close)
-- Displays fallback instructions if sidepanel doesn't update
-- User controls when to close the tab
+The `/auth-success` page redirects to `/sign-in` when there is no session.
