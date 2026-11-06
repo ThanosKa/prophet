@@ -138,7 +138,7 @@ Prophet sits at the intersection of:
 |-----------|-------------|-------------------|
 | **Claude in Chrome** (Anthropic) | Official Claude extension, screenshot-based Computer Use | Prophet is faster (no vision model), cheaper (text vs images), more deterministic (UIDs vs coordinates) |
 | **ChatGPT browser plugins** | Chat-only, no browser control | Prophet can actually interact with and control web pages |
-| **Merlin AI / Monica AI** | AI chat sidebar extensions | Prophet has deeper browser automation (18 tools), not just chat overlays |
+| **Merlin AI / Monica AI** | AI chat sidebar extensions | Prophet has deeper browser automation (19 tools), not just chat overlays |
 | **Sider AI** | Multi-model sidebar | Prophet's agent loop and browser automation go far beyond chat |
 
 ### Indirect Competitors
@@ -189,7 +189,7 @@ Prophet sits at the intersection of:
 **For the Technical Power User:**
 - "Prophet uses the accessibility tree, not screenshots -- the same approach as Playwright MCP, but with natural language."
 - "Choose Haiku for speed, Sonnet for balance, or Opus for maximum capability -- per conversation."
-- "18 browser automation tools: snapshot, click, fill, hover, navigate, scroll, tab management, and more."
+- "19 browser automation tools: snapshot, click, fill, hover, navigate, scroll, tab management, and more."
 - "Client-side tool execution via Chrome DevTools Protocol -- your page content never hits our servers."
 - "Open source on GitHub. See exactly how it works."
 
@@ -210,7 +210,7 @@ Prophet sits at the intersection of:
 | Feature | Benefit | Proof Point |
 |---------|---------|-------------|
 | **Side panel integration** | Access AI without leaving your workflow | Chrome's native side panel API -- always one click away on any site |
-| **18 browser automation tools** | AI doesn't just advise; it executes tasks for you | Click, type, scroll, navigate, manage tabs, wait for dynamic content |
+| **19 browser automation tools** | AI doesn't just advise; it executes tasks for you | Click, type, scroll, navigate, manage tabs, wait for dynamic content |
 | **Accessibility tree observation** | Faster, cheaper, more reliable page understanding | Same approach as Microsoft's Playwright MCP; structured text vs expensive image processing |
 | **UID-based element targeting** | Deterministic interactions -- clicks exactly the right element | Each interactive element gets a stable unique ID; no coordinate-guessing |
 | **Client-side tool execution** | Your browsing data never leaves your machine | Tools run via Chrome DevTools Protocol in your logged-in session |
@@ -347,13 +347,13 @@ Prophet's voice is **competent, direct, and approachable** -- like a sharp cowor
 
 - **Clear over clever** -- Say what the product does. Avoid jargon for its own sake.
 - **Honest over hype** -- "Faster and cheaper than screenshot-based approaches" is better than "revolutionary AI breakthrough."
-- **Specific over vague** -- "18 browser automation tools" is better than "powerful capabilities."
+- **Specific over vague** -- "19 browser automation tools" is better than "powerful capabilities."
 - **Active over passive** -- "Prophet fills the form for you" not "Forms can be filled by the AI."
 
 ### Do's
 
 - Lead with what the user gets, not what the product is
-- Use concrete numbers (18 tools, 3 models, $0.07 free credits, $10 of credits on Pro)
+- Use concrete numbers (19 tools, 3 models, $0.07 free credits, $10 of credits on Pro)
 - Reference the accessibility tree advantage when differentiating
 - Acknowledge limitations honestly (can't see images, can't solve CAPTCHAs)
 - Show the product in action (screenshots, demos, code examples on technical pages)

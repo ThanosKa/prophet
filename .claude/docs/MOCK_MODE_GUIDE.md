@@ -24,7 +24,7 @@ VITE_USE_DEV_API=true
 | Mode | Value | Behavior |
 |------|-------|----------|
 | **Mock** | `VITE_USE_DEV_API=mock` | Simulated responses, no API calls, instant agent UI |
-| **Dev API** | `VITE_USE_DEV_API=true` | Real API via `/api/agent/chat/dev`, no credits deducted |
+| **Dev API** | `VITE_USE_DEV_API=true` | Real Anthropic calls via `/api/agent/chat/dev`, no Credits deducted; the route answers 403 outside `NODE_ENV=development` |
 | **Production** | Not set or any other value | Real API via `/api/agent/chat`, credits deducted |
 
 `pnpm test:agent` (`scripts/test-agent.sh`) curls the same `/api/agent/chat/dev` endpoint, so it needs `pnpm dev:web` running.
@@ -35,8 +35,8 @@ When `VITE_USE_DEV_API=mock`, the agent uses the `mockAgentStream()` generator i
 
 ### Features
 
-✅ **Instant Response**: Streams text at 20-60ms per character (realistic typing speed)
-✅ **Tool Calls**: Randomly simulates 0-2 tool calls with realistic delays
+✅ **Instant Response**: Streams text at 10-40ms per character
+✅ **Tool Calls**: Simulates tool calls with realistic delays
 ✅ **Metrics**: Generates fake token counts and costs
 ✅ **Agent Overlay**: Triggers all the same UI/UX as real agent (borders, overlays, etc.)
 ✅ **Abort Support**: Can be cancelled mid-stream
@@ -44,22 +44,7 @@ When `VITE_USE_DEV_API=mock`, the agent uses the `mockAgentStream()` generator i
 
 ### Mock Responses
 
-The system randomly picks from 5 pre-defined responses:
-
-1. "I'll help you with that. Let me search for the information you need."
-   - Tools: `search_google`
-
-2. "I can see the page. Let me extract the data you're looking for."
-   - Tools: `get_page_content`, `extract_data`
-
-3. "I'll navigate to that page and click the button for you."
-   - Tools: `navigate_to`, `click_element`
-
-4. "Let me analyze the current page and extract the relevant information."
-   - Tools: `get_page_content`
-
-5. "Here's what I found based on your request."
-   - Tools: None (text-only response)
+A normal message gets a random entry from `MOCK_RESPONSES` in `apps/sidepanel/src/lib/agent/mock-agent.ts`. These messages pick the tools instead: `/all`, `/snap`, `/nav`, `/tabs`, `/element`, `/wait`, `/page` and `/think` (forces thinking).
 
 ## Testing UI/UX
 
@@ -76,7 +61,7 @@ The system randomly picks from 5 pre-defined responses:
 
 ### Test Different Scenarios
 
-Send messages and refresh to see different mock responses:
+Send several messages to see different mock responses:
 - Some with tool calls
 - Some without
 - Different text lengths
@@ -90,7 +75,7 @@ Send messages and refresh to see different mock responses:
 
 ## Customizing Mock Responses
 
-Edit `/apps/sidepanel/src/lib/agent/mock-agent.ts`:
+Edit `apps/sidepanel/src/lib/agent/mock-agent.ts`:
 
 ```typescript
 const MOCK_RESPONSES = [
@@ -102,15 +87,7 @@ const MOCK_RESPONSES = [
 ]
 ```
 
-### Available Mock Tools
-
-- `search_google`
-- `get_page_content`
-- `click_element`
-- `extract_data`
-- `navigate_to`
-
-You can also add custom tool names - they'll work for UI testing even if they don't exist in the real agent.
+Tool names are only labels here: any name works for UI testing, even one the real agent lacks.
 
 ## Comparison Table
 
@@ -121,7 +98,7 @@ You can also add custom tool names - they'll work for UI testing even if they do
 | Response Speed | ⚡ Instant (fake stream) | 🐢 Real LLM | 🐢 Real LLM |
 | Tool Execution | 🎭 Simulated | ✅ Real | ✅ Real |
 | UI/UX Testing | ✅ Perfect | ⚠️ Slow | ⚠️ Slow + Costly |
-| Cost per Test | $0.00 | $0.00 | ~$0.01-0.05 |
+| Cost per Test | $0.00 | Anthropic usage | Anthropic usage + Credits |
 
 ## Recommended Workflow
 
@@ -144,6 +121,6 @@ You can also add custom tool names - they'll work for UI testing even if they do
 
 - Mock mode is **only** for UI/UX testing
 - Always test with real API before production
-- Mock responses are random - refresh to see different ones
+- Mock responses are random per message
 - Abort functionality works in all modes
 - Mock mode simulates realistic typing speed for better visual testing

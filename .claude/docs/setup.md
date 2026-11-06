@@ -22,16 +22,12 @@ Create accounts and get credentials from:
 
 ### Marketing (contains backend API)
 
-Copy [apps/marketing/.env.example](apps/marketing/.env.example) → `apps/marketing/.env.local`
-
 ```bash
 cp apps/marketing/.env.example apps/marketing/.env.local
 # Edit with your credentials
 ```
 
 ### Sidepanel
-
-Copy [apps/sidepanel/.env.example](apps/sidepanel/.env.example) → `apps/sidepanel/.env.local`
 
 ```bash
 cp apps/sidepanel/.env.example apps/sidepanel/.env.local
@@ -75,38 +71,4 @@ pnpm -F @prophet/sidepanel build
 
 # Environment Variables
 
-## apps/marketing/.env.local
-
-Copy from [apps/marketing/.env.example](apps/marketing/.env.example) - marketing + API needs:
-
-**Database:**
-- `DATABASE_URL` - Supabase PostgreSQL connection
-
-**Anthropic:**
-- `ANTHROPIC_API_KEY` - AI API (server-side only)
-
-**Clerk:**
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk public key
-- `CLERK_SECRET_KEY` - Clerk secret (server-side only)
-- `CLERK_WEBHOOK_SECRET` - Clerk webhooks
-
-**Upstash Redis:**
-- `UPSTASH_REDIS_REST_URL` - Redis for rate limiting
-- `UPSTASH_REDIS_REST_TOKEN` - Redis auth token
-
-**Stripe:**
-- `STRIPE_SECRET_KEY` - Stripe API key
-- `STRIPE_WEBHOOK_SECRET` - Stripe webhook verification
-
-**App URLs:**
-- `NEXT_PUBLIC_APP_URL` - App URL (localhost:3000 in dev)
-
-## apps/sidepanel/.env.local
-
-Copy from [apps/sidepanel/.env.example](apps/sidepanel/.env.example) - Chrome extension needs:
-
-- `VITE_CLERK_PUBLISHABLE_KEY` - Clerk public key (Vite prefixed for build-time inlining)
-- `VITE_API_URL` - API URL for extension requests (http://localhost:3000 in dev)
-- `VITE_CLERK_SYNC_HOST` - Clerk session sync host (empty in dev, falls back to `VITE_API_URL`)
-- `VITE_USE_DEV_API` - `mock` / `true` / unset; see `.claude/docs/MOCK_MODE_GUIDE.md`
-- `VITE_EXTENSION_ID` - Extension ID from `chrome://extensions` (defaults to `chrome.runtime.id`)
+`apps/marketing/.env.example` and `apps/sidepanel/.env.example` document every variable. `apps/sidepanel/.env.example` sets `VITE_USE_DEV_API=mock`, so a copied file runs the mock agent until you change it; see `.claude/docs/MOCK_MODE_GUIDE.md`.

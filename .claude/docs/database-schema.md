@@ -20,9 +20,8 @@ users {
   stripeCustomerId: string
   stripeSubscriptionId: string
   stripePriceId: string
-  subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete'
-  pendingTier: 'free' | 'pro' | 'premium' | 'ultra'  // For downgrades
-  pendingTierEffectiveDate: timestamp                 // When pendingTier takes effect
+  subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'incomplete'
+  cancelAtPeriodEnd: boolean
   createdAt: timestamp
   updatedAt: timestamp
 }
@@ -61,6 +60,11 @@ chats {
   id: uuid
   userId: string          // FK → users.id (cascade delete)
   title: string
+  contextTokens: number             // Newest prompt + output, clamped to the model's context window
+  contextInputTokens: number
+  contextOutputTokens: number
+  contextReasoningTokens: number
+  contextCachedInputTokens: number
   createdAt: timestamp
   updatedAt: timestamp
 }
@@ -79,7 +83,7 @@ messages {
   outputTokens: number
   costCents: number       // Actual API cost in cents
   toolCalls: text | null  // JSON string, see below
-  createdAt: timestamp    // clock_timestamp(), so rows keep their real order under the chat lock
+  createdAt: timestamp    // Run rows write clock_timestamp(), so they keep their real order under the chat lock
 }
 ```
 
@@ -119,14 +123,6 @@ usageRecords {
 - **users → usageRecords**: One-to-many (cascade delete)
 - **users → creditPurchases**: One-to-many (cascade delete)
 - **users → messages**: Indirect via chats
-
-## Database Commands
-
-```bash
-pnpm -F @prophet/marketing db:generate  # Generate migrations from schema
-pnpm -F @prophet/marketing db:migrate   # Apply migrations
-pnpm -F @prophet/marketing db:studio    # Open Drizzle Studio GUI
-```
 
 ## Migrations
 
