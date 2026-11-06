@@ -1606,7 +1606,7 @@ const mcpServersVsProphetBrowserAutomation: BlogPost = {
 <h2>Tool Capabilities</h2>
 <p>Both approaches offer comprehensive browser interaction tools, but with different strengths.</p>
 <p><strong>Playwright MCP tools</strong> typically include navigation, clicking, typing, selecting, scrolling, screenshot capture, PDF generation, network interception, and multi-tab management. Playwright's selector engine is powerful, supporting CSS selectors, XPath, text content matching, and chained selectors. Network interception allows monitoring and modifying API calls, which is valuable for testing and debugging.</p>
-<p><strong>Prophet's <a href="/blog/ai-agent-browser-tools-explained">19 built-in tools</a></strong> cover clicking, typing, scrolling, navigation, data extraction, tab management, and more. These tools operate through Chrome's extension APIs, which provide direct access to browser functionality without the abstraction layer that Playwright introduces. Prophet's tools are optimized for the accessibility tree paradigm, meaning they identify elements by their semantic role and label rather than CSS selectors.</p>
+<p><strong>Prophet's <a href="/blog/ai-agent-browser-tools-explained">19 built-in tools</a></strong> cover page snapshots, clicking, typing, scrolling, navigation, waiting for pages to load, and tab management. These tools operate through Chrome's extension APIs, which provide direct access to browser functionality without the abstraction layer that Playwright introduces. Prophet's tools are optimized for the accessibility tree paradigm, meaning they identify elements by their semantic role and label rather than CSS selectors.</p>
 
 <h2>Use Case Comparison</h2>
 
@@ -1638,94 +1638,96 @@ const mcpServersVsProphetBrowserAutomation: BlogPost = {
 const aiAgentBrowserToolsExplained: BlogPost = {
   slug: 'ai-agent-browser-tools-explained',
   title: 'What AI Browser Agents Do: The 19 Tools Behind a Click',
-  description: 'Click, type, extract, navigate. The 19 primitives every browser agent is built from, and why the way it reads the page decides its speed.',
+  description: 'Snapshot, click, fill, navigate, wait, switch tabs: what each of Prophet\'s 19 browser tools does, and why reading the page first decides reliability.',
   date: '2026-05-14',
-  lastModified: '2026-05-19',
-  readingTime: '12 min read',
+  lastModified: '2026-11-06',
+  readingTime: '10 min read',
   category: 'Guides',
   keywords: ['ai browser agent tools', 'browser automation tools', 'ai agent click type', 'chrome extension automation', 'ai web interaction tools'],
   faq: [
     {
       question: 'What tools does an AI browser agent need?',
-      answer: 'A complete browser agent needs four tool categories: navigation (visit URL, back, forward, open/switch tab), interaction (click, type, select, check, hover), scrolling (up, down, to element), and extraction (read page, get element text, extract structured data, get URL). Prophet ships 19 such tools, enough to script virtually any single-page or multi-page workflow.',
+      answer: 'It needs a way to see the page, act on elements, move between pages, wait for the page to settle and work across tabs. Prophet ships 19 tools in six groups: observation (take snapshot, search snapshot), element interaction (click, fill, hover), navigation (navigate, back, forward, reload), page (scroll, read page content, page info), waiting (wait for selector, wait for navigation, wait for a set time) and tabs (list, switch, close, open).',
     },
     {
       question: 'How does an AI agent decide which browser tool to use?',
-      answer: 'The language model receives your goal plus the current page\'s accessibility tree, then emits a structured tool call specifying the tool name and parameters ("click element with role \'button\' and name \'Sign Up\'"). After the extension executes the call and returns the result, the model decides whether to chain another tool or finish. There is no rigid decision tree — selection is goal-driven.',
+      answer: 'Claude receives your goal and the tool definitions. It usually starts by taking a snapshot of the page, which lists every interactive element with a short unique ID, then emits a tool call such as "click the element with this ID". The extension runs the call in your tab and returns the result, and Claude decides whether to call another tool or answer. There is no fixed decision tree: the choice follows the goal.',
     },
     {
-      question: 'What is the difference between clicking and typing tools in AI browser agents?',
-      answer: 'Click activates buttons, links, checkboxes, dropdowns, and any element with an interactive role — one synthetic event per call. Type (or fill) targets editable inputs, clears any existing content, then enters the specified text character by character. Robust agents also expose a Select Option tool for native and ARIA dropdowns, since clicking dropdown items varies by implementation.',
+      question: 'What is the difference between the click and fill tools?',
+      answer: 'Click activates any element from the snapshot: buttons, links, checkboxes, radio buttons, and it can double-click. If the element is off-screen it is scrolled into view first. Fill targets a text input, textarea, search box, email, password or number field, or a rich text editor: it focuses the field, replaces the existing value and types the new one through Chrome\'s input system, so the page reacts as if you typed it.',
     },
     {
-      question: 'How does an AI agent extract data from a web page?',
-      answer: 'Three layered tools handle extraction. Read Page Content returns the full text content structured by accessibility-tree hierarchy. Extract Structured Data pulls labeled fields (prices, headings, table rows) into JSON. Get Element Text targets one specific element by role and name. The agent chooses whichever returns the minimum tokens to satisfy your question.',
+      question: 'How does an AI agent read data from a web page?',
+      answer: 'Prophet has two ways. Read page content returns the page URL, title and the cleaned main text, which suits questions about an article or a table. The snapshot returns the interactive elements with their roles, names and current values, which suits forms and buttons. Claude then pulls out the fields you asked for (prices, names, dates) and formats them in its answer; there is no separate extraction tool.',
     },
     {
       question: 'Can AI browser agents handle multi-step workflows?',
-      answer: 'Yes. The agent loops: read page state, call a tool, check the result, decide the next tool. A request like "fill out the contact form and submit it" typically chains 4-6 tool calls (focus name, type name, focus email, type email, click submit, verify confirmation). Each step is informed by the previous step\'s outcome, so dynamic states like validation errors are handled mid-loop.',
+      answer: 'Yes. The agent loops: snapshot the page, call a tool, check the result, decide the next tool. "Fill out the contact form and submit it" typically chains a snapshot, two or three fill calls, a click on submit, a wait for the page to update and a fresh snapshot to confirm. Each step uses the previous result, so a validation error is handled mid-loop.',
     },
   ],
   content: `
-<p>When you ask an AI assistant to "fill out this form" or "find the pricing on this page," the AI needs concrete capabilities to translate your instruction into browser actions. These capabilities are called tools: discrete functions that the AI agent can invoke to interact with the web page. Prophet ships with 19 built-in tools that cover the full range of browser interactions, from simple clicks to complex data extraction.</p>
-<p>Understanding what these tools do and how they work helps you give better instructions and get more reliable results. This guide explains each category of tools, how the AI decides which one to use, and how to prompt for the best outcomes.</p>
+<p>An AI browser agent turns "fill out this form" into a sequence of small, concrete actions called tools. Prophet gives Claude 19 of them: two to see the page, three to act on elements, four to navigate, three to read and scroll the page, three to wait, and four to manage tabs.</p>
+<p>Knowing what each one does helps you write instructions that work the first time. Below is every tool, grouped the way the extension groups them, followed by how Claude chains them and how to prompt for reliable results.</p>
 
-<h2>How AI Agent Tools Work</h2>
-<p>Before diving into specific tools, it helps to understand the basic mechanism. When you send a message to Prophet, the AI model (Claude) analyzes your request and the current page state. If the request requires interacting with the page, the model generates a "tool call," a structured instruction specifying which tool to use and what parameters to pass.</p>
-<p>For example, if you say "click the Sign Up button," the model reads the page's accessibility tree, identifies the element labeled "Sign Up" with a button role, and generates a tool call like: <em>click element with role "button" and name "Sign Up"</em>. The extension executes this tool call against the live page in your browser and returns the result to the model, which then decides whether to take another action or respond to you.</p>
-<p>This tool-use loop can execute multiple steps in sequence. A request like "fill out the contact form with my name and email, then submit it" might involve three or four tool calls: focusing the name field, typing the name, focusing the email field, typing the email, and clicking the submit button. The model chains these tools together automatically based on your high-level instruction.</p>
+<h2>How the Tool Loop Works</h2>
+<p>When you send a message, Claude reads your request and decides whether it needs the page. If it does, it emits a tool call: a structured request naming one tool and its inputs. The Prophet extension runs that call in your own tab, in your logged-in session, and sends the result back. Claude then calls another tool or answers you.</p>
+<p>Almost every interaction starts with a snapshot. The snapshot lists the page's interactive elements from the accessibility tree, each with a short unique ID (UID), for example <em>uid=Ab12Cd3E button "Submit"</em>. Later calls target that UID, so "click the Sign Up button" becomes "click uid=Ab12Cd3E". Targeting by UID from the accessibility tree is sturdier than CSS selectors, because labels and roles survive most redesigns.</p>
 
-<h2>Navigation Tools</h2>
-<p>Navigation tools control where the browser goes and what page is loaded.</p>
-<p><strong>Navigate to URL</strong> opens a specified URL in the current tab. This is used when the AI needs to visit a specific page, such as a help article, a dashboard, or a search results page. The tool waits for the page to finish loading before returning control to the model.</p>
-<p><strong>Go back / Go forward</strong> mirrors the browser's back and forward buttons. The AI uses these when it needs to return to a previous page after checking something, or when navigating through a multi-step process that requires moving between pages.</p>
-<p><strong>Open new tab</strong> creates a new browser tab with a specified URL. This is useful when the AI needs to reference information from another page without losing the current page's state. For example, looking up a help article while filling out a form.</p>
-<p><strong>Switch tab</strong> changes the active tab to one the AI has previously opened or that was already open. This enables workflows that span multiple pages, like comparing information across different sites.</p>
+<h2>Observation: Seeing the Page (2 tools)</h2>
+<p><strong>Take snapshot</strong> captures the accessibility tree of the current tab: buttons, links, inputs and other interactive elements with their roles, names, current values and UIDs. Claude calls it before interacting and again after the page changes. On very large pages the snapshot is cut at a size limit, with a note telling Claude to search for anything not listed.</p>
+<p><strong>Search snapshot</strong> searches the latest snapshot for elements matching a text query (case-insensitive, partial match). It is how Claude finds "the Export button" on a dashboard with hundreds of elements without reading all of them.</p>
 
-<h2>Interaction Tools</h2>
-<p>Interaction tools let the AI agent manipulate elements on the current page.</p>
-<p><strong>Click</strong> is the most frequently used tool. It activates buttons, links, checkboxes, dropdowns, and any other clickable element on the page. The AI identifies the target element through the accessibility tree, using a combination of the element's role (button, link, checkbox), its accessible name (the text label), and its position in the page structure. This approach is more reliable than CSS selectors or XPath because accessible names persist even when developers change the underlying HTML structure.</p>
-<p><strong>Type / Fill</strong> enters text into input fields, text areas, and other editable elements. The AI first identifies the target input field through its label or placeholder text, focuses it, and then enters the specified text. This tool handles clearing existing content before typing, which is important when editing pre-filled forms.</p>
-<p><strong>Select option</strong> chooses an option from a dropdown or select menu. The AI identifies the dropdown by its label, opens it, and selects the specified option by its visible text. This works with both native HTML select elements and custom dropdown components that use ARIA roles.</p>
-<p><strong>Check / Uncheck</strong> toggles checkbox and radio button elements. The AI reads the current state (checked or unchecked) and only performs the action if the state needs to change, preventing double-toggles.</p>
-<p><strong>Hover</strong> moves the mouse over an element to trigger hover states. This is used for menus, tooltips, and other interactive elements that reveal content on hover.</p>
+<h2>Element Interaction: Acting on the Page (3 tools)</h2>
+<p><strong>Click element</strong> clicks an element by its UID: buttons, links, checkboxes, radio buttons, menu items. It can also double-click. If the element is outside the viewport, it is scrolled into view first.</p>
+<p><strong>Fill element</strong> enters text into an input or textarea by UID. It scrolls the field into view, focuses it, replaces any existing value and types the new one through Chrome's own input system, so the page reacts as if you had typed it. It works with text, email, password, number and search fields, and with rich text editors.</p>
+<p><strong>Hover element</strong> moves the pointer over an element to trigger hover states, such as menus that open on hover or tooltips that hold the information you need.</p>
+<p>There is no separate "select option" or "check box" tool: checkboxes, radio buttons and custom dropdown menus are handled with click, after Claude reads their current state in the snapshot.</p>
 
-<h2>Scrolling Tools</h2>
-<p>Web pages often extend beyond the visible viewport, and the AI needs to access content that is not currently visible.</p>
-<p><strong>Scroll down / Scroll up</strong> moves the page viewport vertically. The AI uses these tools when it needs to access content below or above the current view, or when it needs to bring a specific element into view before interacting with it.</p>
-<p><strong>Scroll to element</strong> scrolls the page until a specific element is visible in the viewport. This is more precise than generic scrolling and is used when the AI knows which element it needs to reach but the element is not currently visible.</p>
+<h2>Navigation: Moving Between Pages (4 tools)</h2>
+<p><strong>Navigate</strong> loads a URL in the current tab and waits for the page to finish loading before returning.</p>
+<p><strong>Go back</strong> and <strong>go forward</strong> work like the browser buttons, for example returning to a results list after checking one item.</p>
+<p><strong>Reload page</strong> refreshes the current page, which helps when a page is stale or stuck.</p>
 
-<h2>Data Extraction Tools</h2>
-<p>Extracting information from web pages is one of the most common AI agent tasks, and Prophet provides specialized tools for structured data extraction.</p>
-<p><strong>Read page content</strong> returns the full text content of the current page, structured by the accessibility tree's hierarchy. This gives the AI a comprehensive understanding of the page's content and structure, which it uses to answer questions, summarize content, and plan interactions.</p>
-<p><strong>Extract structured data</strong> pulls specific data from the page in a structured format. When you ask "what are the prices listed on this page?" the AI uses this tool to identify price-related elements and return them in a structured way that preserves the relationship between items and their prices.</p>
-<p><strong>Get element text</strong> returns the text content of a specific element identified by its role and name. This is used for targeted extraction when the AI needs a specific piece of information rather than the full page content.</p>
-<p><strong>Get page URL</strong> returns the current page's URL. This seems simple, but it is important for the AI to know where it is, especially after navigating through multiple pages or following redirects.</p>
+<h2>Page: Reading and Scrolling (3 tools)</h2>
+<p><strong>Scroll page</strong> scrolls up, down, left or right by a number of pixels (500 by default), or jumps to the very top or bottom. After scrolling, Claude takes a new snapshot to see what appeared.</p>
+<p><strong>Read page content</strong> returns the page URL, title and the cleaned main text, without HTML. This is the tool behind "summarize this article" or "what does this contract say about termination?", where reading matters more than clicking.</p>
+<p><strong>Get page info</strong> returns the current URL, title and viewport. It tells Claude where it ended up after a redirect or a multi-step flow.</p>
 
-<h2>How the AI Chooses Tools</h2>
-<p>The AI model does not follow a rigid decision tree when selecting tools. Instead, it evaluates your request against the current page state and selects the tool (or sequence of tools) most likely to accomplish your goal.</p>
-<p>For a request like "find the total on this invoice," the AI will first use the read page content tool to understand the page structure, then identify the element containing the total, and return the answer. No interaction tools are needed because the task is purely informational.</p>
-<p>For a request like "subscribe to the monthly plan," the AI reads the page to find the subscription options, clicks the monthly plan button, fills in any required form fields, and clicks the confirmation button. Each tool call is informed by the result of the previous one, allowing the AI to handle unexpected states like confirmation dialogs or additional form fields.</p>
-<p>You can influence tool selection by being specific in your instructions. "Click the blue button at the top of the page" gives the AI less useful information than "click the Subscribe button in the pricing section." The AI identifies elements by their semantic meaning (labels, roles), not their visual appearance, so descriptions that reference functionality work better than descriptions that reference appearance.</p>
+<h2>Waiting: Letting the Page Settle (3 tools)</h2>
+<p>Modern pages load content after the first render, and acting too early is the most common cause of failed automation.</p>
+<p><strong>Wait for selector</strong> waits until an element matching a CSS selector appears (optionally until it is visible), up to a timeout of 10 seconds by default.</p>
+<p><strong>Wait for navigation</strong> waits until the page reports it has finished loading, up to 30 seconds by default.</p>
+<p><strong>Wait for timeout</strong> pauses for a set number of milliseconds, for animations or slow widgets that give no signal.</p>
+
+<h2>Tabs: Working Across Pages (4 tools)</h2>
+<p><strong>List tabs</strong> shows the open tabs so Claude can find the one it needs.</p>
+<p><strong>Switch tab</strong> moves focus to a tab by its ID, which is how Claude compares information across two sites.</p>
+<p><strong>Open new tab</strong> opens a URL in a new tab, in the foreground or background, without losing the page you are on.</p>
+<p><strong>Close tab</strong> closes a tab by its ID once Claude is done with it.</p>
+
+<h2>How Claude Chains the Tools</h2>
+<p>For "find the total on this invoice", Claude needs no interaction: it reads the page content and answers.</p>
+<p>For "subscribe to the monthly plan", it takes a snapshot, searches it for the plan, clicks the monthly option, fills any required fields, clicks the confirm button, waits for navigation and takes a fresh snapshot to check the confirmation. If a dialog or a validation error appears, the next snapshot shows it and Claude adjusts.</p>
+<p>For "compare the pricing on these two sites", it opens the second site in a new tab, reads both pages, switches between them as needed and writes the comparison.</p>
+<p>Instructions that name an element's purpose help most. "Click the Subscribe button in the pricing section" maps directly to a role and a label in the snapshot; "click the blue button on the left" does not, because the snapshot describes what elements are, not what they look like.</p>
 
 <h2>Reliability and Error Handling</h2>
-<p>Browser automation is inherently unpredictable. Pages load slowly, elements change dynamically, and interactions can trigger unexpected states. Prophet's tools include built-in error handling for common failure modes.</p>
 <ul>
-<li><strong>Element not found:</strong> If the AI tries to click an element that does not exist, the tool returns an error message that the AI uses to re-evaluate the page and try an alternative approach.</li>
-<li><strong>Element not visible:</strong> If the target element is outside the viewport, the AI automatically scrolls to bring it into view before retrying the interaction.</li>
-<li><strong>Page loading:</strong> Navigation tools wait for the page to finish loading before returning, preventing the AI from trying to interact with elements that have not rendered yet.</li>
-<li><strong>Dynamic content:</strong> The accessibility tree captures the current rendered state of the page, including content loaded dynamically via JavaScript, so the AI always works with the latest page state.</li>
+<li><strong>Element not found:</strong> if a UID no longer exists (the page changed), the tool returns an error and Claude takes a new snapshot and retries with the current UID.</li>
+<li><strong>Element off-screen:</strong> click scrolls the element into view before clicking.</li>
+<li><strong>Page loading:</strong> navigate, back, forward and reload wait for the page to finish loading; the wait tools cover content that loads later.</li>
+<li><strong>Dynamic content:</strong> each snapshot reflects the page as rendered at that moment, including content added by JavaScript, so Claude works from the current state rather than the first load.</li>
 </ul>
 
-<h2>Tips for Better Tool Usage</h2>
-<p>These practices lead to more reliable results when working with Prophet's browser tools:</p>
+<h2>Tips for Better Results</h2>
 <ul>
-<li><strong>Describe goals, not steps.</strong> Say "fill out the contact form with name John and email john@example.com" rather than "click the name field, type John, click the email field, type john@example.com." The AI plans better steps when it understands the goal.</li>
-<li><strong>Use semantic descriptions.</strong> Refer to elements by their labels and functions: "the search box," "the submit button," "the price in the first row." Avoid visual descriptions like "the red button on the left."</li>
-<li><strong>Break complex tasks into phases.</strong> For multi-page workflows, guide the AI through one phase at a time: "First, go to the settings page and find the notification preferences" rather than combining many steps into one instruction.</li>
-<li><strong>Verify results.</strong> After the AI performs actions, ask it to confirm what happened: "Did the form submit successfully?" or "What does the confirmation page say?"</li>
+<li><strong>Describe the goal, not the clicks.</strong> "Fill out the contact form with name John and email john@example.com" lets Claude plan the snapshot, fills and submit itself.</li>
+<li><strong>Use labels and functions.</strong> "The search box", "the submit button", "the price in the first row" match what the snapshot contains.</li>
+<li><strong>Split long workflows.</strong> For multi-page tasks, give one phase at a time: "First open the settings page and find the notification preferences."</li>
+<li><strong>Ask for a check.</strong> "Did the form submit? What does the confirmation say?" makes Claude take a fresh snapshot or read the page and report what is actually there.</li>
 </ul>
-<p>Understanding these tools transforms the AI from a chatbot into a capable browser agent. For a walkthrough of how these tools work in practice, visit the <a href="/how-it-works">how it works page</a>. For an overview of what Prophet can do across different professional workflows, explore the <a href="/use-cases">use cases directory</a>.</p>
+<p>To see the loop in action, visit the <a href="/how-it-works">how it works page</a>. For why reading the accessibility tree beats screenshots, see <a href="/blog/what-is-ai-web-agent">what an AI web agent is</a>, and for the tasks people use these tools for, explore the <a href="/use-cases">use cases directory</a>.</p>
 `
 }
 
@@ -1975,7 +1977,7 @@ const naturalLanguageBrowserAutomation: BlogPost = {
 <p>The technical mechanism behind this involves several components working together:</p>
 <p><strong>Page understanding.</strong> The AI agent needs to understand what is on the current page. In Prophet's case, this happens through the accessibility tree, a structured representation of the page that identifies every interactive element, its role (button, link, input, etc.), its label, and its current state. This gives the agent a semantic map of the page without relying on visual parsing or DOM structure.</p>
 <p><strong>Intent interpretation.</strong> The language model interprets your natural language instruction and maps it to a sequence of actions. "Fill out the contact form" becomes a plan: identify the form fields, determine what information each field expects, enter the appropriate values, and submit. The model handles the translation from goal to steps.</p>
-<p><strong>Tool execution.</strong> The agent executes each step using browser interaction tools: <a href="/blog/ai-agent-browser-tools-explained">click, type, scroll, navigate, and extract</a>. Each tool call is informed by the current page state, so the agent adapts to what it finds rather than following a fixed script.</p>
+<p><strong>Tool execution.</strong> The agent executes each step using browser interaction tools: <a href="/blog/ai-agent-browser-tools-explained">snapshot, click, fill, scroll, navigate, and read</a>. Each tool call is informed by the current page state, so the agent adapts to what it finds rather than following a fixed script.</p>
 <p><strong>Adaptive error handling.</strong> When something unexpected happens, a dialog appears, an element is not found, or the page loads differently than expected, the agent re-evaluates the page state and adjusts its approach. This is fundamentally different from traditional automation, where unexpected states cause failures.</p>
 
 <h2>What This Means for Different Users</h2>
