@@ -8,6 +8,7 @@
 import { writeFile, appendFile, mkdir } from 'fs/promises'
 import { join, resolve } from 'path'
 import type { MessageParam } from '@anthropic-ai/sdk/resources/messages'
+import { logger } from '@/lib/logger'
 
 // Use absolute path to ensure consistency across different route contexts
 const LOG_DIR = resolve(process.cwd(), 'logs')
@@ -22,7 +23,7 @@ export class DevLogger {
         this.isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
         
         if (this.isDev) {
-            console.log(`[DevLogger] Initialized. Logs will be written to: ${LOG_DIR}`)
+            logger.info({ logDir: LOG_DIR }, 'DevLogger initialized')
         }
     }
 
@@ -105,7 +106,7 @@ ${jsonSent}
         try {
             await appendFile(LOG_FILE_PATH, logBlock, 'utf-8')
         } catch (_err) {
-            console.error('[DevLogger] Failed to write to log file:', _err)
+            logger.error({ error: _err instanceof Error ? _err.message : String(_err) }, 'DevLogger: Failed to write to log file')
         }
     }
 
@@ -148,7 +149,7 @@ END OF RESPONSE
         try {
             await appendFile(LOG_FILE_PATH, responseBlock, 'utf-8')
         } catch (_err) {
-            console.error('[DevLogger] Failed to write response to log file:', _err)
+            logger.error({ error: _err instanceof Error ? _err.message : String(_err) }, 'DevLogger: Failed to write response to log file')
         }
     }
 
@@ -172,7 +173,7 @@ ${error instanceof Error && error.stack ? `\nStack:\n${error.stack}` : ''}
         try {
             await appendFile(LOG_FILE_PATH, errorBlock, 'utf-8')
         } catch (_err) {
-            console.error('[DevLogger] Failed to write error to log file:', _err)
+            logger.error({ error: _err instanceof Error ? _err.message : String(_err) }, 'DevLogger: Failed to write error to log file')
         }
     }
 
@@ -194,7 +195,7 @@ Each request shows: Model, User Message, JSON Sent, and Response.
 `
             await writeFile(LOG_FILE_PATH, header, 'utf-8')
         } catch (_err) {
-            console.error('[DevLogger] Failed to clear log file:', _err)
+            logger.error({ error: _err instanceof Error ? _err.message : String(_err) }, 'DevLogger: Failed to clear log file')
         }
     }
 
