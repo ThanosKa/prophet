@@ -5,6 +5,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Each route suite builds an in-memory database in beforeAll, which outlasts the 10 s default on CI runners.
+    hookTimeout: 60_000,
     include: ['**/*.test.ts'],
     exclude: ['node_modules', '.next'],
     coverage: {
