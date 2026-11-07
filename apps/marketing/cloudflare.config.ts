@@ -6,6 +6,7 @@ export default defineConfig({
     entrypoint: "./worker/index.ts",
     compatibilityDate: "2026-11-07",
     compatibilityFlags: ["nodejs_compat"],
+    observability: { enabled: true },
     assets: {
       htmlHandling: "none",
       notFoundHandling: "none",
