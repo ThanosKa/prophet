@@ -26,5 +26,5 @@
     "types": ["vitest/globals"]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "dist", ".cloudflare", ".vinext", ".next/types/validator.ts"]
 }

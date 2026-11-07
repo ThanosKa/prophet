@@ -4,7 +4,7 @@ import globals from "globals";
 
 export default [
   {
-    ignores: [".next/**", "node_modules/**", "*.config.js"],
+    ignores: [".next/**", ".cloudflare/**", ".vinext/**", "dist/**", "node_modules/**", "*.config.js"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
