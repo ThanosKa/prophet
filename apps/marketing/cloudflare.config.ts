@@ -6,6 +6,7 @@ export default defineConfig({
     entrypoint: "./worker/index.ts",
     compatibilityDate: "2026-11-07",
     compatibilityFlags: ["nodejs_compat"],
+    observability: { enabled: true },
     assets: {
       htmlHandling: "none",
       notFoundHandling: "none",
@@ -14,6 +15,14 @@ export default defineConfig({
     env: {
       ASSETS: bindings.assets(),
       IMAGES: bindings.images(),
+      // Caching is off on this config: Credits must never be read stale. The address and
+      // password live in Cloudflare, not here. Hyperdrive reaches Supabase over TLS, which a
+      // Worker's own connection cannot do (it rejects Supabase's private certificate).
+      HYPERDRIVE: bindings.hyperdrive({
+        id: "36f2f058237f47388730bebfff8ee88c",
+        // Local previews stay off the real database unless someone points them there.
+        dev: { connectionString: "postgresql://ci:ci@localhost:5432/ci" },
+      }),
       // Only declared names reach the Worker's process.env. Values come from
       // .env.<mode>.local locally and from Worker secrets once deployed.
       ANTHROPIC_API_KEY: bindings.secret(),
@@ -21,8 +30,6 @@ export default defineConfig({
       CLERK_WEBHOOK_SECRET: bindings.secret(),
       DATABASE_URL: bindings.secret(),
       DIRECT_URL: bindings.secret(),
-      ENABLE_WEB_SEARCH: bindings.secret(),
-      LOG_LEVEL: bindings.secret(),
       RESEND_API_KEY: bindings.secret(),
       STRIPE_PRICE_EXTRA_CREDITS: bindings.secret(),
       STRIPE_PRICE_PREMIUM: bindings.secret(),
