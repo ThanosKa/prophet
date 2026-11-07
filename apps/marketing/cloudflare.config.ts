@@ -20,10 +20,11 @@ export default defineConfig({
       ASSETS: bindings.assets(),
       IMAGES: bindings.images(),
       // Caching is off on this config: Credits must never be read stale. The address and
-      // password live in Cloudflare, not here. Hyperdrive reaches Supabase over TLS, which a
-      // Worker's own connection cannot do (it rejects Supabase's private certificate).
+      // password live in Cloudflare, not here. It uses Supabase's direct address with
+      // verify-full against Supabase's root certificate: the pooler's own link to Postgres
+      // has no TLS, and a Worker's own connection rejects Supabase's private certificate.
       HYPERDRIVE: bindings.hyperdrive({
-        id: "36f2f058237f47388730bebfff8ee88c",
+        id: "9840e527d3db42df9022a7a8e1f580b6",
         // Local previews stay off the real database unless someone points them there.
         dev: { connectionString: "postgresql://ci:ci@localhost:5432/ci" },
       }),
