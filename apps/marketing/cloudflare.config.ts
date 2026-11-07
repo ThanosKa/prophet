@@ -15,6 +15,14 @@ export default defineConfig({
     env: {
       ASSETS: bindings.assets(),
       IMAGES: bindings.images(),
+      // Caching is off on this config: Credits must never be read stale. The address and
+      // password live in Cloudflare, not here. Hyperdrive reaches Supabase over TLS, which a
+      // Worker's own connection cannot do (it rejects Supabase's private certificate).
+      HYPERDRIVE: bindings.hyperdrive({
+        id: "36f2f058237f47388730bebfff8ee88c",
+        // Local previews stay off the real database unless someone points them there.
+        dev: { connectionString: "postgresql://ci:ci@localhost:5432/ci" },
+      }),
       // Only declared names reach the Worker's process.env. Values come from
       // .env.<mode>.local locally and from Worker secrets once deployed.
       ANTHROPIC_API_KEY: bindings.secret(),
