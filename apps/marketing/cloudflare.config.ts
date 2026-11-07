@@ -22,8 +22,6 @@ export default defineConfig({
       CLERK_WEBHOOK_SECRET: bindings.secret(),
       DATABASE_URL: bindings.secret(),
       DIRECT_URL: bindings.secret(),
-      ENABLE_WEB_SEARCH: bindings.secret(),
-      LOG_LEVEL: bindings.secret(),
       RESEND_API_KEY: bindings.secret(),
       STRIPE_PRICE_EXTRA_CREDITS: bindings.secret(),
       STRIPE_PRICE_PREMIUM: bindings.secret(),
