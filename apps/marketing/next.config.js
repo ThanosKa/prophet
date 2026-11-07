@@ -6,6 +6,9 @@ const nextConfig = {
   // Disable strict mode in development
   reactStrictMode: process.env.NODE_ENV === "production",
 
+  // vinext would otherwise stream generateMetadata tags into the body for browsers and crawlers.
+  htmlLimitedBots: /.*/,
+
   images: {
     formats: ['image/avif', 'image/webp'],
   },
