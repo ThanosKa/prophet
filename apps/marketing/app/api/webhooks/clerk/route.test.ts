@@ -127,6 +127,23 @@ describe('POST /api/webhooks/clerk', () => {
   })
 
   describe('user.created', () => {
+    it('answers Clerk only after the welcome email has settled', async () => {
+      let finishEmail = () => {}
+      mocks.sendWelcomeEmail.mockImplementationOnce(() => new Promise<void>((resolve) => { finishEmail = resolve }))
+      let answered = false
+
+      const answer = postWebhook(userEvent({ type: 'user.created' })).then((response) => {
+        answered = true
+        return response
+      })
+      await vi.waitFor(() => expect(mocks.sendWelcomeEmail).toHaveBeenCalledTimes(1))
+      await new Promise((resolve) => setTimeout(resolve, 20))
+      expect(answered).toBe(false)
+
+      finishEmail()
+      expect((await answer).status).toBe(200)
+    })
+
     it('always starts new users on the free tier, ignoring public_metadata', async () => {
       const response = await postWebhook(
         userEvent({ type: 'user.created', publicMetadata: { tier: 'enterprise' } })

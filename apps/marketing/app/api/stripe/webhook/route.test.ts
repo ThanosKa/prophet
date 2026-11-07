@@ -14,13 +14,13 @@ vi.mock('@/lib/db', async () => {
 })
 
 const mocks = vi.hoisted(() => ({
-  constructEvent: vi.fn(),
+  constructEventAsync: vi.fn(),
   invalidateUserTierCache: vi.fn(),
   sendPurchaseEmail: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('@/lib/stripe', () => ({
-  stripe: { webhooks: { constructEvent: mocks.constructEvent } },
+  stripe: { webhooks: { constructEventAsync: mocks.constructEventAsync } },
 }))
 vi.mock('@/lib/cache', () => ({ invalidateUserTierCache: mocks.invalidateUserTierCache }))
 vi.mock('@/lib/email', () => ({ sendPurchaseEmail: mocks.sendPurchaseEmail }))
@@ -87,8 +87,26 @@ async function balances() {
 }
 
 async function postWebhook(event: unknown) {
-  mocks.constructEvent.mockReturnValue(event)
+  mocks.constructEventAsync.mockResolvedValue(event)
   return POST(new Request('http://localhost/api/stripe/webhook', { method: 'POST', body: '{}' }))
+}
+
+/** The answer stays pending until the email settles: a Worker may cancel work left running after it. */
+async function expectAnswerToWaitForEmail(event: unknown) {
+  let finishEmail = () => {}
+  mocks.sendPurchaseEmail.mockImplementationOnce(() => new Promise<void>((resolve) => { finishEmail = resolve }))
+  let answered = false
+
+  const answer = postWebhook(event).then((response) => {
+    answered = true
+    return response
+  })
+  await vi.waitFor(() => expect(mocks.sendPurchaseEmail).toHaveBeenCalledTimes(1))
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  expect(answered).toBe(false)
+
+  finishEmail()
+  expect((await answer).status).toBe(200)
 }
 
 function extraCreditsCheckoutEvent({ sessionId = 'cs_extra_1', credits = '1000' } = {}) {
@@ -171,6 +189,22 @@ describe('POST /api/stripe/webhook', () => {
       expect(response.status).toBe(200)
       expect(await balances()).toEqual({ subscriptionCredits: 300, purchasedCredits: 2000 })
       expect(mocks.sendPurchaseEmail).toHaveBeenCalledTimes(1)
+    })
+
+    it('answers Stripe only after the receipt email has settled', async () => {
+      await insertProSubscriber({ creditsRemaining: 300, purchasedCredits: 1000 })
+
+      await expectAnswerToWaitForEmail(extraCreditsCheckoutEvent())
+    })
+
+    it('keeps the Credits and answers 200 when the receipt email fails', async () => {
+      await insertProSubscriber({ creditsRemaining: 300, purchasedCredits: 1000 })
+      mocks.sendPurchaseEmail.mockImplementationOnce(() => Promise.reject(new Error('email down')))
+
+      const response = await postWebhook(extraCreditsCheckoutEvent())
+
+      expect(response.status).toBe(200)
+      expect(await balances()).toEqual({ subscriptionCredits: 300, purchasedCredits: 2000 })
     })
 
     it('adds the Credits once when Stripe redelivers the same checkout session', async () => {
@@ -271,6 +305,14 @@ describe('POST /api/stripe/webhook', () => {
       expect(user.billingPeriodEnd).toEqual(new Date(PERIOD_END * 1000))
       expect(await balances()).toEqual({ subscriptionCredits: TIER_CONFIG.pro.credits, purchasedCredits: 1000 })
       expect(mocks.sendPurchaseEmail).toHaveBeenCalledTimes(1)
+    })
+
+    it('answers Stripe only after the new subscription email has settled', async () => {
+      await insertFreeBuyer()
+
+      await expectAnswerToWaitForEmail(
+        subscriptionEvent({ type: 'customer.subscription.created', priceId: TIER_CONFIG.pro.priceId })
+      )
     })
 
     it('grants no Credits while the first payment is still incomplete', async () => {

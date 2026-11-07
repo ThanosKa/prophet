@@ -35,7 +35,8 @@ export async function POST(request: Request) {
   let event: Stripe.Event
 
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    // The sync version throws on Workers, whose WebCrypto is async, so every event would get a 400.
+    event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret)
   } catch (error) {
     logger.error({ error }, 'Webhook signature verification failed')
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
@@ -127,7 +128,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         where: eq(users.id, userId),
       })
       if (user) {
-        sendPurchaseEmail({
+        // Awaited: a Worker may cancel work left running after the response.
+        await sendPurchaseEmail({
           to: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -232,7 +234,8 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
 
   if (isNewSubscription) {
     const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
-    sendPurchaseEmail({
+    // Awaited: a Worker may cancel work left running after the response.
+    await sendPurchaseEmail({
       to: user.email,
       firstName: user.firstName,
       lastName: user.lastName,

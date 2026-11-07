@@ -112,7 +112,8 @@ export async function POST(req: Request) {
         creditsRemaining: TIER_CONFIG.free.credits,
       })
 
-      sendWelcomeEmail({
+      // Awaited: a Worker may cancel work left running after the response.
+      await sendWelcomeEmail({
         to: primaryEmail,
         firstName: first_name,
         lastName: last_name,
