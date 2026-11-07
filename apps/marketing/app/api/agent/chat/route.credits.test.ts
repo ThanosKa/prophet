@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { eq } from 'drizzle-orm'
 import * as schema from '@/lib/db/schema'
 import { getAgentMinTokens } from '@/lib/agent/web-search'
+import { currentRequestDb, serveWithRequestDb } from '@/lib/db/request-scope'
 import {
   AGENT_CHAT_URL,
   balance as balanceOf,
@@ -115,7 +116,10 @@ function cachedTurn({ outputTokens, stopReason = 'end_turn' }: { outputTokens: n
  * 10,000 input tokens reported (unless `usage` says otherwise), 4,000 bytes of text
  * streamed, then the turn hangs until the route aborts the upstream request.
  */
-function turnThatHangsAfterStreaming(usage: Record<string, number> = { input_tokens: 10_000 }) {
+function turnThatHangsAfterStreaming(
+  usage: Record<string, number> = { input_tokens: 10_000 },
+  abortTakesMs = 0
+) {
   const upstream: { signal?: AbortSignal } = {}
   streamMock.mockImplementation((_params: unknown, options?: { signal?: AbortSignal }) => {
     upstream.signal = options?.signal
@@ -126,7 +130,9 @@ function turnThatHangsAfterStreaming(usage: Record<string, number> = { input_tok
         yield { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'x'.repeat(4000) } }
         await new Promise((_resolve, reject) => {
           if (!options?.signal) return reject(new Error('no abort signal passed upstream'))
-          options.signal.addEventListener('abort', () => reject(new Error('Request was aborted.')))
+          options.signal.addEventListener('abort', () => {
+            setTimeout(() => reject(new Error('Request was aborted.')), abortTakesMs)
+          })
         })
       },
       finalMessage: () => new Promise(() => {}),
@@ -250,6 +256,35 @@ describe('credit reservation in POST /api/agent/chat', () => {
     // ($0.04 + $0.04) x1.25 = 10 credits
     await vi.waitFor(async () => expect(await balance()).toBe(990))
     expect(upstream.signal?.aborted).toBe(true)
+  })
+
+  it('on a Worker, keeps the request and its database client until a disconnected Turn has settled', async () => {
+    await seedUser({ credits: 1000 })
+    // Settlement starts well after the hang-up, so a client closed at the hang-up would miss it.
+    turnThatHangsAfterStreaming({ input_tokens: 10_000 }, 30)
+    const keptAlive: Promise<unknown>[] = []
+    let balanceWhenClosed: number | undefined
+
+    const response = await serveWithRequestDb({
+      ctx: { waitUntil: (promise) => void keptAlive.push(promise) },
+      openClient: () => ({
+        db,
+        close: async () => {
+          balanceWhenClosed = await balance()
+        },
+      }),
+      handle: () => {
+        // This suite's `db` is pglite, so open the request's client by hand.
+        currentRequestDb()
+        return post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+      },
+    })
+    const reader = response.body!.getReader()
+    await readUntil(reader, 'content_delta')
+    await reader.cancel()
+    await Promise.all(keptAlive)
+
+    expect(balanceWhenClosed).toBe(990)
   })
 
   it('settles exactly once when the request signal and the stream cancel both fire', async () => {

@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { APIError, BadRequestError } from "@anthropic-ai/sdk";
 import { db } from "@/lib/db";
+import { keepRequestOpenUntil } from "@/lib/db/request-scope";
 import { users, chats, messages, usageRecords } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/ratelimit";
@@ -404,6 +405,11 @@ export async function POST(req: Request) {
     const abortUpstream = () => upstream.abort();
     req.signal.addEventListener("abort", abortUpstream, { once: true });
     let clientConnected = !req.signal.aborted;
+    // The client can hang up long before the Turn settles its Hold in the `finally` below.
+    let endTurn = () => {};
+    keepRequestOpenUntil(new Promise<void>((resolve) => {
+      endTurn = resolve;
+    }));
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -900,8 +906,12 @@ export async function POST(req: Request) {
 
           close();
         } finally {
-          req.signal.removeEventListener("abort", abortUpstream);
-          if (!settled) await settleUnfinishedTurn();
+          try {
+            req.signal.removeEventListener("abort", abortUpstream);
+            if (!settled) await settleUnfinishedTurn();
+          } finally {
+            endTurn();
+          }
         }
       },
       cancel() {
