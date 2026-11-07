@@ -4,6 +4,10 @@ export default defineConfig({
   worker: defineWorker({
     name: "prophet-marketing",
     entrypoint: "./worker/index.ts",
+    // Temporary, for signed-in tests: Clerk's live keys refuse workers.dev. Remove at cutover.
+    domains: ["cf-test.prophetchrome.com"],
+    // A domain turns workers.dev off unless this is set.
+    workersDev: true,
     compatibilityDate: "2026-11-07",
     compatibilityFlags: ["nodejs_compat"],
     observability: { enabled: true },

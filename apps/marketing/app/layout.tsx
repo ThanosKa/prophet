@@ -1,3 +1,4 @@
+import { CloudflareWebAnalytics } from '@/components/cloudflare-web-analytics'
 import { ClerkThemeProvider } from '@/components/providers/ClerkThemeProvider'
 import type { Metadata } from 'next'
 import { ThemeProvider } from 'next-themes'
@@ -83,6 +84,7 @@ export default function RootLayout({
             </CheckoutProvider>
             <Toaster />
           </ThemeProvider>
+          <CloudflareWebAnalytics />
         </body>
       </html>
     </ClerkThemeProvider>
