@@ -19,6 +19,9 @@ const STILL_RENDERING = /^text\/(event-stream|html|x-component)\b/
 
 let scopesInUse = false
 
+/** The part of a Worker's ExecutionContext a request scope needs. */
+export type WaitUntilContext = { waitUntil: (promise: Promise<unknown>) => void }
+
 /** True once this process has served a request through a scope, which only a Worker does. */
 export function requestScopesInUse(): boolean {
   return scopesInUse
@@ -62,7 +65,7 @@ export function serveWithRequestDb({
   openClient,
   handle,
 }: {
-  ctx: { waitUntil: (promise: Promise<unknown>) => void }
+  ctx: WaitUntilContext
   openClient: () => RequestClient
   handle: () => Promise<Response>
 }): Promise<Response> {

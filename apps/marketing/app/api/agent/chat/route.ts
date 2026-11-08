@@ -117,7 +117,9 @@ function describeInvalidRequest(err: unknown): { message: string; code: string }
 
 const BALANCE_HELD_RETRY_AFTER_SECONDS = 5;
 
-// A function killed at this limit never settles, so the user forfeits that turn's hold.
+// Vercel only: a function killed at this limit never settles, so the user forfeits that
+// Turn's Hold. Workers ignore it; there a Turn's settlement runs under `waitUntil`
+// (`keepRequestOpenUntil`), which survives a hang-up but not an isolate that dies.
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
@@ -351,6 +353,13 @@ export async function POST(req: Request) {
       );
     }
     const { reserveCents, maxTokens } = plan;
+    // Every Hold is logged when taken and again when settled, under one id. A Worker that
+    // dies mid-Turn (memory, CPU, restart) settles nothing and logs nothing, so a taken
+    // Hold with no settled line is a lost Hold to return by hand.
+    const holdId = crypto.randomUUID();
+    logger.info({ userId, chatId, holdId, reserveCents, ...hold }, "Credit hold taken");
+    const holdSettled = (actualCents: number) =>
+      logger.info({ userId, chatId, holdId, actualCents }, "Credit hold settled");
     const maxTokensReducedForBalance = maxTokens < AGENT_TURN_MAX_TOKENS;
 
     let history: HistoryRow[] = runHistory;
@@ -360,27 +369,35 @@ export async function POST(req: Request) {
     } else if (previousTurns) {
       runRequest = { type: "continuation", turns: runTurns };
     }
-    if (userMessage) {
-      try {
+    // Nothing was sent to Anthropic yet, so a failure from here to the stream gives the
+    // whole Hold back. Without this, the outer catch would answer 500 and keep it.
+    let anthropicMessages: MessageParam[];
+    try {
+      if (userMessage) {
         const started = await openRun({ db, chatId, userMessage });
         history = started.history;
         runRequest = { type: "first", opening: started.opening };
-      } catch (startError) {
-        logger.error(
-          { userId, chatId, error: errorMessage(startError) },
-          "Failed to start the Run; returning its hold"
-        );
-        await settleCredits({ db, userId, hold, actualCents: 0 }).catch((settleError: unknown) => {
-          logger.error(
-            { userId, chatId, reserveCents, error: errorMessage(settleError) },
-            "Failed to return the hold of a Run that never started"
-          );
-        });
-        return NextResponse.json(error(INTERNAL_ERROR_MESSAGE, "INTERNAL_ERROR"), { status: 500 });
       }
+      const builtMessages = buildAgentMessages({ history, userMessage, image, runTurns });
+      anthropicMessages = runEnd ? withLastTurnNotice(builtMessages) : builtMessages;
+      // DEV LOGGING: Log request to LLM
+      await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking });
+    } catch (startError) {
+      logger.error(
+        { userId, chatId, error: errorMessage(startError) },
+        "Failed to start the Turn; returning its hold"
+      );
+      await settleCredits({ db, userId, hold, actualCents: 0 }).then(
+        () => holdSettled(0),
+        (settleError: unknown) => {
+          logger.error(
+            { userId, chatId, holdId, reserveCents, error: errorMessage(settleError) },
+            "Failed to return the hold of a Turn that never started; hold kept"
+          );
+        }
+      );
+      return NextResponse.json(error(INTERNAL_ERROR_MESSAGE, "INTERNAL_ERROR"), { status: 500 });
     }
-    const builtMessages = buildAgentMessages({ history, userMessage, image, runTurns });
-    const anthropicMessages = runEnd ? withLastTurnNotice(builtMessages) : builtMessages;
 
     logger.debug(
       {
@@ -397,18 +414,15 @@ export async function POST(req: Request) {
       "Starting agent stream"
     );
 
-    // DEV LOGGING: Log request to LLM
-    await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking });
-
     const encoder = new TextEncoder();
     const upstream = new AbortController();
     const abortUpstream = () => upstream.abort();
     req.signal.addEventListener("abort", abortUpstream, { once: true });
     let clientConnected = !req.signal.aborted;
     // The client can hang up long before the Turn settles its Hold in the `finally` below.
-    let endTurn = () => {};
+    let releaseRequestScope = () => {};
     keepRequestOpenUntil(new Promise<void>((resolve) => {
-      endTurn = resolve;
+      releaseRequestScope = resolve;
     }));
 
     const stream = new ReadableStream({
@@ -490,11 +504,13 @@ export async function POST(req: Request) {
                 });
               }
             });
+            holdSettled(actualCents);
           } catch (settleError) {
             logger.error(
               {
                 userId,
                 chatId,
+                holdId,
                 reserveCents,
                 actualCents,
                 error: errorMessage(settleError),
@@ -755,6 +771,7 @@ export async function POST(req: Request) {
             }
           });
           settled = true;
+          holdSettled(costCents);
 
           if (costCents > reserveCents) {
             logger.warn(
@@ -910,7 +927,7 @@ export async function POST(req: Request) {
             req.signal.removeEventListener("abort", abortUpstream);
             if (!settled) await settleUnfinishedTurn();
           } finally {
-            endTurn();
+            releaseRequestScope();
           }
         }
       },

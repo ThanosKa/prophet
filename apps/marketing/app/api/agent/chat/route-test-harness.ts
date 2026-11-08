@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   // A plain vi.fn, so tests can hand it stub streams without casting to MessageStream.
   stream: vi.fn(),
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+  logRequest: vi.fn(),
 }))
 
 vi.mock('@/lib/db', async () => {
@@ -28,7 +29,7 @@ vi.mock('@clerk/nextjs/server', () => ({ auth: mocks.auth }))
 vi.mock('@/lib/ratelimit', () => ({ checkRateLimit: mocks.checkRateLimit }))
 vi.mock('@/lib/anthropic', () => ({ anthropic: { messages: { stream: mocks.stream } } }))
 vi.mock('@/lib/logger', () => ({ logger: mocks.logger }))
-vi.mock('@/lib/dev-logger', () => ({ devLogger: { logRequest: vi.fn(), logResponse: vi.fn() } }))
+vi.mock('@/lib/dev-logger', () => ({ devLogger: { logRequest: mocks.logRequest, logResponse: vi.fn() } }))
 
 const { db } = await import('@/lib/db')
 const { POST } = await import('./route')
@@ -36,6 +37,8 @@ const { POST } = await import('./route')
 export { db }
 export const streamMock: Mock = mocks.stream
 export const loggerMock: Record<'debug' | 'info' | 'warn' | 'error', Mock> = mocks.logger
+/** The development logger's request hook: the last step before a Turn starts streaming. */
+export const logRequestMock: Mock = mocks.logRequest
 
 /** Creates the tables from the Drizzle schema; no migration files are involved. */
 export async function createTables(): Promise<void> {

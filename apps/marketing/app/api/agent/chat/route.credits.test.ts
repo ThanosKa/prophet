@@ -8,6 +8,8 @@ import {
   balance as balanceOf,
   createTables,
   db,
+  loggerMock,
+  logRequestMock,
   postAgentChat,
   postRaw,
   resetAs,
@@ -279,12 +281,59 @@ describe('credit reservation in POST /api/agent/chat', () => {
         return post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
       },
     })
-    const reader = response.body!.getReader()
+    if (!response.body) throw new Error('expected a streamed body')
+    const reader = response.body.getReader()
     await readUntil(reader, 'content_delta')
     await reader.cancel()
     await Promise.all(keptAlive)
 
     expect(balanceWhenClosed).toBe(990)
+  })
+
+  it('returns the whole Hold when the route fails after reserving and before streaming', async () => {
+    await seedUser({ credits: 1000 })
+    logRequestMock.mockRejectedValueOnce(new Error('disk full'))
+
+    const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+
+    expect(response.status).toBe(500)
+    expect(await balance()).toBe(1000)
+    expect(streamMock).not.toHaveBeenCalled()
+  })
+
+  describe('Hold log, for finding a Hold the Worker never settled', () => {
+    const logged = (message: string) =>
+      loggerMock.info.mock.calls.filter(([, text]) => text === message).map(([fields]) => fields)
+
+    it('logs a finished Turn\'s Hold when taken and when settled, under one id', async () => {
+      await seedUser({ credits: 1000 })
+      streamMock.mockReturnValue(completedTurn({ inputTokens: 1000, outputTokens: 500 }))
+
+      await (await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })).text()
+
+      const [taken, ...moreTaken] = logged('Credit hold taken')
+      const [settled, ...moreSettled] = logged('Credit hold settled')
+      expect(moreTaken).toEqual([])
+      expect(moreSettled).toEqual([])
+      expect(taken).toMatchObject({ userId: USER_ID, chatId: CHAT_ID, holdId: expect.any(String) })
+      expect(taken.reserveCents).toBeGreaterThan(0)
+      expect(settled).toMatchObject({ holdId: taken.holdId, actualCents: 2 })
+    })
+
+    it('logs a disconnected Turn\'s Hold as settled under the id it was taken with', async () => {
+      await seedUser({ credits: 1000 })
+      turnThatHangsAfterStreaming()
+
+      const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
+      if (!response.body) throw new Error('expected a streamed body')
+      const reader = response.body.getReader()
+      await readUntil(reader, 'content_delta')
+      await reader.cancel()
+      await vi.waitFor(() => expect(logged('Credit hold settled')).toHaveLength(1))
+
+      const [taken] = logged('Credit hold taken')
+      expect(logged('Credit hold settled')[0]).toMatchObject({ holdId: taken.holdId, actualCents: 10 })
+    })
   })
 
   it('settles exactly once when the request signal and the stream cancel both fire', async () => {

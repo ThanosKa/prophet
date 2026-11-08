@@ -17,6 +17,11 @@ function fakeClient(): RequestClient & { closed: boolean } {
   return client
 }
 
+function bodyOf(response: Response): ReadableStream<Uint8Array> {
+  if (!response.body) throw new Error('expected a streamed body')
+  return response.body
+}
+
 function fakeContext() {
   const pending: Promise<unknown>[] = []
   return {
@@ -79,13 +84,14 @@ describe('serveWithRequestDb', () => {
     expect(response.status).toBe(201)
     expect(response.headers.get('Content-Type')).toBe('text/event-stream')
 
-    const reader = response.body!.getReader()
-    source!.enqueue(encoder.encode('first'))
+    const reader = bodyOf(response).getReader()
+    if (!source) throw new Error('the source stream did not start')
+    source.enqueue(encoder.encode('first'))
     // The first chunk arrives while the stream is still open: nothing waits for the end.
     expect(new TextDecoder().decode((await reader.read()).value)).toBe('first')
     expect(client.closed).toBe(false)
 
-    source!.close()
+    source.close()
     expect((await reader.read()).done).toBe(true)
     await finished()
     expect(client.closed).toBe(true)
@@ -149,7 +155,7 @@ describe('serveWithRequestDb', () => {
       },
     })
 
-    await response.body!.cancel()
+    await bodyOf(response).cancel()
     // Give a wrongly eager close every chance to run before the Hold is released.
     await new Promise((resolve) => setTimeout(resolve, 10))
     expect(client.closed).toBe(false)
@@ -157,6 +163,26 @@ describe('serveWithRequestDb', () => {
     releaseHold()
     await finished()
     expect(client.closed).toBe(true)
+  })
+
+  it('passes a hang-up on to the Turn\'s own stream, so the Turn can stop Anthropic and settle', async () => {
+    const { ctx } = fakeContext()
+    let sourceCancelled: unknown = 'not cancelled'
+    const turnStream = new ReadableStream({
+      cancel(reason) {
+        sourceCancelled = reason
+      },
+    })
+
+    const response = await serveWithRequestDb({
+      ctx,
+      openClient: fakeClient,
+      handle: async () => new Response(turnStream, { headers: { 'Content-Type': 'text/event-stream' } }),
+    })
+    await bodyOf(response).cancel('client hung up')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(sourceCancelled).toBe('client hung up')
   })
 
   it('closes the client and passes the error on when the handler throws', async () => {
