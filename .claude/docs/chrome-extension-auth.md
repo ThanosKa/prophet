@@ -29,14 +29,16 @@ In `apps/sidepanel/src/main.tsx`:
 
 ## Auto-Reload Mechanism
 
-An open sidepanel listens for Clerk's session token (`__clerk_client_jwt`) in `chrome.storage.local` (`App.tsx`). When it changes (sign-in or sign-out), the sidepanel calls `window.location.reload()` and ClerkProvider re-initializes with the new session state.
+An open sidepanel listens for changes to the `__client_uat` cookie on the sync host (`App.tsx`, `src/lib/clerk-session-cookie.ts`). When the cookie disagrees with what the panel shows, the sidepanel calls `window.location.reload()` and ClerkProvider re-initializes with the new session state.
+
+Do not reload on changes to Clerk's stored token (`__clerk_client_jwt` in `chrome.storage.local`). In production Clerk writes the sync-host `__client` cookie to that key before each request and the response header after it. After an extension sign-out the cookie is stale, so Clerk issues a new token on every request, and reloading on each change loops until the web app refreshes the cookie (measured: 109 reloads in 56 seconds).
 
 ## Sign-Out Flow
 
 1. The user avatar menu's settings item opens `options.html`
 2. User clicks "Sign Out" in the options page (`src/options.tsx`)
-3. The options page sends a `SIGN_OUT` message, which reloads an open sidepanel, then calls Clerk's `signOut()`
-4. Clerk removes the session token, and the sidepanel shows the sign-in screen
+3. The options page calls Clerk's `signOut()` with a callback, so it stays on the page and shows the sign-in screen
+4. Once the session is gone, the callback sends a `SIGN_OUT` message. An open sidepanel that still shows a signed-in user reloads, and then shows the sign-in screen
 
 ## Environment Variables
 

@@ -12,10 +12,12 @@ function OptionsApp() {
     const { user, isLoaded, isSignedIn } = useUser()
     const { signOut } = useAuth()
 
-    const handleSignOut = async () => {
-        chrome.runtime.sendMessage({ type: 'SIGN_OUT' })
-        const optionsUrl = chrome.runtime.getURL('options.html')
-        signOut({ redirectUrl: optionsUrl }).catch(() => {})
+    const handleSignOut = () => {
+        // The callback runs once the session is gone, so the panel never reloads while still
+        // signed in, and it keeps this page from navigating and writing Clerk's token again.
+        signOut(() => {
+            chrome.runtime.sendMessage({ type: 'SIGN_OUT' })
+        }).catch(() => {})
     }
 
     const handleLogin = () => {
