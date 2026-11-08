@@ -4,9 +4,10 @@ export default defineConfig({
   worker: defineWorker({
     name: "prophet-marketing",
     entrypoint: "./worker/index.ts",
-    // Temporary, for signed-in tests: Clerk's live keys refuse workers.dev. Remove at cutover.
-    // Until then both test hosts answer with X-Robots-Tag: noindex (worker/edge-headers.ts).
-    domains: ["cf-test.prophetchrome.com"],
+    // Production since 2026-11-08. www stays a DNS-only record to Vercel, which answers 308
+    // to the root. The temporary cf-test host was removed at cutover; workers.dev still
+    // answers with X-Robots-Tag: noindex (worker/edge-headers.ts).
+    domains: ["prophetchrome.com"],
     // A domain turns workers.dev off unless this is set.
     workersDev: true,
     compatibilityDate: "2026-11-07",

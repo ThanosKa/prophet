@@ -151,7 +151,7 @@ Quick preview: Sign in → Open Prophet extension → Type message → Claude st
 | Payments         | Stripe (subscriptions + webhooks)        |
 | Validation       | Zod                                      |
 | Build Tool       | pnpm workspaces                          |
-| Hosting          | Cloudflare Workers via vinext (Vercel until the domain moves) |
+| Hosting          | Cloudflare Workers via vinext (`www` redirect still on Vercel) |
 
 ## Getting Started
 
@@ -315,7 +315,9 @@ Only the marketing app (backend API) needs deployment. The Chrome extension runs
 
 ### Deploy to Cloudflare Workers
 
-`apps/marketing` runs on Cloudflare Workers through vinext, as the Worker `prophet-marketing` (`apps/marketing/cloudflare.config.ts`). The Next.js scripts (`dev`, `build`) keep working beside it.
+`apps/marketing` runs on Cloudflare Workers through vinext, as the Worker `prophet-marketing` (`apps/marketing/cloudflare.config.ts`). It has served `prophetchrome.com` since 2026-11-08. The Next.js scripts (`dev`, `build`) keep working beside it.
+
+**How a change reaches production:** merging to `main` does not update the Worker. After the merge, someone runs the steps below by hand, with Node 24.22 or newer and `CLOUDFLARE_ACCOUNT_ID` set. Nothing deploys automatically unless that is set up separately.
 
 1. Put the six `NEXT_PUBLIC_*` values in `apps/marketing/.env.production.local`. They are inlined at build time, and the build stops if one is missing or the Clerk key is not `pk_live_` (set `ALLOW_CLERK_TEST_KEY=1` only for a local preview on placeholder values).
 2. Set the server values as Worker secrets: every name declared with `bindings.secret()` in `cloudflare.config.ts`. `cf deploy --secrets-file <file.json>` uploads them; later deploys keep them. There is no `DATABASE_URL` on the Worker.
@@ -324,7 +326,9 @@ Only the marketing app (backend API) needs deployment. The Chrome extension runs
 
 Run `db:migrate` before deploying code that needs a schema change.
 
-### Deploy to Vercel (until the domain moves)
+### Vercel (fallback only)
+
+Vercel still builds `main`, but since the cutover it serves only `www.prophetchrome.com` (a 308 to the root) and visitors whose DNS still holds the old answer. The project is kept as the way back: take `prophetchrome.com` off the Worker and add back the DNS-only CNAME to Vercel's target. The original setup was:
 
 1. Push your code to GitHub
 2. Import the project in Vercel
@@ -356,7 +360,7 @@ Run `db:migrate` before deploying code that needs a schema change.
 - Tests (`pnpm test:run`)
 - Next.js and extension builds (`pnpm build`) with placeholder env
 - Uses Node.js 20 and pnpm 9 for consistency
-- Deploys nothing: Vercel deploys `main` itself until the domain moves; the Worker is deployed by hand
+- Deploys nothing: the Worker is deployed by hand (see Deployment). Vercel still builds `main`, but only serves the `www` redirect and the fallback
 
 ## Contributing
 
@@ -384,7 +388,7 @@ Key security features:
 - [Anthropic](https://www.anthropic.com/) for Claude AI
 - [Clerk](https://clerk.com/) for authentication
 - [shadcn/ui](https://ui.shadcn.com) for UI components
-- [Vercel](https://vercel.com) for hosting
+- [Cloudflare Workers](https://workers.cloudflare.com) for hosting
 - [Next.js](https://nextjs.org/) for the framework
 - [Drizzle](https://orm.drizzle.team/) for the ORM
 - [Upstash](https://upstash.com/) for serverless Redis

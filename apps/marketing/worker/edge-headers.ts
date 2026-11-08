@@ -1,6 +1,7 @@
 /**
  * Hosts that serve the production Worker for testing only. They must stay out of search
- * engines: they carry the whole site and API on the live database. Remove at cutover.
+ * engines: they carry the whole site and API on the live database. cf-test is no longer
+ * routed to the Worker (removed at cutover); its check stays so a re-added test host is covered.
  */
 function isTestHost(hostname: string): boolean {
   return hostname === 'cf-test.prophetchrome.com' || hostname.endsWith('.workers.dev')
