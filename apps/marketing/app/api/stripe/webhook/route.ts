@@ -128,7 +128,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         where: eq(users.id, userId),
       })
       if (user) {
-        // Awaited: a Worker may cancel work left running after the response.
+        // Awaited, with a timeout inside: a Worker may cancel work left running after the response.
         await sendPurchaseEmail({
           to: user.email,
           firstName: user.firstName,
@@ -234,7 +234,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
 
   if (isNewSubscription) {
     const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
-    // Awaited: a Worker may cancel work left running after the response.
+    // Awaited, with a timeout inside: a Worker may cancel work left running after the response.
     await sendPurchaseEmail({
       to: user.email,
       firstName: user.firstName,

@@ -27,11 +27,32 @@ export interface SendPurchaseEmailParams {
   isSubscription: boolean
 }
 
-export async function sendWelcomeEmail({ to, firstName, lastName }: SendWelcomeEmailParams) {
+/**
+ * Webhooks await their email before answering (a Worker cancels work left running after
+ * the response), so a slow Resend must not hold the answer past the sender's timeout.
+ */
+const SEND_TIMEOUT_MS = 5_000
+
+type SendResult = Awaited<ReturnType<Resend['emails']['send']>>
+
+async function sendWithin(payload: Parameters<Resend['emails']['send']>[0]): Promise<SendResult> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(`Resend timed out after ${SEND_TIMEOUT_MS} ms`)), SEND_TIMEOUT_MS)
+  })
+  try {
+    return await Promise.race([getResend().emails.send(payload), timeout])
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+// Logs name the email by its Resend id, never by the recipient's address.
+export async function sendWelcomeEmail({ to, firstName, lastName }: SendWelcomeEmailParams): Promise<void> {
   const html = buildWelcomeHtml({ firstName, lastName })
 
   try {
-    const { data, error } = await getResend().emails.send({
+    const { data, error } = await sendWithin({
       from: FROM_EMAIL,
       to,
       subject: buildWelcomeSubject({ firstName }),
@@ -39,21 +60,21 @@ export async function sendWelcomeEmail({ to, firstName, lastName }: SendWelcomeE
     })
 
     if (error) {
-      logger.error({ error, to }, 'Failed to send welcome email')
+      logger.error({ error }, 'Failed to send welcome email')
       return
     }
 
-    logger.info({ emailId: data?.id, to }, 'Welcome email sent')
+    logger.info({ emailId: data?.id }, 'Welcome email sent')
   } catch (err) {
-    logger.error({ error: err instanceof Error ? err.message : String(err), to }, 'Welcome email send threw')
+    logger.error({ error: err instanceof Error ? err.message : String(err) }, 'Welcome email send threw')
   }
 }
 
-export async function sendPurchaseEmail(params: SendPurchaseEmailParams) {
+export async function sendPurchaseEmail(params: SendPurchaseEmailParams): Promise<void> {
   const html = buildPurchaseHtml(params)
 
   try {
-    const { data, error } = await getResend().emails.send({
+    const { data, error } = await sendWithin({
       from: FROM_EMAIL,
       to: params.to,
       subject: `Your Prophet receipt — ${params.planName}`,
@@ -61,13 +82,13 @@ export async function sendPurchaseEmail(params: SendPurchaseEmailParams) {
     })
 
     if (error) {
-      logger.error({ error, to: params.to }, 'Failed to send purchase email')
+      logger.error({ error }, 'Failed to send purchase email')
       return
     }
 
-    logger.info({ emailId: data?.id, to: params.to, plan: params.planName }, 'Purchase email sent')
+    logger.info({ emailId: data?.id, plan: params.planName }, 'Purchase email sent')
   } catch (err) {
-    logger.error({ error: err instanceof Error ? err.message : String(err), to: params.to }, 'Purchase email send threw')
+    logger.error({ error: err instanceof Error ? err.message : String(err) }, 'Purchase email send threw')
   }
 }
 

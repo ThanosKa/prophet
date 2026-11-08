@@ -3,8 +3,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mocks = vi.hoisted(() => {
   const where = vi.fn()
   const set = vi.fn((_values: Record<string, unknown>) => ({ where }))
-  const values = vi.fn((_values: Record<string, unknown>) => Promise.resolve())
+  // What the insert's RETURNING yields: the new row, or nothing when the user already exists.
+  const inserted = vi.fn(() => Promise.resolve([{ id: 'user_123' }]))
+  const values = vi.fn((_values: Record<string, unknown>) => ({
+    onConflictDoNothing: () => ({ returning: inserted }),
+  }))
   return {
+    inserted,
+    logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
     verify: vi.fn(),
     set,
     update: vi.fn(() => ({ set })),
@@ -40,13 +46,7 @@ vi.mock('@/lib/email', () => ({
   sendWelcomeEmail: mocks.sendWelcomeEmail,
 }))
 
-vi.mock('@/lib/logger', () => ({
-  logger: {
-    info: vi.fn(),
-    error: vi.fn(),
-    warn: vi.fn(),
-  },
-}))
+vi.mock('@/lib/logger', () => ({ logger: mocks.logger }))
 
 vi.mock('next/headers', () => ({
   headers: vi.fn(() => ({
@@ -73,13 +73,13 @@ function userEvent({
   }
 }
 
-async function postWebhook(event: unknown) {
+async function postWebhook(event: unknown, rawBody = JSON.stringify(event)) {
   mocks.verify.mockReturnValue(event)
   const { POST } = await import('./route')
   return POST(
     new Request('http://localhost/api/webhooks/clerk', {
       method: 'POST',
-      body: JSON.stringify(event),
+      body: rawBody,
     })
   )
 }
@@ -157,11 +157,37 @@ describe('POST /api/webhooks/clerk', () => {
       })
     })
 
+    it('acknowledges a redelivered user.created without a second user or welcome email', async () => {
+      mocks.inserted.mockResolvedValueOnce([])
+
+      const response = await postWebhook(userEvent({ type: 'user.created' }))
+
+      expect(response.status).toBe(200)
+      expect(mocks.sendWelcomeEmail).not.toHaveBeenCalled()
+    })
+
+    it('logs the new user by id, never by email address', async () => {
+      await postWebhook(userEvent({ type: 'user.created' }))
+      await postWebhook(userEvent({ type: 'user.updated' }))
+
+      expect(JSON.stringify(mocks.logger.info.mock.calls)).not.toContain('ada@example.com')
+      expect(mocks.logger.info).toHaveBeenCalledWith({ userId: 'user_123' }, 'User created from webhook')
+    })
+
     it('gives a new user the Free grant of 7 Credits', async () => {
       await postWebhook(userEvent({ type: 'user.created' }))
 
       expect(lastCallArg(mocks.values).creditsRemaining).toBe(7)
     })
+  })
+
+  it('verifies the signature over the body exactly as Clerk sent it', async () => {
+    // Spacing and key order a JSON round trip would change, breaking the signature.
+    const rawBody = '{"data": {"id": "sess_123"}, "type": "session.created", "amount": 1.0}'
+
+    await postWebhook({ type: 'session.created', data: { id: 'sess_123' } }, rawBody)
+
+    expect(mocks.verify).toHaveBeenCalledWith(rawBody, expect.any(Object))
   })
 
   it('deletes the user on user.deleted', async () => {

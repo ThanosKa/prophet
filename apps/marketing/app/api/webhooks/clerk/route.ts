@@ -52,8 +52,8 @@ export async function POST(req: Request) {
       )
     }
 
-    const payload = await req.json()
-    const body = JSON.stringify(payload)
+    // Verified as received: a JSON round trip can change bytes and break the signature.
+    const body = await req.text()
 
     const wh = new Webhook(WEBHOOK_SECRET)
 
@@ -103,23 +103,33 @@ export async function POST(req: Request) {
         )
       }
 
-      await db.insert(users).values({
-        id,
-        email: primaryEmail,
-        firstName: first_name ?? null,
-        lastName: last_name ?? null,
-        tier: 'free',
-        creditsRemaining: TIER_CONFIG.free.credits,
-      })
+      // Svix redelivers user.created after a slow or failed answer; the replay changes nothing.
+      const inserted = await db
+        .insert(users)
+        .values({
+          id,
+          email: primaryEmail,
+          firstName: first_name ?? null,
+          lastName: last_name ?? null,
+          tier: 'free',
+          creditsRemaining: TIER_CONFIG.free.credits,
+        })
+        .onConflictDoNothing()
+        .returning({ id: users.id })
 
-      // Awaited: a Worker may cancel work left running after the response.
+      if (inserted.length === 0) {
+        logger.info({ userId: id }, 'User already exists; user.created redelivery ignored')
+        return NextResponse.json(success({ received: true }))
+      }
+
+      // Awaited, with a timeout inside: a Worker may cancel work left running after the response.
       await sendWelcomeEmail({
         to: primaryEmail,
         firstName: first_name,
         lastName: last_name,
       }).catch(() => {})
 
-      logger.info({ userId: id, email: primaryEmail }, 'User created from webhook')
+      logger.info({ userId: id }, 'User created from webhook')
     } else if (evt.type === 'user.updated') {
       const { id, email_addresses, first_name, last_name } = evt.data
 
@@ -135,7 +145,7 @@ export async function POST(req: Request) {
         })
         .where(eq(users.id, id))
 
-      logger.info({ userId: id, email: primaryEmail }, 'User updated from webhook')
+      logger.info({ userId: id }, 'User updated from webhook')
     } else {
       const { id } = evt.data
 
