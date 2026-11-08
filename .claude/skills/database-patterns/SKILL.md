@@ -239,7 +239,7 @@ migrateData()
 
 Import `db` from `@/lib/db` everywhere; it picks the right client for where the code runs.
 
-- **On the Cloudflare Worker,** each request gets its own client, opened on first use and closed after the response ends (`lib/db/request-scope.ts`), because a Worker cannot reuse a connection across requests. Work that outlives the response and still needs the database, such as settling a Hold after the client hangs up, must be declared with `keepRequestOpenUntil(promise)`, or it fails with "Database used after its request ended".
+- **On the Cloudflare Worker,** each request gets its own client, opened on first use and closed after the response ends (`lib/db/request-scope.ts`), because a Worker cannot reuse a connection across requests. Work that outlives the response and still needs the database, such as settling a Hold after the client hangs up, must be declared with `keepRequestOpenUntil(promise)`, or it fails with "Database used after its request ended". The Worker connects only through the `HYPERDRIVE` binding: without it, the first query throws rather than dialling `DATABASE_URL` without TLS.
 - **Under Next.js and in scripts,** `db` is the shared pool below.
 
 ```typescript

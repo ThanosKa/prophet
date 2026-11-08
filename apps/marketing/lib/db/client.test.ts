@@ -1,19 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { databaseConnectionString, openRequestClient } from './client'
+import { databaseConnectionString, openRequestClient, type DatabaseEnv } from './client'
 
 describe('databaseConnectionString', () => {
-  it('uses DATABASE_URL until a Hyperdrive binding exists', () => {
-    expect(databaseConnectionString({ DATABASE_URL: 'direct' })).toBe('direct')
+  it('connects through the Hyperdrive binding', () => {
+    expect(databaseConnectionString({ HYPERDRIVE: { connectionString: 'via-hyperdrive' } })).toBe(
+      'via-hyperdrive'
+    )
   })
 
-  it('prefers Hyperdrive once it is bound', () => {
-    expect(
-      databaseConnectionString({ DATABASE_URL: 'direct', HYPERDRIVE: { connectionString: 'pooled' } })
-    ).toBe('pooled')
-  })
-
-  it('names the missing setting, not its value', () => {
-    expect(() => databaseConnectionString({})).toThrow('DATABASE_URL')
+  it('refuses to connect without the Hyperdrive binding, even when DATABASE_URL is set', () => {
+    // A direct DATABASE_URL from a Worker would go out without TLS.
+    // The Worker's env holds other names too; a leftover DATABASE_URL secret must not be used.
+    const env: DatabaseEnv & { DATABASE_URL: string } = {
+      DATABASE_URL: 'postgresql://user:password@db.example.com:5432/postgres',
+    }
+    expect(() => databaseConnectionString(env)).toThrow('HYPERDRIVE')
   })
 })
 
