@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 vi.mock('@/lib/agent', () => ({ runAgentLoop: vi.fn() }))
 vi.mock('@/lib/config', () => ({
-  config: { apiUrl: 'http://localhost:3000', useDevApi: false, useMockApi: false },
+  config: { apiUrl: 'http://localhost:3000', clerkSyncHost: 'http://localhost:3000', useDevApi: false, useMockApi: false },
 }))
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({ isSignedIn: true, user: { creditsRemaining: 100 } }),
@@ -18,6 +18,7 @@ vi.stubGlobal('chrome', {
   storage: {
     local: { get: vi.fn(() => Promise.resolve({})), set: vi.fn(() => Promise.resolve()), onChanged: listener() },
   },
+  cookies: { onChanged: listener() },
   tabs: {
     query: vi.fn(() => Promise.resolve([{ id: 1 }])),
     sendMessage: vi.fn(() => Promise.resolve()),

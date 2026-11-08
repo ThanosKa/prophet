@@ -2,6 +2,10 @@
 
 The extension version lives in `manifest.ts`. Newest release first.
 
+## 1.0.8
+
+- Signing out reloads the side panel once. It used to reload repeatedly, for up to about a minute, until the web app refreshed its session cookie.
+
 ## 1.0.7
 
 1.0.6 was never uploaded to the Chrome Web Store, so this release also carries its changes.

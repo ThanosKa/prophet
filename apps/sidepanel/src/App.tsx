@@ -16,6 +16,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { apiClient } from '@/lib/api'
 import { describeThrownError } from '@/lib/user-facing-errors'
+import { shouldReloadForSessionCookie } from '@/lib/clerk-session-cookie'
+import { config } from '@/lib/config'
 import type { ImageData } from '@prophet/shared'
 
 export default function App() {
@@ -61,35 +63,29 @@ export default function App() {
 
   useEffect(() => {
     const handleSignOutMessage = (message: { type?: string }) => {
-      if (message?.type === 'SIGN_OUT') {
+      if (message?.type === 'SIGN_OUT' && isSignedIn) {
         window.location.reload()
       }
     }
     chrome.runtime.onMessage.addListener(handleSignOutMessage)
     return () => chrome.runtime.onMessage.removeListener(handleSignOutMessage)
-  }, [])
+  }, [isSignedIn])
 
   useEffect(() => {
-    const handleStorageChange = (
-      changes: { [key: string]: chrome.storage.StorageChange }
-    ) => {
-      const jwtKey = Object.keys(changes).find((key) => key.includes('__clerk_client_jwt'))
-      if (jwtKey) {
-        if (changes[jwtKey].newValue) {
-          logger.log('App', 'Clerk session synced, reloading sidepanel')
-        } else if (changes[jwtKey].oldValue && !changes[jwtKey].newValue) {
-          logger.log('App', 'Clerk session signed out, reloading sidepanel')
-        }
+    const syncHostname = new URL(config.clerkSyncHost).hostname
+    const handleCookieChange = (change: chrome.cookies.CookieChangeInfo) => {
+      if (shouldReloadForSessionCookie({ change, isSignedIn, syncHostname })) {
+        logger.log('App', 'Clerk session changed, reloading sidepanel')
         window.location.reload()
       }
     }
 
-    chrome.storage.local.onChanged.addListener(handleStorageChange)
+    chrome.cookies.onChanged.addListener(handleCookieChange)
 
     return () => {
-      chrome.storage.local.onChanged.removeListener(handleStorageChange)
+      chrome.cookies.onChanged.removeListener(handleCookieChange)
     }
-  }, [])
+  }, [isSignedIn])
 
   useEffect(() => {
     document.documentElement.classList.remove('light', 'dark')
