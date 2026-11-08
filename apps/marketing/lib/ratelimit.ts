@@ -1,16 +1,25 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import { getUserTier } from '@/lib/cache'
+import { keepRequestOpenUntil } from '@/lib/db/request-scope'
 import { logger } from '@/lib/logger'
 
 const isFakeCredentials =
   process.env.UPSTASH_REDIS_REST_URL?.includes('fake') ||
   process.env.UPSTASH_REDIS_REST_TOKEN === 'faketoken123'
 
+// Requests still pass without Upstash (CODING_STANDARDS: Redis is optional), but in
+// production that leaves Turns and Anthropic spend unlimited, so it is an error there.
+const reportDisabled = (reason: string) => {
+  const message = `${reason}. Rate limiting is disabled.`
+  if (process.env.NODE_ENV === 'production') logger.error(message)
+  else logger.warn(message)
+}
+
 if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-  logger.warn('UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN not set. Rate limiting will be disabled.')
+  reportDisabled('UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN not set')
 } else if (isFakeCredentials) {
-  logger.warn('Fake Upstash credentials detected. Rate limiting will be disabled.')
+  reportDisabled('Fake Upstash credentials detected')
 }
 
 const redis =
@@ -110,6 +119,7 @@ export async function checkRateLimit(
 ): Promise<{ success: boolean; limit?: number; remaining?: number; reset?: number }> {
   if (globalRatelimit) {
     const globalCheck = await globalRatelimit.limit('global')
+    keepRequestOpenUntil(globalCheck.pending)
     if (!globalCheck.success) {
       return { success: false, limit: globalCheck.limit, remaining: globalCheck.remaining, reset: globalCheck.reset }
     }
@@ -124,7 +134,9 @@ export async function checkRateLimit(
   const tier = await getUserTier(userId)
   const limiter = limiters[tier]
 
-  const { success, limit, remaining, reset } = await limiter.limit(userId)
+  const { success, limit, remaining, reset, pending } = await limiter.limit(userId)
+  // Analytics writes finish after the answer; on a Worker they would be cancelled.
+  keepRequestOpenUntil(pending)
 
   return { success, limit, remaining, reset }
 }
