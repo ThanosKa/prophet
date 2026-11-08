@@ -151,7 +151,7 @@ Quick preview: Sign in → Open Prophet extension → Type message → Claude st
 | Payments         | Stripe (subscriptions + webhooks)        |
 | Validation       | Zod                                      |
 | Build Tool       | pnpm workspaces                          |
-| Hosting          | Vercel (recommended)                     |
+| Hosting          | Cloudflare Workers via vinext (Vercel until the domain moves) |
 
 ## Getting Started
 
@@ -311,9 +311,20 @@ Extension → Backend API (`/api/chat`) → Anthropic API (streaming) → Backen
 
 ## Deployment
 
-### Deploy to Vercel
+Only the marketing app (backend API) needs deployment. The Chrome extension runs client-side.
 
-The easiest way to deploy Prophet is with Vercel:
+### Deploy to Cloudflare Workers
+
+`apps/marketing` runs on Cloudflare Workers through vinext, as the Worker `prophet-marketing` (`apps/marketing/cloudflare.config.ts`). The Next.js scripts (`dev`, `build`) keep working beside it.
+
+1. Put the six `NEXT_PUBLIC_*` values in `apps/marketing/.env.production.local`. They are inlined at build time, and the build stops if one is missing or the Clerk key is not `pk_live_` (set `ALLOW_CLERK_TEST_KEY=1` only for a local preview on placeholder values).
+2. Set the server values as Worker secrets: every name declared with `bindings.secret()` in `cloudflare.config.ts`. `cf deploy --secrets-file <file.json>` uploads them; later deploys keep them. There is no `DATABASE_URL` on the Worker.
+3. The database is reached only through the Hyperdrive binding `HYPERDRIVE` (caching off, `verify-full` TLS). Without the binding every database request fails with an error, never a direct connection.
+4. Build and deploy from `apps/marketing`: `pnpm build:vinext`, then `npx cf deploy --prebuilt` (or `pnpm deploy:vinext`, which builds first).
+
+Run `db:migrate` before deploying code that needs a schema change.
+
+### Deploy to Vercel (until the domain moves)
 
 1. Push your code to GitHub
 2. Import the project in Vercel
@@ -322,14 +333,12 @@ The easiest way to deploy Prophet is with Vercel:
 5. Update `NEXT_PUBLIC_APP_URL` to your production domain
 6. Deploy
 
-**Note**: Only the marketing app (backend API) needs deployment. The Chrome extension runs client-side.
-
 ### Production Checklist
 
 - [ ] Configure production environment variables
 - [ ] Set up Supabase connection pooling (Session mode recommended)
 - [ ] Configure Clerk production instance and webhooks (`/api/webhooks/clerk`)
-- [ ] Enable Stripe live mode with webhook endpoint (`/api/webhooks/stripe`)
+- [ ] Enable Stripe live mode with webhook endpoint (`/api/stripe/webhook`)
 - [ ] Set up Upstash Redis production instance
 - [ ] Add production Clerk extension ID to Allowed Origins
 - [ ] Configure custom domain and SSL
@@ -342,10 +351,12 @@ The easiest way to deploy Prophet is with Vercel:
 
 `.github/workflows/ci.yml` runs automated checks on every push and pull request:
 
-- ESLint for code quality
 - TypeScript type checking (`pnpm type-check`)
+- ESLint (`pnpm lint`)
+- Tests (`pnpm test:run`)
+- Next.js and extension builds (`pnpm build`) with placeholder env
 - Uses Node.js 20 and pnpm 9 for consistency
-- Skips builds (Vercel handles deployment)
+- Deploys nothing: Vercel deploys `main` itself until the domain moves; the Worker is deployed by hand
 
 ## Contributing
 

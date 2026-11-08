@@ -37,7 +37,7 @@ Installed extension builds outlive deploys, so the API keeps accepting what olde
 
 - Branch from `main` as `<type>/<topic>` (`feat/`, `fix/`, `chore/`, `docs/`, `seo/`) and open the PR against `main`. `autopilot/seo-*` branches belong to the SEO autopilot.
 - Write Conventional Commits with a scope, naming the behaviour: `fix(marketing): keep one live Run per chat`. Scopes in use: `marketing`, `sidepanel`, `shared`, `seo`, `db`, `claude`.
-- Merging to `main` deploys to production on Vercel. A schema change has an ordering rule: see `.claude/docs/database-schema.md`.
+- Merging to `main` deploys to production on Vercel until the domain moves to Cloudflare. From then on production is the `prophet-marketing` Worker, deployed by hand with `cf deploy` (README, Deployment). A schema change has an ordering rule: see `.claude/docs/database-schema.md`.
 - An extension release bumps the version in `apps/sidepanel/manifest.ts` and `apps/sidepanel/package.json`, and adds notes to `apps/sidepanel/RELEASE_NOTES.md`.
 - If your change makes a line in these docs false, fix that line in the same PR.
 

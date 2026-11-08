@@ -8,7 +8,7 @@ The rules every diff in this repo is checked against, one per line, alongside th
 - Scope every query on user-owned rows by `userId` as well as the row id (`and(eq(chats.id, chatId), eq(chats.userId, userId))`), returning 404 when nothing matches.
 - Parse every request input (body, query, params) with a Zod schema via `safeParse`, returning 400 on failure; data from the extension and content scripts is untrusted.
 - Rate-limit every authenticated API route with `checkRateLimit(userId, type)` (`apps/marketing/lib/ratelimit.ts`) right after `auth()`: `'chat'` for the agent route, `'api'` for the rest.
-- Verify webhook signatures before trusting the payload: Stripe with `stripe.webhooks.constructEvent` on the raw `request.text()` body, Clerk with `svix`.
+- Verify webhook signatures before trusting the payload: Stripe with `await stripe.webhooks.constructEventAsync` on the raw `request.text()` body (the sync `constructEvent` throws on Workers), Clerk with `svix` on the raw `req.text()` body.
 
 ## Credits and billing
 

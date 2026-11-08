@@ -38,7 +38,8 @@ export async function POST(request: Request) {
   let event: Stripe.Event
 
   try {
-    event = stripe.webhooks.constructEvent(
+    // Async: the sync constructEvent throws on Workers, whose WebCrypto is async.
+    event = await stripe.webhooks.constructEventAsync(
       body,
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!
@@ -342,7 +343,8 @@ Always verify webhooks are from Stripe:
 
 ```typescript
 try {
-  event = stripe.webhooks.constructEvent(
+  // Async: the sync constructEvent throws on Workers, whose WebCrypto is async.
+  event = await stripe.webhooks.constructEventAsync(
     body,           // Raw request body (not parsed JSON)
     signature,      // stripe-signature header
     webhookSecret   // STRIPE_WEBHOOK_SECRET env var

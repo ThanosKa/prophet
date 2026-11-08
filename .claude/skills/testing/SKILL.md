@@ -94,7 +94,7 @@ vi.mock('@/lib/db', () => ({
 ```typescript
 vi.mock('@/lib/stripe', () => ({
   stripe: {
-    webhooks: { constructEvent: vi.fn() },
+    webhooks: { constructEventAsync: vi.fn() },
     subscriptions: { update: vi.fn() },
   },
 }))
