@@ -17,7 +17,7 @@ export default function PrivacyPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h1 className="text-4xl sm:text-5xl font-bold mb-4">Privacy Policy</h1>
-            <p className="text-sm text-muted-foreground">Last updated: January 2026</p>
+            <p className="text-sm text-muted-foreground">Last updated: November 2026</p>
           </div>
 
           <div className="space-y-8">
@@ -151,6 +151,8 @@ export default function PrivacyPage() {
                   <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
                     <li><strong className="text-foreground">Anthropic:</strong> AI model API (chat processing)</li>
                     <li><strong className="text-foreground">Clerk:</strong> Authentication and user management</li>
+                    <li><strong className="text-foreground">Cloudflare:</strong> Website and API hosting, and cookie-free visitor analytics</li>
+                    <li><strong className="text-foreground">Resend:</strong> Account and receipt emails</li>
                     <li><strong className="text-foreground">Stripe:</strong> Payment processing</li>
                     <li><strong className="text-foreground">Supabase:</strong> Database hosting</li>
                     <li><strong className="text-foreground">Upstash:</strong> Rate limiting</li>
