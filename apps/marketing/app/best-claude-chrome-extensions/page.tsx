@@ -8,9 +8,9 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: { absolute: 'Best Claude Chrome Extensions in 2026: 5 Tested & Ranked' },
+  title: { absolute: 'Best Claude Extensions for Chrome (2026): Official + 4 More' },
   description:
-    "All 5 Claude extensions ranked on models, automation and price, including Anthropic's own. Only one gives you Opus 5.5 without a $20/mo plan.",
+    "Anthropic's official Claude in Chrome needs a paid Claude plan. Compare it with 4 more Claude extensions on models, automation and price, incl. pay-per-use.",
   alternates: { canonical: '/best-claude-chrome-extensions' },
 }
 
@@ -22,7 +22,7 @@ const extensions = [
     url: 'https://chromewebstore.google.com/detail/prophet/febgdmgcdimmjfkfblbpjmkjfepmfkif',
     claudeModels: 'Haiku 5.5, Sonnet 5.5, Opus 5.5',
     pricing: 'Free tier ($0.07 credits to try Haiku), Pro $9.99/mo, Premium $29.99/mo, Ultra $59.99/mo',
-    description: 'Prophet is a Chrome extension built specifically around Claude AI. It lives in the Chrome side panel and provides three Claude model options: Haiku 5.5 for fast, affordable tasks; Sonnet 5.5 for balanced performance; and Opus 5.5 for the most complex reasoning. What makes Prophet unique among Claude extensions is its browser automation layer. Using 19 built-in tools, Prophet can interact with web pages on your behalf: clicking buttons, filling forms, navigating between pages, extracting data, and managing browser tabs. This is powered by the accessibility tree rather than screenshots, making it faster and more reliable than vision-based approaches. The pay-per-use credit system means you pay only for the tokens you consume, and every plan includes credits equal to its price. For Claude power users who want the AI to not just analyze web pages but take action on them, Prophet is the most capable option. The entire codebase is open source on GitHub, providing full transparency into how Claude is integrated and how your data flows through the system.',
+    description: 'Prophet is a Chrome extension built specifically around Claude AI. It lives in the Chrome side panel and provides three Claude model options: Haiku 5.5 for fast, affordable tasks; Sonnet 5.5 for balanced performance; and Opus 5.5 for the most complex reasoning. What makes Prophet unique among Claude extensions is its browser automation layer. Using 19 built-in tools, Prophet can interact with web pages on your behalf: clicking buttons, filling forms, navigating between pages, reading page content, and managing browser tabs. This is powered by the accessibility tree rather than screenshots, making it faster and more reliable than vision-based approaches. The pay-per-use credit system means you pay only for the tokens you consume, and every plan includes credits equal to its price. For Claude power users who want the AI to not just analyze web pages but take action on them, Prophet is the most capable option. The entire codebase is open source on GitHub, providing full transparency into how Claude is integrated and how your data flows through the system.',
     pros: [
       'All three major Claude models available (Haiku 5.5, Sonnet 5.5, Opus 5.5)',
       'Browser automation with 19 tools for real page interaction',
@@ -42,17 +42,17 @@ const extensions = [
     name: 'Claude in Chrome (by Anthropic)',
     tagline: 'Official Anthropic browser extension',
     url: 'https://www.anthropic.com/news/claude-for-chrome',
-    claudeModels: 'Claude 4 Sonnet (default)',
-    pricing: 'Requires Claude Pro ($20/mo), Team ($25/mo per user), or Enterprise subscription',
-    description: 'Claude in Chrome is Anthropic\'s official browser extension. It provides Claude as a sidebar assistant that can see and interact with web pages using Computer Use, Anthropic\'s screenshot-based browser automation technology. Since it comes directly from Anthropic, it has the deepest integration with Claude\'s capabilities and is the first to receive new features. The extension requires an active Claude Pro, Team, or Enterprise subscription. Computer Use works by taking screenshots of the page, analyzing them with Claude\'s vision capabilities, and then simulating mouse clicks at specific coordinates. This approach is flexible but inherently slower and more expensive in tokens than text-based methods. Claude in Chrome is the best choice for users already paying for a Claude subscription who want official support and the latest Claude features. However, the subscription-based pricing means you pay the same whether you use the extension for 5 minutes or 5 hours per day.',
+    claudeModels: 'All public Claude models (per Anthropic, November 2026)',
+    pricing: 'Included with paid Claude plans (Pro from $20/mo, Max, Ultra, Team, Enterprise); not on the Free plan',
+    description: 'Claude in Chrome is Anthropic\'s official browser extension. It provides Claude as a sidebar assistant that can see and interact with web pages using Computer Use, Anthropic\'s screenshot-based browser automation technology. Since it comes directly from Anthropic, it has the deepest integration with Claude\'s capabilities and is the first to receive new features. As of November 2026 the Anthropic help center lists it on paid plans only (Pro, Max, Ultra, Team and Enterprise), not on the Free plan. Computer Use works by taking screenshots of the page, analyzing them with Claude\'s vision capabilities, and then simulating mouse clicks at specific coordinates. This approach is flexible but inherently slower and more expensive in tokens than text-based methods. Claude in Chrome is the best choice for users already paying for a Claude subscription who want official support and the latest Claude features. However, the subscription-based pricing means you pay the same whether you use the extension for 5 minutes or 5 hours per day.',
     pros: [
       'Official Anthropic product with first-party support',
       'Computer Use for visual browser automation',
       'Deep Claude integration with the latest model features',
-      'Works within existing Claude subscription',
+      'Works within an existing paid Claude plan; no separate fee',
     ],
     cons: [
-      'Requires minimum $20/mo Claude subscription',
+      'Not available on the Free Claude plan; Pro starts at $20/mo',
       'Screenshot-based approach is slower than accessibility tree methods',
       'Higher token costs due to vision processing (images are expensive)',
       'Coordinate-based clicking is less precise than UID-based targeting',
@@ -63,17 +63,16 @@ const extensions = [
     name: 'Monica (Claude mode)',
     tagline: 'Multi-model assistant with Claude access',
     url: 'https://monica.im',
-    claudeModels: 'Claude 3.5 Sonnet',
+    claudeModels: 'Claude alongside GPT and Gemini (versions set by Monica)',
     pricing: 'Free tier (limited), Pro $9.90/mo, Unlimited $19.90/mo',
-    description: 'Monica is a popular multi-model AI extension that includes Claude 3.5 Sonnet among its available models. While not Claude-exclusive, Monica provides a convenient way to access Claude alongside GPT-4o and Gemini in a single extension. You can switch between models based on the task: use Claude for nuanced writing and analysis, GPT for general chat, and Gemini for tasks that benefit from Google\'s data. Monica\'s Claude access is limited to Claude 3.5 Sonnet; it does not offer Haiku or Opus options. The sidebar interface is polished and includes translation, summarization, rewriting, and image generation tools. For users who want Claude as one tool in a broader AI toolkit rather than their primary model, Monica is a solid choice. However, the Claude model version tends to lag behind the latest releases.',
+    description: 'Monica is a popular multi-model AI extension that includes Claude among its available models. While not Claude-exclusive, Monica provides a convenient way to access Claude alongside GPT and Gemini in a single extension. You can switch between models based on the task: use Claude for nuanced writing and analysis, GPT for general chat, and Gemini for tasks that benefit from Google\'s data. The sidebar interface is polished and includes translation, summarization, rewriting, and image generation tools. For users who want Claude as one tool in a broader AI toolkit rather than their primary model, Monica is a solid choice. However, the Claude model version tends to lag behind the latest releases.',
     pros: [
-      'Claude alongside GPT-4o and Gemini in one extension',
+      'Claude alongside GPT and Gemini in one extension',
       'Polished sidebar with writing and translation tools',
       'Lower entry price than dedicated Claude subscriptions',
       'Easy model switching based on task requirements',
     ],
     cons: [
-      'Limited to Claude 3.5 Sonnet; no Haiku or Opus',
       'Claude model updates may lag behind Anthropic releases',
       'No browser automation capabilities',
       'Daily caps on Claude usage even on Unlimited plan',
@@ -84,9 +83,9 @@ const extensions = [
     name: 'Sider (Claude mode)',
     tagline: 'Reading companion with Claude option',
     url: 'https://sider.ai',
-    claudeModels: 'Claude 3.5 Sonnet',
+    claudeModels: 'Claude alongside GPT and Gemini (versions set by Sider)',
     pricing: 'Free tier, Basic $8.99/mo, Pro $12.99/mo, Unlimited $24.99/mo',
-    description: 'Sider includes Claude 3.5 Sonnet as one of its available models within its reading and writing sidebar. Sider\'s unique group chat feature lets you compare Claude\'s response against GPT and Gemini on the same prompt, which is valuable for understanding each model\'s strengths. Claude on Sider is best for text analysis, summarization, and content generation tasks. The sidebar adapts its tools based on the current page context, offering different options for articles, code, email, and general browsing. Like Monica, Sider provides Claude access within a multi-model framework, but with a stronger emphasis on reading assistance and content comprehension. The Claude model selection is limited to Sonnet, and power users who need Haiku for cost efficiency or Opus for maximum capability will need to look elsewhere.',
+    description: 'Sider includes Claude as one of its available models within its reading and writing sidebar. Sider\'s unique group chat feature lets you compare Claude\'s response against GPT and Gemini on the same prompt, which is valuable for understanding each model\'s strengths. Claude on Sider is best for text analysis, summarization, and content generation tasks. The sidebar adapts its tools based on the current page context, offering different options for articles, code, email, and general browsing. Like Monica, Sider provides Claude access within a multi-model framework, but with a stronger emphasis on reading assistance and content comprehension.',
     pros: [
       'Group chat to compare Claude against other models',
       'Context-adaptive sidebar tools for different page types',
@@ -94,7 +93,6 @@ const extensions = [
       'Competitive pricing starting at $8.99/mo',
     ],
     cons: [
-      'Limited to Claude 3.5 Sonnet only',
       'No browser automation from the sidebar',
       'Unlimited plan at $24.99 is expensive for sidebar access',
       'Claude-specific features are no different from other models in the UI',
@@ -142,15 +140,15 @@ const faqItems = [
   },
   {
     question: 'What are the best browser extensions for Claude AI in 2026?',
-    answer: 'As of May 2026, the strongest browser extensions for Claude AI are Prophet (Haiku 5.5, Sonnet 5.5, and Opus 5.5 with pay-per-use credits and accessibility-tree browser automation), Anthropic\'s official Claude in Chrome (requires a $20/mo Claude Pro subscription and uses screenshot-based Computer Use), Monica and Sider (multi-model sidebars that include Claude 3.5 Sonnet alongside GPT and Gemini), and Harpa AI (bring-your-own-Anthropic-key for unmarked Claude API access). Prophet is the only one in this list built exclusively around Claude.',
+    answer: 'As of November 2026, the strongest browser extensions for Claude AI are Prophet (Haiku 5.5, Sonnet 5.5, and Opus 5.5 with pay-per-use credits and accessibility-tree browser automation), Anthropic\'s official Claude in Chrome (needs a paid Claude plan, from $20/mo for Pro, and uses screenshot-based Computer Use), Monica and Sider (multi-model sidebars that include Claude alongside GPT and Gemini), and Harpa AI (bring-your-own-Anthropic-key for unmarked Claude API access). Prophet is the only one in this list built exclusively around Claude.',
   },
   {
     question: 'Which is the best Claude Chrome extension for 2026?',
-    answer: 'For most users in 2026, Prophet is the best Claude Chrome extension. It is the only sidebar that offers all three production Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5), pairs them with 19 browser automation tools, and bills pay-per-use against your actual Anthropic API spend instead of a flat monthly fee. If you already pay for Claude Pro, Anthropic\'s own Claude in Chrome is the safer pick for first-party support, though it costs more per browser-automation task because Computer Use sends screenshots on every step.',
+    answer: 'For most users in 2026, Prophet is the best Claude Chrome extension. It is the only sidebar that offers all three production Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5), pairs them with 19 browser automation tools, and bills pay-per-use against your actual Anthropic API spend instead of a flat monthly fee. If you already pay for a Claude plan, Anthropic\'s own Claude in Chrome is the safer pick for first-party support, though it costs more per browser-automation task because Computer Use sends screenshots on every step.',
   },
   {
     question: 'Is there a Claude AI Chrome extension in 2026?',
-    answer: 'Yes — as of May 2026 there are at least five production-quality Claude AI Chrome extensions. Anthropic ships an official one (Claude in Chrome) that requires a Claude Pro, Team, or Enterprise subscription. Prophet is a Claude-exclusive open-source side panel with browser automation and pay-per-use pricing. Monica, Sider, and Harpa AI all expose Claude as one model among several. Prophet and Harpa are the cheapest entry points; Anthropic\'s extension is the deepest first-party integration.',
+    answer: 'Yes. Anthropic ships an official one, Claude in Chrome, which works on paid Claude plans (Pro, Max, Ultra, Team and Enterprise) but not on the Free plan, as of November 2026. At least four more extensions give you Claude in Chrome. Prophet is a Claude-exclusive open-source side panel with browser automation and pay-per-use pricing. Monica, Sider, and Harpa AI all expose Claude as one model among several. Prophet and Harpa are the cheapest entry points; Anthropic\'s extension is the deepest first-party integration.',
   },
 ]
 
@@ -191,9 +189,9 @@ export default function BestClaudeChromeExtensionsPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-12">
             <h1 className="text-4xl sm:text-5xl font-bold mb-4">Best Chrome Extensions for Claude AI in 2026 (Tested)</h1>
-            <p className="text-sm text-muted-foreground mb-6">Last updated: May 19, 2026</p>
+            <p className="text-sm text-muted-foreground mb-6">Last updated: November 9, 2026</p>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              Claude is one of the most capable AI models available, and Chrome extensions are the most natural way to integrate it into your browsing workflow. Rather than switching to claude.ai every time you need help, these extensions bring Claude directly into the page you are working on. Some offer Claude as one option among many models. Others are built entirely around Claude, taking full advantage of its strengths in reasoning, writing, and analysis.
+              The official Claude extension for Chrome is Anthropic&apos;s Claude in Chrome, and it only works on a paid Claude plan (Pro from $20/month, Max, Ultra, Team or Enterprise), not on the Free plan, as of November 2026. If you do not want a Claude subscription, Prophet gives you Claude Haiku, Sonnet and Opus in the Chrome side panel on pay-per-use credits, and Monica, Sider and Harpa AI offer Claude as one model among several. All five are compared below on Claude models, browser automation and price.
             </p>
             <p className="text-muted-foreground leading-relaxed mt-4">
               We focused this comparison on how well each extension leverages Claude specifically. Having access to Claude is table stakes; what matters is the depth of integration, which Claude models are available, and whether the extension adds capabilities beyond what you get at claude.ai. Browser automation, pay-per-use pricing, and transparency about Claude API usage all factored into our rankings. Want to use Claude without paying for a subscription? See our guide on{' '}
@@ -210,7 +208,7 @@ export default function BestClaudeChromeExtensionsPage() {
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">Claude AI Chrome Extension Picks for 2026</h2>
             <p className="text-muted-foreground leading-relaxed">
-              If you are searching for a Claude AI Chrome extension in 2026 or the best Claude Chrome extension for 2026, the five options below are the production-quality picks worth installing today. Each one was tested in May 2026 against three real tasks: reading a long article and asking follow-up questions, drafting an email reply from a thread, and (where the extension supports it) extracting structured data from a page. Prophet, Anthropic\'s official Claude in Chrome, Monica, Sider, and Harpa AI cover the full spectrum from Claude-exclusive automation to multi-model sidebars to bring-your-own-key power-user setups.
+              If you are searching for a Claude AI Chrome extension in 2026 or the best Claude Chrome extension for 2026, the five options below are the production-quality picks worth installing today. Each one was tested in May 2026 against three real tasks: reading a long article and asking follow-up questions, drafting an email reply from a thread, and (where the extension supports it) extracting structured data from a page. Prophet, Anthropic&apos;s official Claude in Chrome, Monica, Sider, and Harpa AI cover the full spectrum from Claude-exclusive automation to multi-model sidebars to bring-your-own-key power-user setups.
             </p>
           </section>
 
@@ -282,9 +280,9 @@ export default function BestClaudeChromeExtensionsPage() {
                 </thead>
                 <tbody className="text-muted-foreground">
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Prophet</td><td className="py-3 px-3">Haiku, Sonnet, Opus</td><td className="py-3 px-3">Yes (19 tools)</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">Free / $9.99</td></tr>
-                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Claude in Chrome</td><td className="py-3 px-3">Sonnet (default)</td><td className="py-3 px-3">Computer Use</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$20/mo sub</td></tr>
-                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Monica</td><td className="py-3 px-3">Claude 3.5 Sonnet</td><td className="py-3 px-3">No</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$9.90/mo</td></tr>
-                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Sider</td><td className="py-3 px-3">Claude 3.5 Sonnet</td><td className="py-3 px-3">No</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$8.99/mo</td></tr>
+                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Claude in Chrome</td><td className="py-3 px-3">All public models</td><td className="py-3 px-3">Computer Use</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Paid Claude plan ($20/mo+)</td></tr>
+                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Monica</td><td className="py-3 px-3">Claude + GPT + Gemini</td><td className="py-3 px-3">No</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$9.90/mo</td></tr>
+                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Sider</td><td className="py-3 px-3">Claude + GPT + Gemini</td><td className="py-3 px-3">No</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$8.99/mo</td></tr>
                   <tr><td className="py-3 px-3 font-medium text-foreground">Harpa AI</td><td className="py-3 px-3">Any (BYOK)</td><td className="py-3 px-3">Monitoring</td><td className="py-3 px-3">Partial</td><td className="py-3 px-3">Free (BYOK)</td></tr>
                 </tbody>
               </table>
