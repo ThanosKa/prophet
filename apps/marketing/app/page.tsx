@@ -2,7 +2,6 @@ import { Header } from '@/components/Header'
 import { Hero } from '@/components/Hero'
 import { TrustBadges } from '@/components/TrustBadges'
 import { Features } from '@/components/Features'
-import { Testimonials } from '@/components/Testimonials'
 import { HowItWorks } from '@/components/HowItWorks'
 import { TechPartners } from '@/components/TechPartners'
 import { Pricing } from '@/components/Pricing'
@@ -39,7 +38,6 @@ export default function Home() {
       </section>
       <TrustBadges />
       <Features />
-      <Testimonials />
       <HowItWorks />
       <TechPartners />
       <Pricing />

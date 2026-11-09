@@ -37,7 +37,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         { url: `${baseUrl}/pricing`, lastModified: TEMPLATES_LAST_UPDATED, changeFrequency: 'weekly', priority: 0.9 },
         { url: `${baseUrl}/how-it-works`, lastModified: TEMPLATES_LAST_UPDATED, changeFrequency: 'monthly', priority: 0.8 },
         { url: `${baseUrl}/best-ai-chrome-extensions`, lastModified: TEMPLATES_LAST_UPDATED, changeFrequency: 'weekly', priority: 0.9 },
-        { url: `${baseUrl}/best-claude-chrome-extensions`, lastModified: TEMPLATES_LAST_UPDATED, changeFrequency: 'weekly', priority: 0.9 },
+        { url: `${baseUrl}/best-claude-chrome-extensions`, lastModified: new Date('2026-11-09'), changeFrequency: 'weekly', priority: 0.9 },
         { url: `${baseUrl}/best-ai-sidebar-extensions`, lastModified: TEMPLATES_LAST_UPDATED, changeFrequency: 'weekly', priority: 0.9 },
         { url: `${baseUrl}/free-claude-ai`, lastModified: TEMPLATES_LAST_UPDATED, changeFrequency: 'weekly', priority: 0.8 },
         { url: `${baseUrl}/compare`, lastModified: TEMPLATES_LAST_UPDATED, changeFrequency: 'weekly', priority: 0.8 },
