@@ -127,6 +127,6 @@ usageRecords {
 ## Migrations
 
 - The production migration journal (`drizzle.__drizzle_migrations`) is complete: it records every migration in `lib/db/migrations/meta/_journal.json` (0000-0007, fixed on 2026-10-08).
-- A schema change goes through `db:generate`, then `db:migrate` against production, before the code is deployed. Production is the Cloudflare Worker, deployed by hand with `cf deploy`, which can ship any checkout: migrate first. Vercel still builds `main` and serves visitors whose DNS has not moved yet, so code that needs a column must also never reach `main` before its migration.
+- A schema change goes through `db:generate`, then `db:migrate` against production, before the code is deployed. Production is the Cloudflare Worker and merging to `main` deploys it, so code that needs a column must never reach `main` before its migration. The deploy workflow stops when migration files changed; after migrating, press Run workflow. A hand `cf deploy` can ship any checkout: migrate first.
 - Nobody runs `db:push` against production. It changes the schema without recording a journal row, which is how the journal drifted.
 - SQL files that were never in the journal live in `docs/db/legacy-sql/` for reference only.
