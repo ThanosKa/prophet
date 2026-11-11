@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: { absolute: 'Prophet Privacy Policy: What We Collect and Why' },
   description:
-    'What Prophet stores, what never leaves your machine, which browser permissions it needs, and how to delete your data.',
+    'What Prophet stores, what it sends to Claude, which browser permissions it needs, and how to delete your data.',
   alternates: { canonical: '/privacy' },
 }
 

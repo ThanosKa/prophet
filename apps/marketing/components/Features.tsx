@@ -25,8 +25,8 @@ const features = [
     icon: CreditCard,
   },
   {
-    title: 'Your Data Stays Private',
-    description: 'Page content is processed locally. Only your messages reach Claude. Enterprise-grade encryption throughout.',
+    title: 'Your Pages Are Not Stored',
+    description: 'The agent reads a text snapshot of the page in your browser and sends it to Claude only to answer you. Page content is not stored in our database, and every connection uses HTTPS.',
     icon: Shield,
   },
   {
