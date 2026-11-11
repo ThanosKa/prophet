@@ -501,8 +501,8 @@ chrome.debugger.sendCommand(
                 <CardContent className="text-sm text-muted-foreground space-y-2">
                   <p>Running tools in your browser means:</p>
                   <p>• <strong className="text-foreground">Your session, your control</strong> - Automation happens in your logged-in browser, not a separate instance</p>
-                  <p>• <strong className="text-foreground">Security</strong> - Backend never sees what you're browsing</p>
-                  <p>• <strong className="text-foreground">Privacy</strong> - Page content stays local to your machine</p>
+                  <p>• <strong className="text-foreground">Security</strong> - Prophet does not read your browsing history or saved passwords</p>
+                  <p>• <strong className="text-foreground">Privacy</strong> - Claude gets a text snapshot of the page, not screenshots, and it is not stored in our database</p>
                   <p>• <strong className="text-foreground">No dependencies</strong> - No separate browser instances needed</p>
                 </CardContent>
               </Card>

@@ -1,10 +1,10 @@
 import { Lock, Shield, CreditCard, Eye, Code } from 'lucide-react'
 
 const badges = [
-  { icon: Lock, label: 'End-to-end encrypted' },
+  { icon: Lock, label: 'Encrypted in transit (HTTPS)' },
   { icon: Shield, label: 'Enterprise-grade auth' },
   { icon: CreditCard, label: 'Stripe secure payments' },
-  { icon: Eye, label: 'Page data stays local' },
+  { icon: Eye, label: 'Page content not stored' },
   { icon: Code, label: 'Open source on GitHub' },
 ]
 

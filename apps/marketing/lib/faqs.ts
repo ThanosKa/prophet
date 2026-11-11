@@ -37,7 +37,7 @@ export const homeFaqs: FAQ[] = [
   {
     question: 'Is my data secure?',
     answer:
-      'Yes. All communication is encrypted in transit and at rest. Your browsing data stays on your machine — our servers only process the messages you send to Claude. We use enterprise-grade Clerk authentication and Stripe payment processing.',
+      'Yes. All communication is encrypted in transit (HTTPS). To answer you, the page content the agent reads is sent through our API to Anthropic\'s Claude; we keep your chat messages for your history, but page content is not stored in our database. We use Clerk authentication and Stripe payment processing.',
   },
   {
     question: 'Can I cancel my subscription anytime?',

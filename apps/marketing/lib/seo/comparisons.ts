@@ -52,7 +52,7 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: '$20/month (Claude Pro)' },
       { feature: 'Browser Automation', prophet: '19 tools via Chrome DevTools Protocol', competitor: 'Computer Use (coordinate-based clicks)' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'Claude Sonnet, Opus (depends on subscription)' },
-      { feature: 'Data Privacy', prophet: 'Page content stays local; only messages sent to API', competitor: 'Screenshots sent to Anthropic servers' },
+      { feature: 'Data Privacy', prophet: 'Text page snapshots (no screenshots) sent to Claude; page content not stored in our database', competitor: 'Screenshots sent to Anthropic servers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
     prophetAdvantages: [
@@ -113,7 +113,7 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free tier with daily limits, Pro from $10/month' },
       { feature: 'Browser Automation', prophet: '19 tools (click, fill, navigate, tab management)', competitor: 'Limited - mainly text selection and summarization' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, and others' },
-      { feature: 'Data Privacy', prophet: 'Page content processed locally; messages only to API', competitor: 'Page content sent to multiple third-party AI providers' },
+      { feature: 'Data Privacy', prophet: 'Page content sent only to Anthropic\'s Claude; not stored in our database', competitor: 'Page content sent to multiple third-party AI providers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
     prophetAdvantages: [
@@ -179,7 +179,7 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with daily limits, Pro from $9.90/month' },
       { feature: 'Browser Automation', prophet: '19 tools via Chrome DevTools Protocol', competitor: 'Page summarization, writing, translation; no deep automation' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, Llama, and more' },
-      { feature: 'Data Privacy', prophet: 'Page data stays local; only chat messages leave your machine', competitor: 'Page content processed by multiple third-party providers' },
+      { feature: 'Data Privacy', prophet: 'Page content sent only to Anthropic\'s Claude; not stored in our database', competitor: 'Page content processed by multiple third-party providers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
     prophetAdvantages: [
@@ -240,7 +240,7 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with limits, Pro from $9.99/month' },
       { feature: 'Browser Automation', prophet: '19 tools (click, fill, navigate, scroll, tab management)', competitor: 'Context-menu actions: summarize, explain, translate; no form automation' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, Llama' },
-      { feature: 'Data Privacy', prophet: 'Browsing data stays local; only messages sent to API', competitor: 'Selected text sent to third-party model providers' },
+      { feature: 'Data Privacy', prophet: 'Page content sent only to Anthropic\'s Claude; not stored in our database', competitor: 'Selected text sent to third-party model providers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
     prophetAdvantages: [
@@ -296,7 +296,7 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with limits, Plus $20/month' },
       { feature: 'Browser Automation', prophet: '19 tools via Chrome DevTools Protocol', competitor: 'Text summarization and Q&A; no element interaction' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4o, GPT-4, GPT-3.5' },
-      { feature: 'Data Privacy', prophet: 'Page content stays on your machine', competitor: 'Page content sent to OpenAI servers' },
+      { feature: 'Data Privacy', prophet: 'Page content sent only to Anthropic\'s Claude; not stored in our database', competitor: 'Page content sent to OpenAI servers' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
     prophetAdvantages: [
@@ -352,7 +352,7 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with daily query limits, Pro from $14.25/month' },
       { feature: 'Browser Automation', prophet: '19 tools (click, type, navigate, scroll, tab management)', competitor: 'Text actions (summarize, reply, rewrite); no form/button automation' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini, Llama, Mistral' },
-      { feature: 'Data Privacy', prophet: 'Page data stays local; messages only to Anthropic API', competitor: 'Page content processed by multiple third-party AI services' },
+      { feature: 'Data Privacy', prophet: 'Page content sent only to Anthropic\'s Claude; not stored in our database', competitor: 'Page content processed by multiple third-party AI services' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
     prophetAdvantages: [
@@ -408,7 +408,7 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free (bring your own API key), Pro from $15/month' },
       { feature: 'Browser Automation', prophet: '19 AI-driven tools via Chrome DevTools Protocol', competitor: 'Macro recorder, page monitoring, web scraping' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, Claude, Gemini (via own API keys)' },
-      { feature: 'Data Privacy', prophet: 'Page content processed locally; only chat messages leave browser', competitor: 'BYOK option keeps data between you and the provider directly' },
+      { feature: 'Data Privacy', prophet: 'Page content sent through our API to Claude; not stored in our database', competitor: 'BYOK option keeps data between you and the provider directly' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
     prophetAdvantages: [
@@ -469,7 +469,7 @@ export const comparisons: ComparisonEntry[] = [
       { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with limits, Pro $20/month' },
       { feature: 'Browser Automation', prophet: '19 tools (click, fill, navigate, scroll, tab management)', competitor: 'No direct browser automation; text-based assistance only' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4, GPT-4o (Microsoft-hosted)' },
-      { feature: 'Data Privacy', prophet: 'Page data stays local; open source for full transparency', competitor: 'Data processed through Microsoft cloud services' },
+      { feature: 'Data Privacy', prophet: 'Page content not stored in our database; open source for full transparency', competitor: 'Data processed through Microsoft cloud services' },
       { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
     ],
     prophetAdvantages: [
