@@ -19,18 +19,9 @@ import {
   toEchoableContent,
   WEB_SEARCH_MAX_USES,
 } from "@/lib/agent/web-search";
-import {
-  estimateInputTokens,
-  planCreditReservation,
-  reserveCredits,
-} from "@/lib/credit-reservation";
+import { estimateInputTokens, planCreditReservation } from "@/lib/credit-reservation";
 import { parseJsonBody, readBodyWithinLimit } from "@/lib/request-body";
-import {
-  returnUnstartedHold,
-  settleFinishedTurn,
-  settleUnfinishedTurn,
-  type HoldContext,
-} from "@/lib/turn-hold";
+import { takeHold } from "@/lib/turn-hold";
 import {
   AGENT_ERROR_CODES,
   AGENT_SIZE_LIMITS,
@@ -336,8 +327,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const hold = await reserveCredits({ db, userId, reserveCents: plan.reserveCents });
-    if (!hold) {
+    const turnHold = await takeHold({ db, userId, chatId, model, reserveCents: plan.reserveCents });
+    if (!turnHold) {
       logger.warn(
         { userId, model, balanceCents, requiredCents: plan.reserveCents },
         "Credit reservation lost a race for the balance"
@@ -355,12 +346,6 @@ export async function POST(req: Request) {
       );
     }
     const { reserveCents, maxTokens } = plan;
-    // Every Hold is logged when taken and again when settled, under one id. A Worker that
-    // dies mid-Turn (memory, CPU, restart) settles nothing and logs nothing, so a taken
-    // Hold with no settled line is a lost Hold to return by hand.
-    const holdId = crypto.randomUUID();
-    logger.info({ userId, chatId, holdId, reserveCents, ...hold }, "Credit hold taken");
-    const holdContext: HoldContext = { db, userId, chatId, model, holdId, hold, reserveCents };
     const maxTokensReducedForBalance = maxTokens < AGENT_TURN_MAX_TOKENS;
 
     let history: HistoryRow[] = runHistory;
@@ -388,7 +373,7 @@ export async function POST(req: Request) {
         { userId, chatId, error: errorMessage(startError) },
         "Failed to start the Turn; returning its hold"
       );
-      await returnUnstartedHold({ context: holdContext });
+      await turnHold.close({ type: "not_started" });
       return NextResponse.json(error(INTERNAL_ERROR_MESSAGE, "INTERNAL_ERROR"), { status: 500 });
     }
 
@@ -442,7 +427,6 @@ export async function POST(req: Request) {
         let outputTokens = 0;
         let webSearchesStarted = 0;
         let usageReported = false;
-        let settled = false;
 
         const turnUsage = (webSearchRequests: number): TokenUsage => ({
           inputTokens,
@@ -670,14 +654,14 @@ export async function POST(req: Request) {
                   releasedToolCalls: releasesToolCalls ? clientToolCalls : [],
                 };
 
-          await settleFinishedTurn({
-            context: holdContext,
+          // Throws when the billing transaction fails; the `finally` then closes it unfinished.
+          await turnHold.close({
+            type: "finished",
             request: runRequest,
             ending,
             usage: turnUsage(webSearchRequests),
             isFinalTurn,
           });
-          settled = true;
 
           logger.info(
             {
@@ -824,18 +808,17 @@ export async function POST(req: Request) {
         } finally {
           try {
             req.signal.removeEventListener("abort", abortUpstream);
-            if (!settled) {
-              await settleUnfinishedTurn({
-                context: holdContext,
-                request: runRequest,
-                partial: {
-                  usageReported,
-                  usage: turnUsage(webSearchesStarted),
-                  streamedOutput,
-                  text: fullTextResponse,
-                },
-              });
-            }
+            // Does nothing once the Turn's finished close has settled the Hold.
+            await turnHold.close({
+              type: "unfinished",
+              request: runRequest,
+              partial: {
+                usageReported,
+                usage: turnUsage(webSearchesStarted),
+                streamedOutput,
+                text: fullTextResponse,
+              },
+            });
           } finally {
             releaseRequestScope();
           }

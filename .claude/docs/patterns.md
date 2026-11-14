@@ -11,9 +11,9 @@ The agent route and rate limiting. Auth, ownership, validation and transaction r
 const model = resolveAgentModel(requestedModel)
 
 // Price the prompt, shrink max_tokens to what the balance covers (402 INSUFFICIENT_BALANCE
-// if it can't cover the minimum), then take the Hold.
+// if it can't cover the minimum), then take the Hold (null: 409 BALANCE_HELD).
 const plan = planCreditReservation({ model, balanceCents, cachedPrefixTokens, restTokens, maxTokens: AGENT_TURN_MAX_TOKENS, ... })
-const hold = await reserveCredits({ db, userId, reserveCents: plan.reserveCents })
+const turnHold = await takeHold({ db, userId, chatId, model, reserveCents: plan.reserveCents })
 
 const anthropicStream = await anthropic.messages.stream({
   model,
@@ -41,12 +41,11 @@ const costCents = calculateUsageCostInCredits(model, {
   webSearchRequests: usage.server_tool_use?.web_search_requests ?? 0,
 })
 
-// Locks the chat row first (writeRunRecord), then the user row (settleCredits).
-await db.transaction(async tx => {
-  await writeRunRecord({ tx, chatId, request: runRequest, ending, model, usage: { inputTokens, outputTokens, costCents } })
-  await settleCredits({ db: tx, userId, hold, actualCents: costCents })
-  await tx.insert(usageRecords).values({ userId, inputTokens, cacheCreationInputTokens, cacheReadInputTokens, outputTokens, costCents, model })
-})
+// The Hold module (lib/turn-hold.ts) prices the same usage and settles in one
+// transaction: the Run record (writeRunRecord, which locks the chat row), then
+// settleCredits (the user row), then the usageRecords row. It throws if that fails, and
+// the stream's `finally` closes the Hold as unfinished; closing a settled Hold does nothing.
+await turnHold.close({ type: 'finished', request: runRequest, usage: turnUsage, ending, isFinalTurn })
 ```
 
 The route's own `ReadableStream` sends these as SSE events (`text/event-stream`); `ARCHITECTURE.md` lists them.
@@ -62,7 +61,7 @@ The route's own `ReadableStream` sends these as SSE events (`text/event-stream`)
 - A Run's prompt carries only the history window (`windowHistory` in `lib/agent/conversation.ts`): the newest rows before the opening message whose rendered size fits `HISTORY_BUDGET_TOKENS`, always including the newest one. Turn 1 and every continuation pass it the same rows, so the bytes before the opening message never change
 - Resolve legacy model IDs before the call and bill from the model actually invoked
 - Bill all three input buckets with `calculateUsageCostInCredits`; the prompt's size is `input_tokens + cache_creation_input_tokens + cache_read_input_tokens`, which is what context displays must show
-- Take the Hold with `reserveCredits` before the call, and settle with `settleCredits` in the same transaction as `writeRunRecord` and the `usageRecords` row; a Stop, disconnect or error settles too
+- Take the Hold with `takeHold` (`lib/turn-hold.ts`) before the call, and settle it only through its `close(outcome)`: `not_started` (nothing sent to Anthropic, the whole Hold back), `finished` or `unfinished` (Stop, disconnect or error). The Hold module settles with `settleCredits` in the same transaction as `writeRunRecord` and the `usageRecords` row, logs "Credit hold taken" and "Credit hold settled" under one hold id, and closes at most once. A new way for a Turn to end is a new outcome, not a new settlement path in the route
 - Take every size limit from `AGENT_SIZE_LIMITS` in `@prophet/shared` (next to `MAX_AGENT_TURNS`), never a local number. The route answers a body over `requestBytes` with 413 `REQUEST_TOO_LARGE`; the request schema caps each field and shortens an over-cap tool result the same way every time, so the cached prefix holds
 - Take a model's context window from `getModelContextWindow` (the `contextWindowTokens` on `MODEL_CONFIG`), never a fixed 200K: the chat's stored context is clamped by it, and the side panel's context meter divides by it (`selectMaxContextTokens` in `uiStore.ts`)
 
