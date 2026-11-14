@@ -7,14 +7,18 @@ import { drizzle } from 'drizzle-orm/pglite'
 import { migrate } from 'drizzle-orm/pglite/migrator'
 import * as schema from '@/lib/db/schema'
 import { users } from '@/lib/db/schema'
+import { z } from 'zod'
 import { TIER_CONFIG } from '@/lib/pricing'
 
 const migrationsFolder = path.resolve(__dirname, 'migrations')
 const REPAIR_TAG_SUFFIX = 'repair_free_credits_included'
 
 type Database = Awaited<ReturnType<typeof setup>>
-type Journal = { entries: { idx: number; tag: string }[] }
-const journal: Journal = JSON.parse(readFileSync(path.join(migrationsFolder, 'meta/_journal.json'), 'utf8'))
+const journalSchema = z.object({ entries: z.array(z.object({ idx: z.number(), tag: z.string() })) })
+const journal = journalSchema.parse(JSON.parse(readFileSync(path.join(migrationsFolder, 'meta/_journal.json'), 'utf8')))
+
+// The amount migration 0008 hardcodes. It stays 7 even if the Free grant changes later.
+const FREE_GRANT_AT_REPAIR = 7
 const repairEntry = journal.entries.find(entry => entry.tag.endsWith(REPAIR_TAG_SUFFIX))
 
 const OLD_TIME = new Date('2026-01-01T00:00:00Z')
@@ -48,9 +52,9 @@ beforeEach(async () => {
 })
 
 describe('migration: repair Free users created without included Credits', () => {
-  it('is in the journal, last and in order', () => {
+  it('is in the journal as 0008 and in order', () => {
     expect(repairEntry).toBeDefined()
-    expect(repairEntry?.idx).toBe(journal.entries.length - 1)
+    expect(repairEntry?.idx).toBe(8)
     expect(journal.entries.map(entry => entry.idx)).toEqual(journal.entries.map((_, index) => index))
     const sqlFiles = readdirSync(migrationsFolder).filter(name => name.endsWith('.sql'))
     expect(sqlFiles).toHaveLength(journal.entries.length)
@@ -116,7 +120,7 @@ describe('migration: repair Free users created without included Credits', () => 
       const { creditsIncluded, ...restAfter } = byId(after, id)
       const { creditsIncluded: wasIncluded, ...restBefore } = byId(before, id)
       expect(wasIncluded).toBe(0)
-      expect(creditsIncluded).toBe(TIER_CONFIG.free.credits)
+      expect(creditsIncluded).toBe(FREE_GRANT_AT_REPAIR)
       // Balances, tier, Stripe fields and timestamps are all untouched.
       expect(restAfter).toEqual(restBefore)
     }
@@ -140,6 +144,6 @@ describe('migration: repair Free users created without included Credits', () => 
     await runRepair(db)
     expect(await snapshot(db)).toEqual(afterFirst)
     const [row] = await db.select().from(users).where(eq(users.id, 'webhook_free'))
-    expect(row.creditsIncluded).toBe(TIER_CONFIG.free.credits)
+    expect(row.creditsIncluded).toBe(FREE_GRANT_AT_REPAIR)
   })
 })
