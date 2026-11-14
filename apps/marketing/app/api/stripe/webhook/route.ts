@@ -44,9 +44,18 @@ export async function POST(request: Request) {
 
   try {
     switch (event.type) {
-      case 'checkout.session.completed': {
+      // A delayed payment method (bank debit) completes the session unpaid, then succeeds
+      // later; the once-per-Checkout-Session record keeps the two from granting twice.
+      case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded': {
         const session = event.data.object as Stripe.Checkout.Session
         await handleCheckoutCompleted(session)
+        break
+      }
+
+      case 'checkout.session.async_payment_failed': {
+        const session = event.data.object as Stripe.Checkout.Session
+        logger.warn({ userId: session.metadata?.userId, sessionId: session.id }, 'Checkout delayed payment failed')
         break
       }
 
@@ -100,6 +109,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const creditsToAdd = parseInt(session.metadata?.credits || '0', 10)
 
     if (type === 'extra_credits' && creditsToAdd > 0) {
+      if (session.payment_status !== 'paid') {
+        logger.info(
+          { userId, sessionId: session.id, paymentStatus: session.payment_status },
+          'Extra credits not added: checkout session is not paid'
+        )
+        return
+      }
+
       const isFirstDelivery = await db.transaction(async (tx) => {
         const recorded = await tx
           .insert(creditPurchases)
