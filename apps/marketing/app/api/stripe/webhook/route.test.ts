@@ -32,6 +32,7 @@ vi.mock('next/headers', () => ({
 }))
 
 const { db } = await import('@/lib/db')
+const { logger } = await import('@/lib/logger')
 
 const USER_ID = 'user_123'
 const CUSTOMER_ID = 'cus_123'
@@ -109,16 +110,27 @@ async function expectAnswerToWaitForEmail(event: unknown) {
   expect((await answer).status).toBe(200)
 }
 
-function extraCreditsCheckoutEvent({ sessionId = 'cs_extra_1', credits = '1000' } = {}) {
+function extraCreditsCheckoutEvent({
+  sessionId = 'cs_extra_1',
+  credits = '1000',
+  type = 'checkout.session.completed',
+  paymentStatus = 'paid',
+}: {
+  sessionId?: string
+  credits?: string
+  type?: 'checkout.session.completed' | 'checkout.session.async_payment_succeeded' | 'checkout.session.async_payment_failed'
+  paymentStatus?: Stripe.Checkout.Session.PaymentStatus
+} = {}) {
   return {
-    id: `evt_${sessionId}`,
-    type: 'checkout.session.completed',
+    id: `evt_${type}_${sessionId}`,
+    type,
     data: {
       object: {
         id: sessionId,
         mode: 'payment',
         customer: CUSTOMER_ID,
         amount_total: 1000,
+        payment_status: paymentStatus,
         metadata: { userId: USER_ID, type: 'extra_credits', credits },
       },
     },
@@ -234,6 +246,79 @@ describe('POST /api/stripe/webhook', () => {
 
       expect(await balances()).toEqual({ subscriptionCredits: TIER_CONFIG.free.credits, purchasedCredits: 1000 })
       expect((await readUser()).stripeCustomerId).toBe(CUSTOMER_ID)
+    })
+  })
+
+  describe('Purchased credits are granted only for a paid checkout session', () => {
+    it('grants 1000 Purchased credits once and sends one email for a paid session', async () => {
+      await insertUser({ creditsRemaining: TIER_CONFIG.free.credits })
+
+      const response = await postWebhook(extraCreditsCheckoutEvent({ paymentStatus: 'paid' }))
+
+      expect(response.status).toBe(200)
+      expect(await balances()).toEqual({ subscriptionCredits: TIER_CONFIG.free.credits, purchasedCredits: 1000 })
+      expect(mocks.sendPurchaseEmail).toHaveBeenCalledTimes(1)
+    })
+
+    it.each(['unpaid', 'no_payment_required'] as const)(
+      'grants nothing and sends no email for a %s session',
+      async (paymentStatus) => {
+        await insertUser({ creditsRemaining: TIER_CONFIG.free.credits })
+
+        const response = await postWebhook(extraCreditsCheckoutEvent({ paymentStatus }))
+
+        expect(response.status).toBe(200)
+        expect(await balances()).toEqual({ subscriptionCredits: TIER_CONFIG.free.credits, purchasedCredits: 0 })
+        expect(mocks.sendPurchaseEmail).not.toHaveBeenCalled()
+        expect(logger.info).toHaveBeenCalledWith(
+          expect.objectContaining({ sessionId: 'cs_extra_1', paymentStatus }),
+          expect.any(String)
+        )
+      }
+    )
+
+    it('grants once when the delayed payment succeeds', async () => {
+      await insertUser({ creditsRemaining: TIER_CONFIG.free.credits })
+
+      await postWebhook(extraCreditsCheckoutEvent({ type: 'checkout.session.async_payment_succeeded' }))
+      await postWebhook(extraCreditsCheckoutEvent({ type: 'checkout.session.async_payment_succeeded' }))
+
+      expect(await balances()).toEqual({ subscriptionCredits: TIER_CONFIG.free.credits, purchasedCredits: 1000 })
+      expect(mocks.sendPurchaseEmail).toHaveBeenCalledTimes(1)
+    })
+
+    it('grants once in total for an unpaid completion followed by the delayed success', async () => {
+      await insertUser({ creditsRemaining: TIER_CONFIG.free.credits })
+
+      await postWebhook(extraCreditsCheckoutEvent({ paymentStatus: 'unpaid' }))
+      expect(await balances()).toEqual({ subscriptionCredits: TIER_CONFIG.free.credits, purchasedCredits: 0 })
+
+      await postWebhook(extraCreditsCheckoutEvent({ type: 'checkout.session.async_payment_succeeded' }))
+
+      expect(await balances()).toEqual({ subscriptionCredits: TIER_CONFIG.free.credits, purchasedCredits: 1000 })
+      expect(mocks.sendPurchaseEmail).toHaveBeenCalledTimes(1)
+    })
+
+    it('grants once in total when both the completion and the delayed success report paid', async () => {
+      await insertUser({ creditsRemaining: TIER_CONFIG.free.credits })
+
+      await postWebhook(extraCreditsCheckoutEvent())
+      await postWebhook(extraCreditsCheckoutEvent({ type: 'checkout.session.async_payment_succeeded' }))
+
+      expect(await balances()).toEqual({ subscriptionCredits: TIER_CONFIG.free.credits, purchasedCredits: 1000 })
+      expect(mocks.sendPurchaseEmail).toHaveBeenCalledTimes(1)
+    })
+
+    it('grants nothing when the delayed payment fails', async () => {
+      await insertUser({ creditsRemaining: TIER_CONFIG.free.credits })
+
+      const response = await postWebhook(
+        extraCreditsCheckoutEvent({ type: 'checkout.session.async_payment_failed', paymentStatus: 'unpaid' })
+      )
+
+      expect(response.status).toBe(200)
+      expect(await balances()).toEqual({ subscriptionCredits: TIER_CONFIG.free.credits, purchasedCredits: 0 })
+      expect(mocks.sendPurchaseEmail).not.toHaveBeenCalled()
     })
   })
 
