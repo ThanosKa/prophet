@@ -275,19 +275,7 @@ export async function reloadPage(): Promise<ToolExecutionResult> {
     await chrome.tabs.reload(tab.id)
 
     // Wait for reload to complete
-    await new Promise<void>((resolve) => {
-      const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
-        if (tabId === tab.id && changeInfo.status === 'complete') {
-          chrome.tabs.onUpdated.removeListener(listener)
-          resolve()
-        }
-      }
-      chrome.tabs.onUpdated.addListener(listener)
-      setTimeout(() => {
-        chrome.tabs.onUpdated.removeListener(listener)
-        resolve()
-      }, 30000)
-    })
+    await waitForTabComplete({ tabId: tab.id, timeoutMs: 30000 })
 
     return {
       success: true,
