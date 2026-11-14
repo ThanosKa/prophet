@@ -26,6 +26,7 @@ import type {
   AgentTurn,
   ToolName,
 } from "@prophet/shared";
+import type { ToolExecutionResult } from "./types";
 
 interface StreamAgentChatOptions {
   chatId: string;
@@ -232,6 +233,11 @@ async function* streamAgentChat({
   }
 }
 
+/** Runs one tool call, already checked against its tool's input schema, and reports what it did. */
+export type ToolRunner = (call: { name: ToolName; input: Record<string, unknown> }) => Promise<ToolExecutionResult>;
+
+const runToolViaBackground: ToolRunner = ({ name, input }) => executeToolViaBackground(name, input);
+
 export interface RunAgentLoopOptions {
   baseUrl: string;
   chatId: string;
@@ -240,6 +246,8 @@ export interface RunAgentLoopOptions {
   image?: ImageData;
   signal?: AbortSignal;
   enableThinking?: boolean;
+  /** Runs each tool call in the user's tab; defaults to the background bridge. */
+  runTool?: ToolRunner;
 }
 
 export async function* runAgentLoop({
@@ -250,6 +258,7 @@ export async function* runAgentLoop({
   image,
   signal,
   enableThinking,
+  runTool = runToolViaBackground,
 }: RunAgentLoopOptions): AsyncGenerator<AgentRunEvent> {
   // Append-only: each request resends the previous one's turns unchanged, so the
   // server's prompt cache hits and the model keeps every earlier tool observation.
@@ -413,7 +422,7 @@ export async function* runAgentLoop({
             }
 
             try {
-              const toolResult = await executeToolViaBackground(toolUse.name, checked.input);
+              const toolResult = await runTool({ name: toolUse.name, input: checked.input });
 
               let resultContent: string;
               if (toolResult.success) {
