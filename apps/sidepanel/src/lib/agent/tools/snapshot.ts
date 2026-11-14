@@ -1,6 +1,7 @@
 import { AGENT_SIZE_LIMITS } from '@prophet/shared'
 import { capNodeText, snapshotManager } from '../snapshot-manager'
 import { type ToolExecutionResult } from '../types'
+import { activeTabTool } from './tab-tool'
 
 /**
  * Keeps a snapshot within the shared limit so one big page can't fill the context.
@@ -18,66 +19,32 @@ function capSnapshotText(text: string): string {
   return `${head}${note(head.length)}`
 }
 
-export async function takeSnapshot(): Promise<ToolExecutionResult> {
-  const startTime = Date.now()
-
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    if (!tab?.id) {
-      return {
-        success: false,
-        error: 'No active tab found',
-        durationMs: Date.now() - startTime,
-      }
-    }
-
+const takeSnapshotTool = activeTabTool<undefined>({
+  failure: 'Failed to take snapshot',
+  run: async ({ tab }) => {
     const snapshot = await snapshotManager.takeSnapshot(tab.id)
-    const formattedSnapshot = capSnapshotText(snapshotManager.formatSnapshotAsText(snapshot))
+    return {
+      data: capSnapshotText(snapshotManager.formatSnapshotAsText(snapshot)),
+    }
+  },
+})
 
-    return {
-      success: true,
-      data: formattedSnapshot,
-      durationMs: Date.now() - startTime,
-    }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to take snapshot',
-      durationMs: Date.now() - startTime,
-    }
-  }
+export function takeSnapshot(): Promise<ToolExecutionResult> {
+  return takeSnapshotTool(undefined)
 }
 
-export async function searchSnapshot(input: { query: string }): Promise<ToolExecutionResult> {
-  const startTime = Date.now()
-
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    if (!tab?.id) {
-      return {
-        success: false,
-        error: 'No active tab found',
-        durationMs: Date.now() - startTime,
-      }
-    }
-
+export const searchSnapshot = activeTabTool<{ query: string }>({
+  failure: 'Failed to search snapshot',
+  run: async ({ input, tab }) => {
     const snapshot = snapshotManager.getSnapshot(tab.id)
     if (!snapshot) {
-      return {
-        success: false,
-        error: 'No snapshot available. Call take_snapshot first.',
-        durationMs: Date.now() - startTime,
-      }
+      return { error: 'No snapshot available. Call take_snapshot first.' }
     }
 
     const results = snapshotManager.searchSnapshot(tab.id, input.query)
 
     if (results.length === 0) {
-      return {
-        success: true,
-        data: `No elements found matching "${input.query}"`,
-        durationMs: Date.now() - startTime,
-      }
+      return { data: `No elements found matching "${input.query}"` }
     }
 
     const formatted = results
@@ -92,15 +59,7 @@ export async function searchSnapshot(input: { query: string }): Promise<ToolExec
       .join('\n')
 
     return {
-      success: true,
       data: `Found ${results.length} elements matching "${input.query}":\n\n${formatted}`,
-      durationMs: Date.now() - startTime,
     }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to search snapshot',
-      durationMs: Date.now() - startTime,
-    }
-  }
-}
+  },
+})
