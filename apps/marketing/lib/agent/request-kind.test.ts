@@ -81,7 +81,7 @@ const rows: Row[] = [
     runRequest: { type: 'run', opening: OPENING, turns: [t1, t2] },
   },
   {
-    name: 'edge: userMessage with previousTurns is a first Turn whose earlier Turns go into the prompt',
+    name: 'edge: userMessage with previousTurns is a first Turn; its previousTurns are kept as runTurns (they count for the last-Turn decision, not the prompt)',
     body: body({ userMessage: 'hi', previousTurns: [t1, t2] }),
     kind: 'first',
     runTurns: [t1, t2],
