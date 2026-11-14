@@ -1,8 +1,9 @@
-import { errorMessage } from '@prophet/shared'
+import { eq } from 'drizzle-orm'
+import { errorMessage, getModelContextWindow } from '@prophet/shared'
 import type { Database } from '@/lib/db/client'
-import { usageRecords } from '@/lib/db/schema'
+import { chats, usageRecords } from '@/lib/db/schema'
 import { estimateTextTokens, settleCredits, type CreditHold } from '@/lib/credit-reservation'
-import { writeRunRecord, type RunRequest } from '@/lib/agent/run-record'
+import { writeRunRecord, type RunRequest, type TurnEnding } from '@/lib/agent/run-record'
 import { logger } from '@/lib/logger'
 import { calculateUsageCostInCredits, type ModelName, type TokenUsage } from '@/lib/pricing'
 
@@ -103,6 +104,77 @@ export async function settleUnfinishedTurn({
         error: errorMessage(settleError),
       },
       'Failed to settle credit reservation; hold kept'
+    )
+  }
+}
+
+/**
+ * The billing transaction of a Turn that reached its final message: the full cost,
+ * which may exceed the Hold. Throws when the transaction fails, keeping the Hold for
+ * the caller to settle as unfinished.
+ */
+export async function settleFinishedTurn({
+  context: { db, userId, chatId, model, holdId, hold, reserveCents },
+  request,
+  ending,
+  usage,
+  isFinalTurn,
+}: {
+  context: HoldContext
+  request: RunRequest
+  ending: TurnEnding
+  usage: TokenUsage
+  isFinalTurn: boolean
+}): Promise<void> {
+  const { inputTokens, cacheCreationInputTokens, cacheReadInputTokens, outputTokens } = usage
+  const costCents = calculateUsageCostInCredits(model, usage)
+  const maxContextTokens = getModelContextWindow(model)
+  await db.transaction(async (tx) => {
+    // Locks the chat row, so it goes before settlement locks the user row.
+    await writeRunRecord({
+      tx,
+      chatId,
+      request,
+      ending,
+      model,
+      usage: { inputTokens, outputTokens, costCents },
+    })
+
+    await settleCredits({ db: tx, userId, hold, actualCents: costCents })
+
+    // Always record usage for billing audit trail
+    await tx.insert(usageRecords).values({
+      userId,
+      inputTokens,
+      cacheCreationInputTokens,
+      cacheReadInputTokens,
+      outputTokens,
+      costCents,
+      model,
+    })
+
+    // Update context tokens on final turn only
+    if (isFinalTurn) {
+      const promptTokens = inputTokens + cacheCreationInputTokens + cacheReadInputTokens
+      const newContextTokens = Math.min(promptTokens + outputTokens, maxContextTokens)
+      await tx
+        .update(chats)
+        .set({
+          contextTokens: newContextTokens,
+          contextInputTokens: promptTokens,
+          contextOutputTokens: outputTokens,
+          contextCachedInputTokens: cacheReadInputTokens,
+          updatedAt: new Date(),
+        })
+        .where(eq(chats.id, chatId))
+    }
+  })
+  logHoldSettled({ userId, chatId, holdId, actualCents: costCents })
+
+  if (costCents > reserveCents) {
+    logger.warn(
+      { userId, chatId, model, reserveCents, costCents, inputTokens },
+      'Turn cost exceeded its Hold (cache miss or input estimate miss)'
     )
   }
 }

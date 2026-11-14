@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { APIError, BadRequestError } from "@anthropic-ai/sdk";
 import { db } from "@/lib/db";
 import { keepRequestOpenUntil } from "@/lib/db/request-scope";
-import { users, chats, messages, usageRecords } from "@/lib/db/schema";
+import { users, chats, messages } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { anthropic } from "@/lib/anthropic";
@@ -26,14 +26,13 @@ import {
   settleCredits,
 } from "@/lib/credit-reservation";
 import { parseJsonBody, readBodyWithinLimit } from "@/lib/request-body";
-import { settleUnfinishedTurn, type HoldContext } from "@/lib/turn-hold";
+import { settleFinishedTurn, settleUnfinishedTurn, type HoldContext } from "@/lib/turn-hold";
 import {
   AGENT_ERROR_CODES,
   AGENT_SIZE_LIMITS,
   agentChatRequestSchema,
   DEFAULT_AGENT_MODEL,
   errorMessage,
-  getModelContextWindow,
   resolveAgentModel,
   RUN_SUPERSEDED_MESSAGE,
   sanitizeForLog,
@@ -47,7 +46,6 @@ import {
   isToolInput,
   openRun,
   resumeRun,
-  writeRunRecord,
   type HistoryRow,
   type RunRequest,
   type TurnEnding,
@@ -678,56 +676,14 @@ export async function POST(req: Request) {
                   releasedToolCalls: releasesToolCalls ? clientToolCalls : [],
                 };
 
-          const maxContextTokens = getModelContextWindow(model);
-          await db.transaction(async (tx) => {
-            // Locks the chat row, so it goes before settlement locks the user row.
-            await writeRunRecord({
-              tx,
-              chatId,
-              request: runRequest,
-              ending,
-              model,
-              usage: { inputTokens, outputTokens, costCents },
-            });
-
-            await settleCredits({ db: tx, userId, hold, actualCents: costCents });
-
-            // Always record usage for billing audit trail
-            await tx.insert(usageRecords).values({
-              userId,
-              inputTokens,
-              cacheCreationInputTokens,
-              cacheReadInputTokens,
-              outputTokens,
-              costCents,
-              model,
-            });
-
-            // Update context tokens on final turn only
-            if (isFinalTurn) {
-              const promptTokens = inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
-              const newContextTokens = Math.min(promptTokens + outputTokens, maxContextTokens);
-              await tx
-                .update(chats)
-                .set({
-                  contextTokens: newContextTokens,
-                  contextInputTokens: promptTokens,
-                  contextOutputTokens: outputTokens,
-                  contextCachedInputTokens: cacheReadInputTokens,
-                  updatedAt: new Date(),
-                })
-                .where(eq(chats.id, chatId));
-            }
+          await settleFinishedTurn({
+            context: holdContext,
+            request: runRequest,
+            ending,
+            usage: turnUsage(webSearchRequests),
+            isFinalTurn,
           });
           settled = true;
-          holdSettled(costCents);
-
-          if (costCents > reserveCents) {
-            logger.warn(
-              { userId, chatId, model, reserveCents, costCents, inputTokens },
-              "Turn cost exceeded its Hold (cache miss or input estimate miss)"
-            );
-          }
 
           logger.info(
             {
