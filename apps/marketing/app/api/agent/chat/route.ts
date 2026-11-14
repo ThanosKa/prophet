@@ -21,12 +21,12 @@ import {
 } from "@/lib/agent/web-search";
 import {
   estimateInputTokens,
-  estimateTextTokens,
   planCreditReservation,
   reserveCredits,
   settleCredits,
 } from "@/lib/credit-reservation";
 import { parseJsonBody, readBodyWithinLimit } from "@/lib/request-body";
+import { settleUnfinishedTurn, type HoldContext } from "@/lib/turn-hold";
 import {
   AGENT_ERROR_CODES,
   AGENT_SIZE_LIMITS,
@@ -360,6 +360,7 @@ export async function POST(req: Request) {
     logger.info({ userId, chatId, holdId, reserveCents, ...hold }, "Credit hold taken");
     const holdSettled = (actualCents: number) =>
       logger.info({ userId, chatId, holdId, actualCents }, "Credit hold settled");
+    const holdContext: HoldContext = { db, userId, chatId, model, holdId, hold, reserveCents };
     const maxTokensReducedForBalance = maxTokens < AGENT_TURN_MAX_TOKENS;
 
     let history: HistoryRow[] = runHistory;
@@ -467,58 +468,6 @@ export async function POST(req: Request) {
           outputTokens,
           costCents,
         });
-
-        // Runs on every path that did not reach the billing transaction. Before
-        // message_start nothing was billed upstream, so the hold goes back in full.
-        // After it, output usage only arrives with the final message_delta, so the
-        // streamed text stands in for it; a deliberate disconnect cannot dodge it.
-        const settleUnfinishedTurn = async () => {
-          outputTokens = Math.max(outputTokens, estimateTextTokens(streamedOutput));
-          const actualCents = usageReported
-            ? Math.min(
-                reserveCents,
-                calculateUsageCostInCredits(model, turnUsage(webSearchesStarted))
-              )
-            : 0;
-          try {
-            await db.transaction(async (tx) => {
-              // Stop, disconnect or error released no tool calls: only the text so far.
-              await writeRunRecord({
-                tx,
-                chatId,
-                request: runRequest,
-                ending: { type: "reply", text: fullTextResponse, releasedToolCalls: [] },
-                model,
-                usage: { inputTokens, outputTokens, costCents: actualCents },
-              });
-              await settleCredits({ db: tx, userId, hold, actualCents });
-              if (actualCents > 0) {
-                await tx.insert(usageRecords).values({
-                  userId,
-                  inputTokens,
-                  cacheCreationInputTokens,
-                  cacheReadInputTokens,
-                  outputTokens,
-                  costCents: actualCents,
-                  model,
-                });
-              }
-            });
-            holdSettled(actualCents);
-          } catch (settleError) {
-            logger.error(
-              {
-                userId,
-                chatId,
-                holdId,
-                reserveCents,
-                actualCents,
-                error: errorMessage(settleError),
-              },
-              "Failed to settle credit reservation; hold kept"
-            );
-          }
-        };
 
         try {
           if (!clientConnected) throw new Error("Client disconnected before the stream started");
@@ -925,7 +874,18 @@ export async function POST(req: Request) {
         } finally {
           try {
             req.signal.removeEventListener("abort", abortUpstream);
-            if (!settled) await settleUnfinishedTurn();
+            if (!settled) {
+              await settleUnfinishedTurn({
+                context: holdContext,
+                request: runRequest,
+                partial: {
+                  usageReported,
+                  usage: turnUsage(webSearchesStarted),
+                  streamedOutput,
+                  text: fullTextResponse,
+                },
+              });
+            }
           } finally {
             releaseRequestScope();
           }
