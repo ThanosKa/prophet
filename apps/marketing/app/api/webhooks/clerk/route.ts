@@ -113,6 +113,7 @@ export async function POST(req: Request) {
           lastName: last_name ?? null,
           tier: 'free',
           creditsRemaining: TIER_CONFIG.free.credits,
+          creditsIncluded: TIER_CONFIG.free.credits,
         })
         .onConflictDoNothing()
         .returning({ id: users.id })
