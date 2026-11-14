@@ -238,6 +238,9 @@ export type ToolRunner = (call: { name: ToolName; input: Record<string, unknown>
 
 const runToolViaBackground: ToolRunner = ({ name, input }) => executeToolViaBackground(name, input);
 
+/** Opens one Turn: sends its JSON request body and yields the Turn's events as they stream in. */
+export type TurnSource = (request: { body: string; signal?: AbortSignal }) => AsyncIterable<AgentStreamEvent>;
+
 export interface RunAgentLoopOptions {
   baseUrl: string;
   chatId: string;
@@ -248,6 +251,8 @@ export interface RunAgentLoopOptions {
   enableThinking?: boolean;
   /** Runs each tool call in the user's tab; defaults to the background bridge. */
   runTool?: ToolRunner;
+  /** Opens each Turn's event stream; defaults to a fetch to the agent route at `baseUrl`. */
+  openTurn?: TurnSource;
 }
 
 export async function* runAgentLoop({
@@ -259,6 +264,7 @@ export async function* runAgentLoop({
   signal,
   enableThinking,
   runTool = runToolViaBackground,
+  openTurn = (request) => streamAgentChat({ baseUrl, ...request }),
 }: RunAgentLoopOptions): AsyncGenerator<AgentRunEvent> {
   // Append-only: each request resends the previous one's turns unchanged, so the
   // server's prompt cache hits and the model keeps every earlier tool observation.
@@ -317,7 +323,7 @@ export async function* runAgentLoop({
     const assistantContent: ContentBlock[] = [];
     let turnTextContent = ""; // Text content for this turn only
 
-    for await (const event of streamAgentChat({ baseUrl, body, signal })) {
+    for await (const event of openTurn({ body, signal })) {
       // Checked per event so a stopped run never executes the remaining tool_use blocks of its turn.
       if (signal?.aborted) {
         yield CANCELLED_EVENT;
