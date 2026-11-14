@@ -20,6 +20,22 @@ _Avoid_: Max steps
 The estimated prompt size at which a Run's next Turn becomes its last: 90K by the Hold's deliberately high estimate, roughly 50-80K real tokens.
 _Avoid_: Context limit, prompt budget
 
+**Run record**:
+The single assistant row that holds a Run's text and tool calls, updated after every Turn.
+_Avoid_: Assistant message, transcript
+
+**Released tool call**:
+A tool call the server lets the extension run: only from a Turn that ended asking for tools and is not the Run's last.
+_Avoid_: Emitted tool call, pending tool
+
+**Superseded Run**:
+A Run whose chat has started a newer Run; its continuations are refused.
+_Avoid_: Stale run, old run
+
+**Continuation**:
+A request for the next Turn of a Run, carrying the earlier Turns and their tool results.
+_Avoid_: Follow-up, tool response
+
 ## Billing
 
 **Credit**:
@@ -29,6 +45,18 @@ _Avoid_: Token, point
 **Hold**:
 The Credits set aside from a user's balance before a Turn starts, sized to the most the Turn could cost. When the Turn ends, the unused part is returned and anything above it is charged.
 _Avoid_: Reservation, pre-auth
+
+**Settlement**:
+Closing a Turn's Hold once: the Turn's cost is charged, the unused part of the Hold returned.
+_Avoid_: Refund, release, close-out
+
+**Unfinished Turn**:
+A Turn ended by Stop, disconnect or error before its final bill arrived; it is settled from what was streamed so far and never above its Hold.
+_Avoid_: Aborted turn, failed turn
+
+**Lost Hold**:
+A Hold that was taken but never settled, because the server stopped mid-Turn; it is returned by hand.
+_Avoid_: Stuck hold, leaked credits
 
 **Margin**:
 The percentage Prophet adds on top of Anthropic's cost when converting a Turn's cost into Credits. It applies to every Turn, whichever kind of Credits pays for it.
