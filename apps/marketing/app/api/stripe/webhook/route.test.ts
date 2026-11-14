@@ -189,6 +189,23 @@ describe('determineTierFromPrice', () => {
     expect(determineTierFromPrice('price_ultra_annual')).toBe('ultra')
     expect(determineTierFromPrice('price_unknown')).toBeNull()
   })
+
+  it('warns once with the price id and tier when the tier is found from price id text', () => {
+    expect(determineTierFromPrice('price_pro_monthly')).toBe('pro')
+
+    expect(logger.warn).toHaveBeenCalledTimes(1)
+    expect(logger.warn).toHaveBeenCalledWith(
+      { priceId: 'price_pro_monthly', tier: 'pro' },
+      'Plan tier found from price id text'
+    )
+  })
+
+  it('does not warn for a configured price id or an unknown one', () => {
+    determineTierFromPrice(TIER_CONFIG.premium.priceId)
+    determineTierFromPrice('price_unknown')
+
+    expect(logger.warn).not.toHaveBeenCalled()
+  })
 })
 
 describe('POST /api/stripe/webhook', () => {

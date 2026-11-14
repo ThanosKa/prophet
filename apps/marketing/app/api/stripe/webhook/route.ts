@@ -375,6 +375,12 @@ export function determineTierFromPrice(priceId: string): 'pro' | 'premium' | 'ul
   if (TIER_CONFIG.ultra.priceId && priceId === TIER_CONFIG.ultra.priceId) return 'ultra'
 
   // Fallback to string matching for backwards compatibility
+  const tier = tierFromPriceIdText(priceId)
+  if (tier) logger.warn({ priceId, tier }, 'Plan tier found from price id text')
+  return tier
+}
+
+function tierFromPriceIdText(priceId: string): 'pro' | 'premium' | 'ultra' | null {
   if (priceId.includes('pro')) return 'pro'
   if (priceId.includes('premium')) return 'premium'
   if (priceId.includes('ultra')) return 'ultra'
