@@ -1,3 +1,4 @@
+import { waitForTabComplete } from './tab-tool'
 import { snapshotManager } from '../snapshot-manager'
 import { debuggerManager } from '../debugger-manager'
 import { type ToolExecutionResult } from '../types'
@@ -179,24 +180,7 @@ export async function openNewTab(input: {
         }
 
         // Wait for the tab to finish loading
-        await new Promise<void>((resolve) => {
-            const listener = (
-                tabId: number,
-                changeInfo: chrome.tabs.TabChangeInfo
-            ) => {
-                if (tabId === newTab.id && changeInfo.status === 'complete') {
-                    chrome.tabs.onUpdated.removeListener(listener)
-                    resolve()
-                }
-            }
-            chrome.tabs.onUpdated.addListener(listener)
-
-            // Timeout after 30s
-            setTimeout(() => {
-                chrome.tabs.onUpdated.removeListener(listener)
-                resolve()
-            }, 30000)
-        })
+        await waitForTabComplete({ tabId: newTab.id, timeoutMs: 30000 })
 
         // Get updated tab info
         const updatedTab = await chrome.tabs.get(newTab.id)
