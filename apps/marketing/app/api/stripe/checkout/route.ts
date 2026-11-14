@@ -9,16 +9,18 @@ import { eq } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { error as errorBody } from '@/types'
-import { EXTRA_CREDITS } from '@/lib/pricing'
+import { EXTRA_CREDITS, TIER_CONFIG } from '@/lib/pricing'
 import { getAppUrl } from '@/lib/constants'
 
+// The server picks every price: `priceId` is still accepted so an older cached page keeps
+// working, but it is ignored.
 const subscriptionCheckoutSchema = z.object({
-  priceId: z.string().min(1, 'Price ID is required'),
+  priceId: z.string().optional(),
   tier: z.enum(['pro', 'premium', 'ultra']),
   mode: z.literal('subscription').optional().default('subscription'),
 })
 const paymentCheckoutSchema = z.object({
-  priceId: z.string().min(1, 'Price ID is required'),
+  priceId: z.string().optional(),
   mode: z.literal('payment'),
   credits: z.number().optional(), // For future variable credit amounts
 })
@@ -63,8 +65,10 @@ export async function POST(request: Request) {
 
     const appUrl = getAppUrl()
 
+    const priceId = data.mode === 'payment' ? EXTRA_CREDITS.priceId : TIER_CONFIG[data.tier].priceId
+
     // Validate priceId is configured (env vars loaded at build time)
-    if (!data.priceId) {
+    if (!priceId) {
       const tierOrType = data.mode === 'subscription' ? data.tier : 'payment'
       logger.error({ tier: tierOrType }, 'Stripe price ID not configured')
       return NextResponse.json(
@@ -80,7 +84,7 @@ export async function POST(request: Request) {
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: data.mode,
-      line_items: [{ price: data.priceId, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${appUrl}/account`,
       cancel_url: isPayment ? `${appUrl}/account/billing` : `${appUrl}/pricing`,
       allow_promotion_codes: !isPayment, // No promo codes for one-time credits
