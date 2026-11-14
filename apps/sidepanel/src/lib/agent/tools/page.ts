@@ -1,5 +1,6 @@
 import { AGENT_SIZE_LIMITS } from '@prophet/shared'
 import { cdpCommander, type EvaluateResult } from '../cdp-commander'
+import { waitForTabComplete } from './tab-tool'
 import { type ToolExecutionResult, type ScrollDirection, type PageContent } from '../types'
 
 export async function navigate(input: { url: string }): Promise<ToolExecutionResult> {
@@ -22,23 +23,7 @@ export async function navigate(input: { url: string }): Promise<ToolExecutionRes
 
     await chrome.tabs.update(tab.id, { url })
 
-    await new Promise<void>((resolve) => {
-      const listener = (
-        tabId: number,
-        changeInfo: chrome.tabs.TabChangeInfo
-      ) => {
-        if (tabId === tab.id && changeInfo.status === 'complete') {
-          chrome.tabs.onUpdated.removeListener(listener)
-          resolve()
-        }
-      }
-      chrome.tabs.onUpdated.addListener(listener)
-
-      setTimeout(() => {
-        chrome.tabs.onUpdated.removeListener(listener)
-        resolve()
-      }, 30000)
-    })
+    await waitForTabComplete({ tabId: tab.id, timeoutMs: 30000 })
 
     return {
       success: true,
@@ -216,19 +201,7 @@ export async function goBack(): Promise<ToolExecutionResult> {
     await chrome.tabs.goBack(tab.id)
 
     // Wait for navigation to complete
-    await new Promise<void>((resolve) => {
-      const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
-        if (tabId === tab.id && changeInfo.status === 'complete') {
-          chrome.tabs.onUpdated.removeListener(listener)
-          resolve()
-        }
-      }
-      chrome.tabs.onUpdated.addListener(listener)
-      setTimeout(() => {
-        chrome.tabs.onUpdated.removeListener(listener)
-        resolve()
-      }, 5000)
-    })
+    await waitForTabComplete({ tabId: tab.id, timeoutMs: 5000 })
 
     const updatedTab = await chrome.tabs.get(tab.id)
 
@@ -265,19 +238,7 @@ export async function goForward(): Promise<ToolExecutionResult> {
     await chrome.tabs.goForward(tab.id)
 
     // Wait for navigation to complete
-    await new Promise<void>((resolve) => {
-      const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
-        if (tabId === tab.id && changeInfo.status === 'complete') {
-          chrome.tabs.onUpdated.removeListener(listener)
-          resolve()
-        }
-      }
-      chrome.tabs.onUpdated.addListener(listener)
-      setTimeout(() => {
-        chrome.tabs.onUpdated.removeListener(listener)
-        resolve()
-      }, 5000)
-    })
+    await waitForTabComplete({ tabId: tab.id, timeoutMs: 5000 })
 
     const updatedTab = await chrome.tabs.get(tab.id)
 
@@ -314,19 +275,7 @@ export async function reloadPage(): Promise<ToolExecutionResult> {
     await chrome.tabs.reload(tab.id)
 
     // Wait for reload to complete
-    await new Promise<void>((resolve) => {
-      const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
-        if (tabId === tab.id && changeInfo.status === 'complete') {
-          chrome.tabs.onUpdated.removeListener(listener)
-          resolve()
-        }
-      }
-      chrome.tabs.onUpdated.addListener(listener)
-      setTimeout(() => {
-        chrome.tabs.onUpdated.removeListener(listener)
-        resolve()
-      }, 30000)
-    })
+    await waitForTabComplete({ tabId: tab.id, timeoutMs: 30000 })
 
     return {
       success: true,
