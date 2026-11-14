@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import path from 'path'
 import { readFileSync, readdirSync } from 'fs'
 import { eq, sql } from 'drizzle-orm'
@@ -12,6 +12,7 @@ import { TIER_CONFIG } from '@/lib/pricing'
 const migrationsFolder = path.resolve(__dirname, 'migrations')
 const REPAIR_TAG_SUFFIX = 'repair_free_credits_included'
 
+type Database = Awaited<ReturnType<typeof setup>>
 type Journal = { entries: { idx: number; tag: string }[] }
 const journal: Journal = JSON.parse(readFileSync(path.join(migrationsFolder, 'meta/_journal.json'), 'utf8'))
 const repairEntry = journal.entries.find(entry => entry.tag.endsWith(REPAIR_TAG_SUFFIX))
@@ -36,6 +37,16 @@ async function setup() {
   return db
 }
 
+let db: Awaited<ReturnType<typeof setup>>
+
+beforeAll(async () => {
+  db = await setup()
+}, 60_000)
+
+beforeEach(async () => {
+  await db.delete(users)
+})
+
 describe('migration: repair Free users created without included Credits', () => {
   it('is in the journal, last and in order', () => {
     expect(repairEntry).toBeDefined()
@@ -50,13 +61,13 @@ describe('migration: repair Free users created without included Credits', () => 
     return readFileSync(path.join(migrationsFolder, `${repairEntry.tag}.sql`), 'utf8')
   }
 
-  async function runRepair(db: Awaited<ReturnType<typeof setup>>): Promise<void> {
+  async function runRepair(db: Database): Promise<void> {
     for (const statement of repairSql().split('--> statement-breakpoint')) {
       await db.execute(sql.raw(statement))
     }
   }
 
-  async function seedUsers(db: Awaited<ReturnType<typeof setup>>): Promise<void> {
+  async function seedUsers(db: Database): Promise<void> {
     await db.insert(users).values([
       // Created by the Clerk webhook before the fix: Free, 7 balance, 0 included.
       userRow('webhook_free', { tier: 'free', creditsRemaining: 7, creditsIncluded: 0 }),
@@ -84,12 +95,11 @@ describe('migration: repair Free users created without included Credits', () => 
     ])
   }
 
-  async function snapshot(db: Awaited<ReturnType<typeof setup>>) {
+  async function snapshot(db: Database) {
     return db.select().from(users).orderBy(users.id)
   }
 
   it('sets included Credits to the Free grant for Free users with 0, and changes nothing else', async () => {
-    const db = await setup()
     await seedUsers(db)
     const before = await snapshot(db)
 
@@ -117,7 +127,6 @@ describe('migration: repair Free users created without included Credits', () => 
   })
 
   it('does not touch a paid user whose included Credits is 0', async () => {
-    const db = await setup()
     await db.insert(users).values(userRow('odd_paid', { tier: 'pro', creditsIncluded: 0, creditsRemaining: 5 }))
     const before = await snapshot(db)
     await runRepair(db)
@@ -125,7 +134,6 @@ describe('migration: repair Free users created without included Credits', () => 
   })
 
   it('changes no row when it runs a second time', async () => {
-    const db = await setup()
     await seedUsers(db)
     await runRepair(db)
     const afterFirst = await snapshot(db)
