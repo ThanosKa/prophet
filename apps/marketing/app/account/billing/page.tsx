@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CreditCard, CheckCircle2, Zap, Loader2, AlertCircle, Clock, XCircle } from "lucide-react"
 import { format } from "date-fns"
+import { toast } from 'sonner'
+import { redirectToStripeSession } from '@/lib/billing-requests'
 import { useUser } from "@/contexts/UserContext"
 import { SubscriptionAlerts } from "@/components/account/SubscriptionAlerts"
 import { formatDollars } from "@prophet/shared"
@@ -41,37 +43,28 @@ export default function BillingPage() {
 
   const handleBuyCredits = async () => {
     setIsBuyingCredits(true)
-    try {
-      const response = await fetch('/api/stripe/checkout/credits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      const data = await response.json()
-      if (data.url) {
-        window.location.href = data.url
-      }
-    } catch (error) {
-      console.error('Failed to start checkout:', error)
-    } finally {
-      setIsBuyingCredits(false)
-    }
+    await redirectToStripeSession({
+      request: () =>
+        fetch('/api/stripe/checkout/credits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      redirect: url => { window.location.href = url },
+      notifyError: () =>
+        toast.error('Something went wrong', { description: 'Please try again later.' }),
+    })
+    setIsBuyingCredits(false)
   }
 
   const handleManageSubscription = async () => {
     setIsManagingSubscription(true)
-    try {
-      const response = await fetch('/api/stripe/portal', {
-        method: 'POST',
-      })
-      const data = await response.json()
-      if (data.url) {
-        window.location.href = data.url
-      }
-    } catch (error) {
-      console.error('Failed to open portal:', error)
-    } finally {
-      setIsManagingSubscription(false)
-    }
+    await redirectToStripeSession({
+      request: () => fetch('/api/stripe/portal', { method: 'POST' }),
+      redirect: url => { window.location.href = url },
+      notifyError: () =>
+        toast.error('Something went wrong', { description: 'Please try again later.' }),
+    })
+    setIsManagingSubscription(false)
   }
 
   if (isLoading) {

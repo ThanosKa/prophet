@@ -3,12 +3,26 @@ import { db } from '@/lib/db'
 import { usageRecords } from '@/lib/db/schema'
 import { eq, and, gte, lte, desc, type SQL } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
+import { checkRateLimit } from '@/lib/ratelimit'
+import { error as errorBody } from '@/types'
 
 export async function GET(req: Request) {
   try {
     const { userId } = await auth()
     if (!userId) {
       return new Response('Unauthorized', { status: 401 })
+    }
+
+    const rateLimitResult = await checkRateLimit(userId, 'api')
+    if (!rateLimitResult.success) {
+      return Response.json(errorBody('Too many requests', 'RATE_LIMIT_EXCEEDED'), {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit?.toString() || '',
+          'X-RateLimit-Remaining': rateLimitResult.remaining?.toString() || '',
+          'X-RateLimit-Reset': rateLimitResult.reset?.toString() || '',
+        },
+      })
     }
 
     const { searchParams } = new URL(req.url)
