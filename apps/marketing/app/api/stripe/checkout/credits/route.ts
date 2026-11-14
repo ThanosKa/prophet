@@ -37,7 +37,7 @@ export async function POST() {
       line_items: [{ price: EXTRA_CREDITS.priceId, quantity: 1 }],
       success_url: `${appUrl}/account/billing`,
       cancel_url: `${appUrl}/account/billing`,
-      allow_promotion_codes: true,
+      allow_promotion_codes: false, // No promo codes for one-time credits
       metadata: {
         userId,
         type: 'extra_credits',
