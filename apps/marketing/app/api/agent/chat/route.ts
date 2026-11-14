@@ -23,10 +23,14 @@ import {
   estimateInputTokens,
   planCreditReservation,
   reserveCredits,
-  settleCredits,
 } from "@/lib/credit-reservation";
 import { parseJsonBody, readBodyWithinLimit } from "@/lib/request-body";
-import { settleFinishedTurn, settleUnfinishedTurn, type HoldContext } from "@/lib/turn-hold";
+import {
+  returnUnstartedHold,
+  settleFinishedTurn,
+  settleUnfinishedTurn,
+  type HoldContext,
+} from "@/lib/turn-hold";
 import {
   AGENT_ERROR_CODES,
   AGENT_SIZE_LIMITS,
@@ -356,8 +360,6 @@ export async function POST(req: Request) {
     // Hold with no settled line is a lost Hold to return by hand.
     const holdId = crypto.randomUUID();
     logger.info({ userId, chatId, holdId, reserveCents, ...hold }, "Credit hold taken");
-    const holdSettled = (actualCents: number) =>
-      logger.info({ userId, chatId, holdId, actualCents }, "Credit hold settled");
     const holdContext: HoldContext = { db, userId, chatId, model, holdId, hold, reserveCents };
     const maxTokensReducedForBalance = maxTokens < AGENT_TURN_MAX_TOKENS;
 
@@ -386,15 +388,7 @@ export async function POST(req: Request) {
         { userId, chatId, error: errorMessage(startError) },
         "Failed to start the Turn; returning its hold"
       );
-      await settleCredits({ db, userId, hold, actualCents: 0 }).then(
-        () => holdSettled(0),
-        (settleError: unknown) => {
-          logger.error(
-            { userId, chatId, holdId, reserveCents, error: errorMessage(settleError) },
-            "Failed to return the hold of a Turn that never started; hold kept"
-          );
-        }
-      );
+      await returnUnstartedHold({ context: holdContext });
       return NextResponse.json(error(INTERNAL_ERROR_MESSAGE, "INTERNAL_ERROR"), { status: 500 });
     }
 

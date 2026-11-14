@@ -178,3 +178,23 @@ export async function settleFinishedTurn({
     )
   }
 }
+
+/**
+ * Gives the whole Hold back when the Turn failed before anything was sent to
+ * Anthropic. Never throws: on failure it logs and keeps the Hold.
+ */
+export async function returnUnstartedHold({
+  context: { db, userId, chatId, holdId, hold, reserveCents },
+}: {
+  context: HoldContext
+}): Promise<void> {
+  await settleCredits({ db, userId, hold, actualCents: 0 }).then(
+    () => logHoldSettled({ userId, chatId, holdId, actualCents: 0 }),
+    (settleError: unknown) => {
+      logger.error(
+        { userId, chatId, holdId, reserveCents, error: errorMessage(settleError) },
+        'Failed to return the hold of a Turn that never started; hold kept'
+      )
+    }
+  )
+}
