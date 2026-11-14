@@ -201,19 +201,7 @@ export async function goBack(): Promise<ToolExecutionResult> {
     await chrome.tabs.goBack(tab.id)
 
     // Wait for navigation to complete
-    await new Promise<void>((resolve) => {
-      const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
-        if (tabId === tab.id && changeInfo.status === 'complete') {
-          chrome.tabs.onUpdated.removeListener(listener)
-          resolve()
-        }
-      }
-      chrome.tabs.onUpdated.addListener(listener)
-      setTimeout(() => {
-        chrome.tabs.onUpdated.removeListener(listener)
-        resolve()
-      }, 5000)
-    })
+    await waitForTabComplete({ tabId: tab.id, timeoutMs: 5000 })
 
     const updatedTab = await chrome.tabs.get(tab.id)
 
