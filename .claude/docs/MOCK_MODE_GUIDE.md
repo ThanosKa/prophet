@@ -31,7 +31,7 @@ VITE_USE_DEV_API=true
 
 ## How Mock Mode Works
 
-When `VITE_USE_DEV_API=mock`, the agent uses the `mockAgentStream()` generator instead of hitting the real API:
+When `VITE_USE_DEV_API=mock`, the real `runAgentLoop` runs as usual, with two fake parts from `createMockAdapters()` in `apps/sidepanel/src/lib/agent/mock-agent.ts`: a fake Turn source (`openTurn`) and a fake tool runner (`runTool`). No network call is made. Because the loop is the real one, mock mode now shows what a real Run shows: continuations after tool calls, the last Turn, `run_notice`, and `tool_call_start` events sent by the loop itself (not by the mock). The old separate mock Run is gone, so timing and event order look slightly different from before.
 
 ### Features
 
@@ -44,7 +44,7 @@ When `VITE_USE_DEV_API=mock`, the agent uses the `mockAgentStream()` generator i
 
 ### Mock Responses
 
-A normal message gets a random entry from `MOCK_RESPONSES` in `apps/sidepanel/src/lib/agent/mock-agent.ts`. These messages pick the tools instead: `/all`, `/snap`, `/nav`, `/tabs`, `/element`, `/wait`, `/page` and `/think` (forces thinking).
+A normal message gets a random entry from `MOCK_RESPONSES` in `apps/sidepanel/src/lib/agent/mock-agent.ts`. These messages pick the tools instead: `/all`, `/snap`, `/nav`, `/tabs`, `/element`, `/wait`, `/page` and `/think` (forces thinking). Two more test the end of a Run: `/limit` asks for a tool on every Turn until the `turn_limit` notice appears, and `/budget` ends the Run on its second Turn with the `run_budget` notice. After the tool calls, the loop continues with a second Turn that answers and ends the Run.
 
 ## Testing UI/UX
 
@@ -87,7 +87,7 @@ const MOCK_RESPONSES = [
 ]
 ```
 
-Tool names are only labels here: any name works for UI testing, even one the real agent lacks.
+Tool names must be real tool names (`ToolName`), because the real loop and the type-checker see them.
 
 ## Comparison Table
 
