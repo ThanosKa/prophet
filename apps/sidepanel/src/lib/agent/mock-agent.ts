@@ -1,64 +1,21 @@
 /**
- * Mock Agent Response Generator
+ * Mock mode: a fake Turn source and a fake tool runner for the real Run loop.
  *
- * Simulates agent responses for UI/UX testing without hitting the real API.
- * Use by setting VITE_USE_DEV_API=mock in .env.local
+ * Use by setting VITE_USE_DEV_API=mock in .env.local. `runAgentLoop` runs as it does for a real
+ * Run (continuations, the last Turn, run_notice, tool_call_start); only the two adapters are fake.
  *
  * Special commands:
- * - Type "/all" to trigger ALL tools sequentially
- * - Type "/snap" to trigger snapshot tools
- * - Type "/nav" to trigger navigation tools
- * - Type "/tabs" to trigger tab tools
- * - Type "/think" to force extended thinking (also triggers with brain toggle)
+ * - "/all" runs ALL tools, "/snap", "/nav", "/tabs", "/element", "/wait", "/page" run one group
+ * - "/think" forces extended thinking (also on when the brain toggle is on)
+ * - "/limit" asks for a tool on every Turn, so the Run ends with the turn_limit notice
+ * - "/budget" ends the Run on its second Turn with the run_budget notice
  * - Any other message picks a random response
- *
- * Extended thinking is simulated when:
- * - The brain toggle is enabled (enableThinking=true)
- * - Or you use the "/think" command
  */
-
-export interface MockAgentEvent {
-  type: 'session_created' | 'content_delta' | 'thinking_delta' | 'tool_use' | 'metrics_update' | 'execution_complete' | 'done' | 'error' | 'tool_call_start' | 'tool_call_complete' | 'tool_call_error'
-  sessionId?: string
-  delta?: string
-  toolUse?: {
-    type: 'tool_use'
-    id: string
-    name: string
-    input: Record<string, unknown>
-  }
-  metrics?: {
-    inputTokens: number
-    cacheReadInputTokens?: number
-    outputTokens: number
-    costCents: number
-  }
-  finalOutput?: string
-  stopReason?: string
-  usage?: {
-    inputTokens: number
-    outputTokens: number
-    costCents: number
-  }
-  contentBlocks?: Array<{
-    type: 'text' | 'tool_use'
-    text?: string
-    id?: string
-    name?: string
-    input?: Record<string, unknown>
-  }>
-  error?: string
-  code?: string
-  details?: {
-    pricingUrl?: string
-  }
-  toolCallId?: string
-  toolName?: string
-  params?: Record<string, unknown>
-}
+import type { ToolName } from '@prophet/shared'
+import type { TurnSource, ToolRunner } from './agent-loop'
 
 // All real tools from the agent
-const ALL_TOOLS = [
+const ALL_TOOLS: ToolName[] = [
   // Observation
   'take_snapshot',
   'search_snapshot',
@@ -84,9 +41,9 @@ const ALL_TOOLS = [
   'switch_tab',
   'close_tab',
   'open_new_tab',
-] as const
+]
 
-const TOOL_GROUPS = {
+const TOOL_GROUPS: Record<'snap' | 'nav' | 'tabs' | 'element' | 'wait' | 'page', ToolName[]> = {
   snap: ['take_snapshot', 'search_snapshot'],
   nav: ['navigate', 'go_back', 'go_forward', 'reload_page', 'scroll_page'],
   tabs: ['list_tabs', 'switch_tab', 'close_tab', 'open_new_tab'],
@@ -95,7 +52,7 @@ const TOOL_GROUPS = {
   page: ['get_page_content', 'get_page_info'],
 }
 
-const MOCK_RESPONSES = [
+const MOCK_RESPONSES: Array<{ text: string; tools: ToolName[] }> = [
   {
     text: "I'll take a snapshot of the page to understand its structure.",
     tools: ['take_snapshot', 'get_page_info'],
@@ -122,220 +79,125 @@ const MOCK_RESPONSES = [
   },
 ]
 
-/**
- * Simulates a streaming agent response
- */
-export async function* mockAgentStream(
-  chatId: string,
-  userMessage: string,
-  _model: string,
-  signal?: AbortSignal,
-  enableThinking?: boolean
-): AsyncGenerator<MockAgentEvent> {
-  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-  const checkAbort = () => {
-    if (signal?.aborted) {
-      throw new Error('Aborted')
-    }
+interface MockScenario {
+  tools: ToolName[]
+  text: string
+  forceThinking?: boolean
+  /** Ends the Run on its second Turn with this reason. */
+  runEnd?: 'run_budget'
+  /** Asks for a tool on every Turn, never finishing on its own. */
+  neverStops?: boolean
+}
+
+function pickScenario(userMessage: string): MockScenario {
+  switch (userMessage.toLowerCase().trim()) {
+    case '/all':
+      return { tools: [...ALL_TOOLS], text: "Testing ALL tools. This will demonstrate every tool in the agent's toolkit." }
+    case '/snap':
+      return { tools: TOOL_GROUPS.snap, text: 'Testing snapshot and screenshot tools.' }
+    case '/nav':
+      return { tools: TOOL_GROUPS.nav, text: 'Testing navigation tools.' }
+    case '/tabs':
+      return { tools: TOOL_GROUPS.tabs, text: 'Testing tab management tools.' }
+    case '/element':
+      return { tools: TOOL_GROUPS.element, text: 'Testing element interaction tools.' }
+    case '/wait':
+      return { tools: TOOL_GROUPS.wait, text: 'Testing wait tools.' }
+    case '/page':
+      return { tools: TOOL_GROUPS.page, text: 'Testing page content tools.' }
+    case '/think':
+      return {
+        tools: ['take_snapshot'],
+        text: "I've analyzed the page structure after deep consideration.",
+        forceThinking: true,
+      }
+    case '/limit':
+      return { tools: ['take_snapshot'], text: 'Testing the turn limit: I will keep asking for a snapshot.', neverStops: true }
+    case '/budget':
+      return { tools: ['take_snapshot'], text: 'Testing the run budget notice.', runEnd: 'run_budget' }
+    default:
+      return MOCK_RESPONSES[Math.floor(Math.random() * MOCK_RESPONSES.length)]
   }
+}
 
-  try {
-    // 1. Send session created
-    yield {
-      type: 'session_created',
-      sessionId: chatId,
-    }
-    await delay(100)
-    checkAbort()
+const defaultWait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
-    // 2. Determine which tools to use based on message
-    const lowerMessage = userMessage.toLowerCase().trim()
-    let tools: string[] = []
-    let text = ''
-    let forceThinking = false
+export interface MockAdapterOptions {
+  userMessage: string
+  enableThinking?: boolean
+  /** Pauses for the fake typing and tool delays; tests pass an instant one. */
+  wait?: (ms: number) => Promise<void>
+}
 
-    if (lowerMessage === '/all') {
-      tools = [...ALL_TOOLS]
-      text = "Testing ALL tools. This will demonstrate every tool in the agent's toolkit."
-    } else if (lowerMessage === '/snap') {
-      tools = TOOL_GROUPS.snap
-      text = "Testing snapshot and screenshot tools."
-    } else if (lowerMessage === '/nav') {
-      tools = TOOL_GROUPS.nav
-      text = "Testing navigation tools."
-    } else if (lowerMessage === '/tabs') {
-      tools = TOOL_GROUPS.tabs
-      text = "Testing tab management tools."
-    } else if (lowerMessage === '/element') {
-      tools = TOOL_GROUPS.element
-      text = "Testing element interaction tools."
-    } else if (lowerMessage === '/wait') {
-      tools = TOOL_GROUPS.wait
-      text = "Testing wait tools."
-    } else if (lowerMessage === '/page') {
-      tools = TOOL_GROUPS.page
-      text = "Testing page content tools."
-    } else if (lowerMessage === '/think') {
-      forceThinking = true
-      tools = ['take_snapshot']
-      text = "I've analyzed the page structure after deep consideration."
-    } else {
-      // Random response
-      const responseIndex = Math.floor(Math.random() * MOCK_RESPONSES.length)
-      const mockResponse = MOCK_RESPONSES[responseIndex]
-      tools = mockResponse.tools
-      text = mockResponse.text
-    }
+/**
+ * The fake Turn source and tool runner for one mock Run. Its first Turn streams the scenario's
+ * thinking, text and tool calls; the Turn the loop continues with answers and ends the Run.
+ */
+export function createMockAdapters({
+  userMessage,
+  enableThinking,
+  wait = defaultWait,
+}: MockAdapterOptions): { openTurn: TurnSource; runTool: ToolRunner } {
+  const scenario = pickScenario(userMessage)
+  let turnNumber = 0
 
-    // 2.5 Simulate thinking if enabled
-    const shouldThink = enableThinking || forceThinking
-    if (shouldThink) {
-      const thinkingContent = generateMockThinking(userMessage, tools)
-      for (const char of thinkingContent) {
-        checkAbort()
-        yield {
-          type: 'thinking_delta',
-          delta: char,
-        }
-        await delay(Math.random() * 15 + 5) // 5-20ms per character (faster than content)
+  const openTurn: TurnSource = async function* () {
+    turnNumber++
+    const isFirstTurn = turnNumber === 1
+    const askForTools = scenario.tools.length > 0 && (isFirstTurn || scenario.neverStops)
+    yield { type: 'session_created', sessionId: 'mock' }
+    await wait(100)
+
+    if (isFirstTurn && (enableThinking || scenario.forceThinking)) {
+      for (const char of generateMockThinking(userMessage, scenario.tools)) {
+        yield { type: 'thinking_delta', delta: char }
+        await wait(Math.random() * 15 + 5)
       }
-      await delay(300)
-      checkAbort()
+      await wait(300)
     }
 
-    // 3. Stream the text content
-    let accumulatedText = ''
-
+    const text = isFirstTurn ? scenario.text : 'Done. Here is what I found based on your request.'
     for (const char of text) {
-      checkAbort()
-      yield {
-        type: 'content_delta',
-        delta: char,
-      }
-      accumulatedText += char
-      await delay(Math.random() * 30 + 10) // 10-40ms per character (faster for /all)
+      yield { type: 'content_delta', delta: char }
+      await wait(Math.random() * 30 + 10)
     }
+    await wait(200)
 
-    await delay(200)
-    checkAbort()
-
-    // 4. Simulate tool calls
-    const contentBlocks: Array<{
-      type: 'text' | 'tool_use'
-      text?: string
-      id?: string
-      name?: string
-      input?: Record<string, unknown>
-    }> = [
-      {
-        type: 'text',
-        text: accumulatedText,
-      },
-    ]
-
-    if (tools.length > 0) {
-      for (const toolName of tools) {
-        checkAbort()
-        await delay(300) // Shorter delay for faster testing
-
-        const toolCallId = `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        const toolInput = generateMockToolInput(toolName, userMessage)
-
-        // Emit tool_call_start
-        yield {
-          type: 'tool_call_start',
-          toolCallId,
-          toolName,
-          params: toolInput,
-        }
-
-        await delay(200)
-        checkAbort()
-
-        const toolUse = {
-          type: 'tool_use' as const,
-          id: toolCallId,
-          name: toolName,
-          input: toolInput,
-        }
-
-        contentBlocks.push(toolUse)
-
+    if (askForTools) {
+      for (const toolName of scenario.tools) {
+        await wait(300)
         yield {
           type: 'tool_use',
-          toolUse,
-        }
-
-        await delay(150)
-        checkAbort()
-
-        // Emit tool_call_complete
-        yield {
-          type: 'tool_call_complete',
-          toolCallId,
+          toolUse: {
+            type: 'tool_use',
+            id: `toolu_mock_${turnNumber}_${toolName}`,
+            name: toolName,
+            input: generateMockToolInput(toolName, userMessage),
+          },
         }
       }
     }
 
-    await delay(200)
-    checkAbort()
-
-    // 5. Send metrics update
     const inputTokens = Math.floor(userMessage.length / 3) + 100
-    const outputTokens = Math.floor(accumulatedText.length / 3) + 50 + (tools.length * 20)
-    const costCents = Math.floor((inputTokens + outputTokens) * 0.001)
-
-    yield {
-      type: 'metrics_update',
-      metrics: {
-        inputTokens,
-        outputTokens,
-        costCents,
-      },
-    }
-
-    await delay(100)
-    checkAbort()
-
-    // 6. Send execution complete
-    yield {
-      type: 'execution_complete',
-      finalOutput: accumulatedText,
-      metrics: {
-        inputTokens,
-        outputTokens,
-        costCents,
-      },
-    }
-
-    await delay(100)
-    checkAbort()
-
-    // 7. Send done
+    const outputTokens = Math.floor(text.length / 3) + 50 + (askForTools ? scenario.tools.length * 20 : 0)
+    const metrics = { inputTokens, outputTokens, costCents: Math.floor((inputTokens + outputTokens) * 0.001) }
+    yield { type: 'metrics_update', metrics }
+    yield { type: 'execution_complete', finalOutput: text, metrics }
     yield {
       type: 'done',
-      stopReason: tools.length > 0 ? 'tool_use' : 'end_turn',
-      usage: {
-        inputTokens,
-        outputTokens,
-        costCents,
-      },
-      contentBlocks,
-    }
-  } catch (error) {
-    if (error instanceof Error && error.message === 'Aborted') {
-      yield {
-        type: 'error',
-        error: 'Request aborted',
-      }
-    } else {
-      yield {
-        type: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }
+      stopReason: askForTools ? 'tool_use' : 'end_turn',
+      usage: metrics,
+      ...(!askForTools && scenario.runEnd && { runEnd: scenario.runEnd }),
     }
   }
+
+  const runTool: ToolRunner = async ({ name }) => {
+    await wait(200)
+    return { success: true, data: `Mock result of ${name}`, durationMs: 200 }
+  }
+
+  return { openTurn, runTool }
 }
 
 /**
@@ -428,11 +290,4 @@ function generateMockToolInput(toolName: string, userMessage: string): Record<st
     default:
       return {}
   }
-}
-
-/**
- * Mock function to check if mock mode is enabled
- */
-export function isMockMode(): boolean {
-  return import.meta.env.VITE_USE_DEV_API === 'mock'
 }

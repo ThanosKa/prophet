@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { TIER_CONFIG } from '@/lib/pricing'
 
 const mocks = vi.hoisted(() => {
   const where = vi.fn()
@@ -7,6 +8,7 @@ const mocks = vi.hoisted(() => {
   const inserted = vi.fn(() => Promise.resolve([{ id: 'user_123' }]))
   const values = vi.fn((_values: Record<string, unknown>) => ({
     onConflictDoNothing: () => ({ returning: inserted }),
+    onConflictDoUpdate: () => ({ returning: () => Promise.resolve([{}]) }),
   }))
   return {
     inserted,
@@ -17,6 +19,7 @@ const mocks = vi.hoisted(() => {
     values,
     insert: vi.fn(() => ({ values })),
     deleteWhere: vi.fn(),
+    findFirst: vi.fn(() => Promise.resolve(undefined)),
     invalidateUserTierCache: vi.fn(),
     sendWelcomeEmail: vi.fn(() => Promise.resolve()),
   }
@@ -34,8 +37,27 @@ vi.mock('@/lib/db', () => ({
   db: {
     update: mocks.update,
     insert: mocks.insert,
+    query: { users: { findFirst: mocks.findFirst } },
     delete: vi.fn(() => ({ where: mocks.deleteWhere })),
   },
+}))
+
+vi.mock('@clerk/nextjs/server', () => ({
+  auth: vi.fn(() => Promise.resolve({ userId: 'user_123' })),
+  clerkClient: vi.fn(() =>
+    Promise.resolve({
+      users: {
+        getUser: vi.fn(() =>
+          Promise.resolve({
+            emailAddresses: [{ emailAddress: 'ada@example.com' }],
+            firstName: 'Ada',
+            lastName: 'Lovelace',
+            imageUrl: 'https://example.com/ada.png',
+          })
+        ),
+      },
+    })
+  ),
 }))
 
 vi.mock('@/lib/cache', () => ({
@@ -178,6 +200,31 @@ describe('POST /api/webhooks/clerk', () => {
       await postWebhook(userEvent({ type: 'user.created' }))
 
       expect(lastCallArg(mocks.values).creditsRemaining).toBe(7)
+    })
+
+    it("records the Free grant's included Credits, so the usage bar has a total", async () => {
+      await postWebhook(userEvent({ type: 'user.created' }))
+
+      expect(lastCallArg(mocks.values).creditsIncluded).toBe(TIER_CONFIG.free.credits)
+    })
+
+    it('creates the same tier, balance and included Credits as sign-in sync', async () => {
+      await postWebhook(userEvent({ type: 'user.created' }))
+      const fromWebhook = lastCallArg(mocks.values)
+
+      const { ensureDbUser } = await import('@/lib/db/user')
+      await ensureDbUser()
+      const fromSignInSync = lastCallArg(mocks.values)
+
+      expect({
+        tier: fromWebhook.tier,
+        creditsRemaining: fromWebhook.creditsRemaining,
+        creditsIncluded: fromWebhook.creditsIncluded,
+      }).toEqual({
+        tier: fromSignInSync.tier,
+        creditsRemaining: fromSignInSync.creditsRemaining,
+        creditsIncluded: fromSignInSync.creditsIncluded,
+      })
     })
   })
 

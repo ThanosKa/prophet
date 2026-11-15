@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { APIError, BadRequestError } from "@anthropic-ai/sdk";
 import { db } from "@/lib/db";
 import { keepRequestOpenUntil } from "@/lib/db/request-scope";
-import { users, chats, messages, usageRecords } from "@/lib/db/schema";
+import { users, chats, messages } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { anthropic } from "@/lib/anthropic";
@@ -19,21 +19,15 @@ import {
   toEchoableContent,
   WEB_SEARCH_MAX_USES,
 } from "@/lib/agent/web-search";
-import {
-  estimateInputTokens,
-  estimateTextTokens,
-  planCreditReservation,
-  reserveCredits,
-  settleCredits,
-} from "@/lib/credit-reservation";
+import { estimateInputTokens, planCreditReservation } from "@/lib/credit-reservation";
 import { parseJsonBody, readBodyWithinLimit } from "@/lib/request-body";
+import { takeHold } from "@/lib/turn-hold";
 import {
   AGENT_ERROR_CODES,
   AGENT_SIZE_LIMITS,
   agentChatRequestSchema,
   DEFAULT_AGENT_MODEL,
   errorMessage,
-  getModelContextWindow,
   resolveAgentModel,
   RUN_SUPERSEDED_MESSAGE,
   sanitizeForLog,
@@ -47,7 +41,6 @@ import {
   isToolInput,
   openRun,
   resumeRun,
-  writeRunRecord,
   type HistoryRow,
   type RunRequest,
   type TurnEnding,
@@ -334,8 +327,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const hold = await reserveCredits({ db, userId, reserveCents: plan.reserveCents });
-    if (!hold) {
+    const turnHold = await takeHold({ db, userId, chatId, model, reserveCents: plan.reserveCents });
+    if (!turnHold) {
       logger.warn(
         { userId, model, balanceCents, requiredCents: plan.reserveCents },
         "Credit reservation lost a race for the balance"
@@ -353,13 +346,6 @@ export async function POST(req: Request) {
       );
     }
     const { reserveCents, maxTokens } = plan;
-    // Every Hold is logged when taken and again when settled, under one id. A Worker that
-    // dies mid-Turn (memory, CPU, restart) settles nothing and logs nothing, so a taken
-    // Hold with no settled line is a lost Hold to return by hand.
-    const holdId = crypto.randomUUID();
-    logger.info({ userId, chatId, holdId, reserveCents, ...hold }, "Credit hold taken");
-    const holdSettled = (actualCents: number) =>
-      logger.info({ userId, chatId, holdId, actualCents }, "Credit hold settled");
     const maxTokensReducedForBalance = maxTokens < AGENT_TURN_MAX_TOKENS;
 
     let history: HistoryRow[] = runHistory;
@@ -387,15 +373,7 @@ export async function POST(req: Request) {
         { userId, chatId, error: errorMessage(startError) },
         "Failed to start the Turn; returning its hold"
       );
-      await settleCredits({ db, userId, hold, actualCents: 0 }).then(
-        () => holdSettled(0),
-        (settleError: unknown) => {
-          logger.error(
-            { userId, chatId, holdId, reserveCents, error: errorMessage(settleError) },
-            "Failed to return the hold of a Turn that never started; hold kept"
-          );
-        }
-      );
+      await turnHold.close({ type: "not_started" });
       return NextResponse.json(error(INTERNAL_ERROR_MESSAGE, "INTERNAL_ERROR"), { status: 500 });
     }
 
@@ -449,7 +427,6 @@ export async function POST(req: Request) {
         let outputTokens = 0;
         let webSearchesStarted = 0;
         let usageReported = false;
-        let settled = false;
 
         const turnUsage = (webSearchRequests: number): TokenUsage => ({
           inputTokens,
@@ -467,58 +444,6 @@ export async function POST(req: Request) {
           outputTokens,
           costCents,
         });
-
-        // Runs on every path that did not reach the billing transaction. Before
-        // message_start nothing was billed upstream, so the hold goes back in full.
-        // After it, output usage only arrives with the final message_delta, so the
-        // streamed text stands in for it; a deliberate disconnect cannot dodge it.
-        const settleUnfinishedTurn = async () => {
-          outputTokens = Math.max(outputTokens, estimateTextTokens(streamedOutput));
-          const actualCents = usageReported
-            ? Math.min(
-                reserveCents,
-                calculateUsageCostInCredits(model, turnUsage(webSearchesStarted))
-              )
-            : 0;
-          try {
-            await db.transaction(async (tx) => {
-              // Stop, disconnect or error released no tool calls: only the text so far.
-              await writeRunRecord({
-                tx,
-                chatId,
-                request: runRequest,
-                ending: { type: "reply", text: fullTextResponse, releasedToolCalls: [] },
-                model,
-                usage: { inputTokens, outputTokens, costCents: actualCents },
-              });
-              await settleCredits({ db: tx, userId, hold, actualCents });
-              if (actualCents > 0) {
-                await tx.insert(usageRecords).values({
-                  userId,
-                  inputTokens,
-                  cacheCreationInputTokens,
-                  cacheReadInputTokens,
-                  outputTokens,
-                  costCents: actualCents,
-                  model,
-                });
-              }
-            });
-            holdSettled(actualCents);
-          } catch (settleError) {
-            logger.error(
-              {
-                userId,
-                chatId,
-                holdId,
-                reserveCents,
-                actualCents,
-                error: errorMessage(settleError),
-              },
-              "Failed to settle credit reservation; hold kept"
-            );
-          }
-        };
 
         try {
           if (!clientConnected) throw new Error("Client disconnected before the stream started");
@@ -729,56 +654,14 @@ export async function POST(req: Request) {
                   releasedToolCalls: releasesToolCalls ? clientToolCalls : [],
                 };
 
-          const maxContextTokens = getModelContextWindow(model);
-          await db.transaction(async (tx) => {
-            // Locks the chat row, so it goes before settlement locks the user row.
-            await writeRunRecord({
-              tx,
-              chatId,
-              request: runRequest,
-              ending,
-              model,
-              usage: { inputTokens, outputTokens, costCents },
-            });
-
-            await settleCredits({ db: tx, userId, hold, actualCents: costCents });
-
-            // Always record usage for billing audit trail
-            await tx.insert(usageRecords).values({
-              userId,
-              inputTokens,
-              cacheCreationInputTokens,
-              cacheReadInputTokens,
-              outputTokens,
-              costCents,
-              model,
-            });
-
-            // Update context tokens on final turn only
-            if (isFinalTurn) {
-              const promptTokens = inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
-              const newContextTokens = Math.min(promptTokens + outputTokens, maxContextTokens);
-              await tx
-                .update(chats)
-                .set({
-                  contextTokens: newContextTokens,
-                  contextInputTokens: promptTokens,
-                  contextOutputTokens: outputTokens,
-                  contextCachedInputTokens: cacheReadInputTokens,
-                  updatedAt: new Date(),
-                })
-                .where(eq(chats.id, chatId));
-            }
+          // Throws when the billing transaction fails; the `finally` then closes it unfinished.
+          await turnHold.close({
+            type: "finished",
+            request: runRequest,
+            ending,
+            usage: turnUsage(webSearchRequests),
+            isFinalTurn,
           });
-          settled = true;
-          holdSettled(costCents);
-
-          if (costCents > reserveCents) {
-            logger.warn(
-              { userId, chatId, model, reserveCents, costCents, inputTokens },
-              "Turn cost exceeded its Hold (cache miss or input estimate miss)"
-            );
-          }
 
           logger.info(
             {
@@ -925,7 +808,17 @@ export async function POST(req: Request) {
         } finally {
           try {
             req.signal.removeEventListener("abort", abortUpstream);
-            if (!settled) await settleUnfinishedTurn();
+            // Does nothing once the Turn's finished close has settled the Hold.
+            await turnHold.close({
+              type: "unfinished",
+              request: runRequest,
+              partial: {
+                usageReported,
+                usage: turnUsage(webSearchesStarted),
+                streamedOutput,
+                text: fullTextResponse,
+              },
+            });
           } finally {
             releaseRequestScope();
           }

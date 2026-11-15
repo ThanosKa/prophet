@@ -6,6 +6,8 @@ import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
+import { checkRateLimit } from '@/lib/ratelimit'
+import { error as errorBody } from '@/types'
 import { EXTRA_CREDITS } from '@/lib/pricing'
 import { getAppUrl } from '@/lib/constants'
 
@@ -15,6 +17,18 @@ export async function POST() {
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const rateLimitResult = await checkRateLimit(userId, 'api')
+    if (!rateLimitResult.success) {
+      return NextResponse.json(errorBody('Too many requests', 'RATE_LIMIT_EXCEEDED'), {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit?.toString() || '',
+          'X-RateLimit-Remaining': rateLimitResult.remaining?.toString() || '',
+          'X-RateLimit-Reset': rateLimitResult.reset?.toString() || '',
+        },
+      })
     }
 
     const user = await db.query.users.findFirst({
@@ -37,7 +51,7 @@ export async function POST() {
       line_items: [{ price: EXTRA_CREDITS.priceId, quantity: 1 }],
       success_url: `${appUrl}/account/billing`,
       cancel_url: `${appUrl}/account/billing`,
-      allow_promotion_codes: true,
+      allow_promotion_codes: false, // No promo codes for one-time credits
       metadata: {
         userId,
         type: 'extra_credits',

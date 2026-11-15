@@ -6,7 +6,7 @@ import { useReviewPromptStore } from '@/store/reviewPromptStore'
 import { runAgentLoop } from '@/lib/agent'
 import { config } from '@/lib/config'
 import { chatAdapter } from '@/lib/agent/chat-adapter'
-import { mockAgentStream } from '@/lib/agent/mock-agent'
+import { createMockAdapters } from '@/lib/agent/mock-agent'
 import { USER_FACING_TEXT, describeThrownError, parseErrorDetails, type ErrorInfo } from '@/lib/user-facing-errors'
 import type { Message, ImageData, AgentStatus, ToolCall } from '@prophet/shared'
 
@@ -153,22 +153,21 @@ export function useAgentChat() {
           createdAt: assistantMessage.createdAt,
         })
 
-        // Use mock agent when VITE_USE_DEV_API=mock for UI/UX testing
+        // Mock mode (VITE_USE_DEV_API=mock) swaps in a fake Turn source and tool runner under the real loop.
         // Use dev endpoint when VITE_USE_DEV_API=true to bypass credits
         // Otherwise use production endpoint
-        const eventStream = config.useMockApi
-          ? mockAgentStream(chatId, content, selectedModel, signal, enableThinking)
-          : runAgentLoop({
-              baseUrl: config.useDevApi
-                ? `${config.apiUrl}/api/agent/chat/dev`
-                : `${config.apiUrl}/api/agent/chat`,
-              chatId,
-              userMessage: content,
-              model: selectedModel,
-              image,
-              signal,
-              enableThinking,
-            })
+        const eventStream = runAgentLoop({
+          baseUrl: config.useDevApi
+            ? `${config.apiUrl}/api/agent/chat/dev`
+            : `${config.apiUrl}/api/agent/chat`,
+          chatId,
+          userMessage: content,
+          model: selectedModel,
+          image,
+          signal,
+          enableThinking,
+          ...(config.useMockApi && createMockAdapters({ userMessage: content, enableThinking })),
+        })
 
         // A run counts as successful when the final turn completes without an error event.
         // These two events are only emitted once the model finishes without requesting more tools.

@@ -129,6 +129,12 @@ back; once another panel has started a newer Run in the chat, the server answers
 └─────────────────────────────────────────┘
 ```
 
+`runAgentLoop` reaches the tools and the server through two optional options:
+`runTool` runs one tool call (default: `executeToolViaBackground`) and `openTurn`
+opens one Turn's event stream (default: the authenticated `fetch` to
+`/api/agent/chat` at `baseUrl`, or the full dev URL). Tests pass fakes for both
+(`agent-loop.seam.test.ts`).
+
 ### 4. Multi-Turn Loop
 
 If Claude requested tools, the loop continues:

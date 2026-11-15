@@ -13,6 +13,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { format, parseISO } from "date-fns"
 import { z } from "zod"
+import { toast } from "sonner"
+import { downloadUsageExport } from "@/lib/billing-requests"
 import { cn } from "@/lib/utils"
 import type { DateRange } from "react-day-picker"
 import { dailyUsagePageSchema, type DailyUsagePage } from "@prophet/shared"
@@ -85,7 +87,19 @@ export default function UsagePage() {
     const params = new URLSearchParams()
     if (dateRange?.from) params.append("from", dateRange.from.toISOString())
     if (dateRange?.to) params.append("to", dateRange.to.toISOString())
-    window.location.href = `/api/usage/export?${params.toString()}`
+    void downloadUsageExport({
+      request: () => fetch(`/api/usage/export?${params.toString()}`),
+      save: file => {
+        const url = URL.createObjectURL(file)
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `usage-export-${new Date().toISOString().split("T")[0]}.csv`
+        link.click()
+        URL.revokeObjectURL(url)
+      },
+      notifyError: () =>
+        toast.error("Could not export usage", { description: "Please try again later." }),
+    })
   }
 
   const handleReset = () => {
