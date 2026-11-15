@@ -19,14 +19,14 @@ export const toolExecutors: Record<string, ToolExecutor<unknown>> = {
 
   // Navigation
   navigate: navigate as ToolExecutor<unknown>,
-  go_back: goBack,
-  go_forward: goForward,
-  reload_page: reloadPage,
+  go_back: goBack as ToolExecutor<unknown>,
+  go_forward: goForward as ToolExecutor<unknown>,
+  reload_page: reloadPage as ToolExecutor<unknown>,
 
   // Page
   scroll_page: scrollPage as ToolExecutor<unknown>,
-  get_page_content: getPageContent,
-  get_page_info: getPageInfo,
+  get_page_content: getPageContent as ToolExecutor<unknown>,
+  get_page_info: getPageInfo as ToolExecutor<unknown>,
 
   // Wait
   wait_for_selector: waitForSelector as ToolExecutor<unknown>,
