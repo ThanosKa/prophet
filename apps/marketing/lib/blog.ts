@@ -13,136 +13,77 @@ export interface BlogPost {
 
 const chatgptVsClaudeExtension: BlogPost = {
   slug: 'chatgpt-vs-claude-chrome-extension',
-  title: 'ChatGPT vs Claude Chrome Extensions: We Tested Both (2026)',
-  description: 'Side by side on speed, price and privacy. Claude extensions read pages 2-4x faster; ChatGPT\'s official one cannot read your page at all.',
+  title: 'Does ChatGPT Have a Chrome Extension Like Claude? (2026)',
+  description: 'Yes. OpenAI\'s ChatGPT extension now reads your tabs and acts in them, like Claude in Chrome. How the two official extensions and Prophet compare on plans, browsers and data.',
   date: '2026-03-05',
-  lastModified: '2026-10-31',
-  readingTime: '12 min read',
+  lastModified: '2026-11-16',
+  readingTime: '7 min read',
   category: 'Comparisons',
-  keywords: ['chatgpt vs claude chrome extension', 'chatgpt chrome extension', 'claude chrome extension', 'chatgpt vs claude', 'ai browser extension comparison'],
+  keywords: ['does chatgpt have a chrome extension like claude', 'chatgpt vs claude chrome extension', 'chatgpt chrome extension', 'claude chrome extension', 'claude in chrome vs chatgpt'],
   faq: [
     {
-      question: 'Is ChatGPT better than Claude for Chrome extensions?',
-      answer: 'Each wins different tasks. Claude leads on long-document reasoning and code generation with fewer hallucinations; ChatGPT leads on multilingual support and creative-writing variety. For browser automation specifically, Claude-based extensions like Prophet are 2-4× faster than ChatGPT screenshot agents because they read the accessibility tree instead of processing image pixels.',
+      question: 'Does ChatGPT have a Chrome extension like Claude?',
+      answer: 'Yes. OpenAI\'s official "ChatGPT" extension in the Chrome Web Store (offered by OpenAI, updated November 3, 2026) can pull in context from your tabs, summarize and answer questions about any tab, and take action in your tabs. That puts it in the same category as Anthropic\'s Claude in Chrome, which reads, clicks and navigates websites alongside you. OpenAI\'s older "ChatGPT search" extension mainly makes ChatGPT search your default search engine.',
     },
     {
-      question: 'What is the best Claude Chrome extension in 2026?',
-      answer: 'Anthropic\'s official Claude in Chrome reads pages, clicks, types and fills forms, but it is only available on paid Claude plans (Pro and up), not on the Free plan, and it perceives pages through screenshots. Prophet reads the accessibility tree instead, offers all three Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5) with 19 browser tools, and bills pay-per-use ($0.07 free credits to try Haiku, no card). Pick Claude in Chrome if you already pay for Claude, Prophet if you want to pay per use.',
+      question: 'Which plans can use the ChatGPT and Claude Chrome extensions?',
+      answer: 'Claude in Chrome is available on paid Claude plans only (Pro, Max, Ultra, Team and Enterprise), per Anthropic\'s help center. The ChatGPT extension\'s Chrome Web Store listing does not say which ChatGPT plans can use it (checked November 16, 2026), so check your plan in ChatGPT. Prophet needs no Claude or ChatGPT subscription: it starts with $0.07 in free credits and paid plans start at $9.99/month for $10 in credits.',
     },
     {
-      question: 'Do ChatGPT extensions read the current page?',
-      answer: 'OpenAI\'s official ChatGPT extension does not. It opens a popup that links to chat.openai.com. Third-party ChatGPT wrappers like Sider and Monica extract page text from the DOM, and screenshot-based agents send a captured image to GPT-4o vision. Both methods exist; neither matches the speed of accessibility-tree extraction used by Claude-first extensions.',
+      question: 'Do the ChatGPT and Claude extensions work outside Chrome?',
+      answer: 'Anthropic says Claude in Chrome works in Google Chrome only, not in other Chromium browsers or on mobile. The ChatGPT extension is distributed through the Chrome Web Store; press coverage of OpenAI\'s October 2026 update says it also runs in Edge, Brave and Opera, but OpenAI\'s listing does not state this.',
     },
     {
-      question: 'How much do Claude and ChatGPT Chrome extensions cost?',
-      answer: 'ChatGPT Plus is $20/month, plus $10-20/month for third-party extensions. Claude Pro is also $20/month. Prophet replaces both with pay-per-use credits: $0.07 free to try Haiku, then $9.99/month for $10 in credits (Pro), scaling to $59.99/month ($60 in credits, Ultra). At 20-30 messages/day on Sonnet, that\'s roughly $12-18 in credits monthly.',
+      question: 'How is Prophet different from Claude in Chrome and the ChatGPT extension?',
+      answer: 'Prophet runs Claude (Haiku 5.5, Sonnet 5.5 or Opus 5.5, your choice per chat) in Chrome\'s side panel and reads the page as an accessibility tree, with an ID for every element, instead of working from pixels. It has 19 browser tools for clicking, typing, navigating, scrolling, waiting and managing tabs, and it bills per use in credits rather than through a monthly AI subscription. Its code is public on GitHub.',
     },
     {
-      question: 'Are Claude extensions more private than ChatGPT ones?',
-      answer: 'Anthropic does not train on API inputs; OpenAI may retain API inputs for 30 days and does train on claude.ai-equivalent web-app conversations unless you opt out. Third-party extensions add another data hop through the extension developer\'s servers. Prophet is open source (github.com/ThanosKa/prophet), so its proxy behavior is independently verifiable.',
+      question: 'What happens to page content when an AI extension reads it?',
+      answer: 'All three send what they read to their AI model in the cloud. Prophet sends page text to Claude through its own API over HTTPS and does not store page content in its database; it does store your chat messages so your history is there next time. For Claude in Chrome and the ChatGPT extension, the provider\'s own privacy policy applies (Anthropic\'s or OpenAI\'s). Whichever you use, read the permissions the extension asks for before installing.',
     },
   ],
   content: `
-<p>The two dominant AI models of 2026 &mdash; OpenAI's GPT-4o and Anthropic's Claude 5 &mdash; both have Chrome extension ecosystems, but they take fundamentally different approaches. ChatGPT's browser presence is fragmented across first-party and third-party tools, while Claude's extension landscape includes both Anthropic's official extension and specialized tools like Prophet that offer deeper browser integration.</p>
-<p>This comparison examines both ecosystems across the dimensions that matter most for daily productivity: model quality for different tasks, browser integration depth, pricing structures, privacy practices, and the overall user experience of working with AI in your browser.</p>
+<p><strong>Yes: ChatGPT now has a Chrome extension like Claude's.</strong> OpenAI's official <a href="https://chromewebstore.google.com/detail/chatgpt/hehggadaopoacecdllhhajmbjkdcmajg" rel="nofollow noopener" target="_blank">ChatGPT extension</a> (offered by OpenAI, last updated November 3, 2026) "can pull in context and take action in your tabs," which is the same job Anthropic's <a href="https://support.claude.com/en/articles/12012173" rel="nofollow noopener" target="_blank">Claude in Chrome</a> does: it reads, clicks and navigates websites alongside you. The real differences are which plan you need, which browsers work, and how you pay.</p>
+<p>If you read an older version of this page: it said ChatGPT's official extension could not read the page. That was true of OpenAI's earlier "ChatGPT search" extension, which mainly makes ChatGPT search your default search engine. It is no longer true of the ChatGPT extension.</p>
 
-<h2>Model Quality: Where Each Excels</h2>
-<p>GPT-4o and Claude Sonnet 5.5 are closer in capability than ever, but meaningful differences remain depending on the task type.</p>
+<h2>The three options at a glance</h2>
+<table>
+<thead><tr><th></th><th>ChatGPT extension (OpenAI)</th><th>Claude in Chrome (Anthropic)</th><th>Prophet</th></tr></thead>
+<tbody>
+<tr><td>Reads the current page and tabs</td><td>Yes: summarizes and answers questions about any tab</td><td>Yes: reads text on web pages</td><td>Yes: reads the page as an accessibility tree</td></tr>
+<tr><td>Acts on the page</td><td>Yes: takes action in your tabs, asks permission before using browser history or uploading/downloading files</td><td>Yes: clicks, types, fills forms, opens and switches tabs</td><td>Yes: 19 browser tools (click, type, hover, navigate, scroll, wait, open/switch/close tabs)</td></tr>
+<tr><td>Recurring tasks</td><td>Not stated on the listing</td><td>Yes: scheduled browser tasks</td><td>No: you start each Run</td></tr>
+<tr><td>Models</td><td>OpenAI's ChatGPT models</td><td>Claude</td><td>Claude Haiku 5.5, Sonnet 5.5, Opus 5.5 (you pick)</td></tr>
+<tr><td>Plan needed</td><td>Not stated on the listing</td><td>Paid Claude plan: Pro, Max, Ultra, Team or Enterprise</td><td>None to try ($0.07 free credits); plans from $9.99/month for $10 in credits</td></tr>
+<tr><td>Browsers</td><td>Chrome Web Store extension</td><td>Google Chrome only</td><td>Chrome</td></tr>
+</tbody>
+</table>
+<p>Sources: the ChatGPT listing in the Chrome Web Store and Anthropic's Claude in Chrome help article, both read November 16, 2026; Prophet's facts come from its <a href="/pricing">pricing page</a> and its public code.</p>
 
-<h3>Reasoning and Analysis</h3>
-<p>Claude Sonnet 5.5 and Opus 5.5 consistently outperform GPT-4o on tasks requiring careful reasoning over long documents. In our testing, Claude produced fewer hallucinations when analyzing financial reports, legal documents, and technical specifications. Claude Opus 5.5, in particular, excels at tasks where the answer requires synthesizing information from multiple sections of a long document.</p>
-<p>GPT-4o performs comparably on shorter reasoning tasks and is slightly faster at producing initial responses. For quick analysis of a paragraph or a short article, the difference is negligible.</p>
+<h2>What the ChatGPT extension does</h2>
+<p>OpenAI's listing describes the extension as "the full power of ChatGPT right where you work." It can research across live and signed-in websites, summarize and answer questions about any tab, and do work in the browser "in the background, without ever taking over your active browsing session." OpenAI says ChatGPT "will always ask for your permission when referencing your browser history and downloading/uploading files." The listing shows about 9,000,000 users.</p>
+<p>The listing does not say which ChatGPT plans can use these features, so check inside ChatGPT before you count on them. Third-party ChatGPT sidebars such as Sider and Monica are a separate category: they read pages and offer several models, but they are not made by OpenAI. Our <a href="/compare/prophet-vs-chatgpt-sidebar">Prophet vs ChatGPT sidebar</a> comparison covers that category.</p>
 
-<h3>Code Generation</h3>
-<p>Both models handle code generation well, but they have different strengths. Claude tends to produce more complete, production-ready code with better error handling and edge case coverage. GPT-4o is often faster at generating boilerplate and is slightly better at working with less common programming languages and frameworks.</p>
-<p>For debugging existing code pasted from a web page, Claude's tendency toward careful analysis before responding leads to more accurate diagnosis. GPT-4o sometimes jumps to a fix without fully understanding the context.</p>
+<h2>What Claude in Chrome does</h2>
+<p>Anthropic's help center says Claude in Chrome "allows Claude to read, click, and navigate websites alongside you." It can fill out forms, open, close and switch tabs, and run recurring browser tasks on a schedule. Its permissions include taking screenshots. It is available on paid plans only (Pro, Max, Ultra, Team and Enterprise) and works in Google Chrome only, not in other Chromium browsers or on mobile. The <a href="/compare/prophet-vs-claude-in-chrome">Prophet vs Claude in Chrome comparison</a> goes through the differences in detail, and the <a href="/best-claude-chrome-extensions">best Claude Chrome extensions</a> list covers the rest of the Claude options.</p>
 
-<h3>Creative Writing</h3>
-<p>This is largely a matter of preference. GPT-4o tends toward more varied, sometimes flowery prose. Claude writes in a more measured, precise style. For marketing copy, both perform well. For long-form content, Claude's consistency across thousands of words gives it an edge. For casual, conversational content, GPT-4o often sounds more natural.</p>
+<h2>Where Prophet fits</h2>
+<p>Prophet is a third option for people who want Claude in the browser without a Claude subscription. It runs in Chrome's side panel and reads the page as an accessibility tree, the structured view screen readers use, where every button, link and field gets an ID. Claude then acts by ID through Prophet's 19 browser tools rather than by guessing at pixels. The <a href="/blog/accessibility-tree-vs-screenshots-browser-ai">accessibility tree vs screenshots</a> article explains the trade-off, and <a href="/blog/ai-agent-browser-tools-explained">browser agent tools explained</a> lists every tool.</p>
+<p>You choose the model per chat: Haiku 5.5 for quick, cheap tasks, Sonnet 5.5 for most work, Opus 5.5 for the hardest ones (see <a href="/blog/claude-haiku-vs-sonnet-vs-opus">Haiku vs Sonnet vs Opus</a>). A Run stops after 20 Turns and asks you to continue, so a task cannot loop on its own. Prophet cannot see images, solve CAPTCHAs or get past paywalls.</p>
 
-<h3>Multilingual Tasks</h3>
-<p>GPT-4o has a slight edge in multilingual support, particularly for lower-resource languages. Claude handles major world languages well but occasionally struggles with less common language pairs in translation tasks.</p>
+<h2>Pricing</h2>
+<p>Claude in Chrome has no price of its own, but it needs a paid Claude plan; Claude Pro is $20/month billed monthly (<a href="https://claude.com/pricing" rel="nofollow noopener" target="_blank">claude.com/pricing</a>). The ChatGPT extension's listing names no price or plan. Prophet bills per use: you get $0.07 in free credits to try Haiku, then Pro is $9.99/month for $10 in credits, Premium $29.99/month for $30, Ultra $59.99/month for $60, and extra credits are $10 and never expire. Each Turn is charged by the tokens it uses. <a href="/blog/chatgpt-plus-vs-claude-pro-vs-prophet-pricing">ChatGPT Plus vs Claude Pro vs Prophet pricing</a> works through the numbers, and <a href="/blog/pay-per-use-ai-vs-subscription">pay-per-use vs subscription</a> covers when each model is cheaper.</p>
 
-<h2>Browser Integration and Automation</h2>
-<p>This is where the two ecosystems diverge most significantly.</p>
+<h2>Privacy</h2>
+<p>All three send what they read on the page to an AI model in the cloud; none of them runs the model on your computer. Prophet sends page text to Claude through its own API over HTTPS and does not store page content in its database. It does store your chat messages, so your history is there next time you open the side panel. Anthropic says it does not train on inputs to its commercial products, including the API, by default (<a href="https://privacy.claude.com/en/articles/7996868-is-my-data-used-for-model-training" rel="nofollow noopener" target="_blank">Anthropic privacy center</a>). For the official extensions, the provider's privacy policy applies. <a href="/blog/client-side-vs-server-side-ai-privacy">Client-side vs server-side AI privacy</a> goes through what Prophet sends, step by step.</p>
 
-<h3>ChatGPT Extensions</h3>
-<p>OpenAI's official ChatGPT extension is primarily a shortcut to the ChatGPT web interface. It opens in a popup and does not read the current page content. Third-party ChatGPT wrappers like Sider and Monica offer page reading capabilities by extracting text from the DOM and sending it to the API.</p>
-<p>For browser automation, ChatGPT-based extensions generally rely on screenshot-based approaches: the extension captures a screenshot of the page, sends it to GPT-4o's vision capabilities, and the model identifies elements to interact with. This works but is slow (each screenshot analysis takes 2-4 seconds), expensive (vision API calls cost more than text), and fragile (UI changes or overlays can confuse the model).</p>
-
-<h3>Claude Extensions</h3>
-<p>Anthropic's official extension, Claude in Chrome, is a real browser agent: it reads the text on the page and can click buttons, type, navigate and fill forms from the side panel. It is included with paid Claude plans (Pro and above) and is not available on the Free plan (<a href="https://support.claude.com/en/articles/12012173" rel="nofollow noopener" target="_blank">Anthropic help center</a>, as of October 2026). It perceives the page through screenshots, as the <a href="/compare/prophet-vs-claude-in-chrome">Prophet vs Claude in Chrome comparison</a> explains in detail. Prophet takes a different approach to the same job.</p>
-<p>Prophet uses the accessibility tree &mdash; the structured representation of the page that screen readers use &mdash; instead of screenshots. This approach is faster because it avoids image processing overhead, more reliable because element identification is deterministic, and cheaper because it sends text rather than images to the API. The accessibility tree also captures interactive elements, form states, and ARIA labels that screenshots miss.</p>
-<p>Prophet's 19 built-in browser tools cover clicking, typing, scrolling, extracting data, navigating, and more. These tools operate programmatically through Chrome's extension APIs rather than simulating mouse movements, which makes them faster and more reliable.</p>
-
-<h2>Pricing Comparison</h2>
-<p>Pricing structures differ enough between the ecosystems that direct comparison requires understanding each model.</p>
-
-<h3>ChatGPT Ecosystem</h3>
-<p>ChatGPT Plus costs $20/month for access to GPT-4o with higher rate limits. The official extension is free but requires this subscription for reliable access. Third-party ChatGPT extensions typically charge $10-20/month on top of, or instead of, the ChatGPT Plus subscription.</p>
-<p>The total cost for a ChatGPT-based browser AI setup ranges from $10/month (third-party only, with query limits) to $40/month (ChatGPT Plus plus a premium third-party extension).</p>
-
-<h3>Claude Ecosystem</h3>
-<p>Claude Pro costs $20/month for access to claude.ai with higher limits. Anthropic's Claude in Chrome has no separate price, but it needs a paid Claude plan; the Free plan cannot use it. Third-party Claude extensions vary: Prophet starts with a free tier ($0.07 in credits) and scales from $9.99/month (Pro, $10 in credits) to $59.99/month (Ultra, $60 in credits).</p>
-<p>Prophet's pay-per-use model means you only pay for tokens consumed. A typical user sending 50 messages per day with Claude Haiku 5.5 spends roughly $3-5/month. The same usage with Sonnet 5.5 costs $8-15/month. With Opus 5.5, expect $15-30/month. This granularity lets you match costs to your actual usage rather than paying a flat rate that may be too high or too low.</p>
-
-<h3>Cost Efficiency</h3>
-<p>For light users (under 20 messages per day), Prophet's free or Pro tier is more economical than either ChatGPT Plus or Claude Pro. For heavy users who need the most capable model available, Claude Pro or ChatGPT Plus may offer better value since they provide unlimited (rate-limited) access to the top model.</p>
-<p>The key difference is predictability versus flexibility. Subscription models give you predictable costs but may waste money during low-usage periods. Pay-per-use models like Prophet's match costs to usage but can surprise you during heavy-use periods.</p>
-
-<h2>Privacy and Data Handling</h2>
-<p>Privacy practices matter more for browser extensions than for standalone AI tools because extensions can access the content of every page you visit.</p>
-
-<h3>ChatGPT Extensions</h3>
-<p>OpenAI's data retention policy states that API inputs may be retained for 30 days for abuse monitoring but are not used for training. However, conversations through the ChatGPT web interface (which the official extension uses) are retained and may be used for training unless you opt out. Third-party ChatGPT extensions add another layer: the extension developer's servers often see your data before it reaches OpenAI.</p>
-
-<h3>Claude Extensions</h3>
-<p>Anthropic does not use API inputs for model training. Claude conversations are processed but not stored beyond the session unless you explicitly save them. Prophet's architecture routes requests through its own backend API to Anthropic, meaning Prophet processes but does not persistently store page content. The open-source nature of Prophet's codebase means you can verify these claims yourself.</p>
-
-<h3>Permissions</h3>
-<p>Both ecosystems' extensions request similar Chrome permissions: access to the active tab, storage for settings, and network access for API calls. Extensions with browser automation capabilities (like Prophet and Harpa) request additional permissions to interact with page elements. Always review the permissions an extension requests before installing it.</p>
-
-<h2>User Experience</h2>
-
-<h3>Interface Design</h3>
-<p>ChatGPT-based extensions generally use popup windows or injected panels, which can feel disconnected from the browsing experience. The popup disappears when you click elsewhere, losing your context. Some third-party tools (like Sider) solve this with a persistent sidebar.</p>
-<p>Claude-based extensions like Prophet use Chrome's native side panel API, which provides a persistent, resizable panel that stays open as you navigate between pages. This is a significant UX advantage for workflows that require switching between the AI and the web page repeatedly.</p>
-
-<h3>Streaming and Latency</h3>
-<p>Both GPT-4o and Claude 5 support streaming responses. In practice, Claude Haiku 5.5 starts streaming slightly faster than GPT-4o mini, while GPT-4o and Claude Sonnet 5.5 are comparable in time-to-first-token. Claude Opus 5.5 is the slowest to start but produces the most thorough responses.</p>
-
-<h3>Chat History</h3>
-<p>ChatGPT's official extension shares history with claude.ai. Third-party extensions manage their own history, which may or may not sync with the web interface. Prophet stores chat history server-side per user, with persistent access across devices and sessions.</p>
-
-<h2>Best Browser for Claude AI (and why Chrome wins right now)</h2>
-<p>Claude itself is browser-agnostic on claude.ai, but the extension ecosystem is overwhelmingly Chrome-first. Chrome's Manifest V3, the native Side Panel API, and the accessibility-tree APIs that Prophet and similar agents depend on are most mature on Chrome (and Chromium derivatives: Edge, Brave, Arc, Opera). Firefox has WebExtensions but no Side Panel API equivalent, so most Claude-first extensions fall back to popup windows there. Safari blocks most third-party extensions from accessing page content the way Claude-powered tools require. For the full ranked list of options, see our <a href="/best-claude-chrome-extensions">best Claude Chrome extensions</a> guide.</p>
-
-<h2>When to Choose ChatGPT Extensions</h2>
+<h2>Which one to pick</h2>
 <ul>
-<li>You need multilingual support for uncommon languages</li>
-<li>You already pay for ChatGPT Plus and want to maximize that investment</li>
-<li>You prefer GPT-4o's writing style for creative content</li>
-<li>You need image generation integrated with your chat workflow (via DALL-E)</li>
-<li>You work with tools that have GPT-specific integrations</li>
+<li><strong>You already pay for ChatGPT:</strong> install OpenAI's ChatGPT extension and check that your plan unlocks the tab actions.</li>
+<li><strong>You already pay for Claude and use Google Chrome:</strong> Claude in Chrome comes with your plan, including scheduled tasks.</li>
+<li><strong>You want Claude without a monthly AI subscription, or want to choose between Haiku, Sonnet and Opus per task:</strong> try <a href="/">Prophet</a> with the free $0.07 credit and pay per use from there.</li>
 </ul>
-
-<h2>When to Choose Claude Extensions</h2>
-<ul>
-<li>You regularly work with long documents that require careful analysis</li>
-<li>You need reliable browser automation for repetitive web tasks</li>
-<li>You want transparent, pay-per-use pricing that scales with actual usage</li>
-<li>Code quality and production-readiness matter more than generation speed</li>
-<li>Privacy is a priority and you want to verify claims through open-source code</li>
-<li>You prefer a persistent side panel over popup-style interactions</li>
-</ul>
-
-<h2>The Hybrid Approach</h2>
-<p>Many power users run both ecosystems. A common setup is Claude (via Prophet) for daily browser automation, document analysis, and code review, combined with ChatGPT Plus for image generation, creative brainstorming, and multilingual tasks. The total cost of Prophet Pro ($9.99/month) plus ChatGPT Plus ($20/month) is $29.99/month, which gives you best-in-class access to both model families with different strengths.</p>
-<p>Ultimately, the "right" extension depends on your specific workflow. Both ecosystems are capable and improving rapidly. Try the free tiers, test them on your actual tasks, and let the results guide your decision rather than brand loyalty.</p>
-
-<h2>Narrow it down further</h2>
-<p>If this comparison pushed you toward Claude, the ranked list of <a href="/best-claude-chrome-extensions">Chrome extensions for Claude AI</a> covers the five production-quality options and which models each exposes. If you want the GPT side of the argument in isolation, <a href="/compare/prophet-vs-chatgpt-sidebar">Prophet vs ChatGPT Sidebar</a> separates the model question from the architecture question, which are usually tangled together.</p>
-<p>On cost, <a href="/blog/chatgpt-plus-vs-claude-pro-vs-prophet-pricing">ChatGPT Plus vs Claude Pro vs Prophet pricing</a> puts all three side by side at identical usage levels, and if you would rather not pay either subscription, <a href="/free-claude-ai">free Claude AI: every free tier and limit</a> lays out what $0 actually buys. The technical reason Claude extensions automate faster is covered in <a href="/blog/accessibility-tree-vs-screenshots-browser-ai">accessibility tree vs screenshots</a>, and current Prophet credit tiers are on the <a href="/pricing">pricing page</a>.</p>
+<p>For a wider list that includes non-Claude tools, see the <a href="/best-ai-chrome-extensions">best AI Chrome extensions</a>.</p>
 `
 }
 
