@@ -14,7 +14,7 @@ export interface BlogPost {
 const chatgptVsClaudeExtension: BlogPost = {
   slug: 'chatgpt-vs-claude-chrome-extension',
   title: 'Does ChatGPT Have a Chrome Extension Like Claude? (2026)',
-  description: 'Yes. OpenAI\'s ChatGPT extension now reads your tabs and acts in them, like Claude in Chrome. How the two official extensions and Prophet compare on plans, browsers and data.',
+  description: 'Yes. OpenAI\'s ChatGPT extension now reads and acts in your tabs, like Claude in Chrome. Plans, browsers and pricing compared, plus a pay-per-use option.',
   date: '2026-03-05',
   lastModified: '2026-11-16',
   readingTime: '7 min read',
