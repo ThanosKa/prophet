@@ -284,57 +284,57 @@ export const comparisons: ComparisonEntry[] = [
   },
   {
     slug: 'prophet-vs-chatgpt-sidebar',
-    competitor: 'ChatGPT Sidebar',
-    h1: 'Prophet vs ChatGPT Sidebar: Browser AI Extensions Face Off',
-    title: 'Prophet vs ChatGPT Sidebar: Which Reads Your Page?',
-    description: 'ChatGPT sidebars read page text; Prophet reads the accessibility tree and acts on it. Speed, cost and privacy compared side by side.',
+    competitor: 'ChatGPT Extension',
+    h1: 'Prophet vs ChatGPT in Chrome: the Official Extension and Sidebars',
+    title: 'Prophet vs ChatGPT Sidebar and Chrome Extension',
+    description: 'OpenAI\'s ChatGPT extension now reads and acts in your tabs. How it compares with Prophet on plans, models, browsers and pay-per-use pricing.',
     keyword: 'prophet vs chatgpt sidebar',
     featureMatrix: [
-      { feature: 'Page Understanding', prophet: 'Accessibility tree snapshots', competitor: 'Page text extraction' },
-      { feature: 'Speed', prophet: 'Fast - structured data parsing', competitor: 'Moderate - depends on OpenAI API latency' },
-      { feature: 'Pricing Model', prophet: 'Pay-per-use credits', competitor: 'Free tier + ChatGPT Plus subscription' },
-      { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: 'Free with limits, Plus $20/month' },
-      { feature: 'Browser Automation', prophet: '19 tools via Chrome DevTools Protocol', competitor: 'Text summarization and Q&A; no element interaction' },
-      { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'GPT-4o, GPT-4, GPT-3.5' },
-      { feature: 'Data Privacy', prophet: 'Page content sent only to Anthropic\'s Claude; not stored in our database', competitor: 'Page content sent to OpenAI servers' },
-      { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
+      { feature: 'Reads the page', prophet: 'Yes - accessibility tree snapshots (text, no screenshots)', competitor: 'Yes - summarizes and answers questions about any tab' },
+      { feature: 'Acts on the page', prophet: 'Yes - 19 tools via Chrome DevTools Protocol', competitor: 'Yes - takes action in your tabs, including data entry' },
+      { feature: 'Pricing Model', prophet: 'Pay-per-use credits (no subscription required)', competitor: 'Part of ChatGPT, whose plans are Free, Go, Plus and Pro' },
+      { feature: 'Plan needed', prophet: 'None to try ($0.07 credits included); plans from $9.99/month for $10 in credits', competitor: 'Not stated on the extension listing' },
+      { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5 (you pick)', competitor: 'OpenAI GPT models; which ones depends on your ChatGPT plan' },
+      { feature: 'Browsers', prophet: 'Chrome', competitor: 'Chrome, plus Edge, Brave and Opera per the listing' },
+      { feature: 'Data Privacy', prophet: 'Page content sent only to Anthropic\'s Claude; not stored in our database', competitor: 'Page content sent to OpenAI; asks permission before using browser history or moving files' },
+      { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'Not stated on the listing' },
     ],
     prophetAdvantages: [
-      'Powered by Claude which excels at nuanced reasoning, long documents, and following complex instructions',
-      'Genuine browser automation with 19 tools versus text-only sidebar functionality',
-      'Pay-per-use pricing is cheaper for moderate users compared to $20/month ChatGPT Plus',
-      'Open source with transparent data handling and community-driven development',
+      'No ChatGPT or Claude subscription needed: pay-per-use credits, starting with $0.07 free and $10 top-ups that never expire',
+      'You pick the Claude model for each task: Haiku 5.5 for quick jobs, Sonnet 5.5 or Opus 5.5 for harder ones',
+      'Open source: the 19 browser tools and how page content is handled can be read in the public code',
     ],
     competitorAdvantages: [
-      'Leverages the large ChatGPT ecosystem with broad plugin and integration support',
-      'GPT-4o offers fast multimodal capabilities including image understanding in chat',
+      'Brings your full ChatGPT conversation history and installed plugins into the browser, per OpenAI\'s listing',
+      'Runs in Edge, Brave and Opera as well as Chrome',
+      'Works in the background without taking over your active browsing session, and lets ChatGPT desktop and web use your browser',
     ],
     verdict:
-      'This comparison is really two arguments stacked on top of each other, and it helps to separate them. The first is Claude against GPT, which is a genuine toss-up that depends on your work: GPT-4o is faster to first token, better at multilingual output and stronger on image understanding; Claude 5 is more reliable on long-document reasoning, produces more complete code with better edge-case handling, and follows multi-part instructions with fewer omissions. Neither is universally better. The second argument is architectural, and it is not close: "ChatGPT Sidebar" is a category of third-party wrappers that extract page text and pass it to the OpenAI API, and none of them can act on the page. Prophet reads the accessibility tree and drives 19 tools through the DevTools Protocol. So if you prefer GPT and only want chat, a ChatGPT sidebar is a perfectly reasonable choice. If you want the AI to operate the page, model preference becomes irrelevant, because only one of the two options can do it at all.',
+      'Until recently, "ChatGPT sidebar" meant third-party wrappers such as Sider or Monica, which read the page and chat about it. That changed: OpenAI\'s own ChatGPT extension in the Chrome Web Store (updated November 17, 2026, read November 18, 2026) can "pull in context and take action in your tabs", research across signed-in websites and do data entry. So both Prophet and ChatGPT now read pages and act on them, and the choice comes down to three things. The model: ChatGPT runs OpenAI\'s GPT models, Prophet runs Claude Haiku, Sonnet and Opus 5.5. The bill: the ChatGPT extension comes with ChatGPT, whose plans are Free, Go, Plus and Pro, while Prophet bills pay-per-use credits and needs no subscription. The browser: OpenAI\'s listing names Edge, Brave and Opera as well as Chrome. If you already pay for ChatGPT and like its answers, its extension is the natural pick. If you prefer Claude, or do not want another subscription, Prophet is.',
     pricingReality: {
-      heading: 'Two subscriptions, or none',
+      heading: 'A ChatGPT plan, or pay per use',
       body:
-        'The hidden cost of ChatGPT sidebars is that there are usually two bills. Most wrappers run a limited free tier and then charge $8-15/month for their own subscription, and the ones that use your ChatGPT account rather than their own API key need ChatGPT Plus at $20/month to be usable. It is common to end up paying both — roughly $30/month for GPT in a sidebar. Prophet requires no OpenAI or Anthropic subscription at all: it bills pay-per-use credits for the tokens you use, starting from $0.07 free with no card. For a user sending 20-30 messages a day, that is a difference between roughly $12-18/month and $20-30/month, and the gap widens sharply below that volume. The counterpoint is real though: if you already pay for ChatGPT Plus for other reasons and would not cancel it, the marginal cost of adding a free-tier sidebar to it is close to zero.',
+        'OpenAI\'s extension listing does not name a price or a plan. ChatGPT\'s plans are Free, Go, Plus and Pro, each with different models and limits (chatgpt.com/pricing, read November 18, 2026). Third-party ChatGPT sidebars usually add a subscription of their own on top. Prophet requires no OpenAI or Anthropic subscription at all: it charges credits for the tokens you actually use, one credit per cent, starting with $0.07 free. Plans start at $9.99/month for $10 in credits, and a $10 top-up can be bought at any time and never expires. If you already pay for ChatGPT for other reasons, its extension adds no cost; if you would only pay for ChatGPT to get browser help, compare that plan with what you would actually spend in Prophet credits.',
     },
     switchingNotes:
-      'Nothing transfers — ChatGPT sidebar wrappers store conversations either in their own accounts or in your ChatGPT history, and neither exports into Prophet. The adjustment that catches people is prompt length. GPT tolerates and often rewards terse prompts; Claude rewards specificity, particularly when browser tools are involved, because a vague instruction gives the tool-selection step less to work with. Users moving from a ChatGPT sidebar typically write prompts that are too short for the first few days and conclude the automation is unreliable, when the fix is simply naming the target element or the desired end state.',
+      'Nothing transfers: the ChatGPT extension keeps your conversations in your ChatGPT history, and third-party sidebars keep them in their own accounts; neither exports into Prophet. The adjustment is in how you ask. Prophet works best when you name the target element or the end state you want ("open the second result and copy its price into the form"), because that tells Claude which of its browser tools to use. Short, vague instructions give it less to work with.',
     chooseCompetitorIf:
-      'You specifically prefer GPT-4o\'s output style, you need strong multilingual work or in-chat image understanding, you are already invested in the ChatGPT ecosystem and its plugins, or you only ever want chat and never automation. GPT-4o is genuinely faster to first token than Claude, and if perceived responsiveness matters more to you than reasoning depth, that is a legitimate reason to choose it.',
+      'You already pay for ChatGPT and want its history, plugins and models in your browser, you prefer GPT\'s answers to Claude\'s, or you browse in Edge, Brave or Opera. OpenAI\'s extension also works in the background without taking over your active tab, which suits long tasks you want to leave running.',
     faq: [
       {
-        question: 'Is Claude better than ChatGPT for browser extensions?',
+        question: 'Does ChatGPT have an official Chrome extension that can act on pages?',
         answer:
-          'For automation, the relevant difference is not the model but the architecture — Claude-based extensions like Prophet read the accessibility tree and can act on pages, while ChatGPT sidebars extract text and cannot. For pure chat quality, Claude leads on long-document reasoning and code completeness, GPT-4o on speed and multilingual output.',
+          'Yes. OpenAI\'s "ChatGPT" extension in the Chrome Web Store (updated November 17, 2026) can pull in context and take action in your tabs, summarize and answer questions about any tab, and do data entry. It asks permission before using your browser history or uploading and downloading files. Older third-party ChatGPT sidebars mostly read the page and chat about it.',
       },
       {
-        question: 'Do I need ChatGPT Plus to use a ChatGPT sidebar?',
+        question: 'Do I need ChatGPT Plus to use the ChatGPT extension?',
         answer:
-          'It depends on the wrapper. Some bill you directly for their own API access at $8-15/month; others piggyback on your ChatGPT account and need Plus at $20/month for consistent access. Many users end up paying both. Prophet needs no subscription of either kind.',
+          'OpenAI\'s listing does not say which plan you need, so check your plan in ChatGPT. Prophet needs no ChatGPT or Claude subscription: it starts with $0.07 in free credits and bills pay-per-use credits after that.',
       },
       {
-        question: 'Can ChatGPT sidebar extensions fill forms?',
+        question: 'Can the ChatGPT extension fill forms?',
         answer:
-          'No. They extract page text and return responses. Filling a form requires the Chrome DevTools Protocol permissions and element targeting that these wrappers do not implement. Prophet does this with 19 dedicated tools.',
+          'OpenAI lists "data entry into any record system (e.g., timesheets, inventory, CMS)" among the things it can do. Prophet fills forms with its click, fill and hover tools, which target page elements by their place in the accessibility tree, using Claude instead of GPT.',
       },
     ],
   },
