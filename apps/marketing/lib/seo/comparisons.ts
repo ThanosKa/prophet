@@ -286,7 +286,7 @@ export const comparisons: ComparisonEntry[] = [
     slug: 'prophet-vs-chatgpt-sidebar',
     competitor: 'ChatGPT Extension',
     h1: 'Prophet vs ChatGPT in Chrome: the Official Extension and Sidebars',
-    title: 'Prophet vs ChatGPT Sidebar and Chrome Extension (2026)',
+    title: 'Prophet vs ChatGPT Sidebar and Chrome Extension',
     description: 'OpenAI\'s ChatGPT extension now reads and acts in your tabs. How it compares with Prophet on plans, models, browsers and pay-per-use pricing.',
     keyword: 'prophet vs chatgpt sidebar',
     featureMatrix: [
