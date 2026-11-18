@@ -292,12 +292,12 @@ export const comparisons: ComparisonEntry[] = [
     featureMatrix: [
       { feature: 'Reads the page', prophet: 'Yes - accessibility tree snapshots (text, no screenshots)', competitor: 'Yes - summarizes and answers questions about any tab' },
       { feature: 'Acts on the page', prophet: 'Yes - 19 tools via Chrome DevTools Protocol', competitor: 'Yes - takes action in your tabs, including data entry' },
-      { feature: 'Pricing Model', prophet: 'Pay-per-use credits (no subscription required)', competitor: 'Runs on your ChatGPT account (Free, Go, Plus or Pro plan)' },
+      { feature: 'Pricing Model', prophet: 'Pay-per-use credits (no subscription required)', competitor: 'Part of ChatGPT, whose plans are Free, Go, Plus and Pro' },
       { feature: 'Plan needed', prophet: 'None to try ($0.07 credits included); plans from $9.99/month for $10 in credits', competitor: 'Not stated on the extension listing' },
       { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5 (you pick)', competitor: 'OpenAI GPT models; which ones depends on your ChatGPT plan' },
       { feature: 'Browsers', prophet: 'Chrome', competitor: 'Chrome, plus Edge, Brave and Opera per the listing' },
       { feature: 'Data Privacy', prophet: 'Page content sent only to Anthropic\'s Claude; not stored in our database', competitor: 'Page content sent to OpenAI; asks permission before using browser history or moving files' },
-      { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
+      { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'Not stated on the listing' },
     ],
     prophetAdvantages: [
       'No ChatGPT or Claude subscription needed: pay-per-use credits, starting with $0.07 free and $10 top-ups that never expire',
@@ -305,16 +305,16 @@ export const comparisons: ComparisonEntry[] = [
       'Open source: the 19 browser tools and how page content is handled can be read in the public code',
     ],
     competitorAdvantages: [
-      'Uses your ChatGPT account, conversation history and installed plugins, per OpenAI\'s listing',
+      'Brings your full ChatGPT conversation history and installed plugins into the browser, per OpenAI\'s listing',
       'Runs in Edge, Brave and Opera as well as Chrome',
-      'Works in the background alongside ChatGPT desktop and web without taking over your active tab',
+      'Works in the background without taking over your active browsing session, and lets ChatGPT desktop and web use your browser',
     ],
     verdict:
-      'Until recently, "ChatGPT sidebar" meant third-party wrappers such as Sider or Monica, which read the page and chat about it. That changed: OpenAI\'s own ChatGPT extension in the Chrome Web Store (updated November 17, 2026, read November 18, 2026) can "pull in context and take action in your tabs", research across signed-in websites and do data entry. So both Prophet and ChatGPT now read pages and act on them, and the choice comes down to three things. The model: ChatGPT runs OpenAI\'s GPT models, Prophet runs Claude Haiku, Sonnet and Opus 5.5. The bill: the ChatGPT extension runs on your ChatGPT plan, while Prophet bills pay-per-use credits and needs no subscription. The browser: OpenAI\'s listing names Edge, Brave and Opera as well as Chrome. If you already pay for ChatGPT and like its answers, its extension is the natural pick. If you prefer Claude, or do not want another subscription, Prophet is.',
+      'Until recently, "ChatGPT sidebar" meant third-party wrappers such as Sider or Monica, which read the page and chat about it. That changed: OpenAI\'s own ChatGPT extension in the Chrome Web Store (updated November 17, 2026, read November 18, 2026) can "pull in context and take action in your tabs", research across signed-in websites and do data entry. So both Prophet and ChatGPT now read pages and act on them, and the choice comes down to three things. The model: ChatGPT runs OpenAI\'s GPT models, Prophet runs Claude Haiku, Sonnet and Opus 5.5. The bill: the ChatGPT extension comes with ChatGPT, whose plans are Free, Go, Plus and Pro, while Prophet bills pay-per-use credits and needs no subscription. The browser: OpenAI\'s listing names Edge, Brave and Opera as well as Chrome. If you already pay for ChatGPT and like its answers, its extension is the natural pick. If you prefer Claude, or do not want another subscription, Prophet is.',
     pricingReality: {
       heading: 'A ChatGPT plan, or pay per use',
       body:
-        'OpenAI\'s extension listing does not name a price or a plan; it uses the ChatGPT account you sign in with, and ChatGPT\'s plans are Free, Go, Plus and Pro, each with different models and limits (chatgpt.com/pricing, read November 18, 2026). Third-party ChatGPT sidebars usually add a subscription of their own on top. Prophet requires no OpenAI or Anthropic subscription at all: it charges credits for the tokens you actually use, one credit per cent, starting with $0.07 free. Plans start at $9.99/month for $10 in credits, and a $10 top-up can be bought at any time and never expires. If you already pay for ChatGPT for other reasons, its extension adds no cost; if you would only pay for ChatGPT to get browser help, compare that plan with what you would actually spend in Prophet credits.',
+        'OpenAI\'s extension listing does not name a price or a plan. ChatGPT\'s plans are Free, Go, Plus and Pro, each with different models and limits (chatgpt.com/pricing, read November 18, 2026). Third-party ChatGPT sidebars usually add a subscription of their own on top. Prophet requires no OpenAI or Anthropic subscription at all: it charges credits for the tokens you actually use, one credit per cent, starting with $0.07 free. Plans start at $9.99/month for $10 in credits, and a $10 top-up can be bought at any time and never expires. If you already pay for ChatGPT for other reasons, its extension adds no cost; if you would only pay for ChatGPT to get browser help, compare that plan with what you would actually spend in Prophet credits.',
     },
     switchingNotes:
       'Nothing transfers: the ChatGPT extension keeps your conversations in your ChatGPT history, and third-party sidebars keep them in their own accounts; neither exports into Prophet. The adjustment is in how you ask. Prophet works best when you name the target element or the end state you want ("open the second result and copy its price into the form"), because that tells Claude which of its browser tools to use. Short, vague instructions give it less to work with.',
@@ -329,7 +329,7 @@ export const comparisons: ComparisonEntry[] = [
       {
         question: 'Do I need ChatGPT Plus to use the ChatGPT extension?',
         answer:
-          'OpenAI\'s listing does not say which plan you need; the extension uses the ChatGPT account you sign in with, so check your plan in ChatGPT. Prophet needs no ChatGPT or Claude subscription: it starts with $0.07 in free credits and bills pay-per-use credits after that.',
+          'OpenAI\'s listing does not say which plan you need, so check your plan in ChatGPT. Prophet needs no ChatGPT or Claude subscription: it starts with $0.07 in free credits and bills pay-per-use credits after that.',
       },
       {
         question: 'Can the ChatGPT extension fill forms?',
