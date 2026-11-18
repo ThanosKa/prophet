@@ -16,7 +16,7 @@ const chatgptVsClaudeExtension: BlogPost = {
   title: 'Does ChatGPT Have a Chrome Extension Like Claude? (2026)',
   description: 'Yes. OpenAI\'s ChatGPT extension now reads and acts in your tabs, like Claude in Chrome. Plans, browsers and pricing compared, plus a pay-per-use option.',
   date: '2026-03-05',
-  lastModified: '2026-11-16',
+  lastModified: '2026-11-18',
   readingTime: '7 min read',
   category: 'Comparisons',
   keywords: ['does chatgpt have a chrome extension like claude', 'chatgpt vs claude chrome extension', 'chatgpt chrome extension', 'claude chrome extension', 'claude in chrome vs chatgpt'],
@@ -31,7 +31,7 @@ const chatgptVsClaudeExtension: BlogPost = {
     },
     {
       question: 'Do the ChatGPT and Claude extensions work outside Chrome?',
-      answer: 'Anthropic says Claude in Chrome works in Google Chrome only, not in other Chromium browsers or on mobile. The ChatGPT extension is distributed through the Chrome Web Store; press coverage of OpenAI\'s October 2026 update says it also runs in Edge, Brave and Opera, but OpenAI\'s listing does not state this.',
+      answer: 'Anthropic says Claude in Chrome works in Google Chrome only, not in other Chromium browsers or on mobile. OpenAI\'s Chrome Web Store listing says the ChatGPT extension also works in other Chromium-based browsers, including Microsoft Edge, Brave and Opera (checked November 18, 2026).',
     },
     {
       question: 'How is Prophet different from Claude in Chrome and the ChatGPT extension?',
@@ -43,7 +43,7 @@ const chatgptVsClaudeExtension: BlogPost = {
     },
   ],
   content: `
-<p><strong>Yes: ChatGPT now has a Chrome extension like Claude's.</strong> OpenAI's official <a href="https://chromewebstore.google.com/detail/chatgpt/hehggadaopoacecdllhhajmbjkdcmajg" rel="nofollow noopener" target="_blank">ChatGPT extension</a> (offered by OpenAI, last updated November 3, 2026) "can pull in context and take action in your tabs," which is the same job Anthropic's <a href="https://support.claude.com/en/articles/12012173" rel="nofollow noopener" target="_blank">Claude in Chrome</a> does: it reads, clicks and navigates websites alongside you. The real differences are which plan you need, which browsers work, and how you pay.</p>
+<p><strong>Yes: ChatGPT now has a Chrome extension like Claude's.</strong> OpenAI's official <a href="https://chromewebstore.google.com/detail/chatgpt/hehggadaopoacecdllhhajmbjkdcmajg" rel="nofollow noopener" target="_blank">ChatGPT extension</a> (offered by OpenAI, last updated November 17, 2026) "can pull in context and take action in your tabs," which is the same job Anthropic's <a href="https://support.claude.com/en/articles/12012173" rel="nofollow noopener" target="_blank">Claude in Chrome</a> does: it reads, clicks and navigates websites alongside you. The real differences are which plan you need, which browsers work, and how you pay.</p>
 <p>If you read an older version of this page: it said ChatGPT's official extension could not read the page. That was true of OpenAI's earlier "ChatGPT search" extension, which mainly makes ChatGPT search your default search engine. It is no longer true of the ChatGPT extension.</p>
 
 <h2>The three options at a glance</h2>
@@ -55,10 +55,10 @@ const chatgptVsClaudeExtension: BlogPost = {
 <tr><td>Recurring tasks</td><td>Not stated on the listing</td><td>Yes: scheduled browser tasks</td><td>No: you start each Run</td></tr>
 <tr><td>Models</td><td>OpenAI's ChatGPT models</td><td>Claude</td><td>Claude Haiku 5.5, Sonnet 5.5, Opus 5.5 (you pick)</td></tr>
 <tr><td>Plan needed</td><td>Not stated on the listing</td><td>Paid Claude plan: Pro, Max, Ultra, Team or Enterprise</td><td>None to try ($0.07 free credits); plans from $9.99/month for $10 in credits</td></tr>
-<tr><td>Browsers</td><td>Chrome Web Store extension</td><td>Google Chrome only</td><td>Chrome</td></tr>
+<tr><td>Browsers</td><td>Chrome, plus Edge, Brave and Opera</td><td>Google Chrome only</td><td>Chrome</td></tr>
 </tbody>
 </table>
-<p>Sources: the ChatGPT listing in the Chrome Web Store and Anthropic's Claude in Chrome help article, both read November 16, 2026; Prophet's facts come from its <a href="/pricing">pricing page</a> and its public code.</p>
+<p>Sources: the ChatGPT listing in the Chrome Web Store, read November 18, 2026, and Anthropic's Claude in Chrome help article, read November 16, 2026; Prophet's facts come from its <a href="/pricing">pricing page</a> and its public code.</p>
 
 <h2>What the ChatGPT extension does</h2>
 <p>OpenAI's listing describes the extension as "the full power of ChatGPT right where you work." It can research across live and signed-in websites, summarize and answer questions about any tab, and do work in the browser "in the background, without ever taking over your active browsing session." OpenAI says ChatGPT "will always ask for your permission when referencing your browser history and downloading/uploading files." The listing shows about 9,000,000 users.</p>
