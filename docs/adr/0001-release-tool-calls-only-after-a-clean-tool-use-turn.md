@@ -12,7 +12,7 @@ Tools act on a real page: they click, type and navigate. A tool call that arrive
 
 ## Cost
 
-A little latency: the first tool starts after the Turn's last token, not when its call is first streamed. The dev route (`VITE_USE_DEV_API`) still releases tool calls mid-stream until ticket 18 of the architecture deepening lands; it is for developers only.
+A little latency: the first tool starts after the Turn's last token, not when its call is first streamed.
 
 ## Rejected alternative
 
