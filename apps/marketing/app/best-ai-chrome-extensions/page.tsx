@@ -63,7 +63,7 @@ const extensions = [
     bestFor: 'Users who want inline AI summaries inside Google search and YouTube.',
     url: 'https://www.getmerlin.in',
     pricing: 'Free tier (limited queries), Pro $14.25/mo, Team $12/mo per user',
-    description: 'Merlin offers AI chat with web search capabilities, allowing it to provide up-to-date answers by searching the internet. It supports GPT-4o, Claude, and Llama models. Merlin is particularly strong at summarizing web pages, analyzing documents, and generating content. The web search integration sets it apart from pure chat-based extensions. It also offers team plans, making it suitable for small businesses and agencies that need shared AI access.',
+    description: 'Merlin offers AI chat with web search capabilities, allowing it to provide up-to-date answers by searching the internet. Its Chrome Web Store listing says it gives access to the latest OpenAI, Anthropic and Google models (ChatGPT, Claude, Gemini). Merlin is particularly strong at summarizing web pages, analyzing documents, and generating content. The web search integration sets it apart from pure chat-based extensions. It also offers team plans, making it suitable for small businesses and agencies that need shared AI access.',
     pros: [
       'Integrated web search for current information',
       'Document and PDF analysis',
@@ -122,8 +122,8 @@ const extensions = [
     tagline: 'AI agent with web automation and monitoring',
     bestFor: 'Users who want page-change monitoring and macro-style automation with bring-your-own-key.',
     url: 'https://harpa.ai',
-    pricing: 'Free (bring your own API key), Pro $15/mo, Business custom pricing',
-    description: 'Harpa AI stands out with its web automation and monitoring capabilities. It can track price changes on e-commerce sites, monitor web pages for content updates, and automate repetitive web tasks using custom commands. Harpa supports GPT-4, Claude, and local AI models via the bring-your-own-key model. The free tier is generous since you use your own API keys. For users who want both AI chat and web monitoring in one extension, Harpa is a strong contender, though its automation is more focused on monitoring than interactive browser control.',
+    pricing: 'Free (bring your own API key), Pro $12/mo, Business custom pricing',
+    description: 'Harpa AI stands out with its web automation and monitoring capabilities. It can track price changes on e-commerce sites, monitor web pages for content updates, and automate repetitive web tasks using custom commands. Harpa supports GPT, Claude, Gemini, Grok and DeepSeek through your own API keys or AI logins, plus local models through Ollama or LM Studio. The free tier is generous since you use your own API keys. For users who want both AI chat and web monitoring in one extension, Harpa is a strong contender, though its automation is more focused on monitoring than interactive browser control.',
     pros: [
       'Web page monitoring and price tracking',
       'Custom automation commands',
@@ -244,7 +244,7 @@ const faqItems = [
   {
     question: 'How much do AI Chrome extensions cost per month?',
     answer:
-      'Most sit between $9 and $15 per month for an entry paid tier: Sider from $8.99, Monica from $9.90, MaxAI and Compose AI from $9.99, Merlin from $14.25, Harpa from $15. Anthropic\'s Claude in Chrome is the outlier at $20/month because it requires a Claude Pro subscription. Prophet is the only pay-per-use option, billing credits for the tokens you use, which means a light month costs cents rather than a flat fee. The break-even against a $10/month subscription lands at roughly 500 Sonnet messages a month.',
+      'Most sit between $9 and $15 per month for an entry paid tier: Sider from $8.99, Monica from $9.90, MaxAI and Compose AI from $9.99, Merlin from $14.25, Harpa from $12. Anthropic\'s Claude in Chrome is the outlier at $20/month because it requires a Claude Pro subscription. Prophet is the only pay-per-use option, billing credits for the tokens you use, which means a light month costs cents rather than a flat fee. The break-even against a $10/month subscription lands at roughly 500 Sonnet messages a month.',
   },
   {
     question: 'Does Anthropic have an official Chrome extension for Claude?',
@@ -444,10 +444,10 @@ export default function BestAIChromeExtensionsPage() {
                 <tbody className="text-muted-foreground">
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Prophet</td><td className="py-3 px-3">Claude (Haiku, Sonnet, Opus)</td><td className="py-3 px-3">Yes (19 tools)</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$9.99/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Monica</td><td className="py-3 px-3">GPT-4o, Claude, Gemini</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$9.90/mo</td></tr>
-                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Merlin</td><td className="py-3 px-3">GPT-4o, Claude, Llama</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$14.25/mo</td></tr>
-                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Sider</td><td className="py-3 px-3">GPT-4, Claude, Gemini</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$8.99/mo</td></tr>
+                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Merlin</td><td className="py-3 px-3">GPT, Claude, Gemini</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$14.25/mo</td></tr>
+                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Sider</td><td className="py-3 px-3">GPT-5, Claude, Gemini, DeepSeek, Grok</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$8.99/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">MaxAI</td><td className="py-3 px-3">GPT-4o, Claude, Gemini, Llama</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$9.99/mo</td></tr>
-                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Harpa AI</td><td className="py-3 px-3">GPT-4, Claude, local models</td><td className="py-3 px-3">Monitoring only</td><td className="py-3 px-3">Yes (BYOK)</td><td className="py-3 px-3">$15/mo</td></tr>
+                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Harpa AI</td><td className="py-3 px-3">GPT, Claude, Gemini, Grok, local models</td><td className="py-3 px-3">Monitoring only</td><td className="py-3 px-3">Yes (BYOK)</td><td className="py-3 px-3">$12/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Claude in Chrome</td><td className="py-3 px-3">Claude (Sonnet)</td><td className="py-3 px-3">Yes (screenshots)</td><td className="py-3 px-3">No (paid Claude plans only)</td><td className="py-3 px-3">$20/mo (Claude Pro)</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Glasp</td><td className="py-3 px-3">Built-in (limited)</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">Free</td></tr>
                   <tr><td className="py-3 px-3 font-medium text-foreground">Compose AI</td><td className="py-3 px-3">Built-in</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$9.99/mo</td></tr>
@@ -463,7 +463,7 @@ export default function BestAIChromeExtensionsPage() {
             </p>
             <ul className="space-y-3 text-muted-foreground">
               <li><strong className="text-foreground">If you want browser automation and Claude access:</strong> Prophet is the only option that combines all three Claude tiers (Haiku, Sonnet, Opus) with 19 real browser tools and pay-per-use pricing. Light users pay closer to $1/month than $20.</li>
-              <li><strong className="text-foreground">If you want to compare multiple AI models on the same prompt:</strong> Sider&apos;s group chat queries GPT-4, Claude, and Gemini at once and shows the answers side by side. Useful when you don&apos;t yet know which model is best for a given task.</li>
+              <li><strong className="text-foreground">If you want to compare multiple AI models on the same prompt:</strong> Sider&apos;s group chat puts ChatGPT, Claude, Gemini and other models on the same question so you can compare their answers. Useful when you don&apos;t yet know which model is best for a given task.</li>
               <li><strong className="text-foreground">If you want a polished daily assistant with image generation:</strong> Monica covers writing, translation, and image generation in one interface. Best fit for users who don&apos;t need automation but want one tool for many small jobs.</li>
               <li><strong className="text-foreground">If you mostly read and research:</strong> MaxAI&apos;s highlight-to-explain workflow and Glasp&apos;s social highlighting are purpose-built for reading and note-taking, not chat. Skip the chat-heavy options.</li>
               <li><strong className="text-foreground">If you already pay for Claude Pro:</strong> Anthropic&apos;s own Claude in Chrome comes with your plan at no extra cost and can act on the page. Prophet is the pay-per-use option if you would rather not keep a $20/month subscription for browser automation.</li>

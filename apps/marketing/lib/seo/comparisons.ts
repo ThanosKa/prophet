@@ -161,7 +161,7 @@ export const comparisons: ComparisonEntry[] = [
       {
         question: 'Which models does each support?',
         answer:
-          'Sider covers GPT-4, Claude and Gemini, with model access tied to your subscription tier. Prophet is Claude-exclusive but offers all three current tiers — Haiku 5.5, Sonnet 5.5 and Opus 5.5 — on every plan including the free one, which is unusual; most extensions reserve frontier models for paid tiers.',
+          'Sider covers GPT-5, Claude, Gemini, DeepSeek and Grok (its Chrome Web Store listing, November 2026), with model access tied to your subscription tier. Prophet is Claude-exclusive but offers all three current tiers — Haiku 5.5, Sonnet 5.5 and Opus 5.5 — on every plan including the free one, which is unusual; most extensions reserve frontier models for paid tiers.',
       },
     ],
   },
@@ -426,7 +426,7 @@ export const comparisons: ComparisonEntry[] = [
     pricingReality: {
       heading: 'BYOK versus managed billing',
       body:
-        'HARPA\'s bring-your-own-key model is, on raw token cost, unbeatable: you pay Anthropic or OpenAI directly at list price with zero markup, and HARPA\'s free tier costs nothing on top. Prophet cannot beat that on arithmetic, and it would be dishonest to claim otherwise — Prophet bills credits at API cost plus a margin, so it cannot match BYOK on raw price, and HARPA Pro at $15/month buys features rather than tokens. What BYOK actually costs you is operational: obtaining an Anthropic API key, funding it, rotating it, monitoring spend across providers, and handling the fact that a leaked key in a browser extension is your liability. Prophet handles authentication, billing and rate limiting centrally, and never exposes a key to the client. So the honest framing is that HARPA is cheaper for people who want to run their own key infrastructure, and Prophet is cheaper in total effort for people who do not.',
+        'HARPA\'s bring-your-own-key model is, on raw token cost, unbeatable: you pay Anthropic or OpenAI directly at list price with zero markup, and HARPA\'s free tier costs nothing on top. Prophet cannot beat that on arithmetic, and it would be dishonest to claim otherwise — Prophet bills credits at API cost plus a margin, so it cannot match BYOK on raw price, and HARPA Pro at $12/month buys features rather than tokens. What BYOK actually costs you is operational: obtaining an Anthropic API key, funding it, rotating it, monitoring spend across providers, and handling the fact that a leaked key in a browser extension is your liability. Prophet handles authentication, billing and rate limiting centrally, and never exposes a key to the client. So the honest framing is that HARPA is cheaper for people who want to run their own key infrastructure, and Prophet is cheaper in total effort for people who do not.',
     },
     switchingNotes:
       'HARPA macros do not translate — there is nothing to import them into, because Prophet has no macro concept. The upside is that most macros become a single sentence: a twelve-step HARPA workflow for extracting a table and pasting it into a form is usually one Prophet instruction. The genuine losses are HARPA\'s scheduled monitoring and change detection, which Prophet does not replicate; if you use HARPA to watch prices or track page changes on a schedule, keep it installed for that. Users switching should also expect to give up determinism: a HARPA macro does exactly the same thing every run, whereas Prophet reasons afresh each time, which is more adaptable and less predictable.',
