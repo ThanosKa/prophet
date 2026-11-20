@@ -7,11 +7,15 @@ import type {
   RefusalStopDetails,
   StopReason,
 } from '@anthropic-ai/sdk/resources/messages'
-import { errorMessage, type StoredToolCall } from '@prophet/shared'
+import { errorMessage, type RunEnd, type StoredToolCall } from '@prophet/shared'
 import { isToolInput } from '@/lib/agent/run-record'
 import { toEchoableContent } from '@/lib/agent/web-search'
 import { logger } from '@/lib/logger'
-import { calculateUsageCostInCredits, type ModelName, type TokenUsage } from '@/lib/pricing'
+import {
+  calculateUsageCostInCredits,
+  calculateWebSearchCostInCredits,
+  type ModelName, type TokenUsage,
+} from '@/lib/pricing'
 import type { PartialTurn } from '@/lib/turn-hold'
 
 /**
@@ -386,4 +390,107 @@ export async function readTurnStream({
   } catch (error) {
     return { ended: 'cut_short', error, partial: partialTurn() }
   }
+}
+
+/** Where the web searches Anthropic billed show up, beside the Turn's usage. */
+type ClosingUsage = ReportedUsage & { webSearchRequests: number; webSearchCostCents: number }
+
+/** The frames that end a finished Turn, in the order they are sent. */
+export type ClosingFrame =
+  | { type: 'error'; error: string; code: string }
+  | { type: 'tool_use'; toolUse: StoredToolCall }
+  | { type: 'citations'; citations: Citation[] }
+  | {
+      type: 'execution_complete'
+      stopReason: StopReason | null
+      finalOutput: string
+      metrics: ClosingUsage
+    }
+  | {
+      type: 'done'
+      stopReason: StopReason | null
+      usage: ClosingUsage
+      citations: Citation[]
+      contentBlocks: ContentBlockParam[]
+      maxTokensReducedForBalance: boolean
+      runEnd?: RunEnd
+    }
+
+/**
+ * The client tool calls a finished Turn releases. Only a clean `tool_use` stop releases
+ * any: every other ending ran none of them, and on `max_tokens` the last one is cut off
+ * mid-input. A Run's last Turn (`runEnd` set) releases none whatever Claude does: the Run
+ * ends with its text as the reply. The Run record and the `tool_use` frames both read
+ * this, so they cannot disagree.
+ */
+export function releasedToolCalls({
+  final,
+  runEnd,
+}: {
+  final: FinishedTurn
+  runEnd: RunEnd | null
+}): StoredToolCall[] {
+  return final.stopReason === 'tool_use' && runEnd === null ? final.clientToolCalls : []
+}
+
+/**
+ * The frames that end a finished Turn, built after settlement and sent as they are.
+ * A refused Turn gets only the error frame; any other Turn gets the released `tool_use`
+ * frames, then `citations` if there are any, then `execution_complete`, then `done`.
+ * Pure: it does not log, send or read the clock.
+ */
+export function closingFrames({
+  final,
+  costCents,
+  runEnd,
+  maxTokensReducedForBalance,
+}: {
+  final: FinishedTurn
+  costCents: number
+  runEnd: RunEnd | null
+  maxTokensReducedForBalance: boolean
+}): ClosingFrame[] {
+  const { stopReason, citations } = final
+
+  // Safety classifiers decline with HTTP 200 and no answer; without an error the
+  // extension would end the run on a blank reply.
+  if (stopReason === 'refusal') {
+    return [
+      {
+        type: 'error',
+        error: 'Claude declined this request. Try rephrasing it or start a new chat.',
+        code: 'MODEL_REFUSED',
+      },
+    ]
+  }
+
+  const usage: ClosingUsage = {
+    ...reportedUsage({ usage: final.usage, costCents }),
+    webSearchRequests: final.usage.webSearchRequests,
+    webSearchCostCents: calculateWebSearchCostInCredits(final.usage.webSearchRequests),
+  }
+  const contentBlocks =
+    stopReason === 'max_tokens'
+      ? final.echoableContent.filter((block) => block.type !== 'tool_use')
+      : final.echoableContent
+
+  return [
+    ...releasedToolCalls({ final, runEnd }).map((toolUse): ClosingFrame => ({ type: 'tool_use', toolUse })),
+    ...(citations.length > 0 ? [{ type: 'citations', citations } as const] : []),
+    {
+      type: 'execution_complete',
+      stopReason,
+      finalOutput: final.text,
+      metrics: usage,
+    },
+    {
+      type: 'done',
+      stopReason,
+      usage,
+      citations,
+      contentBlocks,
+      maxTokensReducedForBalance,
+      ...(runEnd && { runEnd }),
+    },
+  ]
 }

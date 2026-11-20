@@ -49,7 +49,12 @@ import {
   type ModelName,
 } from "@/lib/pricing";
 import { devLogger } from "@/lib/dev-logger";
-import { describeTurnError, readTurnStream, reportedUsage } from "@/lib/agent/turn-stream";
+import {
+  closingFrames,
+  describeTurnError,
+  readTurnStream,
+  releasedToolCalls,
+} from "@/lib/agent/turn-stream";
 import type { MessageParam } from "@anthropic-ai/sdk/resources/messages";
 
 const BALANCE_HELD_RETRY_AFTER_SECONDS = 5;
@@ -445,17 +450,6 @@ export async function POST(req: Request) {
             webSearchRequests,
           } = final.usage;
 
-          // Only a clean `tool_use` stop releases tool calls. Any other ending ran
-          // none of them, so neither the reply nor the record carries them; on
-          // `max_tokens` the last one is cut off mid-input. A Run's last Turn releases
-          // none whatever Claude does: the Run ends with its text as the reply.
-          const releasesToolCalls = stopReason === "tool_use" && runEnd === null;
-          const contentBlocks =
-            stopReason === "max_tokens"
-              ? final.echoableContent.filter((block) => block.type !== "tool_use")
-              : final.echoableContent;
-          const { citations } = final;
-
           const costCents = calculateUsageCostInCredits(model, final.usage);
           const webSearchCostCents =
             calculateWebSearchCostInCredits(webSearchRequests);
@@ -470,7 +464,7 @@ export async function POST(req: Request) {
               : {
                   type: "reply",
                   text: final.text,
-                  releasedToolCalls: releasesToolCalls ? final.clientToolCalls : [],
+                  releasedToolCalls: releasedToolCalls({ final, runEnd }),
                 };
 
           // Throws when the billing transaction fails; the `finally` then closes it unfinished.
@@ -508,62 +502,21 @@ export async function POST(req: Request) {
             cache_creation_input_tokens: cacheCreationInputTokens,
           });
 
-          // Safety classifiers decline with HTTP 200 and no answer; without an error the
-          // extension would end the run on a blank reply.
           if (stopReason === "refusal") {
             logger.warn(
               { userId, chatId, model, category: final.refusalCategory },
               "Model declined the request"
             );
-            send(JSON.stringify({
-              type: "error",
-              error: "Claude declined this request. Try rephrasing it or start a new chat.",
-              code: "MODEL_REFUSED",
-            }));
-            close();
-            return;
           }
 
-          if (releasesToolCalls) {
-            for (const toolUse of final.clientToolCalls) {
-              send(JSON.stringify({ type: "tool_use", toolUse }));
-            }
-          }
-
-          if (citations.length > 0) {
-            const citationsData = JSON.stringify({
-              type: "citations",
-              citations,
-            });
-            send(citationsData);
-          }
-
-          const executionCompleteData = JSON.stringify({
-            type: "execution_complete",
-            stopReason,
-            finalOutput: final.text,
-            metrics: {
-              ...reportedUsage({ usage: final.usage, costCents }),
-              webSearchRequests,
-              webSearchCostCents,
-            },
-          });
-          send(executionCompleteData);
-
-          const doneData = JSON.stringify({
-            type: "done",
-            stopReason,
-            usage: {
-              ...reportedUsage({ usage: final.usage, costCents }),
-              webSearchRequests,
-              webSearchCostCents,
-            },
-            citations,
-            contentBlocks,
+          for (const frame of closingFrames({
+            final,
+            costCents,
+            runEnd,
             maxTokensReducedForBalance,
-            ...(runEnd && { runEnd }),
-          });
-          send(doneData);
+          })) {
+            send(JSON.stringify(frame));
+          }
 
           close();
         } catch (err) {
