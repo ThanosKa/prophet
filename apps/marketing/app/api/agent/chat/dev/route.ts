@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm'
 import { anthropic } from '@/lib/anthropic'
 import { AGENT_TOOLS } from '@/lib/agent/tools'
 import { AGENT_SYSTEM_PROMPT } from '@/lib/agent/system-prompt'
-import { AGENT_TURN_MAX_TOKENS, buildAgentTools, buildOutputConfig, buildThinkingConfig, toEchoableContent } from '@/lib/agent/web-search'
+import { AGENT_TURN_MAX_TOKENS, buildAgentTools, buildOutputConfig, buildThinkingConfig } from '@/lib/agent/web-search'
 import {
   agentChatRequestSchema,
   DEFAULT_AGENT_MODEL,
@@ -15,7 +15,10 @@ import {
 } from '@prophet/shared'
 import { error, INTERNAL_ERROR_MESSAGE } from '@/types'
 import { logger } from '@/lib/logger'
-import { calculateUsageCostInCredits, type ModelName, type TokenUsage } from '@/lib/pricing'
+import { calculateUsageCostInCredits, type ModelName } from '@/lib/pricing'
+import { estimateInputTokens } from '@/lib/credit-reservation'
+import { lastTurnReason, withLastTurnNotice } from '@/lib/agent/last-turn'
+import { closingFrames, describeTurnError, readTurnStream } from '@/lib/agent/turn-stream'
 import { buildAgentMessages, resolveRunTurns } from '@/lib/agent/conversation'
 import { devLogger } from '@/lib/dev-logger'
 
@@ -52,6 +55,7 @@ export async function POST(req: Request) {
     const {
       chatId,
       userMessage,
+      runId,
       previousTurns,
       toolResults,
       previousContent,
@@ -77,7 +81,20 @@ export async function POST(req: Request) {
       where: eq(messages.chatId, chatId),
       orderBy: (messages, { asc }) => [asc(messages.createdAt)],
     })
-    const anthropicMessages = buildAgentMessages({ history, userMessage, image, runTurns })
+    const builtMessages = buildAgentMessages({ history, userMessage, image, runTurns })
+    const tools = buildAgentTools(AGENT_TOOLS, enableWebSearch)
+    const runEnd = lastTurnReason({
+      runTurns,
+      hasRunId: runId !== undefined,
+      estimatedPromptTokens: estimateInputTokens({
+        system: AGENT_SYSTEM_PROMPT,
+        tools,
+        messages: builtMessages,
+      }),
+    })
+    const anthropicMessages = runEnd ? withLastTurnNotice(builtMessages) : builtMessages
+    // Production names the Run on a first Turn and on a continuation that sends its id.
+    const sessionRunId = isFirstTurn ? crypto.randomUUID() : runId
 
     logger.debug(
       { model, messageCount: anthropicMessages.length, runTurns: runTurns.length },
@@ -112,149 +129,45 @@ export async function POST(req: Request) {
           }
         }
 
-        let fullTextResponse = ''
-        let inputTokens = 0
-        let cacheCreationInputTokens = 0
-        let cacheReadInputTokens = 0
-        let outputTokens = 0
-        let contentDeltaCount = 0
-
-        const turnUsage = (webSearchRequests: number): TokenUsage => ({
-          inputTokens,
-          cacheCreationInputTokens,
-          cacheReadInputTokens,
-          outputTokens,
-          webSearchRequests,
-        })
-        const reportedUsage = (costCents: number) => ({
-          inputTokens: inputTokens + cacheCreationInputTokens + cacheReadInputTokens,
-          cacheCreationInputTokens,
-          cacheReadInputTokens,
-          outputTokens,
-          costCents,
-        })
-        let toolUseCount = 0
-
         try {
           logger.debug({ model, maxTokens: AGENT_TURN_MAX_TOKENS, enableThinking }, '[DEV] Creating Anthropic stream')
 
           const thinkingConfig = buildThinkingConfig(enableThinking)
           const outputConfig = buildOutputConfig(enableThinking)
 
-          const anthropicStream = await anthropic.messages.stream({
-            model,
-            max_tokens: AGENT_TURN_MAX_TOKENS,
-            cache_control: { type: 'ephemeral' },
-            system: [
-              {
-                type: 'text',
-                text: AGENT_SYSTEM_PROMPT,
+          const turn = await readTurnStream({
+            open: async () =>
+              anthropic.messages.stream({
+                model,
+                max_tokens: AGENT_TURN_MAX_TOKENS,
                 cache_control: { type: 'ephemeral' },
-              },
-            ],
-            tools: buildAgentTools(AGENT_TOOLS, enableWebSearch),
-            messages: anthropicMessages,
-            ...(thinkingConfig && { thinking: thinkingConfig }),
-            ...(outputConfig && { output_config: outputConfig }),
-          })
-
-          logger.debug({}, '[DEV] Anthropic stream created, processing events')
-
-          let currentToolUse: { id: string; name: string; input: string } | null = null
-
-          // Send session_created at the start
-          safeEnqueue(JSON.stringify({
-            type: 'session_created',
-            sessionId: chatId,
-          }))
-
-          for await (const event of anthropicStream) {
-            if (event.type === 'message_start') {
-              inputTokens = event.message.usage.input_tokens
-              cacheCreationInputTokens = event.message.usage.cache_creation_input_tokens ?? 0
-              cacheReadInputTokens = event.message.usage.cache_read_input_tokens ?? 0
-              logger.debug({ inputTokens }, '[DEV] Message started')
-            } else if (event.type === 'content_block_start') {
-              if (event.content_block.type === 'tool_use') {
-                toolUseCount++
-                currentToolUse = {
-                  id: event.content_block.id,
-                  name: event.content_block.name,
-                  input: '',
-                }
-                logger.debug(
-                  { toolUseId: event.content_block.id, toolName: event.content_block.name },
-                  '[DEV] Tool use started'
-                )
-              }
-            } else if (event.type === 'content_block_delta') {
-              if (event.delta.type === 'text_delta') {
-                contentDeltaCount++
-                const text = event.delta.text
-                fullTextResponse += text
-                safeEnqueue(JSON.stringify({
-                  type: 'content_delta',
-                  delta: text,
-                }))
-              } else if (event.delta.type === 'thinking_delta') {
-                safeEnqueue(JSON.stringify({
-                  type: 'thinking_delta',
-                  delta: event.delta.thinking,
-                }))
-              } else if (event.delta.type === 'input_json_delta' && currentToolUse) {
-                currentToolUse.input += event.delta.partial_json
-              }
-            } else if (event.type === 'content_block_stop') {
-              if (currentToolUse) {
-                let parsedInput = {}
-                try {
-                  parsedInput = currentToolUse.input ? JSON.parse(currentToolUse.input) : {}
-                } catch {
-                  logger.warn(
-                    { toolUseId: currentToolUse.id, input: currentToolUse.input },
-                    '[DEV] Failed to parse tool input'
-                  )
-                }
-
-                logger.debug(
-                  { toolName: currentToolUse.name, inputKeys: Object.keys(parsedInput) },
-                  '[DEV] Tool use completed'
-                )
-
-                safeEnqueue(JSON.stringify({
-                  type: 'tool_use',
-                  toolUse: {
-                    type: 'tool_use',
-                    id: currentToolUse.id,
-                    name: currentToolUse.name,
-                    input: parsedInput,
+                system: [
+                  {
+                    type: 'text',
+                    text: AGENT_SYSTEM_PROMPT,
+                    cache_control: { type: 'ephemeral' },
                   },
-                }))
-                currentToolUse = null
-              }
-            } else if (event.type === 'message_delta') {
-              if (event.usage) {
-                outputTokens = event.usage.output_tokens
-                safeEnqueue(JSON.stringify({
-                  type: 'metrics_update',
-                  metrics: reportedUsage(calculateUsageCostInCredits(model, turnUsage(0))),
-                }))
-              }
-            }
-          }
+                ],
+                tools,
+                messages: anthropicMessages,
+                ...(thinkingConfig && { thinking: thinkingConfig }),
+                ...(outputConfig && { output_config: outputConfig }),
+              }),
+            sessionFrame: {
+              type: 'session_created',
+              sessionId: chatId,
+              ...(sessionRunId !== undefined && { runId: sessionRunId }),
+            },
+            model,
+            send: (frame) => safeEnqueue(JSON.stringify(frame)),
+          })
+          if (turn.ended === 'cut_short') throw turn.error
 
-          const finalMessage = await anthropicStream.finalMessage()
-          const stopReason = finalMessage.stop_reason
-          inputTokens = finalMessage.usage.input_tokens
-          cacheCreationInputTokens = finalMessage.usage.cache_creation_input_tokens ?? 0
-          cacheReadInputTokens = finalMessage.usage.cache_read_input_tokens ?? 0
-          outputTokens = finalMessage.usage.output_tokens
-          const webSearchRequests =
-            finalMessage.usage.server_tool_use?.web_search_requests ?? 0
-
-          const contentBlocks = toEchoableContent(finalMessage.content)
-
-          const costCents = calculateUsageCostInCredits(model, turnUsage(webSearchRequests))
+          const { final } = turn
+          const { stopReason } = final
+          const { inputTokens, cacheCreationInputTokens, cacheReadInputTokens, outputTokens } = final.usage
+          const fullTextResponse = final.text
+          const costCents = calculateUsageCostInCredits(model, final.usage)
 
           logger.info(
             {
@@ -264,8 +177,7 @@ export async function POST(req: Request) {
               cacheReadInputTokens,
               cacheCreationInputTokens,
               stopReason,
-              contentDeltaCount,
-              toolUseCount,
+              toolUseCount: final.clientToolCalls.length,
               textLength: fullTextResponse.length,
             },
             '[DEV] Agent stream completed'
@@ -280,10 +192,10 @@ export async function POST(req: Request) {
           })
 
           // Determine if this is the final turn of the agentic loop
-          const isFinalTurn = stopReason !== 'tool_use' && stopReason !== 'pause_turn'
+          const isFinalTurn = runEnd !== null || !final.runContinues
 
           // Save messages only on appropriate turns (same logic as production)
-          const assistantToolCalls = contentBlocks.filter(b => b.type === "tool_use");
+          const assistantToolCalls = final.clientToolCalls;
           const hasContent = fullTextResponse.trim().length > 0 || assistantToolCalls.length > 0;
 
           const promptTokens = inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
@@ -332,18 +244,14 @@ export async function POST(req: Request) {
             }
           });
 
-          safeEnqueue(JSON.stringify({
-            type: 'execution_complete',
-            finalOutput: fullTextResponse,
-            metrics: reportedUsage(costCents),
-          }))
-
-          safeEnqueue(JSON.stringify({
-            type: 'done',
-            stopReason,
-            usage: reportedUsage(costCents),
-            contentBlocks,
-          }))
+          for (const frame of closingFrames({
+            final,
+            costCents,
+            runEnd,
+            maxTokensReducedForBalance: false,
+          })) {
+            safeEnqueue(JSON.stringify(frame))
+          }
 
           safeClose()
         } catch (err) {
@@ -355,36 +263,7 @@ export async function POST(req: Request) {
             '[DEV] Agent streaming error'
           )
 
-          // Parse error to provide user-friendly messages
-          let userFriendlyError = "Something went wrong. Please try again."
-          let errorCode: string | undefined
-
-          if (err instanceof Error) {
-            const errMessage = err.message
-
-            if (errMessage.includes("rate_limit_error") || errMessage.startsWith("429")) {
-              userFriendlyError = "AI service is temporarily busy. Please wait a moment and try again."
-              errorCode = "ANTHROPIC_RATE_LIMIT"
-            } else if (errMessage.includes("overloaded") || errMessage.startsWith("529")) {
-              userFriendlyError = "AI service is experiencing high demand. Please try again in a few minutes."
-              errorCode = "ANTHROPIC_OVERLOADED"
-            } else if (errMessage.includes("authentication") || errMessage.includes("api_key")) {
-              userFriendlyError = "Service configuration error. Please contact support."
-              errorCode = "ANTHROPIC_AUTH_ERROR"
-            } else if (errMessage.includes("invalid_request")) {
-              userFriendlyError = "Invalid request. Please try a different message."
-              errorCode = "ANTHROPIC_INVALID_REQUEST"
-            } else {
-              userFriendlyError = "Something went wrong. Please try again."
-              errorCode = "STREAMING_ERROR"
-            }
-          }
-
-          safeEnqueue(JSON.stringify({
-            type: 'error',
-            error: userFriendlyError,
-            code: errorCode,
-          }))
+          safeEnqueue(JSON.stringify(describeTurnError(err)))
 
           safeClose()
         }

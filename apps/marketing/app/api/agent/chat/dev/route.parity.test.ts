@@ -151,7 +151,14 @@ describe("the dev route sends production's frames", () => {
     const production = await productionFrames(turn);
     const dev = await devFrames(turn);
 
-    expect(dev).toEqual(production);
+    // Each request starts its own Run, so the Run id is matched by shape only.
+    const withoutRunId = (list: typeof dev) =>
+      list.map(({ runId, ...frame }) => {
+        if (runId !== undefined) expect(runId).toMatch(UUID);
+        return frame;
+      });
+
+    expect(withoutRunId(dev)).toEqual(withoutRunId(production));
   });
 
   it("names the Run in session_created", async () => {
