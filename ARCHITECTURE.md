@@ -308,7 +308,7 @@ apps/
 │   └── lib/
 │       └── agent/
 │           ├── tools.ts          # Tool definitions
-│           ├── turn-stream.ts    # Reads Claude's stream for one Turn
+│           ├── turn-stream.ts    # Reads Claude's stream for one Turn; builds its closing frames
 │           └── system-prompt.ts  # Agent instructions
 │
 └── shared/                       # Shared Types

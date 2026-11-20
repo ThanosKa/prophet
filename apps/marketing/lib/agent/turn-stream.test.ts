@@ -7,7 +7,14 @@ import {
   toolUse,
   toolUseBlockEvents,
 } from '@/app/api/agent/chat/anthropic-stream-stubs'
-import { describeTurnError, readTurnStream } from './turn-stream'
+import { calculateWebSearchCostInCredits } from '@/lib/pricing'
+import {
+  closingFrames,
+  describeTurnError,
+  readTurnStream,
+  releasedToolCalls,
+  type FinishedTurn,
+} from './turn-stream'
 
 const loggerMock = vi.hoisted(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }))
 vi.mock('@/lib/logger', () => ({ logger: loggerMock }))
@@ -414,5 +421,120 @@ describe('describeTurnError', () => {
     expect(JSON.stringify(describeTurnError('stream ended'))).toBe(
       '{"type":"error","error":"Something went wrong. Please try again."}'
     )
+  })
+})
+
+const CALL = { type: 'tool_use', id: 'toolu_1', name: 'click', input: { selector: '#a' } } as const
+
+function finished(overrides: Partial<FinishedTurn> = {}): FinishedTurn {
+  return {
+    stopReason: 'end_turn',
+    usage: { ...STUB_USAGE, webSearchRequests: 0 },
+    text: 'Done',
+    clientToolCalls: [],
+    echoableContent: [{ type: 'text', text: 'Done' }],
+    citations: [],
+    refusalCategory: null,
+    runContinues: false,
+    ...overrides,
+  }
+}
+
+const frames = (final: FinishedTurn, extra: Partial<Parameters<typeof closingFrames>[0]> = {}) =>
+  closingFrames({ final, costCents: 1, runEnd: null, maxTokensReducedForBalance: false, ...extra })
+
+describe('closingFrames', () => {
+  it('gives a refused Turn only the error frame', () => {
+    const result = frames(finished({ stopReason: 'refusal', clientToolCalls: [CALL] }))
+
+    expect(result).toEqual([
+      {
+        type: 'error',
+        error: 'Claude declined this request. Try rephrasing it or start a new chat.',
+        code: 'MODEL_REFUSED',
+      },
+    ])
+  })
+
+  it('sends the tool calls, then citations, then execution_complete, then done on tool_use', () => {
+    const citations = [{ url: 'https://a.test', title: 'A', citedText: 'a' }]
+    const result = frames(
+      finished({
+        stopReason: 'tool_use',
+        clientToolCalls: [CALL],
+        citations,
+        echoableContent: [CALL],
+        runContinues: true,
+      })
+    )
+
+    expect(result.map((f) => f.type)).toEqual(['tool_use', 'citations', 'execution_complete', 'done'])
+    expect(result[0]).toEqual({ type: 'tool_use', toolUse: CALL })
+    expect(result[1]).toEqual({ type: 'citations', citations })
+  })
+
+  it('releases no tool call on the last Turn of a Run, and says why on done', () => {
+    const result = frames(finished({ stopReason: 'tool_use', clientToolCalls: [CALL] }), {
+      runEnd: 'turn_limit',
+    })
+
+    expect(result.map((f) => f.type)).toEqual(['execution_complete', 'done'])
+    expect(result[1]).toMatchObject({ type: 'done', runEnd: 'turn_limit' })
+    expect(releasedToolCalls({ final: finished({ stopReason: 'tool_use', clientToolCalls: [CALL] }), runEnd: 'turn_limit' })).toEqual([])
+  })
+
+  it('releases no tool call on max_tokens and drops the cut-off call from contentBlocks', () => {
+    const result = frames(
+      finished({
+        stopReason: 'max_tokens',
+        clientToolCalls: [CALL],
+        echoableContent: [{ type: 'text', text: 'Part' }, CALL],
+      })
+    )
+
+    expect(result.map((f) => f.type)).toEqual(['execution_complete', 'done'])
+    expect(result[1]).toMatchObject({ contentBlocks: [{ type: 'text', text: 'Part' }] })
+  })
+
+  it('keeps tool_use blocks in contentBlocks on a tool_use stop', () => {
+    const result = frames(
+      finished({ stopReason: 'tool_use', clientToolCalls: [CALL], echoableContent: [CALL] })
+    )
+
+    expect(result.at(-1)).toMatchObject({ contentBlocks: [CALL] })
+  })
+
+  it('sends citations only when there are some', () => {
+    expect(frames(finished()).map((f) => f.type)).toEqual(['execution_complete', 'done'])
+  })
+
+  it('leaves runEnd out of done unless the Run ends', () => {
+    const [, done] = frames(finished())
+
+    expect(JSON.stringify(done)).not.toContain('runEnd')
+  })
+
+  it('reports usage with the web searches, and the balance reduction', () => {
+    const result = frames(
+      finished({ usage: { ...STUB_USAGE, cacheReadInputTokens: 200, webSearchRequests: 2 } }),
+      { costCents: 7, maxTokensReducedForBalance: true }
+    )
+    const usage = {
+      inputTokens: 1200,
+      cacheCreationInputTokens: 0,
+      cacheReadInputTokens: 200,
+      outputTokens: 50,
+      costCents: 7,
+      webSearchRequests: 2,
+      webSearchCostCents: calculateWebSearchCostInCredits(2),
+    }
+
+    expect(result[0]).toEqual({
+      type: 'execution_complete',
+      stopReason: 'end_turn',
+      finalOutput: 'Done',
+      metrics: usage,
+    })
+    expect(result[1]).toMatchObject({ type: 'done', usage, maxTokensReducedForBalance: true })
   })
 })
