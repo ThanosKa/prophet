@@ -335,6 +335,7 @@ export async function POST(req: Request) {
         messageCount: anthropicMessages.length,
         runTurns: runTurns.length,
         runEnd,
+        kind: requestKind.kind,
       },
       "Starting agent stream"
     );
