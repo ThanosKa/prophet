@@ -116,7 +116,7 @@ const extensions = [
     name: 'Harpa AI',
     tagline: 'AI sidebar with web monitoring and custom commands',
     url: 'https://harpa.ai',
-    pricing: 'Free (BYOK), Pro $15/mo, Business custom',
+    pricing: 'Free (BYOK), Pro $12/mo, Business custom',
     description: 'Harpa AI operates in the sidebar with a focus on web monitoring and custom automation commands. You can set up alerts to track price changes on e-commerce sites, monitor web pages for content updates, and create custom command sequences for repetitive tasks. The bring-your-own-API-key model means you can use the sidebar for free with your own GPT-4 or Claude API keys. Harpa supports local AI models as well, which appeals to privacy-conscious users. The sidebar interface is functional but complex, with a steeper learning curve than other options. For power users who want monitoring and custom commands alongside AI chat, Harpa is the most capable option in that specific niche.',
     pros: [
       'Web monitoring and price alerts from the sidebar',
@@ -291,7 +291,7 @@ export default function BestAISidebarExtensionsPage() {
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Sider</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$8.99/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">MaxAI</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$9.99/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Merlin</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">$14.25/mo</td></tr>
-                  <tr><td className="py-3 px-3 font-medium text-foreground">Harpa AI</td><td className="py-3 px-3">Monitoring only</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$15/mo</td></tr>
+                  <tr><td className="py-3 px-3 font-medium text-foreground">Harpa AI</td><td className="py-3 px-3">Monitoring only</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$12/mo</td></tr>
                 </tbody>
               </table>
             </div>

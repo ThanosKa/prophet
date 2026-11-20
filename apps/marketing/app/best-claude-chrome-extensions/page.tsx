@@ -104,7 +104,7 @@ const extensions = [
     tagline: 'Bring your own Claude API key',
     url: 'https://harpa.ai',
     claudeModels: 'Any Claude model via your API key',
-    pricing: 'Free with your own API key, Pro $15/mo',
+    pricing: 'Free with your own API key, Pro $12/mo',
     description: 'Harpa AI supports Claude through its bring-your-own-key (BYOK) feature. Instead of paying Harpa for Claude access, you enter your own Anthropic API key and pay Anthropic directly for usage. This gives you access to any Claude model available through the API, including the latest releases, at Anthropic\'s direct pricing without markup. Harpa adds value through its web monitoring features (price tracking, page change alerts) and custom command system. The BYOK approach makes Harpa the most cost-effective way to use Claude in a browser extension if you already have an Anthropic API key. However, the setup requires technical knowledge, and the interface prioritizes power users over simplicity. Harpa\'s automation is focused on monitoring and alerts rather than interactive browser control.',
     pros: [
       'Access any Claude model through your own API key',
