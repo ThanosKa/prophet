@@ -33,7 +33,7 @@ import {
 import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
 import { totalCredits } from "@/lib/credit-balance";
 import { buildAgentMessages } from "@/lib/agent/conversation";
-import { readRequestKind } from "@/lib/agent/request-kind";
+import { readRequestKind, toRunRequest } from "@/lib/agent/request-kind";
 import { lastTurnReason, withLastTurnNotice } from "@/lib/agent/last-turn";
 import {
   openRun,
@@ -297,20 +297,20 @@ export async function POST(req: Request) {
     const maxTokensReducedForBalance = maxTokens < AGENT_TURN_MAX_TOKENS;
 
     let history: HistoryRow[] = runHistory;
-    let runRequest: RunRequest = { type: "legacy", turns: runTurns };
-    if (resumed) {
-      runRequest = { type: "run", opening: resumed.opening, turns: runTurns };
-    } else if (previousTurns) {
-      runRequest = { type: "continuation", turns: runTurns };
-    }
+    let runRequest: RunRequest;
     // Nothing was sent to Anthropic yet, so a failure from here to the stream gives the
     // whole Hold back. Without this, the outer catch would answer 500 and keep it.
     let anthropicMessages: MessageParam[];
     try {
-      if (userMessage) {
-        const started = await openRun({ db, chatId, userMessage });
+      if (requestKind.kind === "first") {
+        const started = await openRun({ db, chatId, userMessage: requestKind.userMessage });
         history = started.history;
-        runRequest = { type: "first", opening: started.opening };
+        runRequest = toRunRequest({ kind: requestKind, from: { opened: started.opening } });
+      } else {
+        runRequest = toRunRequest({
+          kind: requestKind,
+          from: resumed ? { resumed: resumed.opening } : null,
+        });
       }
       const builtMessages = buildAgentMessages({ history, userMessage, image, runTurns });
       anthropicMessages = runEnd ? withLastTurnNotice(builtMessages) : builtMessages;
