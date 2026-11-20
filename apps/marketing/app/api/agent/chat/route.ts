@@ -32,7 +32,8 @@ import {
 } from "@prophet/shared";
 import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
 import { totalCredits } from "@/lib/credit-balance";
-import { buildAgentMessages, resolveRunTurns } from "@/lib/agent/conversation";
+import { buildAgentMessages } from "@/lib/agent/conversation";
+import { cachedPrefixTurns, readRequestKind, toRunRequest } from "@/lib/agent/request-kind";
 import { lastTurnReason, withLastTurnNotice } from "@/lib/agent/last-turn";
 import {
   openRun,
@@ -138,9 +139,6 @@ export async function POST(req: Request) {
       chatId,
       userMessage,
       runId,
-      previousTurns,
-      toolResults,
-      previousContent,
       image,
       enableThinking,
       enableWebSearch,
@@ -173,10 +171,8 @@ export async function POST(req: Request) {
       });
     }
 
-    const isFirstTurn = !!userMessage;
-    const runTurns = resolveRunTurns({ previousTurns, previousContent, toolResults });
-    const isContinuationTurn = !isFirstTurn && runTurns.length > 0;
-    if (!isFirstTurn && !isContinuationTurn) {
+    const requestKind = readRequestKind(validation.data);
+    if (requestKind.kind === "invalid") {
       return NextResponse.json(
         error(
           "Either userMessage or toolResults is required",
@@ -185,6 +181,8 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    const { runTurns } = requestKind;
+    const isContinuationTurn = requestKind.kind !== "first";
 
     // Read without a lock to size the Hold; a first Turn rebuilds its prompt from the
     // read it takes under the chat lock once the Hold is in place.
@@ -195,8 +193,8 @@ export async function POST(req: Request) {
     // A continuation that names its Run goes on only while that Run is the live one,
     // and stops before any Hold once another panel has started a newer Run.
     const resumed =
-      isContinuationTurn && runId !== undefined
-        ? resumeRun({ history: unlockedHistory, runId })
+      requestKind.kind === "run"
+        ? resumeRun({ history: unlockedHistory, runId: requestKind.runId })
         : undefined;
     if (resumed === null) {
       logger.info({ userId, chatId, runId }, "Continuation of a superseded Run");
@@ -224,21 +222,21 @@ export async function POST(req: Request) {
     const estimatedInputTokens = runEnd
       ? estimatePrompt(withLastTurnNotice(estimatedMessages))
       : estimatedPromptTokens;
-    // The Hold expects the cache: a `previousTurns` continuation's previous Turn already
-    // sent (and cached) this prompt minus its newest Turn, so that prefix is priced as a
-    // cache read and the rest, the last-Turn notice included, as a cache write. First
-    // Turns and the legacy form write their whole prompt. A miss settles as overage.
-    const cachedPrefixTokens =
-      isContinuationTurn && previousTurns
-        ? estimatePrompt(
-            buildAgentMessages({
-              history: runHistory,
-              userMessage,
-              image,
-              runTurns: runTurns.slice(0, -1),
-            })
-          )
-        : 0;
+    // The Hold expects the cache: when the previous Turn already sent (and cached) this
+    // prompt minus its newest Turn, that prefix is priced as a cache read and the rest,
+    // the last-Turn notice included, as a cache write (`cachedPrefixTurns` says which
+    // requests have one). A miss settles as overage.
+    const cachedTurns = cachedPrefixTurns(requestKind);
+    const cachedPrefixTokens = cachedTurns
+      ? estimatePrompt(
+          buildAgentMessages({
+            history: runHistory,
+            userMessage,
+            image,
+            runTurns: cachedTurns,
+          })
+        )
+      : 0;
     const restTokens = Math.max(0, estimatedInputTokens - cachedPrefixTokens);
     const balanceCents = totalCredits(user);
     const planFor = (option: { model: ModelName; enableThinking: boolean }) =>
@@ -298,20 +296,20 @@ export async function POST(req: Request) {
     const maxTokensReducedForBalance = maxTokens < AGENT_TURN_MAX_TOKENS;
 
     let history: HistoryRow[] = runHistory;
-    let runRequest: RunRequest = { type: "legacy", turns: runTurns };
-    if (resumed) {
-      runRequest = { type: "run", opening: resumed.opening, turns: runTurns };
-    } else if (previousTurns) {
-      runRequest = { type: "continuation", turns: runTurns };
-    }
+    let runRequest: RunRequest;
     // Nothing was sent to Anthropic yet, so a failure from here to the stream gives the
     // whole Hold back. Without this, the outer catch would answer 500 and keep it.
     let anthropicMessages: MessageParam[];
     try {
-      if (userMessage) {
-        const started = await openRun({ db, chatId, userMessage });
+      if (requestKind.kind === "first") {
+        const started = await openRun({ db, chatId, userMessage: requestKind.userMessage });
         history = started.history;
-        runRequest = { type: "first", opening: started.opening };
+        runRequest = toRunRequest({ kind: requestKind, from: { opened: started.opening } });
+      } else {
+        runRequest = toRunRequest({
+          kind: requestKind,
+          from: resumed ? { resumed: resumed.opening } : null,
+        });
       }
       const builtMessages = buildAgentMessages({ history, userMessage, image, runTurns });
       anthropicMessages = runEnd ? withLastTurnNotice(builtMessages) : builtMessages;

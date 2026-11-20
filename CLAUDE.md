@@ -10,7 +10,7 @@ Chrome side panel AI agent sold on prepaid credits, in a pnpm monorepo:
 
 One `POST /api/agent/chat` is one Turn: side panel → API → Anthropic (streaming) → SSE back → the side panel runs the released tool calls in the user's tab and POSTs the results, until the Run ends. Clerk authenticates both the web app and the extension.
 
-Installed extension builds outlive deploys, so the API keeps accepting what older builds send (`LEGACY_MODEL_ALIASES`, `LEGACY_MAX_AGENT_TURNS`, continuations without `runId`).
+Installed extension builds outlive deploys, so the API keeps accepting what older builds send (`LEGACY_MODEL_ALIASES`, `LEGACY_MAX_AGENT_TURNS`, continuations without `runId`; `apps/marketing/lib/agent/request-kind.ts` names each kind and is where one is retired).
 
 ## Commands
 
