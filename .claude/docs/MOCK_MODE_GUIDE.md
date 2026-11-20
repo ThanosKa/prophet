@@ -27,6 +27,8 @@ VITE_USE_DEV_API=true
 | **Dev API** | `VITE_USE_DEV_API=true` | Real Anthropic calls via `/api/agent/chat/dev`, no Credits deducted; the route answers 403 outside `NODE_ENV=development` |
 | **Production** | Not set or any other value | Real API via `/api/agent/chat`, credits deducted |
 
+The dev route reads Claude's stream with the same Turn stream module as production, so a developer sees the frames a user would: tool calls only at the end of a clean `tool_use` Turn, web search frames and citations, a `runId` on `session_created`, a `runEnd` on a Run's last Turn, and production's wording for errors. It differs only in billing: it takes no Hold and writes no `usageRecords` rows. `apps/marketing/app/api/agent/chat/dev/route.parity.test.ts` pins this against the production route.
+
 `pnpm test:agent` (`scripts/test-agent.sh`) curls the same `/api/agent/chat/dev` endpoint, so it needs `pnpm dev:web` running.
 
 ## How Mock Mode Works
