@@ -141,67 +141,33 @@ const invalidRequest = () => {
   throw new Error("400 invalid_request_error: something is off");
 };
 
-/** What each route sends for the same Turn today; this records the drift, it does not endorse it. */
-const types = (list: Array<{ type: string }>) => list.map((frame) => frame.type);
+describe("the dev route sends production's frames", () => {
+  it.each([
+    ["plain text", plainText],
+    ["a tool_use Turn", twoToolCalls],
+    ["a web search Turn", webSearch],
+    ["an invalid request", invalidRequest as unknown as Turn],
+  ])("for %s", async (_name, turn) => {
+    const production = await productionFrames(turn);
+    const dev = await devFrames(turn);
 
-describe("today's differences between the dev route and production", () => {
-  it("the dev route leaves the Run id out of session_created", async () => {
-    const [dev] = await devFrames(plainText);
-    const [production] = await productionFrames(plainText);
-
-    expect(dev).toEqual({ type: "session_created", sessionId: CHAT_ID });
-    expect(production).toMatchObject({ runId: expect.stringMatching(UUID) });
+    expect(dev).toEqual(production);
   });
 
-  it("the dev route sends tool calls mid-stream, production after the Turn", async () => {
-    expect(types(await devFrames(twoToolCalls))).toEqual([
-      "session_created",
-      "content_delta",
-      "tool_use",
-      "tool_use",
-      "metrics_update",
-      "execution_complete",
-      "done",
-    ]);
-    expect(types(await productionFrames(twoToolCalls))).toEqual([
-      "session_created",
-      "content_delta",
-      "metrics_update",
-      "tool_use",
-      "tool_use",
-      "execution_complete",
-      "done",
-    ]);
-  });
+  it("names the Run in session_created", async () => {
+    const [session] = await devFrames(plainText);
 
-  it("the dev route sends no web search frames and no citations", async () => {
-    expect(types(await devFrames(webSearch))).toEqual([
-      "session_created",
-      "content_delta",
-      "metrics_update",
-      "execution_complete",
-      "done",
-    ]);
-    expect(types(await productionFrames(webSearch))).toEqual([
-      "session_created",
-      "web_search_start",
-      "web_search_results",
-      "content_delta",
-      "metrics_update",
-      "citations",
-      "execution_complete",
-      "done",
-    ]);
-  });
-
-  it("the dev route words an invalid request differently", async () => {
-    const [dev] = await devFrames(invalidRequest as unknown as Turn);
-    const [production] = await productionFrames(invalidRequest as unknown as Turn);
-
-    expect(dev).toMatchObject({ error: "Invalid request. Please try a different message." });
-    expect(production).toMatchObject({
-      error: "Claude couldn't process this request. Start a new chat and try again.",
+    expect(session).toEqual({
+      type: "session_created",
+      sessionId: CHAT_ID,
+      runId: expect.stringMatching(UUID),
     });
+  });
+
+  it("releases tool calls only at the end of a clean tool_use Turn", async () => {
+    const types = (await devFrames(twoToolCalls)).map((frame) => frame.type);
+
+    expect(types.indexOf("tool_use")).toBeGreaterThan(types.indexOf("metrics_update"));
   });
 });
 
