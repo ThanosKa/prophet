@@ -162,3 +162,44 @@ describe('openNewTab', () => {
     expect(chromeStub.tabs.onUpdated.removeListener).toHaveBeenCalledTimes(1)
   })
 })
+
+// Ticket 33: the new tab can finish loading before chrome.tabs.create returns.
+describe('openNewTab when the new tab finishes loading while it is being created', () => {
+  it('finishes without waiting 30 seconds, and removes its listener', async () => {
+    chromeStub.tabs.create.mockImplementation(async () => {
+      emit(NEW_TAB_ID, 'complete')
+      return { id: NEW_TAB_ID }
+    })
+
+    const promise = openNewTab({ url: 'example.com' })
+    const state = track(promise)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(state.done).toBe(true)
+    expect((await promise).success).toBe(true)
+    expect(listeners.size).toBe(0)
+  })
+
+  it('ignores a load that finishes during the call in another tab', async () => {
+    chromeStub.tabs.create.mockImplementation(async () => {
+      emit(NEW_TAB_ID + 1, 'complete')
+      return { id: NEW_TAB_ID }
+    })
+
+    const promise = openNewTab({ url: 'example.com' })
+    const state = track(promise)
+    await vi.advanceTimersByTimeAsync(29_999)
+    expect(state.done).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect((await promise).success).toBe(true)
+    expect(listeners.size).toBe(0)
+  })
+
+  it('removes its listener when creating the tab fails', async () => {
+    chromeStub.tabs.create.mockRejectedValue(new Error('window closed'))
+
+    expect(await openNewTab({ url: 'example.com' })).toMatchObject({ success: false, error: 'window closed' })
+    expect(listeners.size).toBe(0)
+  })
+})

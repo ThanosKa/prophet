@@ -257,3 +257,63 @@ describe('waitForTimeout', () => {
     expect(await pending).toEqual({ success: true, data: 'Waited 30000ms', durationMs: 30_000 })
   })
 })
+
+// Ticket 33: the page can finish loading while the "already loaded" check is in
+// progress. Wait for navigation must not miss that load and return its timeout error.
+describe('waitForNavigation when the load finishes during the "already loaded" check', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  /** The check reads 'loading', and the given statuses arrive while it is in progress. */
+  function stubCheck(statuses: string[]) {
+    const listeners = new Set<UpdateListener>()
+    const emit = (status: string) => [...listeners].forEach((l) => l(7, { status }))
+    vi.stubGlobal('chrome', {
+      tabs: {
+        query: vi.fn(async () => [{ id: 7 }]),
+        get: vi.fn(async () => {
+          statuses.forEach(emit)
+          return { status: 'loading' }
+        }),
+        onUpdated: {
+          addListener: vi.fn((l: UpdateListener) => listeners.add(l)),
+          removeListener: vi.fn((l: UpdateListener) => listeners.delete(l)),
+        },
+      },
+    })
+    return { listeners, emit }
+  }
+
+  it('reports "Navigation complete" without waiting its timeout, and removes its listener', async () => {
+    const { listeners } = stubCheck(['complete'])
+
+    const pending = waitForNavigation({})
+    let done = false
+    void pending.then(() => (done = true))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(done).toBe(true)
+    expect(await pending).toMatchObject({ success: true, data: 'Navigation complete' })
+    expect(listeners.size).toBe(0)
+  })
+
+  it('keeps waiting when the tab starts loading again after that load', async () => {
+    const { listeners, emit } = stubCheck(['complete', 'loading'])
+
+    const pending = waitForNavigation({})
+    let done = false
+    void pending.then(() => (done = true))
+    await vi.advanceTimersByTimeAsync(29_999)
+    expect(done).toBe(false)
+
+    emit('complete')
+    expect(await pending).toMatchObject({ success: true, data: 'Navigation complete' })
+    expect(listeners.size).toBe(0)
+  })
+})
