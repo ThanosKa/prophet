@@ -15,37 +15,41 @@ const model = resolveAgentModel(requestedModel)
 const plan = planCreditReservation({ model, balanceCents, cachedPrefixTokens, restTokens, maxTokens: AGENT_TURN_MAX_TOKENS, ... })
 const turnHold = await takeHold({ db, userId, chatId, model, reserveCents: plan.reserveCents })
 
-const anthropicStream = await anthropic.messages.stream({
-  model,
-  max_tokens: maxTokens,
-  // Automatic caching: the breakpoint follows the newest block on every request.
-  cache_control: { type: 'ephemeral' },
-  // Explicit breakpoint on the static prefix (tools + system), shared by every chat.
-  system: [{ type: 'text', text: AGENT_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-  tools: buildAgentTools(AGENT_TOOLS, webSearchEnabled),
-  // DB history + the run's opening message + every earlier turn of the run, append-only
-  messages: buildAgentMessages({ history, userMessage, image, runTurns }),
+// The call to Anthropic stays in the route, inside `open`. readTurnStream
+// (lib/agent/turn-stream.ts) sends session_created once the stream is open and the
+// live frames through the route's `send`, holds client tool calls back, awaits
+// finalMessage() and never throws: Stop or an error comes back as `cut_short` with the
+// PartialTurn measured so far, which the route words with describeTurnError.
+const turn = await readTurnStream({
+  open: async () => anthropic.messages.stream({
+    model,
+    max_tokens: maxTokens,
+    // Automatic caching: the breakpoint follows the newest block on every request.
+    cache_control: { type: 'ephemeral' },
+    // Explicit breakpoint on the static prefix (tools + system), shared by every chat.
+    system: [{ type: 'text', text: AGENT_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+    tools: buildAgentTools(AGENT_TOOLS, webSearchEnabled),
+    // DB history + the run's opening message + every earlier turn of the run, append-only
+    messages: buildAgentMessages({ history, userMessage, image, runTurns }),
+  }, { signal: upstream.signal }),
+  sessionFrame, model, send,
 })
 
-const finalMessage = await anthropicStream.finalMessage()
-const { usage } = finalMessage
-
-// `input_tokens` is only the uncached remainder; cache writes and reads are billed
-// separately (writes 1.25x input, reads 0.1x, 0.05x on Opus 5.5 and Sonnet 5.5).
-// Haiku 5.5 bills the whole request at a higher rate card once the prompt passes 100K tokens.
-const costCents = calculateUsageCostInCredits(model, {
-  inputTokens: usage.input_tokens,
-  cacheCreationInputTokens: usage.cache_creation_input_tokens ?? 0,
-  cacheReadInputTokens: usage.cache_read_input_tokens ?? 0,
-  outputTokens: usage.output_tokens,
-  webSearchRequests: usage.server_tool_use?.web_search_requests ?? 0,
-})
+// `turn.final.usage` comes from finalMessage().usage. `input_tokens` is only the uncached
+// remainder; cache writes and reads are billed separately (writes 1.25x input, reads
+// 0.1x, 0.05x on Opus 5.5 and Sonnet 5.5). Haiku 5.5 bills the whole request at a
+// higher rate card once the prompt passes 100K tokens.
+const costCents = calculateUsageCostInCredits(model, turn.final.usage)
+// = inputTokens, cacheCreationInputTokens, cacheReadInputTokens, outputTokens and
+//   webSearchRequests (usage.server_tool_use.web_search_requests)
 
 // The Hold module (lib/turn-hold.ts) prices the same usage and settles in one
 // transaction: the Run record (writeRunRecord, which locks the chat row), then
 // settleCredits (the user row), then the usageRecords row. It throws if that fails, and
-// the stream's `finally` closes the Hold as unfinished; closing a settled Hold does nothing.
-await turnHold.close({ type: 'finished', request: runRequest, usage: turnUsage, ending, isFinalTurn })
+// the stream's `finally` closes the Hold as unfinished from `turn.partial` (the final
+// usage with the web searches that started, never above the Hold); closing a settled
+// Hold does nothing.
+await turnHold.close({ type: 'finished', request: runRequest, usage: turn.final.usage, ending, isFinalTurn })
 ```
 
 The route's own `ReadableStream` sends these as SSE events (`text/event-stream`); `ARCHITECTURE.md` lists them.
@@ -53,7 +57,7 @@ The route's own `ReadableStream` sends these as SSE events (`text/event-stream`)
 ### Key Points
 
 - Use `anthropic.messages.stream()` for streaming responses
-- Await `finalMessage()` for authoritative usage, including `server_tool_use.web_search_requests`
+- Read the stream only through `readTurnStream` (`lib/agent/turn-stream.ts`): it awaits `finalMessage()` for authoritative usage, including `server_tool_use.web_search_requests`, and prices `metrics_update` from the web searches that started. Words for a cut-short Turn's error frame come from `describeTurnError` in the same module
 - Release client tool calls only after a `tool_use` stop: collect them while streaming and send the `tool_use` events after `finalMessage()`, before `citations`, `execution_complete` and `done` (extension 1.0.5 takes `execution_complete` without a prior tool call as the final answer). On `max_tokens`, `refusal`, Stop or an error, send none and store none; on `max_tokens`, `done.contentBlocks` drops the cut-off call
 - Each Run keeps one assistant row, updated after every Turn (`writeRunRecord` in `lib/agent/run-record.ts`): in the billing transaction on a normal end, and in the unfinished-Turn settlement on Stop, disconnect or error. The Run's user row is saved under the chat lock before the first Turn (`openRun`), so it survives a failed Turn. Lock the chat row before the user row in every transaction that writes the record. A new Run's prompt renders an earlier assistant row as its text plus an "Actions taken" list
 - The live Run is the chat's newest user row. `session_created` carries `runId` (the Run's opening row id), and a continuation that sends it back gets 409 `RUN_SUPERSEDED` before any Hold once a newer Run has started (`resumeRun`); its prompt uses the rows up to and including the `runId` row. `writeRunRecord` re-checks under the chat lock and skips a superseded Run's record, while billing still settles. A continuation without `runId` (extension 1.0.5) keeps the legacy rules
