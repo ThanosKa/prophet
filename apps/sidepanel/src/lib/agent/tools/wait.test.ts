@@ -142,15 +142,15 @@ describe('waitForNavigation', () => {
     })
   })
 
-  it('returns "Page already loaded" without listening when the tab is complete', async () => {
-    const { onUpdated } = stubChrome({ status: 'complete' })
+  it('returns "Page already loaded" when the tab is complete, and removes its listener', async () => {
+    const { listeners } = stubChrome({ status: 'complete' })
 
     expect(await waitForNavigation({})).toEqual({
       success: true,
       data: 'Page already loaded',
       durationMs: expect.any(Number),
     })
-    expect(onUpdated.addListener).not.toHaveBeenCalled()
+    expect(listeners.size).toBe(0)
   })
 
   it('resolves on a load-complete event for the active tab and removes its listener', async () => {
@@ -211,14 +211,11 @@ describe('waitForNavigation', () => {
   })
 
   it("returns an Error's message from a failing tab read", async () => {
-    vi.stubGlobal('chrome', {
-      tabs: {
-        query: vi.fn(async () => [{ id: 7 }]),
-        get: vi.fn(async () => Promise.reject(new Error('tab closed'))),
-      },
-    })
+    const { listeners } = stubChrome()
+    vi.mocked(chrome.tabs.get).mockRejectedValue(new Error('tab closed'))
 
     expect(await waitForNavigation({})).toMatchObject({ success: false, error: 'tab closed' })
+    expect(listeners.size).toBe(0)
   })
 })
 

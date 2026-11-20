@@ -1,4 +1,4 @@
-import { waitForTabComplete } from './tab-tool'
+import { openTabAndWaitForLoad } from './tab-tool'
 import { snapshotManager } from '../snapshot-manager'
 import { debuggerManager } from '../debugger-manager'
 import { type ToolExecutionResult } from '../types'
@@ -168,8 +168,11 @@ export async function openNewTab(input: {
 
         const active = input.active ?? true
 
-        // Create the new tab
-        const newTab = await chrome.tabs.create({ url, active })
+        // Create the new tab and wait for it to finish loading
+        const newTab = await openTabAndWaitForLoad({
+            timeoutMs: 30000,
+            open: () => chrome.tabs.create({ url, active }),
+        })
 
         if (!newTab.id) {
             return {
@@ -178,9 +181,6 @@ export async function openNewTab(input: {
                 durationMs: Date.now() - startTime,
             }
         }
-
-        // Wait for the tab to finish loading
-        await waitForTabComplete({ tabId: newTab.id, timeoutMs: 30000 })
 
         // Get updated tab info
         const updatedTab = await chrome.tabs.get(newTab.id)

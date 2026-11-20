@@ -1,6 +1,6 @@
 import { cdpCommander, type EvaluateResult } from '../cdp-commander'
 import { type ToolExecutionResult } from '../types'
-import { activeTabTool, waitForTabComplete } from './tab-tool'
+import { activeTabTool, waitForLoadUnlessComplete } from './tab-tool'
 
 const MAX_TIMEOUT_MS = 30000
 const DEFAULT_TIMEOUT_MS = 10000
@@ -95,16 +95,10 @@ export const waitForNavigation = activeTabTool<{ timeout?: number }>({
   run: async ({ input, tab }) => {
     const timeout = Math.min(input.timeout || MAX_TIMEOUT_MS, MAX_TIMEOUT_MS)
 
-    // Check if already complete
-    const currentTab = await chrome.tabs.get(tab.id)
-    if (currentTab.status === 'complete') {
+    const outcome = await waitForLoadUnlessComplete({ tabId: tab.id, timeoutMs: timeout })
+    if (outcome === 'already_loaded') {
       return { data: 'Page already loaded' }
     }
-
-    const outcome = await waitForTabComplete({
-      tabId: tab.id,
-      timeoutMs: timeout,
-    })
     if (outcome === 'timed_out') {
       return { error: 'Timeout waiting for navigation' }
     }
