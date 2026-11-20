@@ -32,7 +32,8 @@ import {
 } from "@prophet/shared";
 import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
 import { totalCredits } from "@/lib/credit-balance";
-import { buildAgentMessages, resolveRunTurns } from "@/lib/agent/conversation";
+import { buildAgentMessages } from "@/lib/agent/conversation";
+import { readRequestKind } from "@/lib/agent/request-kind";
 import { lastTurnReason, withLastTurnNotice } from "@/lib/agent/last-turn";
 import {
   openRun,
@@ -139,8 +140,6 @@ export async function POST(req: Request) {
       userMessage,
       runId,
       previousTurns,
-      toolResults,
-      previousContent,
       image,
       enableThinking,
       enableWebSearch,
@@ -173,10 +172,8 @@ export async function POST(req: Request) {
       });
     }
 
-    const isFirstTurn = !!userMessage;
-    const runTurns = resolveRunTurns({ previousTurns, previousContent, toolResults });
-    const isContinuationTurn = !isFirstTurn && runTurns.length > 0;
-    if (!isFirstTurn && !isContinuationTurn) {
+    const requestKind = readRequestKind(validation.data);
+    if (requestKind.kind === "invalid") {
       return NextResponse.json(
         error(
           "Either userMessage or toolResults is required",
@@ -185,6 +182,8 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    const { runTurns } = requestKind;
+    const isContinuationTurn = requestKind.kind !== "first";
 
     // Read without a lock to size the Hold; a first Turn rebuilds its prompt from the
     // read it takes under the chat lock once the Hold is in place.
@@ -195,8 +194,8 @@ export async function POST(req: Request) {
     // A continuation that names its Run goes on only while that Run is the live one,
     // and stops before any Hold once another panel has started a newer Run.
     const resumed =
-      isContinuationTurn && runId !== undefined
-        ? resumeRun({ history: unlockedHistory, runId })
+      requestKind.kind === "run"
+        ? resumeRun({ history: unlockedHistory, runId: requestKind.runId })
         : undefined;
     if (resumed === null) {
       logger.info({ userId, chatId, runId }, "Continuation of a superseded Run");
