@@ -1,6 +1,6 @@
 import { AGENT_SIZE_LIMITS } from '@prophet/shared'
 import { cdpCommander, type EvaluateResult } from '../cdp-commander'
-import { activeTabTool, waitForTabComplete } from './tab-tool'
+import { activeTabTool, navigateAndWaitForLoad } from './tab-tool'
 import { type ScrollDirection, type PageContent } from '../types'
 
 export const navigate = activeTabTool<{ url: string }>({
@@ -11,9 +11,11 @@ export const navigate = activeTabTool<{ url: string }>({
       url = `https://${url}`
     }
 
-    await chrome.tabs.update(tab.id, { url })
-
-    await waitForTabComplete({ tabId: tab.id, timeoutMs: 30000 })
+    await navigateAndWaitForLoad({
+      tabId: tab.id,
+      timeoutMs: 30000,
+      navigate: () => chrome.tabs.update(tab.id, { url }),
+    })
 
     return { data: `Navigated to ${url}` }
   },
@@ -123,10 +125,7 @@ export const getPageContent = activeTabTool<void>({
 export const goBack = activeTabTool<void>({
   failure: 'Failed to go back',
   run: async ({ tab }) => {
-    await chrome.tabs.goBack(tab.id)
-
-    // Wait for navigation to complete
-    await waitForTabComplete({ tabId: tab.id, timeoutMs: 5000 })
+    await navigateAndWaitForLoad({ tabId: tab.id, timeoutMs: 5000, navigate: () => chrome.tabs.goBack(tab.id) })
 
     const updatedTab = await chrome.tabs.get(tab.id)
 
@@ -140,10 +139,7 @@ export const goBack = activeTabTool<void>({
 export const goForward = activeTabTool<void>({
   failure: 'Failed to go forward',
   run: async ({ tab }) => {
-    await chrome.tabs.goForward(tab.id)
-
-    // Wait for navigation to complete
-    await waitForTabComplete({ tabId: tab.id, timeoutMs: 5000 })
+    await navigateAndWaitForLoad({ tabId: tab.id, timeoutMs: 5000, navigate: () => chrome.tabs.goForward(tab.id) })
 
     const updatedTab = await chrome.tabs.get(tab.id)
 
@@ -157,10 +153,7 @@ export const goForward = activeTabTool<void>({
 export const reloadPage = activeTabTool<void>({
   failure: 'Failed to reload page',
   run: async ({ tab }) => {
-    await chrome.tabs.reload(tab.id)
-
-    // Wait for reload to complete
-    await waitForTabComplete({ tabId: tab.id, timeoutMs: 30000 })
+    await navigateAndWaitForLoad({ tabId: tab.id, timeoutMs: 30000, navigate: () => chrome.tabs.reload(tab.id) })
 
     return { data: 'Page reloaded' }
   },
