@@ -1,6 +1,360 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { APIError } from '@anthropic-ai/sdk'
-import { describeTurnError } from './turn-stream'
+import {
+  anthropicTurn,
+  text,
+  textBlockEvents,
+  toolUse,
+  toolUseBlockEvents,
+} from '@/app/api/agent/chat/anthropic-stream-stubs'
+import { describeTurnError, readTurnStream } from './turn-stream'
+
+const loggerMock = vi.hoisted(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }))
+vi.mock('@/lib/logger', () => ({ logger: loggerMock }))
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
+
+const SESSION = { type: 'session_created', sessionId: 'chat_1', runId: 'run_1' } as const
+
+/** Reads one fake Turn and records every frame sent while it streamed. */
+async function readTurn(stream: object) {
+  const sent: unknown[] = []
+  const result = await readTurnStream({
+    // A plain vi.fn, so the fake stream needs no cast to the SDK's MessageStream.
+    open: vi.fn().mockResolvedValue(stream),
+    sessionFrame: SESSION,
+    model: 'claude-haiku-5-5',
+    send: (frame) => {
+      sent.push(frame)
+    },
+  })
+  return { sent, result }
+}
+
+/** The stub's 1,000 input and 50 output tokens on Haiku 5.5 cost one Credit. */
+const STUB_USAGE = {
+  inputTokens: 1000,
+  cacheCreationInputTokens: 0,
+  cacheReadInputTokens: 0,
+  outputTokens: 50,
+}
+const STUB_METRICS = { type: 'metrics_update', metrics: { ...STUB_USAGE, costCents: 1 } }
+
+describe('readTurnStream', () => {
+  it('sends session_created, the text and the metrics, and returns the finished Turn', async () => {
+    const { sent, result } = await readTurn(
+      anthropicTurn({ content: [text('Hello there')], stopReason: 'end_turn' })
+    )
+
+    expect(sent).toEqual([SESSION, { type: 'content_delta', delta: 'Hello there' }, STUB_METRICS])
+    expect(result).toEqual({
+      ended: 'finished',
+      final: {
+        stopReason: 'end_turn',
+        usage: { ...STUB_USAGE, webSearchRequests: 0 },
+        text: 'Hello there',
+        clientToolCalls: [],
+        echoableContent: [{ type: 'text', text: 'Hello there' }],
+        citations: [],
+        refusalCategory: null,
+        runContinues: false,
+      },
+      partial: {
+        usageReported: true,
+        usage: { ...STUB_USAGE, webSearchRequests: 0 },
+        streamedOutput: 'Hello there',
+        text: 'Hello there',
+      },
+    })
+  })
+
+  it('sends thinking as it streams, outside the reply text', async () => {
+    const thinking = { type: 'thinking', thinking: 'The user wants a greeting.', signature: 'sig' }
+    const { sent, result } = await readTurn(
+      anthropicTurn({
+        events: [
+          { type: 'content_block_start', index: 0, content_block: { ...thinking, thinking: '' } },
+          { type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: thinking.thinking } },
+          { type: 'content_block_stop', index: 0 },
+          ...textBlockEvents({ index: 1, value: 'Hi!' }),
+        ],
+        content: [thinking, text('Hi!')],
+        stopReason: 'end_turn',
+      })
+    )
+
+    expect(sent).toEqual([
+      SESSION,
+      { type: 'thinking_delta', delta: 'The user wants a greeting.' },
+      { type: 'content_delta', delta: 'Hi!' },
+      STUB_METRICS,
+    ])
+    expect(result.partial).toMatchObject({ streamedOutput: 'The user wants a greeting.Hi!', text: 'Hi!' })
+    expect(result.ended === 'finished' && result.final.text).toBe('Hi!')
+  })
+
+  it('sends web search start and results as they happen, and prices metrics from the started search', async () => {
+    const search = { type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: { query: 'prophet chrome' } }
+    const searchResult = {
+      type: 'web_search_tool_result',
+      tool_use_id: 'srvtoolu_1',
+      content: [
+        { type: 'web_search_result', url: 'https://a.com', title: 'A', page_age: '1 day', encrypted_content: 'enc-a' },
+        { type: 'web_search_result', url: 'https://b.com', title: 'B', page_age: null, encrypted_content: 'enc-b' },
+      ],
+    }
+    const answer = {
+      type: 'text',
+      text: 'Prophet is a side panel agent.',
+      citations: [
+        {
+          type: 'web_search_result_location',
+          url: 'https://a.com',
+          title: 'A',
+          cited_text: 'a side panel agent',
+          encrypted_index: 'idx',
+        },
+      ],
+    }
+    const { sent, result } = await readTurn(
+      anthropicTurn({
+        events: [
+          { type: 'content_block_start', index: 0, content_block: { ...search, input: {} } },
+          {
+            type: 'content_block_delta',
+            index: 0,
+            delta: { type: 'input_json_delta', partial_json: '{"query":"prophet chrome"}' },
+          },
+          { type: 'content_block_stop', index: 0 },
+          { type: 'content_block_start', index: 1, content_block: searchResult },
+          { type: 'content_block_stop', index: 1 },
+          ...textBlockEvents({ index: 2, value: 'Prophet is a side panel agent.' }),
+        ],
+        content: [search, searchResult, answer],
+        stopReason: 'end_turn',
+      })
+    )
+
+    expect(sent).toEqual([
+      SESSION,
+      { type: 'web_search_start', toolUseId: 'srvtoolu_1', query: 'prophet chrome' },
+      {
+        type: 'web_search_results',
+        toolUseId: 'srvtoolu_1',
+        sources: [
+          { url: 'https://a.com', title: 'A', pageAge: '1 day' },
+          { url: 'https://b.com', title: 'B', pageAge: null },
+        ],
+      },
+      { type: 'content_delta', delta: 'Prophet is a side panel agent.' },
+      { type: 'metrics_update', metrics: { ...STUB_USAGE, costCents: 2 } },
+    ])
+    expect(result.ended === 'finished' && result.final.citations).toEqual([
+      { url: 'https://a.com', title: 'A', citedText: 'a side panel agent' },
+    ])
+  })
+
+  it('sends a web search error frame for a failed search', async () => {
+    const failed = {
+      type: 'web_search_tool_result',
+      tool_use_id: 'srvtoolu_1',
+      content: { type: 'web_search_tool_result_error', error_code: 'max_uses_exceeded' },
+    }
+    const { sent } = await readTurn(
+      anthropicTurn({
+        events: [
+          { type: 'content_block_start', index: 0, content_block: failed },
+          { type: 'content_block_stop', index: 0 },
+        ],
+        content: [failed],
+        stopReason: 'end_turn',
+      })
+    )
+
+    expect(sent).toContainEqual({
+      type: 'web_search_error',
+      toolUseId: 'srvtoolu_1',
+      errorCode: 'max_uses_exceeded',
+    })
+  })
+
+  it('holds client tool calls back until the Turn ends', async () => {
+    const navigate = toolUse({ id: 'toolu_1', name: 'navigate', input: { url: 'https://a.com' } })
+    const { sent, result } = await readTurn(
+      anthropicTurn({ content: [text('Opening a.com'), navigate], stopReason: 'tool_use' })
+    )
+
+    expect(sent).toEqual([SESSION, { type: 'content_delta', delta: 'Opening a.com' }, STUB_METRICS])
+    expect(result).toMatchObject({
+      ended: 'finished',
+      final: {
+        stopReason: 'tool_use',
+        clientToolCalls: [{ type: 'tool_use', id: 'toolu_1', name: 'navigate', input: { url: 'https://a.com' } }],
+        runContinues: true,
+      },
+    })
+  })
+
+  it('turns unparseable tool JSON into an empty input and warns', async () => {
+    const { result } = await readTurn(
+      anthropicTurn({
+        events: toolUseBlockEvents({ index: 0, id: 'toolu_1', name: 'navigate', partialJson: '{"url": "https://a.' }),
+        content: [toolUse({ id: 'toolu_1', name: 'navigate', input: {} })],
+        stopReason: 'tool_use',
+      })
+    )
+
+    expect(result.ended === 'finished' && result.final.clientToolCalls).toEqual([
+      { type: 'tool_use', id: 'toolu_1', name: 'navigate', input: {} },
+    ])
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      { toolUseId: 'toolu_1', input: '{"url": "https://a.', error: expect.any(String) },
+      'Failed to parse tool input, using empty object'
+    )
+  })
+
+  it('finishes a pause_turn Turn as one the Run goes on from', async () => {
+    const { result } = await readTurn(
+      anthropicTurn({ content: [text('Still searching')], stopReason: 'pause_turn' })
+    )
+
+    expect(result).toMatchObject({ ended: 'finished', final: { stopReason: 'pause_turn', runContinues: true } })
+  })
+
+  it('carries the refusal category of a refused Turn', async () => {
+    const { result } = await readTurn(anthropicTurn({ content: [text('Sure')], stopReason: 'refusal' }))
+
+    expect(result).toMatchObject({
+      ended: 'finished',
+      final: { stopReason: 'refusal', refusalCategory: 'cyber', runContinues: false },
+    })
+  })
+
+  it('bills the web searches Anthropic reports, and leaves the started ones for a partial bill', async () => {
+    const search = (id: string) => ({ type: 'server_tool_use', id, name: 'web_search', input: { query: id } })
+    const turn = anthropicTurn({
+      content: [search('srvtoolu_1'), search('srvtoolu_2'), text('Found it')],
+      stopReason: 'end_turn',
+    })
+    const { result } = await readTurn({
+      ...turn,
+      finalMessage: async () => ({
+        ...(await turn.finalMessage()),
+        usage: { input_tokens: 1000, output_tokens: 50, server_tool_use: { web_search_requests: 1 } },
+      }),
+    })
+
+    expect(result.ended === 'finished' && result.final.usage.webSearchRequests).toBe(1)
+    expect(result.partial.usage.webSearchRequests).toBe(2)
+  })
+
+  it('sends nothing and reports no usage when the stream never opens', async () => {
+    const failure = new Error('529 overloaded_error')
+    const sent: unknown[] = []
+    const result = await readTurnStream({
+      open: () => Promise.reject(failure),
+      sessionFrame: SESSION,
+      model: 'claude-haiku-5-5',
+      send: (frame) => {
+        sent.push(frame)
+      },
+    })
+
+    expect(sent).toEqual([])
+    expect(result).toEqual({
+      ended: 'cut_short',
+      error: failure,
+      partial: {
+        usageReported: false,
+        usage: { inputTokens: 0, cacheCreationInputTokens: 0, cacheReadInputTokens: 0, outputTokens: 0, webSearchRequests: 0 },
+        streamedOutput: '',
+        text: '',
+      },
+    })
+  })
+
+  it('cuts short before message_start with no usage reported', async () => {
+    const stop = new Error('Request was aborted.')
+    const { sent, result } = await readTurn(cutOffStream({ events: [], error: stop }))
+
+    expect(sent).toEqual([SESSION])
+    expect(result).toMatchObject({ ended: 'cut_short', error: stop, partial: { usageReported: false } })
+  })
+
+  it('cuts short after message_start with the usage and output measured so far', async () => {
+    const stop = new Error('Request was aborted.')
+    const { sent, result } = await readTurn(
+      cutOffStream({
+        events: [
+          {
+            type: 'message_start',
+            message: {
+              usage: { input_tokens: 1000, output_tokens: 1, cache_creation_input_tokens: 200, cache_read_input_tokens: 300 },
+            },
+          },
+          ...textBlockEvents({ index: 0, value: 'Opening ' }),
+          { type: 'content_block_start', index: 1, content_block: { type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: {} } },
+          { type: 'content_block_stop', index: 1 },
+          { type: 'content_block_start', index: 2, content_block: { type: 'tool_use', id: 'toolu_1', name: 'navigate', input: {} } },
+          { type: 'content_block_delta', index: 2, delta: { type: 'input_json_delta', partial_json: '{"url":' } },
+        ],
+        error: stop,
+      })
+    )
+
+    expect(sent).toEqual([
+      SESSION,
+      { type: 'content_delta', delta: 'Opening ' },
+      { type: 'web_search_start', toolUseId: 'srvtoolu_1', query: '' },
+    ])
+    expect(result).toEqual({
+      ended: 'cut_short',
+      error: stop,
+      partial: {
+        usageReported: true,
+        usage: {
+          inputTokens: 1000,
+          cacheCreationInputTokens: 200,
+          cacheReadInputTokens: 300,
+          outputTokens: 0,
+          webSearchRequests: 1,
+        },
+        streamedOutput: 'Opening {"url":',
+        text: 'Opening ',
+      },
+    })
+  })
+
+  it('cuts short with the streamed usage when the final message fails', async () => {
+    const failure = new Error('stream ended without a message')
+    const turn = anthropicTurn({ content: [text('Done')], stopReason: 'end_turn' })
+    const { result } = await readTurn({ ...turn, finalMessage: () => Promise.reject(failure) })
+
+    expect(result).toEqual({
+      ended: 'cut_short',
+      error: failure,
+      partial: {
+        usageReported: true,
+        usage: { ...STUB_USAGE, webSearchRequests: 0 },
+        streamedOutput: 'Done',
+        text: 'Done',
+      },
+    })
+  })
+})
+
+/** A stream that sends `events` and then fails, as Stop or a dropped connection does. */
+function cutOffStream({ events, error }: { events: Record<string, unknown>[]; error: Error }) {
+  return {
+    [Symbol.asyncIterator]: async function* () {
+      yield* events
+      throw error
+    },
+    finalMessage: () => Promise.reject(new Error('no final message after a cut-off stream')),
+  }
+}
 
 /** The SDK's own factory, so the error has the exact class and message a real 400 has. */
 function anthropicBadRequest(message: string) {
