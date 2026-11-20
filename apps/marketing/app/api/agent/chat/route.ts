@@ -33,7 +33,7 @@ import {
 import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
 import { totalCredits } from "@/lib/credit-balance";
 import { buildAgentMessages } from "@/lib/agent/conversation";
-import { readRequestKind, toRunRequest } from "@/lib/agent/request-kind";
+import { cachedPrefixTurns, readRequestKind, toRunRequest } from "@/lib/agent/request-kind";
 import { lastTurnReason, withLastTurnNotice } from "@/lib/agent/last-turn";
 import {
   openRun,
@@ -139,7 +139,6 @@ export async function POST(req: Request) {
       chatId,
       userMessage,
       runId,
-      previousTurns,
       image,
       enableThinking,
       enableWebSearch,
@@ -223,21 +222,21 @@ export async function POST(req: Request) {
     const estimatedInputTokens = runEnd
       ? estimatePrompt(withLastTurnNotice(estimatedMessages))
       : estimatedPromptTokens;
-    // The Hold expects the cache: a `previousTurns` continuation's previous Turn already
-    // sent (and cached) this prompt minus its newest Turn, so that prefix is priced as a
-    // cache read and the rest, the last-Turn notice included, as a cache write. First
-    // Turns and the legacy form write their whole prompt. A miss settles as overage.
-    const cachedPrefixTokens =
-      isContinuationTurn && previousTurns
-        ? estimatePrompt(
-            buildAgentMessages({
-              history: runHistory,
-              userMessage,
-              image,
-              runTurns: runTurns.slice(0, -1),
-            })
-          )
-        : 0;
+    // The Hold expects the cache: when the previous Turn already sent (and cached) this
+    // prompt minus its newest Turn, that prefix is priced as a cache read and the rest,
+    // the last-Turn notice included, as a cache write (`cachedPrefixTurns` says which
+    // requests have one). A miss settles as overage.
+    const cachedTurns = cachedPrefixTurns(requestKind);
+    const cachedPrefixTokens = cachedTurns
+      ? estimatePrompt(
+          buildAgentMessages({
+            history: runHistory,
+            userMessage,
+            image,
+            runTurns: cachedTurns,
+          })
+        )
+      : 0;
     const restTokens = Math.max(0, estimatedInputTokens - cachedPrefixTokens);
     const balanceCents = totalCredits(user);
     const planFor = (option: { model: ModelName; enableThinking: boolean }) =>
