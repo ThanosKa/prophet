@@ -9,7 +9,7 @@ import { eq } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { error as errorBody } from '@/types'
-import { EXTRA_CREDITS, TIER_CONFIG } from '@/lib/pricing'
+import { EXTRA_CREDITS, TIER_CONFIG, hasLivePlan } from '@/lib/pricing'
 import { getAppUrl } from '@/lib/constants'
 
 // The server picks every price: `priceId` is still accepted so an older cached page keeps
@@ -61,6 +61,19 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // One plan per user: a second Checkout would open a second subscription on the same
+    // customer. A subscriber switches plans in the billing portal instead.
+    if (data.mode === 'subscription' && hasLivePlan(user)) {
+      logger.info(
+        { userId, tier: data.tier, subscriptionStatus: user.subscriptionStatus },
+        'Plan checkout refused: subscription exists'
+      )
+      return NextResponse.json(
+        errorBody('You already have a plan. Switch plans in the billing portal.', 'SUBSCRIPTION_EXISTS'),
+        { status: 409 }
+      )
     }
 
     const appUrl = getAppUrl()
