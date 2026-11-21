@@ -1,6 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { APIError, BadRequestError } from "@anthropic-ai/sdk";
 import { db } from "@/lib/db";
 import { keepRequestOpenUntil } from "@/lib/db/request-scope";
 import { users, chats, messages } from "@/lib/db/schema";
@@ -16,12 +15,11 @@ import {
   buildThinkingConfig,
   getAgentMinTokens,
   shouldUseWebSearch,
-  toEchoableContent,
   WEB_SEARCH_MAX_USES,
 } from "@/lib/agent/web-search";
 import { estimateInputTokens, planCreditReservation } from "@/lib/credit-reservation";
 import { parseJsonBody, readBodyWithinLimit } from "@/lib/request-body";
-import { takeHold } from "@/lib/turn-hold";
+import { takeHold, type PartialTurn } from "@/lib/turn-hold";
 import {
   AGENT_ERROR_CODES,
   AGENT_SIZE_LIMITS,
@@ -31,14 +29,13 @@ import {
   resolveAgentModel,
   RUN_SUPERSEDED_MESSAGE,
   sanitizeForLog,
-  type StoredToolCall,
 } from "@prophet/shared";
 import { describeInsufficientBalance } from "@/lib/agent/insufficient-balance";
 import { totalCredits } from "@/lib/credit-balance";
-import { buildAgentMessages, resolveRunTurns } from "@/lib/agent/conversation";
+import { buildAgentMessages } from "@/lib/agent/conversation";
+import { cachedPrefixTurns, readRequestKind, toRunRequest } from "@/lib/agent/request-kind";
 import { lastTurnReason, withLastTurnNotice } from "@/lib/agent/last-turn";
 import {
-  isToolInput,
   openRun,
   resumeRun,
   type HistoryRow,
@@ -51,62 +48,15 @@ import {
   calculateUsageCostInCredits,
   calculateWebSearchCostInCredits,
   type ModelName,
-  type TokenUsage,
 } from "@/lib/pricing";
 import { devLogger } from "@/lib/dev-logger";
-import type { ContentBlock, MessageParam } from "@anthropic-ai/sdk/resources/messages";
-
-function extractCitations(blocks: ContentBlock[]) {
-  const seen = new Set<string>();
-  const citations: Array<{ url: string; title: string; citedText: string }> = [];
-
-  for (const block of blocks) {
-    if (block.type !== "text" || !block.citations) continue;
-    for (const citation of block.citations) {
-      if (citation.type !== "web_search_result_location") continue;
-      if (seen.has(citation.url)) continue;
-      seen.add(citation.url);
-      citations.push({
-        url: citation.url,
-        title: citation.title ?? citation.url,
-        citedText: citation.cited_text,
-      });
-    }
-  }
-
-  return citations;
-}
-
-function describeInvalidRequest(err: unknown): { message: string; code: string } | null {
-  if (!(err instanceof Error)) return null;
-  const isInvalidRequest =
-    err instanceof BadRequestError ||
-    (err instanceof APIError && err.type === "invalid_request_error") ||
-    err.message.includes("invalid_request");
-  if (!isInvalidRequest) return null;
-
-  const text = err.message.toLowerCase();
-  if (
-    text.includes("prompt is too long") ||
-    text.includes("too many tokens") ||
-    text.includes("context")
-  ) {
-    return {
-      message: "This chat is too long for the model. Start a new chat to continue.",
-      code: "CONTEXT_TOO_LONG",
-    };
-  }
-  if (text.includes("image")) {
-    return {
-      message: "That image is too large or unsupported. Try a smaller image.",
-      code: "IMAGE_INVALID",
-    };
-  }
-  return {
-    message: "Claude couldn't process this request. Start a new chat and try again.",
-    code: "ANTHROPIC_INVALID_REQUEST",
-  };
-}
+import {
+  closingFrames,
+  describeTurnError,
+  readTurnStream,
+  releasedToolCalls,
+} from "@/lib/agent/turn-stream";
+import type { MessageParam } from "@anthropic-ai/sdk/resources/messages";
 
 const BALANCE_HELD_RETRY_AFTER_SECONDS = 5;
 
@@ -189,9 +139,6 @@ export async function POST(req: Request) {
       chatId,
       userMessage,
       runId,
-      previousTurns,
-      toolResults,
-      previousContent,
       image,
       enableThinking,
       enableWebSearch,
@@ -224,10 +171,8 @@ export async function POST(req: Request) {
       });
     }
 
-    const isFirstTurn = !!userMessage;
-    const runTurns = resolveRunTurns({ previousTurns, previousContent, toolResults });
-    const isContinuationTurn = !isFirstTurn && runTurns.length > 0;
-    if (!isFirstTurn && !isContinuationTurn) {
+    const requestKind = readRequestKind(validation.data);
+    if (requestKind.kind === "invalid") {
       return NextResponse.json(
         error(
           "Either userMessage or toolResults is required",
@@ -236,6 +181,8 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    const { runTurns } = requestKind;
+    const isContinuationTurn = requestKind.kind !== "first";
 
     // Read without a lock to size the Hold; a first Turn rebuilds its prompt from the
     // read it takes under the chat lock once the Hold is in place.
@@ -246,8 +193,8 @@ export async function POST(req: Request) {
     // A continuation that names its Run goes on only while that Run is the live one,
     // and stops before any Hold once another panel has started a newer Run.
     const resumed =
-      isContinuationTurn && runId !== undefined
-        ? resumeRun({ history: unlockedHistory, runId })
+      requestKind.kind === "run"
+        ? resumeRun({ history: unlockedHistory, runId: requestKind.runId })
         : undefined;
     if (resumed === null) {
       logger.info({ userId, chatId, runId }, "Continuation of a superseded Run");
@@ -275,21 +222,21 @@ export async function POST(req: Request) {
     const estimatedInputTokens = runEnd
       ? estimatePrompt(withLastTurnNotice(estimatedMessages))
       : estimatedPromptTokens;
-    // The Hold expects the cache: a `previousTurns` continuation's previous Turn already
-    // sent (and cached) this prompt minus its newest Turn, so that prefix is priced as a
-    // cache read and the rest, the last-Turn notice included, as a cache write. First
-    // Turns and the legacy form write their whole prompt. A miss settles as overage.
-    const cachedPrefixTokens =
-      isContinuationTurn && previousTurns
-        ? estimatePrompt(
-            buildAgentMessages({
-              history: runHistory,
-              userMessage,
-              image,
-              runTurns: runTurns.slice(0, -1),
-            })
-          )
-        : 0;
+    // The Hold expects the cache: when the previous Turn already sent (and cached) this
+    // prompt minus its newest Turn, that prefix is priced as a cache read and the rest,
+    // the last-Turn notice included, as a cache write (`cachedPrefixTurns` says which
+    // requests have one). A miss settles as overage.
+    const cachedTurns = cachedPrefixTurns(requestKind);
+    const cachedPrefixTokens = cachedTurns
+      ? estimatePrompt(
+          buildAgentMessages({
+            history: runHistory,
+            userMessage,
+            image,
+            runTurns: cachedTurns,
+          })
+        )
+      : 0;
     const restTokens = Math.max(0, estimatedInputTokens - cachedPrefixTokens);
     const balanceCents = totalCredits(user);
     const planFor = (option: { model: ModelName; enableThinking: boolean }) =>
@@ -349,20 +296,20 @@ export async function POST(req: Request) {
     const maxTokensReducedForBalance = maxTokens < AGENT_TURN_MAX_TOKENS;
 
     let history: HistoryRow[] = runHistory;
-    let runRequest: RunRequest = { type: "legacy", turns: runTurns };
-    if (resumed) {
-      runRequest = { type: "run", opening: resumed.opening, turns: runTurns };
-    } else if (previousTurns) {
-      runRequest = { type: "continuation", turns: runTurns };
-    }
+    let runRequest: RunRequest;
     // Nothing was sent to Anthropic yet, so a failure from here to the stream gives the
     // whole Hold back. Without this, the outer catch would answer 500 and keep it.
     let anthropicMessages: MessageParam[];
     try {
-      if (userMessage) {
-        const started = await openRun({ db, chatId, userMessage });
+      if (requestKind.kind === "first") {
+        const started = await openRun({ db, chatId, userMessage: requestKind.userMessage });
         history = started.history;
-        runRequest = { type: "first", opening: started.opening };
+        runRequest = toRunRequest({ kind: requestKind, from: { opened: started.opening } });
+      } else {
+        runRequest = toRunRequest({
+          kind: requestKind,
+          from: resumed ? { resumed: resumed.opening } : null,
+        });
       }
       const builtMessages = buildAgentMessages({ history, userMessage, image, runTurns });
       anthropicMessages = runEnd ? withLastTurnNotice(builtMessages) : builtMessages;
@@ -388,6 +335,7 @@ export async function POST(req: Request) {
         messageCount: anthropicMessages.length,
         runTurns: runTurns.length,
         runEnd,
+        kind: requestKind.kind,
       },
       "Starting agent stream"
     );
@@ -418,32 +366,34 @@ export async function POST(req: Request) {
           clientConnected = false;
           controller.close();
         };
+        const failTurn = (err: unknown) => {
+          logger.error(
+            {
+              error: errorMessage(err),
+              userId,
+              chatId,
+            },
+            "Agent streaming error"
+          );
 
-        let fullTextResponse = "";
-        let streamedOutput = "";
-        let inputTokens = 0;
-        let cacheCreationInputTokens = 0;
-        let cacheReadInputTokens = 0;
-        let outputTokens = 0;
-        let webSearchesStarted = 0;
-        let usageReported = false;
+          send(JSON.stringify(describeTurnError(err)));
 
-        const turnUsage = (webSearchRequests: number): TokenUsage => ({
-          inputTokens,
-          cacheCreationInputTokens,
-          cacheReadInputTokens,
-          outputTokens,
-          webSearchRequests,
-        });
-        // The extension shows `inputTokens` as context size, so it carries the whole
-        // prompt; Anthropic's own `input_tokens` is only the uncached remainder.
-        const reportedUsage = (costCents: number) => ({
-          inputTokens: inputTokens + cacheCreationInputTokens + cacheReadInputTokens,
-          cacheCreationInputTokens,
-          cacheReadInputTokens,
-          outputTokens,
-          costCents,
-        });
+          close();
+        };
+
+        // A Turn cut off before its stream opens measured nothing, so it is billed nothing.
+        let partial: PartialTurn = {
+          usageReported: false,
+          usage: {
+            inputTokens: 0,
+            cacheCreationInputTokens: 0,
+            cacheReadInputTokens: 0,
+            outputTokens: 0,
+            webSearchRequests: 0,
+          },
+          streamedOutput: "",
+          text: "",
+        };
 
         try {
           if (!clientConnected) throw new Error("Client disconnected before the stream started");
@@ -451,197 +401,59 @@ export async function POST(req: Request) {
           const thinkingConfig = buildThinkingConfig(enableThinking);
           const outputConfig = buildOutputConfig(enableThinking);
 
-          const anthropicStream = await anthropic.messages.stream({
-            model,
-            max_tokens: maxTokens,
-            // Automatic caching moves this breakpoint to the newest block on every
-            // request, so each turn of a run reads the prefix the previous turn wrote.
-            cache_control: { type: "ephemeral" },
-            system: [
-              {
-                type: "text",
-                text: AGENT_SYSTEM_PROMPT,
+          const turn = await readTurnStream({
+            open: async () =>
+              anthropic.messages.stream({
+                model,
+                max_tokens: maxTokens,
+                // Automatic caching moves this breakpoint to the newest block on every
+                // request, so each turn of a run reads the prefix the previous turn wrote.
                 cache_control: { type: "ephemeral" },
-              },
-            ],
-            tools,
-            messages: anthropicMessages,
-            ...(thinkingConfig && { thinking: thinkingConfig }),
-            ...(outputConfig && { output_config: outputConfig }),
-          }, { signal: upstream.signal });
-
-          let currentToolUse: {
-            id: string;
-            name: string;
-            input: string;
-            isServerTool: boolean;
-          } | null = null;
-          // Held back until the Turn ends cleanly with `tool_use`: a call released
-          // mid-stream would run even when the Turn is then cut off or refused.
-          const clientToolCalls: StoredToolCall[] = [];
-
-          // Send session_created at the start
-          const sessionData = JSON.stringify({
-            type: "session_created",
-            sessionId: chatId,
-            // The extension names the Run by this id on every continuation.
-            ...((runRequest.type === "first" || runRequest.type === "run") && {
-              runId: runRequest.opening.id,
-            }),
+                system: [
+                  {
+                    type: "text",
+                    text: AGENT_SYSTEM_PROMPT,
+                    cache_control: { type: "ephemeral" },
+                  },
+                ],
+                tools,
+                messages: anthropicMessages,
+                ...(thinkingConfig && { thinking: thinkingConfig }),
+                ...(outputConfig && { output_config: outputConfig }),
+              }, { signal: upstream.signal }),
+            sessionFrame: {
+              type: "session_created",
+              sessionId: chatId,
+              // The extension names the Run by this id on every continuation.
+              ...((runRequest.type === "first" || runRequest.type === "run") && {
+                runId: runRequest.opening.id,
+              }),
+            },
+            model,
+            send: (frame) => send(JSON.stringify(frame)),
           });
-          send(sessionData);
-
-          for await (const event of anthropicStream) {
-            if (event.type === "message_start") {
-              inputTokens = event.message.usage.input_tokens;
-              cacheCreationInputTokens = event.message.usage.cache_creation_input_tokens ?? 0;
-              cacheReadInputTokens = event.message.usage.cache_read_input_tokens ?? 0;
-              usageReported = true;
-            } else if (event.type === "content_block_start") {
-              if (event.content_block.type === "tool_use") {
-                currentToolUse = {
-                  id: event.content_block.id,
-                  name: event.content_block.name,
-                  input: "",
-                  isServerTool: false,
-                };
-              } else if (event.content_block.type === "server_tool_use") {
-                webSearchesStarted += 1;
-                currentToolUse = {
-                  id: event.content_block.id,
-                  name: event.content_block.name,
-                  input: "",
-                  isServerTool: true,
-                };
-              } else if (
-                event.content_block.type === "web_search_tool_result"
-              ) {
-                const result = event.content_block;
-                const payload = Array.isArray(result.content)
-                  ? {
-                      type: "web_search_results",
-                      toolUseId: result.tool_use_id,
-                      sources: result.content.map((r) => ({
-                        url: r.url,
-                        title: r.title,
-                        pageAge: r.page_age ?? null,
-                      })),
-                    }
-                  : {
-                      type: "web_search_error",
-                      toolUseId: result.tool_use_id,
-                      errorCode: result.content.error_code,
-                    };
-                send(JSON.stringify(payload));
-              }
-            } else if (event.type === "content_block_delta") {
-              if (event.delta.type === "text_delta") {
-                const text = event.delta.text;
-                fullTextResponse += text;
-                streamedOutput += text;
-                const data = JSON.stringify({
-                  type: "content_delta",
-                  delta: text,
-                });
-                send(data);
-              } else if (event.delta.type === "thinking_delta") {
-                streamedOutput += event.delta.thinking;
-                const data = JSON.stringify({
-                  type: "thinking_delta",
-                  delta: event.delta.thinking,
-                });
-                send(data);
-              } else if (
-                event.delta.type === "input_json_delta" &&
-                currentToolUse
-              ) {
-                currentToolUse.input += event.delta.partial_json;
-                streamedOutput += event.delta.partial_json;
-              }
-            } else if (event.type === "content_block_stop") {
-              if (currentToolUse) {
-                let parsedInput = {};
-                try {
-                  // Robust parsing: handle potential hallucinations or malformed JSON
-                  const rawInput = currentToolUse.input.trim();
-                  parsedInput = rawInput ? JSON.parse(rawInput) : {};
-                } catch (e) {
-                  logger.warn(
-                    {
-                      toolUseId: currentToolUse.id,
-                      input: currentToolUse.input,
-                      error: errorMessage(e),
-                    },
-                    "Failed to parse tool input, using empty object"
-                  );
-                }
-
-                if (currentToolUse.isServerTool) {
-                  // Anthropic runs this one; the client must never try to execute it.
-                  const searchData = JSON.stringify({
-                    type: "web_search_start",
-                    toolUseId: currentToolUse.id,
-                    query:
-                      (parsedInput as { query?: string }).query ?? "",
-                  });
-                  send(searchData);
-                } else {
-                  clientToolCalls.push({
-                    type: "tool_use",
-                    id: currentToolUse.id,
-                    name: currentToolUse.name,
-                    input: isToolInput(parsedInput) ? parsedInput : {},
-                  });
-                }
-                currentToolUse = null;
-              }
-            } else if (event.type === "message_delta") {
-              if (event.usage) {
-                outputTokens = event.usage.output_tokens;
-                const metricsData = JSON.stringify({
-                  type: "metrics_update",
-                  metrics: reportedUsage(
-                    calculateUsageCostInCredits(model, turnUsage(webSearchesStarted))
-                  ),
-                });
-                send(metricsData);
-              }
-            }
+          // From here on, a Turn that fails is settled from what it measured.
+          partial = turn.partial;
+          if (turn.ended === "cut_short") {
+            failTurn(turn.error);
+            return;
           }
 
-          const finalMessage = await anthropicStream.finalMessage();
-          const stopReason = finalMessage.stop_reason;
-          // message_start predates any server-tool iterations, which add input and
-          // cache tokens; the final usage is the authoritative bill.
-          inputTokens = finalMessage.usage.input_tokens;
-          cacheCreationInputTokens = finalMessage.usage.cache_creation_input_tokens ?? 0;
-          cacheReadInputTokens = finalMessage.usage.cache_read_input_tokens ?? 0;
-          outputTokens = finalMessage.usage.output_tokens;
-          const webSearchRequests =
-            finalMessage.usage.server_tool_use?.web_search_requests ?? 0;
+          const { final } = turn;
+          const { stopReason } = final;
+          const {
+            inputTokens,
+            cacheCreationInputTokens,
+            cacheReadInputTokens,
+            outputTokens,
+            webSearchRequests,
+          } = final.usage;
 
-          // The API's own blocks are authoritative for replay: they carry the
-          // encrypted web-search payloads that must round-trip untouched.
-          const echoableContent = toEchoableContent(finalMessage.content);
-          // Only a clean `tool_use` stop releases tool calls. Any other ending ran
-          // none of them, so neither the reply nor the record carries them; on
-          // `max_tokens` the last one is cut off mid-input. A Run's last Turn releases
-          // none whatever Claude does: the Run ends with its text as the reply.
-          const releasesToolCalls = stopReason === "tool_use" && runEnd === null;
-          const contentBlocks =
-            stopReason === "max_tokens"
-              ? echoableContent.filter((block) => block.type !== "tool_use")
-              : echoableContent;
-          const citations = extractCitations(finalMessage.content);
-
-          const costCents = calculateUsageCostInCredits(model, turnUsage(webSearchRequests));
+          const costCents = calculateUsageCostInCredits(model, final.usage);
           const webSearchCostCents =
             calculateWebSearchCostInCredits(webSearchRequests);
 
-          // `pause_turn` means Anthropic stopped a long server-tool turn early and
-          // the client has to replay the assistant turn, so it is not final either.
-          const isFinalTurn =
-            runEnd !== null || (stopReason !== "tool_use" && stopReason !== "pause_turn");
+          const isFinalTurn = runEnd !== null || !final.runContinues;
 
           // A refused Turn's text isn't a reply the user should see again, and the
           // tool calls it held were never released.
@@ -650,8 +462,8 @@ export async function POST(req: Request) {
               ? { type: "refused" }
               : {
                   type: "reply",
-                  text: fullTextResponse,
-                  releasedToolCalls: releasesToolCalls ? clientToolCalls : [],
+                  text: final.text,
+                  releasedToolCalls: releasedToolCalls({ final, runEnd }),
                 };
 
           // Throws when the billing transaction fails; the `finally` then closes it unfinished.
@@ -659,7 +471,7 @@ export async function POST(req: Request) {
             type: "finished",
             request: runRequest,
             ending,
-            usage: turnUsage(webSearchRequests),
+            usage: final.usage,
             isFinalTurn,
           });
 
@@ -682,143 +494,37 @@ export async function POST(req: Request) {
           );
 
           // DEV LOGGING: Log response from LLM
-          await devLogger.logResponse(fullTextResponse, {
+          await devLogger.logResponse(final.text, {
             input_tokens: inputTokens,
             output_tokens: outputTokens,
             cache_read_input_tokens: cacheReadInputTokens,
             cache_creation_input_tokens: cacheCreationInputTokens,
           });
 
-          // Safety classifiers decline with HTTP 200 and no answer; without an error the
-          // extension would end the run on a blank reply.
           if (stopReason === "refusal") {
             logger.warn(
-              { userId, chatId, model, category: finalMessage.stop_details?.category ?? null },
+              { userId, chatId, model, category: final.refusalCategory },
               "Model declined the request"
             );
-            send(JSON.stringify({
-              type: "error",
-              error: "Claude declined this request. Try rephrasing it or start a new chat.",
-              code: "MODEL_REFUSED",
-            }));
-            close();
-            return;
           }
 
-          if (releasesToolCalls) {
-            for (const toolUse of clientToolCalls) {
-              send(JSON.stringify({ type: "tool_use", toolUse }));
-            }
-          }
-
-          if (citations.length > 0) {
-            const citationsData = JSON.stringify({
-              type: "citations",
-              citations,
-            });
-            send(citationsData);
-          }
-
-          const executionCompleteData = JSON.stringify({
-            type: "execution_complete",
-            stopReason,
-            finalOutput: fullTextResponse,
-            metrics: {
-              ...reportedUsage(costCents),
-              webSearchRequests,
-              webSearchCostCents,
-            },
-          });
-          send(executionCompleteData);
-
-          const doneData = JSON.stringify({
-            type: "done",
-            stopReason,
-            usage: {
-              ...reportedUsage(costCents),
-              webSearchRequests,
-              webSearchCostCents,
-            },
-            citations,
-            contentBlocks,
+          for (const frame of closingFrames({
+            final,
+            costCents,
+            runEnd,
             maxTokensReducedForBalance,
-            ...(runEnd && { runEnd }),
-          });
-          send(doneData);
+          })) {
+            send(JSON.stringify(frame));
+          }
 
           close();
         } catch (err) {
-          logger.error(
-            {
-              error: errorMessage(err),
-              userId,
-              chatId,
-            },
-            "Agent streaming error"
-          );
-
-          // Parse error to provide user-friendly messages
-          let userFriendlyError = "Something went wrong. Please try again.";
-          let errorCode: string | undefined;
-          let errorDetails: Record<string, unknown> | undefined;
-
-          const invalidRequest = describeInvalidRequest(err);
-          if (invalidRequest) {
-            userFriendlyError = invalidRequest.message;
-            errorCode = invalidRequest.code;
-          } else if (err instanceof Error) {
-            const errMessage = err.message;
-
-            // Handle Anthropic rate limit errors (429)
-            if (errMessage.includes("rate_limit_error") || errMessage.startsWith("429")) {
-              userFriendlyError = "AI service is temporarily busy. Please wait a moment and try again.";
-              errorCode = "ANTHROPIC_RATE_LIMIT";
-              // Try to extract retry info from error
-              const retryMatch = errMessage.match(/try again later/i);
-              if (retryMatch) {
-                errorDetails = { retryAfter: 60 };
-              }
-            }
-            // Handle Anthropic overloaded errors (529)
-            else if (errMessage.includes("overloaded") || errMessage.startsWith("529")) {
-              userFriendlyError = "AI service is experiencing high demand. Please try again in a few minutes.";
-              errorCode = "ANTHROPIC_OVERLOADED";
-            }
-            // Handle authentication errors
-            else if (errMessage.includes("authentication") || errMessage.includes("api_key")) {
-              userFriendlyError = "Service configuration error. Please contact support.";
-              errorCode = "ANTHROPIC_AUTH_ERROR";
-            }
-            // For other errors, use a generic message (don't expose raw error to user)
-            else {
-              userFriendlyError = "Something went wrong. Please try again.";
-              errorCode = "STREAMING_ERROR";
-            }
-          }
-
-          const errorData = JSON.stringify({
-            type: "error",
-            error: userFriendlyError,
-            code: errorCode,
-            details: errorDetails,
-          });
-          send(errorData);
-
-          close();
+          failTurn(err);
         } finally {
           try {
             req.signal.removeEventListener("abort", abortUpstream);
             // Does nothing once the Turn's finished close has settled the Hold.
-            await turnHold.close({
-              type: "unfinished",
-              request: runRequest,
-              partial: {
-                usageReported,
-                usage: turnUsage(webSearchesStarted),
-                streamedOutput,
-                text: fullTextResponse,
-              },
-            });
+            await turnHold.close({ type: "unfinished", request: runRequest, partial });
           } finally {
             releaseRequestScope();
           }

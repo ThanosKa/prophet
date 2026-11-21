@@ -430,3 +430,97 @@ describe('waiting for a page to load', () => {
     expect(chromeStub.tabs.onUpdated.removeListener).toHaveBeenCalledTimes(1)
   })
 })
+
+// Ticket 33: the tab's load can finish while the navigation request is still in
+// progress (a page restored from the back/forward cache, for example). The tool
+// must not miss that load and wait its full timeout.
+describe('a load that finishes while the navigation is being requested', () => {
+  const requests: Array<[string, () => Promise<{ success: boolean }>, () => ReturnType<typeof vi.fn>, number]> = [
+    ['navigate', () => navigate({ url: 'example.com' }), () => chromeStub.tabs.update, 30_000],
+    ['reloadPage', () => reloadPage(), () => chromeStub.tabs.reload, 30_000],
+    ['goBack', () => goBack(), () => chromeStub.tabs.goBack, 5_000],
+    ['goForward', () => goForward(), () => chromeStub.tabs.goForward, 5_000],
+  ]
+
+  it.each(requests)('%s finishes without waiting its timeout, and removes its listener', async (_name, run, request) => {
+    request().mockImplementation(async () => {
+      emit(TAB_ID, 'loading')
+      emit(TAB_ID, 'complete')
+    })
+
+    const promise = run()
+    const state = track(promise)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(state.done).toBe(true)
+    expect((await promise).success).toBe(true)
+    expect(listeners.size).toBe(0)
+  })
+
+  it.each(requests)(
+    "%s keeps waiting for the new page when the old page's load-complete arrives before the request",
+    async (_name, run, request, timeout) => {
+      chromeStub.tabs.query.mockImplementation(async () => {
+        emit(TAB_ID, 'complete')
+        return [{ id: TAB_ID, title: 'Shop', url: 'https://shop.example' }]
+      })
+      request().mockImplementation(async () => {
+        // The old page's load-complete, with no new load started yet
+        emit(TAB_ID, 'complete')
+      })
+
+      const promise = run()
+      const state = track(promise)
+      await vi.advanceTimersByTimeAsync(timeout - 1)
+      expect(state.done).toBe(false)
+
+      emit(TAB_ID, 'loading')
+      emit(TAB_ID, 'complete')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(state.done).toBe(true)
+      expect((await promise).success).toBe(true)
+      expect(listeners.size).toBe(0)
+    }
+  )
+
+  it.each(requests)('%s ignores a load that finishes during the request in another tab', async (_name, run, request, timeout) => {
+    request().mockImplementation(async () => {
+      emit(TAB_ID + 1, 'loading')
+      emit(TAB_ID + 1, 'complete')
+    })
+
+    const promise = run()
+    const state = track(promise)
+    await vi.advanceTimersByTimeAsync(timeout - 1)
+    expect(state.done).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect((await promise).success).toBe(true)
+    expect(listeners.size).toBe(0)
+  })
+
+  it.each(requests)('%s keeps waiting when the tab starts loading again during the request', async (_name, run, request, timeout) => {
+    request().mockImplementation(async () => {
+      emit(TAB_ID, 'loading')
+      emit(TAB_ID, 'complete')
+      emit(TAB_ID, 'loading')
+    })
+
+    const promise = run()
+    const state = track(promise)
+    await vi.advanceTimersByTimeAsync(timeout - 1)
+    expect(state.done).toBe(false)
+
+    emit(TAB_ID, 'complete')
+    await promise
+    expect(listeners.size).toBe(0)
+  })
+
+  it.each(requests)('%s removes its listener when the request fails', async (_name, run, request) => {
+    request().mockRejectedValue(new Error('tab crashed'))
+
+    expect(await run()).toMatchObject({ success: false, error: 'tab crashed' })
+    expect(listeners.size).toBe(0)
+  })
+})

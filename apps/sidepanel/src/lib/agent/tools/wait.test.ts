@@ -142,15 +142,15 @@ describe('waitForNavigation', () => {
     })
   })
 
-  it('returns "Page already loaded" without listening when the tab is complete', async () => {
-    const { onUpdated } = stubChrome({ status: 'complete' })
+  it('returns "Page already loaded" when the tab is complete, and removes its listener', async () => {
+    const { listeners } = stubChrome({ status: 'complete' })
 
     expect(await waitForNavigation({})).toEqual({
       success: true,
       data: 'Page already loaded',
       durationMs: expect.any(Number),
     })
-    expect(onUpdated.addListener).not.toHaveBeenCalled()
+    expect(listeners.size).toBe(0)
   })
 
   it('resolves on a load-complete event for the active tab and removes its listener', async () => {
@@ -211,14 +211,11 @@ describe('waitForNavigation', () => {
   })
 
   it("returns an Error's message from a failing tab read", async () => {
-    vi.stubGlobal('chrome', {
-      tabs: {
-        query: vi.fn(async () => [{ id: 7 }]),
-        get: vi.fn(async () => Promise.reject(new Error('tab closed'))),
-      },
-    })
+    const { listeners } = stubChrome()
+    vi.mocked(chrome.tabs.get).mockRejectedValue(new Error('tab closed'))
 
     expect(await waitForNavigation({})).toMatchObject({ success: false, error: 'tab closed' })
+    expect(listeners.size).toBe(0)
   })
 })
 
@@ -255,5 +252,65 @@ describe('waitForTimeout', () => {
     await vi.advanceTimersByTimeAsync(30_000)
 
     expect(await pending).toEqual({ success: true, data: 'Waited 30000ms', durationMs: 30_000 })
+  })
+})
+
+// Ticket 33: the page can finish loading while the "already loaded" check is in
+// progress. Wait for navigation must not miss that load and return its timeout error.
+describe('waitForNavigation when the load finishes during the "already loaded" check', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  /** The check reads 'loading', and the given statuses arrive while it is in progress. */
+  function stubCheck(statuses: string[]) {
+    const listeners = new Set<UpdateListener>()
+    const emit = (status: string) => [...listeners].forEach((l) => l(7, { status }))
+    vi.stubGlobal('chrome', {
+      tabs: {
+        query: vi.fn(async () => [{ id: 7 }]),
+        get: vi.fn(async () => {
+          statuses.forEach(emit)
+          return { status: 'loading' }
+        }),
+        onUpdated: {
+          addListener: vi.fn((l: UpdateListener) => listeners.add(l)),
+          removeListener: vi.fn((l: UpdateListener) => listeners.delete(l)),
+        },
+      },
+    })
+    return { listeners, emit }
+  }
+
+  it('reports "Navigation complete" without waiting its timeout, and removes its listener', async () => {
+    const { listeners } = stubCheck(['complete'])
+
+    const pending = waitForNavigation({})
+    let done = false
+    void pending.then(() => (done = true))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(done).toBe(true)
+    expect(await pending).toMatchObject({ success: true, data: 'Navigation complete' })
+    expect(listeners.size).toBe(0)
+  })
+
+  it('keeps waiting when the tab starts loading again after that load', async () => {
+    const { listeners, emit } = stubCheck(['complete', 'loading'])
+
+    const pending = waitForNavigation({})
+    let done = false
+    void pending.then(() => (done = true))
+    await vi.advanceTimersByTimeAsync(29_999)
+    expect(done).toBe(false)
+
+    emit('complete')
+    expect(await pending).toMatchObject({ success: true, data: 'Navigation complete' })
+    expect(listeners.size).toBe(0)
   })
 })
