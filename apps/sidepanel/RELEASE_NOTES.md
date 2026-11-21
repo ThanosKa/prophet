@@ -2,6 +2,15 @@
 
 The extension version lives in `manifest.ts`. Newest release first.
 
+## 1.0.9
+
+1.0.8 may not have been uploaded to the Chrome Web Store (nothing records an upload), so this release also carries its changes.
+
+- The agent no longer waits the full timeout when a page loads instantly: navigating, going back or forward, reloading, opening a new tab and the wait tools now notice a load that finishes right away.
+
+From 1.0.8:
+- Signing out reloads the side panel once. It used to reload repeatedly, for up to about a minute, until the web app refreshed its session cookie.
+
 ## 1.0.8
 
 - Signing out reloads the side panel once. It used to reload repeatedly, for up to about a minute, until the web app refreshed its session cookie.
