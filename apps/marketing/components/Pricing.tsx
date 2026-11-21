@@ -8,7 +8,7 @@ import { motion } from 'framer-motion'
 import { Check, Zap } from 'lucide-react'
 import { UpgradeButton } from './UpgradeButton'
 import { BuyCreditsButton } from './BuyCreditsButton'
-import { EXTRA_CREDITS, TIER_CONFIG, type TierName } from '@/lib/pricing'
+import { EXTRA_CREDITS, TIER_CONFIG, hasLivePlan, type TierName } from '@/lib/pricing'
 import { useUserOptional } from '@/contexts/UserContext'
 import { formatDollars, type User } from '@prophet/shared'
 
@@ -81,7 +81,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
 
   const dbUser = userContext?.user || fetchedUser
   const userTier = dbUser?.tier
-  const hasPlan = userTier !== undefined && userTier !== 'free'
+  const hasPlan = dbUser ? hasLivePlan(dbUser) : false
 
   return (
     <section id="pricing" className="py-20 px-4">

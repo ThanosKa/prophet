@@ -210,3 +210,18 @@ export function calculateWorstCaseProfit(plan: { price: number; credits: number 
 
   return { stripeFeeCents, maxAnthropicCostCents, profitCents };
 }
+
+/**
+ * The user has a plan that a second Checkout would duplicate: a subscription id with status
+ * `active` (a scheduled cancellation included) or `past_due`. `incomplete` is not a live plan,
+ * so a failed first payment can be retried through Checkout.
+ */
+export function hasLivePlan(user: {
+  stripeSubscriptionId?: string | null
+  subscriptionStatus?: string | null
+}): boolean {
+  return (
+    Boolean(user.stripeSubscriptionId) &&
+    (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'past_due')
+  )
+}

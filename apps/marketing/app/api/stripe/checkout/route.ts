@@ -9,7 +9,7 @@ import { eq } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { error as errorBody } from '@/types'
-import { EXTRA_CREDITS, TIER_CONFIG } from '@/lib/pricing'
+import { EXTRA_CREDITS, TIER_CONFIG, hasLivePlan } from '@/lib/pricing'
 import { getAppUrl } from '@/lib/constants'
 
 // The server picks every price: `priceId` is still accepted so an older cached page keeps
@@ -64,13 +64,8 @@ export async function POST(request: Request) {
     }
 
     // One plan per user: a second Checkout would open a second subscription on the same
-    // customer. A subscriber switches plans in the billing portal instead. A scheduled
-    // cancellation is still `active`; `incomplete` may retry a failed first payment.
-    if (
-      data.mode === 'subscription' &&
-      user.stripeSubscriptionId &&
-      (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'past_due')
-    ) {
+    // customer. A subscriber switches plans in the billing portal instead.
+    if (data.mode === 'subscription' && hasLivePlan(user)) {
       logger.info(
         { userId, tier: data.tier, subscriptionStatus: user.subscriptionStatus },
         'Plan checkout refused: subscription exists'
