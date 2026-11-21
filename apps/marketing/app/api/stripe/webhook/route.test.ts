@@ -183,28 +183,17 @@ function renewalInvoiceEvent({ billingReason = 'subscription_cycle' } = {}) {
 }
 
 describe('determineTierFromPrice', () => {
-  it('matches configured price IDs and legacy names', () => {
+  it('gives a tier only for a configured price id', () => {
+    expect(determineTierFromPrice(TIER_CONFIG.pro.priceId)).toBe('pro')
     expect(determineTierFromPrice(TIER_CONFIG.premium.priceId)).toBe('premium')
-    expect(determineTierFromPrice('price_pro_monthly')).toBe('pro')
-    expect(determineTierFromPrice('price_ultra_annual')).toBe('ultra')
+    expect(determineTierFromPrice(TIER_CONFIG.ultra.priceId)).toBe('ultra')
+  })
+
+  it('gives no tier for a price id that is not configured, even if it contains a plan name', () => {
+    expect(determineTierFromPrice('price_pro_monthly')).toBeNull()
+    expect(determineTierFromPrice('price_premium_annual')).toBeNull()
+    expect(determineTierFromPrice('price_ultra_annual')).toBeNull()
     expect(determineTierFromPrice('price_unknown')).toBeNull()
-  })
-
-  it('warns once with the price id and tier when the tier is found from price id text', () => {
-    expect(determineTierFromPrice('price_pro_monthly')).toBe('pro')
-
-    expect(logger.warn).toHaveBeenCalledTimes(1)
-    expect(logger.warn).toHaveBeenCalledWith(
-      { priceId: 'price_pro_monthly', tier: 'pro' },
-      'Plan tier found from price id text'
-    )
-  })
-
-  it('does not warn for a configured price id or an unknown one', () => {
-    determineTierFromPrice(TIER_CONFIG.premium.priceId)
-    determineTierFromPrice('price_unknown')
-
-    expect(logger.warn).not.toHaveBeenCalled()
   })
 })
 
@@ -407,6 +396,17 @@ describe('POST /api/stripe/webhook', () => {
       expect(user.billingPeriodEnd).toEqual(new Date(PERIOD_END * 1000))
       expect(await balances()).toEqual({ subscriptionCredits: TIER_CONFIG.pro.credits, purchasedCredits: 1000 })
       expect(mocks.sendPurchaseEmail).toHaveBeenCalledTimes(1)
+    })
+
+    it('logs and changes no user when the price id is not configured', async () => {
+      await insertFreeBuyer()
+      const before = await readUser()
+
+      await postWebhook(subscriptionEvent({ type: 'customer.subscription.created', priceId: 'price_pro_monthly' }))
+
+      expect(logger.error).toHaveBeenCalledWith({ priceId: 'price_pro_monthly' }, 'Could not determine tier from price')
+      expect(await readUser()).toEqual(before)
+      expect(mocks.sendPurchaseEmail).not.toHaveBeenCalled()
     })
 
     it('answers Stripe only after the new subscription email has settled', async () => {
