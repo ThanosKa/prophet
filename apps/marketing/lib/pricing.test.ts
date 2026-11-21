@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   calculateCostInCredits,
+  hasLivePlan,
   calculateCostInCents,
   TIER_CONFIG,
   MODEL_PRICING,
@@ -431,5 +432,22 @@ describe('Haiku 5.5 prompt-length rate cards', () => {
       cacheReadInputTokens: 20_000,
       outputTokens: 500,
     })).toBe(1)
+  })
+})
+
+describe('hasLivePlan', () => {
+  it('counts an active or past_due subscription as a live plan', () => {
+    expect(hasLivePlan({ stripeSubscriptionId: 'sub_1', subscriptionStatus: 'active' })).toBe(true)
+    expect(hasLivePlan({ stripeSubscriptionId: 'sub_1', subscriptionStatus: 'past_due' })).toBe(true)
+  })
+
+  it('does not count an incomplete subscription, even though the webhook already wrote the paid tier', () => {
+    expect(hasLivePlan({ stripeSubscriptionId: 'sub_1', subscriptionStatus: 'incomplete' })).toBe(false)
+  })
+
+  it('does not count a user without a subscription id or status', () => {
+    expect(hasLivePlan({ stripeSubscriptionId: null, subscriptionStatus: 'canceled' })).toBe(false)
+    expect(hasLivePlan({ stripeSubscriptionId: null, subscriptionStatus: 'active' })).toBe(false)
+    expect(hasLivePlan({})).toBe(false)
   })
 })

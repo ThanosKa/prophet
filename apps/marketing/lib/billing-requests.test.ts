@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { redirectToStripeSession, downloadUsageExport } from './billing-requests'
+import { redirectToStripeSession, downloadUsageExport, startPlanChange } from './billing-requests'
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status })
 
@@ -69,5 +69,55 @@ describe('downloadUsageExport', () => {
       notifyError,
     })
     expect(notifyError).toHaveBeenCalledOnce()
+  })
+})
+
+describe('startPlanChange', () => {
+  const PORTAL_URL = 'https://billing.stripe.test/p'
+  const CHECKOUT_URL = 'https://checkout.stripe.test/c'
+
+  function setup({ hasPlan, checkoutAnswer }: { hasPlan: boolean; checkoutAnswer: () => Response }) {
+    const checkout = vi.fn(async () => checkoutAnswer())
+    const portal = vi.fn(async () => json({ url: PORTAL_URL }))
+    const redirect = vi.fn()
+    const notifyError = vi.fn()
+    const run = () => startPlanChange({ hasPlan, checkout, portal, redirect, notifyError })
+    return { checkout, portal, redirect, notifyError, run }
+  }
+
+  it('sends a subscriber to the billing portal without starting a checkout', async () => {
+    const s = setup({ hasPlan: true, checkoutAnswer: () => json({ url: CHECKOUT_URL }) })
+    await s.run()
+    expect(s.checkout).not.toHaveBeenCalled()
+    expect(s.redirect).toHaveBeenCalledWith(PORTAL_URL)
+  })
+
+  it('sends a user without a plan to Checkout', async () => {
+    const s = setup({ hasPlan: false, checkoutAnswer: () => json({ url: CHECKOUT_URL }) })
+    await s.run()
+    expect(s.portal).not.toHaveBeenCalled()
+    expect(s.redirect).toHaveBeenCalledWith(CHECKOUT_URL)
+  })
+
+  it('opens the billing portal when a stale page gets 409 SUBSCRIPTION_EXISTS', async () => {
+    const s = setup({
+      hasPlan: false,
+      checkoutAnswer: () => json({ error: 'You already have a plan.', code: 'SUBSCRIPTION_EXISTS' }, 409),
+    })
+    await s.run()
+    expect(s.portal).toHaveBeenCalledOnce()
+    expect(s.redirect).toHaveBeenCalledWith(PORTAL_URL)
+    expect(s.notifyError).not.toHaveBeenCalled()
+  })
+
+  it('shows the error for any other failed checkout', async () => {
+    const s = setup({
+      hasPlan: false,
+      checkoutAnswer: () => json({ error: 'Too many requests', code: 'RATE_LIMIT_EXCEEDED' }, 429),
+    })
+    await s.run()
+    expect(s.portal).not.toHaveBeenCalled()
+    expect(s.redirect).not.toHaveBeenCalled()
+    expect(s.notifyError).toHaveBeenCalledOnce()
   })
 })

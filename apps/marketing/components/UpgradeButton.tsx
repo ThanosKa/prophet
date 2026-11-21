@@ -4,11 +4,14 @@ import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useCheckout } from '@/hooks/use-checkout'
+import { startPlanChange } from '@/lib/billing-requests'
 import type { TierName } from '@/lib/pricing'
 
 interface UpgradeButtonProps {
   tier: Exclude<TierName, 'free'>
   priceId: string
+  /** The user is on a paid plan: switch it in the billing portal instead of a second checkout. */
+  hasPlan?: boolean
   variant?: 'default' | 'outline'
   className?: string
   children?: React.ReactNode
@@ -17,6 +20,7 @@ interface UpgradeButtonProps {
 export function UpgradeButton({
   tier,
   priceId,
+  hasPlan = false,
   variant = 'default',
   className,
   children,
@@ -25,26 +29,21 @@ export function UpgradeButton({
 
   const handleUpgrade = async () => {
     setProcessing(true)
-    try {
-      const response = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, tier, mode: 'subscription' }),
-      })
-      const data = await response.json()
-
-      if (!response.ok || !data.url) {
-        throw new Error(data.error || 'Failed to start checkout')
-      }
-
-      window.location.href = data.url
-    } catch (error) {
-      console.error('Failed to start checkout:', error)
-      toast.error('Something went wrong', {
-        description: 'Please try again later.',
-      })
-      setProcessing(false)
-    }
+    await startPlanChange({
+      hasPlan,
+      checkout: () =>
+        fetch('/api/stripe/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ priceId, tier, mode: 'subscription' }),
+        }),
+      portal: () => fetch('/api/stripe/portal', { method: 'POST' }),
+      redirect: url => { window.location.href = url },
+      notifyError: () => {
+        toast.error('Something went wrong', { description: 'Please try again later.' })
+        setProcessing(false)
+      },
+    })
   }
 
   return (
