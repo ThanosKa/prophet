@@ -63,6 +63,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    // One plan per user: a second Checkout would open a second subscription on the same
+    // customer. A subscriber switches plans in the billing portal instead. A scheduled
+    // cancellation is still `active`; `incomplete` may retry a failed first payment.
+    if (
+      data.mode === 'subscription' &&
+      user.stripeSubscriptionId &&
+      (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'past_due')
+    ) {
+      logger.info(
+        { userId, tier: data.tier, subscriptionStatus: user.subscriptionStatus },
+        'Plan checkout refused: subscription exists'
+      )
+      return NextResponse.json(
+        errorBody('You already have a plan. Switch plans in the billing portal.', 'SUBSCRIPTION_EXISTS'),
+        { status: 409 }
+      )
+    }
+
     const appUrl = getAppUrl()
 
     const priceId = data.mode === 'payment' ? EXTRA_CREDITS.priceId : TIER_CONFIG[data.tier].priceId

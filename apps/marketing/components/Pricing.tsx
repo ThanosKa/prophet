@@ -81,6 +81,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
 
   const dbUser = userContext?.user || fetchedUser
   const userTier = dbUser?.tier
+  const hasPlan = userTier !== undefined && userTier !== 'free'
 
   return (
     <section id="pricing" className="py-20 px-4">
@@ -143,6 +144,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
                   <UpgradeButton
                     tier={plan.tier}
                     priceId={TIER_CONFIG[plan.tier].priceId}
+                    hasPlan={hasPlan}
                     variant={plan.popular ? 'default' : 'outline'}
                     className="w-full mb-6"
                   >
