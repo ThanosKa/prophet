@@ -1,6 +1,6 @@
 # Coding Standards
 
-The rules every diff in this repo is checked against, one per line, alongside the guardrails in `CLAUDE.md`. Writing code: every rule that touches the files you change holds before you finish. Reviewing: check the diff against every rule in turn. Some older code predates a rule; new and changed code follows it.
+The rules every diff in this repo is checked against, one per line, alongside the guardrails in `CLAUDE.md`. Writing code: every rule that touches the files you change holds before you finish. Reviewing: check the diff against every rule in turn. Some older code predates a rule; new and changed code follows it. Lint enforces `any`, type assertions (`as const` aside), non-null `!`, `console`, exhaustive `switch` and positional parameters: resolve each lint error in the code itself.
 
 ## Security guardrails
 
@@ -34,6 +34,13 @@ The rules every diff in this repo is checked against, one per line, alongside th
 - Type values of unknown shape as `unknown` and narrow them, never `any`.
 - Fix type errors at the source: `strict` stays on, and non-null `!` only where the value is provably set.
 - Use string-literal unions or `as const` objects in place of `enum`.
+- Parse external data once, at the boundary, into a named domain type, and trust it from there on. Hand-write a type guard only where no schema fits.
+- A type guard, named `isX` or `hasX`, checks every property its return type claims.
+- Narrow in this order: discriminant `switch`, then `in`, then `typeof` or `instanceof`, then a type guard.
+- Model variants as a union on one literal discriminant field, so each state carries only its own fields: `{ kind: "loading" } | { kind: "success"; data: User } | { kind: "error"; error: string }`.
+- Shape the type so the illegal value cannot be built: `[T, ...T[]]` for a non-empty list, `start` plus `duration` for a range. Keep `T[]` while every operation on it stays total; strengthen it only where the loose type would force `!`, a cast, or a "should never happen" throw.
+- Brand primitives that must stay apart, such as IDs: `string & { readonly __brand: "UserId" }`. A brand comes from a verifying type guard (`input is UserId`).
+- Check a literal against a type with `satisfies`, which keeps its literal types.
 - Give a function you write with more than one parameter a single object argument (`reserveCredits({ db, userId, reserveCents })`); callbacks and framework signatures keep their shape.
 - Annotate return types on exported functions in `lib/` and `apps/shared`; React components, route handlers and locals infer theirs.
 
@@ -44,6 +51,7 @@ The rules every diff in this repo is checked against, one per line, alongside th
 ## Tests
 
 - Colocate tests as `*.test.ts(x)` beside their source; billing, credit-calculation and auth changes always ship with tests.
+- Run the real thing: the framework's test primitives, a real or in-memory implementation, a running build for UI. Mock only what cannot run locally.
 
 ## Where the detail lives
 

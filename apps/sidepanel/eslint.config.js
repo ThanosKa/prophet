@@ -28,6 +28,11 @@ export default [
         ecmaFeatures: {
           jsx: true,
         },
+        projectService: {
+          // Root-level TS files outside tsconfig.json's "include".
+          allowDefaultProject: ["tailwind.config.ts", "vitest.config.ts"],
+        },
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     settings: {
@@ -38,14 +43,37 @@ export default [
     rules: {
       "react/react-in-jsx-scope": "off",
       "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/consistent-type-assertions": ["error", { assertionStyle: "never" }],
+      "@typescript-eslint/no-non-null-assertion": "error",
+      "@typescript-eslint/switch-exhaustiveness-check": "error",
+      "no-console": "error",
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "FunctionDeclaration[params.length>1]",
+          message: "Take one object argument instead of positional params.",
+        },
+        {
+          selector: "VariableDeclarator > ArrowFunctionExpression[params.length>1]",
+          message: "Take one object argument instead of positional params.",
+        },
+      ],
       "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
       ...reactHooks.configs.recommended.rules,
     },
   },
   {
-    files: ["**/*.test.ts", "**/*.test.tsx"],
+    files: [
+      "**/*.test.{ts,tsx}",
+      "**/*.spec.{ts,tsx}",
+      "**/tests/**/*.{ts,tsx}",
+      "**/__tests__/**/*.{ts,tsx}",
+    ],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/consistent-type-assertions": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
+      "no-restricted-syntax": "off",
     },
   },
   {
