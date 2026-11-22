@@ -96,7 +96,13 @@ function buildWelcomeSubject({ firstName }: { firstName?: string | null }): stri
   return firstName ? `Welcome to Prophet, ${firstName}!` : 'Welcome to Prophet!'
 }
 
-function formatName(firstName?: string | null, lastName?: string | null): string | null {
+function formatName({
+  firstName,
+  lastName,
+}: {
+  firstName?: string | null
+  lastName?: string | null
+}): string | null {
   const parts = [firstName, lastName].filter(Boolean)
   return parts.length > 0 ? parts.join(' ') : null
 }
@@ -170,7 +176,7 @@ You're receiving this because you signed up for Prophet.
 }
 
 export function buildWelcomeHtml({ firstName, lastName }: { firstName?: string | null; lastName?: string | null }): string {
-  const fullName = formatName(firstName, lastName)
+  const fullName = formatName({ firstName, lastName })
   const greeting = fullName ? `Welcome to Prophet, ${fullName}!` : 'Welcome to Prophet!'
 
   const content = `
@@ -248,7 +254,7 @@ Install Prophet Extension
 
 export function buildPurchaseHtml(params: SendPurchaseEmailParams): string {
   const { firstName, lastName, planName, credits, isSubscription } = params
-  const fullName = formatName(firstName, lastName)
+  const fullName = formatName({ firstName, lastName })
   const greeting = fullName ? `Thank you, ${fullName}!` : 'Thank you for your purchase!'
   const creditsFormatted = formatDollars(credits)
   const typeLabel = isSubscription ? 'Subscription' : 'One-time purchase'

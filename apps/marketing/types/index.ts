@@ -27,7 +27,15 @@ export function success<T>(data: T): SuccessResponse<T> {
 }
 
 // Helper to create error responses
-export function error(message: string, code?: string, details?: unknown): ErrorResponse {
+export function error({
+  message,
+  code,
+  details,
+}: {
+  message: string
+  code?: string
+  details?: unknown
+}): ErrorResponse {
   return { error: message, code, details }
 }
 

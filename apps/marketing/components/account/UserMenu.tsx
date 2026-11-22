@@ -40,7 +40,7 @@ export function UserMenu() {
       .then((data) => {
         if (data.data) setFetchedUser(data.data);
       })
-      .catch((err) => console.error("Failed to fetch user in menu:", err));
+      .catch(() => undefined);
   }, [userContext?.user]);
 
   // The context carries the DB row and its named balances; /api/auth/user sends the total.

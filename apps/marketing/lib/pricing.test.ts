@@ -32,29 +32,29 @@ describe('Margin, rounding and the Minimum charge', () => {
 
   it('charges a Haiku Turn with an Anthropic cost of 0.8 cents exactly 1 Credit (0.8 x 1.25 = 1.0)', () => {
     // 80,000 input tokens x $0.10/MTok = $0.008
-    expect(calculateUsageCostInCredits('claude-haiku-5-5', haikuInput(80_000))).toBe(1)
+    expect(calculateUsageCostInCredits({ model: 'claude-haiku-5-5', usage: haikuInput(80_000) })).toBe(1)
   })
 
   it('rounds up: a 1.6-cent Turn costs 2 Credits (1.6 x 1.25 = 2.0), a 2-cent Turn costs 3 (2.5)', () => {
     // Sonnet input at $2/MTok: 8,000 tokens = $0.016, 10,000 tokens = $0.02
-    expect(calculateCostInCredits('claude-sonnet-5-5', 8_000, 0)).toBe(2)
-    expect(calculateCostInCredits('claude-sonnet-5-5', 10_000, 0)).toBe(3)
+    expect(calculateCostInCredits({ model: 'claude-sonnet-5-5', inputTokens: 8_000, outputTokens: 0 })).toBe(2)
+    expect(calculateCostInCredits({ model: 'claude-sonnet-5-5', inputTokens: 10_000, outputTokens: 0 })).toBe(3)
   })
 
   it('does not round float noise up into an extra Credit: a 5.6-cent Turn costs exactly 7', () => {
     // Sonnet input: 28,000 tokens x $2/MTok = $0.056; 5.6 x 1.25 = 7.0
-    expect(calculateCostInCredits('claude-sonnet-5-5', 28_000, 0)).toBe(7)
+    expect(calculateCostInCredits({ model: 'claude-sonnet-5-5', inputTokens: 28_000, outputTokens: 0 })).toBe(7)
   })
 
   it('applies the Margin to a large Turn: a 100-cent Opus Turn costs 125 Credits', () => {
     // 250,000 input tokens x $4/MTok = $1.00
-    expect(calculateCostInCredits('claude-opus-5-5', 250_000, 0)).toBe(125)
+    expect(calculateCostInCredits({ model: 'claude-opus-5-5', inputTokens: 250_000, outputTokens: 0 })).toBe(125)
   })
 
   it('never charges less than the Minimum charge of 1 Credit', () => {
     expect(MINIMUM_CHARGE_CREDITS).toBe(1)
-    expect(calculateUsageCostInCredits('claude-haiku-5-5', haikuInput(0))).toBe(1)
-    expect(calculateUsageCostInCredits('claude-haiku-5-5', haikuInput(10))).toBe(1)
+    expect(calculateUsageCostInCredits({ model: 'claude-haiku-5-5', usage: haikuInput(0) })).toBe(1)
+    expect(calculateUsageCostInCredits({ model: 'claude-haiku-5-5', usage: haikuInput(10) })).toBe(1)
   })
 
   it('applies the Margin to the web search fee: one $0.01 search costs 2 Credits (1.25 rounded up)', () => {
@@ -111,7 +111,7 @@ describe('Every Turn is profitable', () => {
       const rawCostUSD = (tokens / 1_000_000) * pricing.input + (tokens / 1_000_000) * pricing.output
       const rawCostCents = rawCostUSD * 100
 
-      const chargedCredits = calculateCostInCredits(model, tokens, tokens)
+      const chargedCredits = calculateCostInCredits({ model, inputTokens: tokens, outputTokens: tokens })
 
       expect(chargedCredits).toBeGreaterThan(rawCostCents)
     }
@@ -121,22 +121,22 @@ describe('Every Turn is profitable', () => {
 describe('Credit Calculation', () => {
   it('always charges at least 1 credit', () => {
     for (const model of Object.keys(MODEL_PRICING) as ModelName[]) {
-      const cost = calculateCostInCredits(model, 1, 1)
+      const cost = calculateCostInCredits({ model, inputTokens: 1, outputTokens: 1 })
       expect(cost).toBeGreaterThanOrEqual(1)
     }
   })
 
   it('zero tokens still costs minimum 1 credit', () => {
     for (const model of Object.keys(MODEL_PRICING) as ModelName[]) {
-      const cost = calculateCostInCredits(model, 0, 0)
+      const cost = calculateCostInCredits({ model, inputTokens: 0, outputTokens: 0 })
       expect(cost).toBe(1)
     }
   })
 
   it('more tokens = more credits', () => {
     for (const model of Object.keys(MODEL_PRICING) as ModelName[]) {
-      const small = calculateCostInCredits(model, 100, 100)
-      const large = calculateCostInCredits(model, 100000, 100000)
+      const small = calculateCostInCredits({ model, inputTokens: 100, outputTokens: 100 })
+      const large = calculateCostInCredits({ model, inputTokens: 100000, outputTokens: 100000 })
       expect(large).toBeGreaterThan(small)
     }
   })
@@ -147,7 +147,7 @@ describe('Credit Calculation', () => {
 
     const costs = models.map(model => ({
       model,
-      cost: calculateCostInCredits(model, tokens, tokens),
+      cost: calculateCostInCredits({ model, inputTokens: tokens, outputTokens: tokens }),
       pricing: MODEL_PRICING[model].input + MODEL_PRICING[model].output,
     }))
 
@@ -159,7 +159,7 @@ describe('Credit Calculation', () => {
   })
 
   it('throws for unknown model', () => {
-    expect(() => calculateCostInCredits('unknown-model' as ModelName, 100, 100))
+    expect(() => calculateCostInCredits({ model: 'unknown-model' as ModelName, inputTokens: 100, outputTokens: 100 }))
       .toThrow('Unknown model')
   })
 })
@@ -223,8 +223,8 @@ describe('MODEL_PRICING Structure', () => {
 describe('calculateCostInCents (legacy alias)', () => {
   it('returns same value as calculateCostInCredits', () => {
     for (const model of Object.keys(MODEL_PRICING) as ModelName[]) {
-      const credits = calculateCostInCredits(model, 10000, 10000)
-      const cents = calculateCostInCents(model, 10000, 10000)
+      const credits = calculateCostInCredits({ model, inputTokens: 10000, outputTokens: 10000 })
+      const cents = calculateCostInCents({ model, inputTokens: 10000, outputTokens: 10000 })
       expect(credits).toBe(cents)
     }
   })
@@ -275,15 +275,15 @@ describe('Web Search Cost Accounting', () => {
   })
 
   it('adds nothing when no searches ran', () => {
-    const withoutSearch = calculateCostInCredits('claude-sonnet-5-5', 1000, 500)
-    const explicitZero = calculateCostInCredits('claude-sonnet-5-5', 1000, 500, 0)
+    const withoutSearch = calculateCostInCredits({ model: 'claude-sonnet-5-5', inputTokens: 1000, outputTokens: 500 })
+    const explicitZero = calculateCostInCredits({ model: 'claude-sonnet-5-5', inputTokens: 1000, outputTokens: 500, webSearchRequests: 0 })
     expect(explicitZero).toBe(withoutSearch)
     expect(calculateWebSearchCostInCredits(0)).toBe(0)
   })
 
   it('charges more when searches ran', () => {
-    const withoutSearch = calculateCostInCredits('claude-sonnet-5-5', 1000, 500, 0)
-    const withSearch = calculateCostInCredits('claude-sonnet-5-5', 1000, 500, 3)
+    const withoutSearch = calculateCostInCredits({ model: 'claude-sonnet-5-5', inputTokens: 1000, outputTokens: 500, webSearchRequests: 0 })
+    const withSearch = calculateCostInCredits({ model: 'claude-sonnet-5-5', inputTokens: 1000, outputTokens: 500, webSearchRequests: 3 })
     expect(withSearch).toBeGreaterThan(withoutSearch)
   })
 
@@ -306,7 +306,7 @@ describe('Web Search Cost Accounting', () => {
         (outputTokens / 1_000_000) * MODEL_PRICING[model].output +
         searches * WEB_SEARCH_PRICE_PER_SEARCH_USD
 
-      const charged = calculateCostInCredits(model, inputTokens, outputTokens, searches)
+      const charged = calculateCostInCredits({ model, inputTokens, outputTokens, webSearchRequests: searches })
       expect(charged).toBeGreaterThan(rawUSD * 100)
     }
   })
@@ -318,27 +318,22 @@ describe('Web Search Cost Accounting', () => {
   })
 
   it('ignores a negative search count instead of crediting the user', () => {
-    const baseline = calculateCostInCredits('claude-opus-5-5', 1000, 500, 0)
-    expect(calculateCostInCredits('claude-opus-5-5', 1000, 500, -5)).toBe(baseline)
+    const baseline = calculateCostInCredits({ model: 'claude-opus-5-5', inputTokens: 1000, outputTokens: 500, webSearchRequests: 0 })
+    expect(calculateCostInCredits({ model: 'claude-opus-5-5', inputTokens: 1000, outputTokens: 500, webSearchRequests: -5 })).toBe(baseline)
   })
 
   it('legacy alias resolves to the same cost as the model actually called', () => {
     for (const legacy of LEGACY_MODEL_IDS) {
       const current = LEGACY_MODEL_ALIASES[legacy]
-      const viaAlias = calculateCostInCredits(
-        resolveAgentModel(legacy) as ModelName,
-        10000,
-        5000,
-        2
-      )
-      const direct = calculateCostInCredits(current as ModelName, 10000, 5000, 2)
+      const viaAlias = calculateCostInCredits({ model: resolveAgentModel(legacy) as ModelName, inputTokens: 10000, outputTokens: 5000, webSearchRequests: 2 })
+      const direct = calculateCostInCredits({ model: current as ModelName, inputTokens: 10000, outputTokens: 5000, webSearchRequests: 2 })
       expect(viaAlias).toBe(direct)
     }
   })
 
   it('calculateCostInCents forwards the search count', () => {
-    expect(calculateCostInCents('claude-opus-5-5', 1000, 500, 3)).toBe(
-      calculateCostInCredits('claude-opus-5-5', 1000, 500, 3)
+    expect(calculateCostInCents({ model: 'claude-opus-5-5', inputTokens: 1000, outputTokens: 500, webSearchRequests: 3 })).toBe(
+      calculateCostInCredits({ model: 'claude-opus-5-5', inputTokens: 1000, outputTokens: 500, webSearchRequests: 3 })
     )
   })
 })
@@ -354,22 +349,22 @@ describe('calculateUsageCostInCredits (prompt-cache-aware billing)', () => {
   it('charges Opus 5.5 cache reads at $0.20/MTok, not the base input rate', () => {
     // 1M x $0.20 = $0.20 -> x1.25 = 25 credits
     expect(
-      calculateUsageCostInCredits('claude-opus-5-5', { ...noUsage, cacheReadInputTokens: 1_000_000 })
+      calculateUsageCostInCredits({ model: 'claude-opus-5-5', usage: { ...noUsage, cacheReadInputTokens: 1_000_000 } })
     ).toBe(25)
   })
 
   it('charges Sonnet 5.5 cache reads at $0.10/MTok (0.05x input)', () => {
     // 1M x $0.10 = $0.10 -> x1.25 = 12.5 -> 13 credits
     expect(
-      calculateUsageCostInCredits('claude-sonnet-5-5', { ...noUsage, cacheReadInputTokens: 1_000_000 })
+      calculateUsageCostInCredits({ model: 'claude-sonnet-5-5', usage: { ...noUsage, cacheReadInputTokens: 1_000_000 } })
     ).toBe(13)
   })
 
   it('charges 5-minute cache writes at 1.25x input: Sonnet $2.50, Opus $5.00 per MTok', () => {
     const write = { ...noUsage, cacheCreationInputTokens: 1_000_000 }
     // $2.50 -> x1.25 = 312.5 -> 313; $5.00 -> x1.25 = 625
-    expect(calculateUsageCostInCredits('claude-sonnet-5-5', write)).toBe(313)
-    expect(calculateUsageCostInCredits('claude-opus-5-5', write)).toBe(625)
+    expect(calculateUsageCostInCredits({ model: 'claude-sonnet-5-5', usage: write })).toBe(313)
+    expect(calculateUsageCostInCredits({ model: 'claude-opus-5-5', usage: write })).toBe(625)
   })
 
   const cachedAgentTurn = {
@@ -381,18 +376,18 @@ describe('calculateUsageCostInCredits (prompt-cache-aware billing)', () => {
 
   it('bills every input bucket plus output on Sonnet 5.5', () => {
     // $0.002 input + $0.005 write + $0.01 read + $0.005 output = $0.022 -> x1.25 = 2.75 -> 3
-    expect(calculateUsageCostInCredits('claude-sonnet-5-5', cachedAgentTurn)).toBe(3)
+    expect(calculateUsageCostInCredits({ model: 'claude-sonnet-5-5', usage: cachedAgentTurn })).toBe(3)
   })
 
   it('bills every input bucket plus output on Opus 5.5', () => {
     // $0.004 input + $0.01 write + $0.02 read + $0.01 output = $0.044 -> x1.25 = 5.5 -> 6
-    expect(calculateUsageCostInCredits('claude-opus-5-5', cachedAgentTurn)).toBe(6)
+    expect(calculateUsageCostInCredits({ model: 'claude-opus-5-5', usage: cachedAgentTurn })).toBe(6)
   })
 
   it('adds the per-search fee on top of cached tokens', () => {
     // $0.044 tokens + 2 x $0.01 searches = $0.064 -> x1.25 = 8
     expect(
-      calculateUsageCostInCredits('claude-opus-5-5', { ...cachedAgentTurn, webSearchRequests: 2 })
+      calculateUsageCostInCredits({ model: 'claude-opus-5-5', usage: { ...cachedAgentTurn, webSearchRequests: 2 } })
     ).toBe(8)
   })
 })
@@ -407,12 +402,12 @@ describe('Haiku 5.5 prompt-length rate cards', () => {
 
   it('bills a prompt of up to 100K tokens at $0.10 / $0.50', () => {
     // 100K x $0.10 + 100K x $0.50 = $0.06 -> x1.25 = 7.5 -> 8
-    expect(calculateUsageCostInCredits('claude-haiku-5-5', usage(100_000, 100_000))).toBe(8)
+    expect(calculateUsageCostInCredits({ model: 'claude-haiku-5-5', usage: usage(100_000, 100_000) })).toBe(8)
   })
 
   it('bills the whole request, output included, at $0.50 / $2.50 once the prompt passes 100K', () => {
     // 200K x $0.50 + 100K x $2.50 = $0.35 -> x1.25 = 43.75 -> 44
-    expect(calculateUsageCostInCredits('claude-haiku-5-5', usage(200_000, 100_000))).toBe(44)
+    expect(calculateUsageCostInCredits({ model: 'claude-haiku-5-5', usage: usage(200_000, 100_000) })).toBe(44)
   })
 
   it('counts cached tokens toward the 100K threshold', () => {
@@ -423,16 +418,16 @@ describe('Haiku 5.5 prompt-length rate cards', () => {
       outputTokens: 0,
     }
     // $0.0005 input + 1M x $0.05 read = $0.0505 -> x1.25 = 6.31 -> 7 (short card would be 2)
-    expect(calculateUsageCostInCredits('claude-haiku-5-5', cachedLongPrompt)).toBe(7)
+    expect(calculateUsageCostInCredits({ model: 'claude-haiku-5-5', usage: cachedLongPrompt })).toBe(7)
   })
 
   it('a typical cached agent turn costs the 1-credit minimum', () => {
-    expect(calculateUsageCostInCredits('claude-haiku-5-5', {
+    expect(calculateUsageCostInCredits({ model: 'claude-haiku-5-5', usage: {
       inputTokens: 1_000,
       cacheCreationInputTokens: 2_000,
       cacheReadInputTokens: 20_000,
       outputTokens: 500,
-    })).toBe(1)
+    } })).toBe(1)
   })
 })
 

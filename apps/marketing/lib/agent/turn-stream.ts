@@ -18,6 +18,10 @@ import {
 } from '@/lib/pricing'
 import type { PartialTurn } from '@/lib/turn-hold'
 
+function searchQueryOf(input: unknown): string {
+  return isToolInput(input) && typeof input.query === 'string' ? input.query : ''
+}
+
 /**
  * The narrow view of Claude's stream this module reads: the SDK's `MessageStream` in
  * production, a fake stream in tests.
@@ -312,7 +316,7 @@ export async function readTurnStream({
         }
       } else if (event.type === 'content_block_stop') {
         if (currentToolUse) {
-          let parsedInput = {}
+          let parsedInput: unknown = {}
           try {
             // Robust parsing: handle potential hallucinations or malformed JSON
             const rawInput = currentToolUse.input.trim()
@@ -333,7 +337,7 @@ export async function readTurnStream({
             send({
               type: 'web_search_start',
               toolUseId: currentToolUse.id,
-              query: (parsedInput as { query?: string }).query ?? '',
+              query: searchQueryOf(parsedInput),
             })
           } else {
             clientToolCalls.push({
@@ -352,7 +356,7 @@ export async function readTurnStream({
             type: 'metrics_update',
             metrics: reportedUsage({
               usage: turnUsage(webSearchesStarted),
-              costCents: calculateUsageCostInCredits(model, turnUsage(webSearchesStarted)),
+              costCents: calculateUsageCostInCredits({ model, usage: turnUsage(webSearchesStarted) }),
             }),
           })
         }

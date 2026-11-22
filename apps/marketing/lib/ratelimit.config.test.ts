@@ -40,7 +40,7 @@ describe('rate limiting without Upstash', () => {
       UPSTASH_REDIS_REST_TOKEN: '',
     })
 
-    await expect(checkRateLimit('user_1', 'chat')).resolves.toEqual({ success: true })
+    await expect(checkRateLimit({ userId: 'user_1', type: 'chat' })).resolves.toEqual({ success: true })
   })
 })
 
@@ -63,7 +63,7 @@ describe('rate limiting with Upstash', () => {
       UPSTASH_REDIS_REST_TOKEN: 'token',
     })
 
-    await checkRateLimit('user_1', 'chat')
+    await checkRateLimit({ userId: 'user_1', type: 'chat' })
 
     // The global limiter and the user's tier limiter each write analytics.
     expect(keepRequestOpenUntil).toHaveBeenCalledTimes(2)

@@ -310,7 +310,7 @@ describe('Legacy model ids from already-installed extensions', () => {
     const events = await drain(await post({ model: 'claude-opus-4-6' }))
 
     // Opus 5.5: (1000/1M x $4) + (500/1M x $20) = $0.014 -> x1.25 Margin = 1.75c -> 2 credits
-    const expected = calculateCostInCredits('claude-opus-5-5', 1000, 500)
+    const expected = calculateCostInCredits({ model: 'claude-opus-5-5', inputTokens: 1000, outputTokens: 500 })
     expect(expected).toBe(2)
 
     const done = events.find((e) => e.type === 'done') as {
@@ -338,7 +338,7 @@ describe('Legacy model ids from already-installed extensions', () => {
       expect(calledModel()).toBe(current)
       expect(usageRow(captured)?.model).toBe(current)
       expect(usageRow(captured)?.costCents).toBe(
-        calculateCostInCredits(current as ModelName, 2000, 1000)
+        calculateCostInCredits({ model: current as ModelName, inputTokens: 2000, outputTokens: 1000 })
       )
     }
   })
@@ -349,7 +349,7 @@ describe('Legacy model ids from already-installed extensions', () => {
 
     await drain(await post({ model: 'claude-sonnet-4-6' }))
 
-    const expected = calculateCostInCredits('claude-sonnet-5-5', 1000, 500)
+    const expected = calculateCostInCredits({ model: 'claude-sonnet-5-5', inputTokens: 1000, outputTokens: 500 })
     expect(settleCredits).toHaveBeenCalledWith(expect.objectContaining({ actualCents: expected }))
     expect(usageRow(captured)?.costCents).toBe(expected)
   })
@@ -402,9 +402,9 @@ describe('Web search gating and billing', () => {
 
     const events = await drain(await post({ enableWebSearch: true }))
 
-    const expected = calculateCostInCredits('claude-haiku-5-5', 1000, 500, 2)
+    const expected = calculateCostInCredits({ model: 'claude-haiku-5-5', inputTokens: 1000, outputTokens: 500, webSearchRequests: 2 })
     expect(expected).toBeGreaterThan(
-      calculateCostInCredits('claude-haiku-5-5', 1000, 500, 0)
+      calculateCostInCredits({ model: 'claude-haiku-5-5', inputTokens: 1000, outputTokens: 500, webSearchRequests: 0 })
     )
 
     const done = events.find((e) => e.type === 'done') as {

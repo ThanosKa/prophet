@@ -124,10 +124,13 @@ export default function AiModelComparisonPage() {
       let cmp: number
       if (sortKey === 'speed') {
         cmp = speedOrder[a.speed] - speedOrder[b.speed]
-      } else if (typeof a[sortKey] === 'number') {
-        cmp = (a[sortKey] as number) - (b[sortKey] as number)
       } else {
-        cmp = String(a[sortKey]).localeCompare(String(b[sortKey]))
+        const aValue = a[sortKey]
+        const bValue = b[sortKey]
+        cmp =
+          typeof aValue === 'number' && typeof bValue === 'number'
+            ? aValue - bValue
+            : String(aValue).localeCompare(String(bValue))
       }
       return sortAsc ? cmp : -cmp
     })

@@ -28,7 +28,7 @@ const turn = await readTurnStream({
     cache_control: { type: 'ephemeral' },
     // Explicit breakpoint on the static prefix (tools + system), shared by every chat.
     system: [{ type: 'text', text: AGENT_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-    tools: buildAgentTools(AGENT_TOOLS, webSearchEnabled),
+    tools: buildAgentTools({ clientTools: AGENT_TOOLS, enableWebSearch: webSearchEnabled }),
     // DB history + the run's opening message + every earlier turn of the run, append-only
     messages: buildAgentMessages({ history, userMessage, image, runTurns }),
   }, { signal: upstream.signal }),
@@ -39,7 +39,7 @@ const turn = await readTurnStream({
 // remainder; cache writes and reads are billed separately (writes 1.25x input, reads
 // 0.1x, 0.05x on Opus 5.5 and Sonnet 5.5). Haiku 5.5 bills the whole request at a
 // higher rate card once the prompt passes 100K tokens.
-const costCents = calculateUsageCostInCredits(model, turn.final.usage)
+const costCents = calculateUsageCostInCredits({ model, usage: turn.final.usage })
 // = inputTokens, cacheCreationInputTokens, cacheReadInputTokens, outputTokens and
 //   webSearchRequests (usage.server_tool_use.web_search_requests)
 
@@ -133,11 +133,11 @@ rebuilt from streamed deltas.
 The limits and limiters live in `apps/marketing/lib/ratelimit.ts`. Answer an over-limit request like the agent route does:
 
 ```typescript
-const rateLimitResult = await checkRateLimit(userId, 'chat')
+const rateLimitResult = await checkRateLimit({ userId, type: 'chat' })
 
 if (!rateLimitResult.success) {
   return NextResponse.json(
-    error('Too many requests. Please try again later.', 'RATE_LIMIT_EXCEEDED'),
+    error({ message: 'Too many requests. Please try again later.', code: 'RATE_LIMIT_EXCEEDED' }),
     {
       status: 429,
       headers: {

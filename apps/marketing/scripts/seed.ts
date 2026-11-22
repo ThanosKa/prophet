@@ -80,7 +80,7 @@ const qaTemplates = [
 ]
 
 // Generate a long conversation by repeating Q&As
-function generateLongConversation(title: string, messageCount: number) {
+function generateLongConversation({ title, messageCount }: { title: string; messageCount: number }) {
   const msgs: Array<{ role: 'user' | 'assistant'; content: string }> = []
   let qaIndex = 0
 
@@ -95,11 +95,11 @@ function generateLongConversation(title: string, messageCount: number) {
 }
 
 const mockConversations = [
-  generateLongConversation('Building a React App', 60),
-  generateLongConversation('TypeScript Best Practices', 80),
-  generateLongConversation('API Design Patterns', 100),
-  generateLongConversation('Database Performance', 50),
-  generateLongConversation('Testing Strategies', 70),
+  generateLongConversation({ title: 'Building a React App', messageCount: 60 }),
+  generateLongConversation({ title: 'TypeScript Best Practices', messageCount: 80 }),
+  generateLongConversation({ title: 'API Design Patterns', messageCount: 100 }),
+  generateLongConversation({ title: 'Database Performance', messageCount: 50 }),
+  generateLongConversation({ title: 'Testing Strategies', messageCount: 70 }),
 ]
 
 async function seed() {

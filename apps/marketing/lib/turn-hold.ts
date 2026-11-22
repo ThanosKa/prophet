@@ -87,7 +87,7 @@ async function settleUnfinishedTurn({
   const actualCents = partial.usageReported
     ? Math.min(
         reserveCents,
-        calculateUsageCostInCredits(model, { ...partial.usage, outputTokens })
+        calculateUsageCostInCredits({ model, usage: { ...partial.usage, outputTokens } })
       )
     : 0
   try {
@@ -149,7 +149,7 @@ async function settleFinishedTurn({
   isFinalTurn: boolean
 }): Promise<number> {
   const { inputTokens, cacheCreationInputTokens, cacheReadInputTokens, outputTokens } = usage
-  const costCents = calculateUsageCostInCredits(model, usage)
+  const costCents = calculateUsageCostInCredits({ model, usage })
   const maxContextTokens = getModelContextWindow(model)
   await db.transaction(async (tx) => {
     // Locks the chat row, so it goes before settlement locks the user row.

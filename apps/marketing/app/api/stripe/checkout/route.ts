@@ -38,9 +38,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const rateLimitResult = await checkRateLimit(userId, 'api')
+    const rateLimitResult = await checkRateLimit({ userId, type: 'api' })
     if (!rateLimitResult.success) {
-      return NextResponse.json(errorBody('Too many requests', 'RATE_LIMIT_EXCEEDED'), {
+      return NextResponse.json(errorBody({ message: 'Too many requests', code: 'RATE_LIMIT_EXCEEDED' }), {
         status: 429,
         headers: {
           'X-RateLimit-Limit': rateLimitResult.limit?.toString() || '',
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
         'Plan checkout refused: subscription exists'
       )
       return NextResponse.json(
-        errorBody('You already have a plan. Switch plans in the billing portal.', 'SUBSCRIPTION_EXISTS'),
+        errorBody({ message: 'You already have a plan. Switch plans in the billing portal.', code: 'SUBSCRIPTION_EXISTS' }),
         { status: 409 }
       )
     }

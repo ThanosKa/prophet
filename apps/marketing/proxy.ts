@@ -23,7 +23,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (req.nextUrl.pathname.startsWith('/api/')) {
     const { userId } = await auth()
     if (!userId) {
-      return NextResponse.json(error(SESSION_EXPIRED_MESSAGE, 'UNAUTHORIZED'), { status: 401 })
+      return NextResponse.json(error({ message: SESSION_EXPIRED_MESSAGE, code: 'UNAUTHORIZED' }), { status: 401 })
     }
   }
 

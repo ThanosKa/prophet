@@ -70,26 +70,23 @@ export async function POST(req: Request) {
     const auth_ = await auth();
     const userId = auth_.userId;
     if (!userId) {
-      return NextResponse.json(error(SESSION_EXPIRED_MESSAGE, "UNAUTHORIZED"), {
+      return NextResponse.json(error({ message: SESSION_EXPIRED_MESSAGE, code: "UNAUTHORIZED" }), {
         status: 401,
       });
     }
 
-    const rateLimitResult = await checkRateLimit(userId, "chat");
+    const rateLimitResult = await checkRateLimit({ userId, type: "chat" });
     if (!rateLimitResult.success) {
       logger.warn(
         { userId, remaining: rateLimitResult.remaining },
         "Rate limit exceeded for agent chat"
       );
       return NextResponse.json(
-        error(
-          "Too many requests. Please try again later.",
-          "RATE_LIMIT_EXCEEDED"
-        ),
+        error({ message: "Too many requests. Please try again later.", code: "RATE_LIMIT_EXCEEDED" }),
         {
           status: 429,
           headers: {
-            "Retry-After": String(Math.ceil((rateLimitResult.reset! - Date.now()) / 1000)),
+            "Retry-After": String(Math.ceil(((rateLimitResult.reset ?? Date.now()) - Date.now()) / 1000)),
             "X-RateLimit-Limit": rateLimitResult.limit?.toString() || "",
             "X-RateLimit-Remaining":
               rateLimitResult.remaining?.toString() || "",
@@ -103,17 +100,14 @@ export async function POST(req: Request) {
     if (bounded.status === "too_large") {
       logger.warn({ userId }, "Agent chat request body over the size limit");
       return NextResponse.json(
-        error(
-          "This request is too large to send. Start a new chat to continue.",
-          AGENT_ERROR_CODES.requestTooLarge
-        ),
+        error({ message: "This request is too large to send. Start a new chat to continue.", code: AGENT_ERROR_CODES.requestTooLarge }),
         { status: 413 }
       );
     }
     const parsed = parseJsonBody(bounded.text);
     if (parsed.status === "invalid") {
       logger.warn({ userId }, "Agent chat request body is not JSON");
-      return NextResponse.json(error("Request body must be JSON", "VALIDATION_ERROR"), {
+      return NextResponse.json(error({ message: "Request body must be JSON", code: "VALIDATION_ERROR" }), {
         status: 400,
       });
     }
@@ -130,7 +124,7 @@ export async function POST(req: Request) {
         "Validation failed for agent chat request"
       );
       return NextResponse.json(
-        error("Invalid request body", "VALIDATION_ERROR", validation.error.issues),
+        error({ message: "Invalid request body", code: "VALIDATION_ERROR", details: validation.error.issues }),
         { status: 400 }
       );
     }
@@ -147,7 +141,7 @@ export async function POST(req: Request) {
     // point — the API call, pricing, credit deduction, usage rows — uses the
     // resolved model so cost always matches the model actually invoked.
     const requestedModel = validation.data.model ?? DEFAULT_AGENT_MODEL;
-    const model = resolveAgentModel(requestedModel) as ModelName;
+    const model = resolveAgentModel(requestedModel);
     const webSearchEnabled = shouldUseWebSearch(enableWebSearch);
 
     const [chat, user] = await Promise.all([
@@ -160,13 +154,13 @@ export async function POST(req: Request) {
     ]);
 
     if (!chat) {
-      return NextResponse.json(error("Chat not found", "CHAT_NOT_FOUND"), {
+      return NextResponse.json(error({ message: "Chat not found", code: "CHAT_NOT_FOUND" }), {
         status: 404,
       });
     }
 
     if (!user) {
-      return NextResponse.json(error("User not found", "USER_NOT_FOUND"), {
+      return NextResponse.json(error({ message: "User not found", code: "USER_NOT_FOUND" }), {
         status: 404,
       });
     }
@@ -174,10 +168,7 @@ export async function POST(req: Request) {
     const requestKind = readRequestKind(validation.data);
     if (requestKind.kind === "invalid") {
       return NextResponse.json(
-        error(
-          "Either userMessage or toolResults is required",
-          "VALIDATION_ERROR"
-        ),
+        error({ message: "Either userMessage or toolResults is required", code: "VALIDATION_ERROR" }),
         { status: 400 }
       );
     }
@@ -199,7 +190,7 @@ export async function POST(req: Request) {
     if (resumed === null) {
       logger.info({ userId, chatId, runId }, "Continuation of a superseded Run");
       return NextResponse.json(
-        error(RUN_SUPERSEDED_MESSAGE, AGENT_ERROR_CODES.runSuperseded),
+        error({ message: RUN_SUPERSEDED_MESSAGE, code: AGENT_ERROR_CODES.runSuperseded }),
         { status: 409 }
       );
     }
@@ -210,7 +201,7 @@ export async function POST(req: Request) {
       image,
       runTurns,
     });
-    const tools = buildAgentTools(AGENT_TOOLS, webSearchEnabled);
+    const tools = buildAgentTools({ clientTools: AGENT_TOOLS, enableWebSearch: webSearchEnabled });
     const estimatePrompt = (promptMessages: MessageParam[]) =>
       estimateInputTokens({ system: AGENT_SYSTEM_PROMPT, tools, messages: promptMessages });
     const estimatedPromptTokens = estimatePrompt(estimatedMessages);
@@ -269,7 +260,7 @@ export async function POST(req: Request) {
         fits: (option) => planFor(option).ok,
       });
       return NextResponse.json(
-        error(message, "INSUFFICIENT_BALANCE", details),
+        error({ message, code: "INSUFFICIENT_BALANCE", details }),
         { status: 402 }
       );
     }
@@ -281,11 +272,7 @@ export async function POST(req: Request) {
         "Credit reservation lost a race for the balance"
       );
       return NextResponse.json(
-        error(
-          "Some of your balance is held by another request that's still running. Try again in a few seconds.",
-          "BALANCE_HELD",
-          { retryAfter: BALANCE_HELD_RETRY_AFTER_SECONDS }
-        ),
+        error({ message: "Some of your balance is held by another request that's still running. Try again in a few seconds.", code: "BALANCE_HELD", details: { retryAfter: BALANCE_HELD_RETRY_AFTER_SECONDS } }),
         {
           status: 409,
           headers: { "Retry-After": String(BALANCE_HELD_RETRY_AFTER_SECONDS) },
@@ -321,7 +308,7 @@ export async function POST(req: Request) {
         "Failed to start the Turn; returning its hold"
       );
       await turnHold.close({ type: "not_started" });
-      return NextResponse.json(error(INTERNAL_ERROR_MESSAGE, "INTERNAL_ERROR"), { status: 500 });
+      return NextResponse.json(error({ message: INTERNAL_ERROR_MESSAGE, code: "INTERNAL_ERROR" }), { status: 500 });
     }
 
     logger.debug(
@@ -449,7 +436,7 @@ export async function POST(req: Request) {
             webSearchRequests,
           } = final.usage;
 
-          const costCents = calculateUsageCostInCredits(model, final.usage);
+          const costCents = calculateUsageCostInCredits({ model, usage: final.usage });
           const webSearchCostCents =
             calculateWebSearchCostInCredits(webSearchRequests);
 
@@ -549,7 +536,7 @@ export async function POST(req: Request) {
       "Agent chat endpoint error"
     );
     return NextResponse.json(
-      error(INTERNAL_ERROR_MESSAGE, "INTERNAL_ERROR"),
+      error({ message: INTERNAL_ERROR_MESSAGE, code: "INTERNAL_ERROR" }),
       { status: 500 }
     );
   }

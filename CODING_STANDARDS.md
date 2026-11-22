@@ -7,7 +7,7 @@ The rules every diff in this repo is checked against, one per line, alongside th
 - Open every API route with Clerk `auth()` and return 401 when `userId` is missing. Exceptions: webhook routes authenticate by signature and are listed in `isPublicRoute` in `apps/marketing/proxy.ts`; `/api/agent/chat/dev` answers 403 outside `NODE_ENV=development`.
 - Scope every query on user-owned rows by `userId` as well as the row id (`and(eq(chats.id, chatId), eq(chats.userId, userId))`), returning 404 when nothing matches.
 - Parse every request input (body, query, params) with a Zod schema via `safeParse`, returning 400 on failure; data from the extension and content scripts is untrusted.
-- Rate-limit every authenticated API route with `checkRateLimit(userId, type)` (`apps/marketing/lib/ratelimit.ts`) right after `auth()`: `'chat'` for the agent route, `'api'` for the rest.
+- Rate-limit every authenticated API route with `checkRateLimit({ userId, type })` (`apps/marketing/lib/ratelimit.ts`) right after `auth()`: `'chat'` for the agent route, `'api'` for the rest.
 - Verify webhook signatures before trusting the payload: Stripe with `await stripe.webhooks.constructEventAsync` on the raw `request.text()` body (the sync `constructEvent` throws on Workers), Clerk with `svix` on the raw `req.text()` body.
 
 ## Credits and billing
@@ -18,7 +18,7 @@ The rules every diff in this repo is checked against, one per line, alongside th
 
 ## API responses and logging
 
-- Build response bodies with `success(data)` / `error(message, code)` from `apps/marketing/types`, with an UPPER_SNAKE `code`.
+- Build response bodies with `success(data)` / `error({ message, code })` from `apps/marketing/types`, with an UPPER_SNAKE `code`.
 - Answer unexpected failures with status 500 and `error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR')`; the real error and stack go to the log, not the client.
 - Log server-side through `logger` (`apps/marketing/lib/logger.ts`).
 

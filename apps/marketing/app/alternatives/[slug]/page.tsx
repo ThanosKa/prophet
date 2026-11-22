@@ -140,7 +140,7 @@ export default async function AlternativePage({ params }: Props) {
           </section>
 
           {/* Condensed Comparison Table */}
-          {condensedMatrix.length > 0 && (
+          {comparison && condensedMatrix.length > 0 && (
             <section className="mb-12">
               <h2 className="text-2xl font-bold mb-4">
                 Prophet vs {data.competitor} at a Glance
@@ -149,7 +149,7 @@ export default async function AlternativePage({ params }: Props) {
                 A condensed comparison of the key differences. For the full
                 breakdown, see the{' '}
                 <Link
-                  href={`/compare/${comparison!.slug}`}
+                  href={`/compare/${comparison.slug}`}
                   className="text-primary hover:underline"
                 >
                   detailed comparison page

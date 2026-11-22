@@ -51,11 +51,15 @@ const lineNumberTransformer: ShikiTransformer = {
   },
 };
 
-export async function highlightCode(
-  code: string,
-  language: BundledLanguage,
-  showLineNumbers = false
-) {
+export async function highlightCode({
+  code,
+  language,
+  showLineNumbers = false,
+}: {
+  code: string
+  language: BundledLanguage
+  showLineNumbers?: boolean
+}) {
   const transformers: ShikiTransformer[] = showLineNumbers
     ? [lineNumberTransformer]
     : [];
@@ -87,7 +91,7 @@ export const CodeBlock = ({
   const mounted = useRef(false);
 
   useEffect(() => {
-    highlightCode(code, language, showLineNumbers).then(([light, dark]) => {
+    highlightCode({ code, language, showLineNumbers }).then(([light, dark]) => {
       if (!mounted.current) {
         setHtml(light);
         setDarkHtml(dark);
@@ -160,7 +164,7 @@ export const CodeBlockCopyButton = ({
       onCopy?.();
       setTimeout(() => setIsCopied(false), timeout);
     } catch (error) {
-      onError?.(error as Error);
+      onError?.(error instanceof Error ? error : new Error(String(error)));
     }
   };
 

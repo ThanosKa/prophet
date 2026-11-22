@@ -109,7 +109,13 @@ export type TokenUsage = {
  * Credit cost of one API call from its reported usage. Cache writes use the
  * 5-minute TTL rate; nothing here requests the 1-hour TTL.
  */
-export function calculateUsageCostInCredits(model: ModelName, usage: TokenUsage): number {
+export function calculateUsageCostInCredits({
+  model,
+  usage,
+}: {
+  model: ModelName;
+  usage: TokenUsage;
+}): number {
   const modelPricing: ModelPricing | undefined = MODEL_PRICING[model];
 
   if (!modelPricing) {
@@ -123,12 +129,13 @@ export function calculateUsageCostInCredits(model: ModelName, usage: TokenUsage)
       ? modelPricing.longPrompt
       : modelPricing;
 
-  const perToken = (tokens: number, usdPerMTok: number) => (tokens / 1_000_000) * usdPerMTok;
+  const perToken = ({ tokens, usdPerMTok }: { tokens: number; usdPerMTok: number }) =>
+    (tokens / 1_000_000) * usdPerMTok;
   const totalCostUSD =
-    perToken(usage.inputTokens, pricing.input) +
-    perToken(usage.cacheCreationInputTokens, pricing.cacheWrite) +
-    perToken(usage.cacheReadInputTokens, pricing.cacheRead) +
-    perToken(usage.outputTokens, pricing.output) +
+    perToken({ tokens: usage.inputTokens, usdPerMTok: pricing.input }) +
+    perToken({ tokens: usage.cacheCreationInputTokens, usdPerMTok: pricing.cacheWrite }) +
+    perToken({ tokens: usage.cacheReadInputTokens, usdPerMTok: pricing.cacheRead }) +
+    perToken({ tokens: usage.outputTokens, usdPerMTok: pricing.output }) +
     Math.max(0, usage.webSearchRequests ?? 0) * WEB_SEARCH_PRICE_PER_SEARCH_USD;
 
   return Math.max(MINIMUM_CHARGE_CREDITS, centsWithMarginRoundedUp(totalCostUSD * 100));
@@ -156,18 +163,26 @@ function centsWithMarginRoundedUp(costCents: number): number {
  * A single search is $0.01, so it dominates a short turn's cost — omitting it would
  * mean serving searches at a loss.
  */
-export function calculateCostInCredits(
-  model: ModelName,
-  inputTokens: number,
-  outputTokens: number,
-  webSearchRequests = 0
-): number {
-  return calculateUsageCostInCredits(model, {
-    inputTokens,
-    cacheCreationInputTokens: 0,
-    cacheReadInputTokens: 0,
-    outputTokens,
-    webSearchRequests,
+export function calculateCostInCredits({
+  model,
+  inputTokens,
+  outputTokens,
+  webSearchRequests = 0,
+}: {
+  model: ModelName;
+  inputTokens: number;
+  outputTokens: number;
+  webSearchRequests?: number;
+}): number {
+  return calculateUsageCostInCredits({
+    model,
+    usage: {
+      inputTokens,
+      cacheCreationInputTokens: 0,
+      cacheReadInputTokens: 0,
+      outputTokens,
+      webSearchRequests,
+    },
   });
 }
 
@@ -181,13 +196,18 @@ export function calculateWebSearchCostInCredits(webSearchRequests: number): numb
 }
 
 // Legacy function for backwards compatibility
-export function calculateCostInCents(
-  model: ModelName,
-  inputTokens: number,
-  outputTokens: number,
-  webSearchRequests = 0
-): number {
-  return calculateCostInCredits(model, inputTokens, outputTokens, webSearchRequests);
+export function calculateCostInCents({
+  model,
+  inputTokens,
+  outputTokens,
+  webSearchRequests = 0,
+}: {
+  model: ModelName;
+  inputTokens: number;
+  outputTokens: number;
+  webSearchRequests?: number;
+}): number {
+  return calculateCostInCredits({ model, inputTokens, outputTokens, webSearchRequests });
 }
 
 // Stripe's standard card fee per charge.

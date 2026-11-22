@@ -34,8 +34,7 @@ export function BuyCreditsButton({
       }
 
       window.location.href = data.url
-    } catch (error) {
-      console.error('Failed to start checkout:', error)
+    } catch {
       toast.error('Something went wrong', {
         description: 'Please try again later.',
       })

@@ -18,11 +18,15 @@ const TEMPLATES_LAST_UPDATED = new Date('2026-07-29')
 
 type Entry = MetadataRoute.Sitemap[number]
 
-function collection(
-    prefix: string,
-    items: ReadonlyArray<{ slug: string }>,
+function collection({
+    prefix,
+    items,
+    priority,
+}: {
+    prefix: string
+    items: ReadonlyArray<{ slug: string }>
     priority: number
-): Entry[] {
+}): Entry[] {
     return items.map((item) => ({
         url: `${baseUrl}${prefix}/${item.slug}`,
         lastModified: TEMPLATES_LAST_UPDATED,
@@ -59,13 +63,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ]
 
     const dynamicPages: Entry[] = [
-        ...collection('/compare', comparisons, 0.8),
-        ...collection('/alternatives', alternatives, 0.7),
-        ...collection('/use-cases', useCases, 0.7),
-        ...collection('/for', professions, 0.6),
-        ...collection('/guides', guides, 0.6),
-        ...collection('/integrations', integrations, 0.6),
-        ...collection('/industries', industries, 0.6),
+        ...collection({ prefix: '/compare', items: comparisons, priority: 0.8 }),
+        ...collection({ prefix: '/alternatives', items: alternatives, priority: 0.7 }),
+        ...collection({ prefix: '/use-cases', items: useCases, priority: 0.7 }),
+        ...collection({ prefix: '/for', items: professions, priority: 0.6 }),
+        ...collection({ prefix: '/guides', items: guides, priority: 0.6 }),
+        ...collection({ prefix: '/integrations', items: integrations, priority: 0.6 }),
+        ...collection({ prefix: '/industries', items: industries, priority: 0.6 }),
         ...getAllBlogPosts().map((post) => ({
             url: `${baseUrl}/blog/${post.slug}`,
             lastModified: new Date(post.lastModified ?? post.date),

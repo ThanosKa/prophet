@@ -93,12 +93,15 @@ export function planCreditReservation({
   webSearchMaxUses: number
 }): CreditReservationPlan {
   const costWith = (outputTokens: number) =>
-    calculateUsageCostInCredits(model, {
-      inputTokens: 0,
-      cacheCreationInputTokens: restTokens,
-      cacheReadInputTokens: cachedPrefixTokens,
-      outputTokens,
-      webSearchRequests: webSearchMaxUses,
+    calculateUsageCostInCredits({
+      model,
+      usage: {
+        inputTokens: 0,
+        cacheCreationInputTokens: restTokens,
+        cacheReadInputTokens: cachedPrefixTokens,
+        outputTokens,
+        webSearchRequests: webSearchMaxUses,
+      },
     })
 
   const floorCents = costWith(minTokens)

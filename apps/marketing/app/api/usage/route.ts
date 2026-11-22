@@ -23,12 +23,12 @@ export async function GET(req: Request) {
   try {
     const { userId } = await auth()
     if (!userId) {
-      return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
+      return NextResponse.json(error({ message: 'Unauthorized', code: 'UNAUTHORIZED' }), { status: 401 })
     }
 
-    const rateLimitResult = await checkRateLimit(userId, 'api')
+    const rateLimitResult = await checkRateLimit({ userId, type: 'api' })
     if (!rateLimitResult.success) {
-      return NextResponse.json(error('Too many requests', 'RATE_LIMIT_EXCEEDED'), {
+      return NextResponse.json(error({ message: 'Too many requests', code: 'RATE_LIMIT_EXCEEDED' }), {
         status: 429,
         headers: {
           'X-RateLimit-Limit': rateLimitResult.limit?.toString() || '',
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
     const query = dailyUsageQuerySchema.safeParse(Object.fromEntries(searchParams))
     if (!query.success) {
       return NextResponse.json(
-        error('Invalid query parameters', 'VALIDATION_ERROR', query.error.issues),
+        error({ message: 'Invalid query parameters', code: 'VALIDATION_ERROR', details: query.error.issues }),
         { status: 400 }
       )
     }
@@ -96,6 +96,6 @@ export async function GET(req: Request) {
     }))
   } catch (err) {
     logger.error({ error: err }, 'Failed to fetch usage records')
-    return NextResponse.json(error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'), { status: 500 })
+    return NextResponse.json(error({ message: INTERNAL_ERROR_MESSAGE, code: 'INTERNAL_ERROR' }), { status: 500 })
   }
 }

@@ -64,9 +64,8 @@ export default function UsagePage() {
         const parsed = usageResponseSchema.safeParse(body)
         if (!parsed.success) throw new Error("Usage response did not match the expected shape")
         setUsage({ status: "success", page: parsed.data.data })
-      } catch (err) {
+      } catch {
         if (controller.signal.aborted) return
-        console.error("Failed to fetch usage:", err)
         setUsage({ status: "error" })
       }
     }

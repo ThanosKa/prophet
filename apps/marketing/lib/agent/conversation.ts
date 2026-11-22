@@ -1,4 +1,4 @@
-import type { ContentBlockParam, MessageParam } from '@anthropic-ai/sdk/resources/messages'
+import type { ContentBlockParam, MessageParam, ToolUseBlockParam, WebSearchToolRequestError } from '@anthropic-ai/sdk/resources/messages'
 import {
   AGENT_SIZE_LIMITS,
   HISTORY_BUDGET_TOKENS,
@@ -6,6 +6,7 @@ import {
   parseStoredToolCalls,
   type AgentChatRequest,
   type AgentTurn,
+  type ContentBlock,
   type ImageData,
 } from '@prophet/shared'
 import type { HistoryRow } from '@/lib/agent/run-record'
@@ -70,7 +71,65 @@ export function windowHistory(rows: HistoryRow[]): HistoryRow[] {
   return rows.slice(start)
 }
 
-function userContent(text: string, image: ImageData | undefined): MessageParam['content'] {
+type ToolCaller = NonNullable<ToolUseBlockParam['caller']>
+
+function isToolCaller(caller: { type: string; tool_id?: unknown }): caller is ToolCaller {
+  return caller.type === 'direct' || typeof caller.tool_id === 'string'
+}
+
+function toToolCaller(caller: { type: string } | undefined): ToolCaller | undefined {
+  return caller && isToolCaller(caller) ? caller : undefined
+}
+
+type SearchErrorCode = WebSearchToolRequestError['error_code']
+
+function isSearchErrorCode(code: string): code is SearchErrorCode {
+  return (
+    code === 'invalid_tool_input' ||
+    code === 'unavailable' ||
+    code === 'max_uses_exceeded' ||
+    code === 'too_many_requests' ||
+    code === 'query_too_long' ||
+    code === 'request_too_large'
+  )
+}
+
+function toSearchErrorCode(code: string): SearchErrorCode {
+  return isSearchErrorCode(code) ? code : 'unavailable'
+}
+
+function toContentBlockParam(block: ContentBlock): ContentBlockParam {
+  switch (block.type) {
+    case 'text':
+      return {
+        ...block,
+        citations:
+          block.citations && block.citations.map((citation) => ({ ...citation, title: citation.title ?? null })),
+      }
+    case 'tool_use':
+    case 'server_tool_use':
+      return { ...block, caller: toToolCaller(block.caller) }
+    case 'web_search_tool_result':
+      return {
+        ...block,
+        content: Array.isArray(block.content)
+          ? block.content
+          : { type: block.content.type, error_code: toSearchErrorCode(block.content.error_code) },
+        caller: toToolCaller(block.caller),
+      }
+    case 'thinking':
+    case 'redacted_thinking':
+      return block
+  }
+}
+
+function userContent({
+  text,
+  image,
+}: {
+  text: string
+  image: ImageData | undefined
+}): MessageParam['content'] {
   if (!image) return text
   return [
     {
@@ -123,7 +182,7 @@ export function buildAgentMessages({
     windowHistory(rows).map((row) => ({ role: row.role, content: renderStoredMessage(row) }))
 
   if (userMessage) {
-    return [...render(history), { role: 'user', content: userContent(userMessage, image) }]
+    return [...render(history), { role: 'user', content: userContent({ text: userMessage, image }) }]
   }
 
   const rows = history.at(-1)?.role === 'assistant' ? history.slice(0, -1) : history
@@ -132,11 +191,11 @@ export function buildAgentMessages({
     opening?.role === 'user'
       ? // Only the opening message's text is stored; the extension resends the run's
         // image so the opening message matches the first turn's.
-        [...render(rows.slice(0, -1)), { role: 'user', content: userContent(opening.content, image) }]
+        [...render(rows.slice(0, -1)), { role: 'user', content: userContent({ text: opening.content, image }) }]
       : render(rows)
 
   for (const turn of runTurns) {
-    messages.push({ role: 'assistant', content: turn.content as ContentBlockParam[] })
+    messages.push({ role: 'assistant', content: turn.content.map(toContentBlockParam) })
     if (turn.toolResults.length > 0) {
       messages.push({
         role: 'user',

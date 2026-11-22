@@ -77,13 +77,13 @@ export async function POST(
     const auth_ = await auth()
     userId = auth_.userId
     if (!userId) {
-      return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
+      return NextResponse.json(error({ message: 'Unauthorized', code: 'UNAUTHORIZED' }), { status: 401 })
     }
 
-    const rateLimitResult = await checkRateLimit(userId, 'api')
+    const rateLimitResult = await checkRateLimit({ userId, type: 'api' })
     if (!rateLimitResult.success) {
       return NextResponse.json(
-        error('Too many requests', 'RATE_LIMIT_EXCEEDED'),
+        error({ message: 'Too many requests', code: 'RATE_LIMIT_EXCEEDED' }),
         {
           status: 429,
           headers: {
@@ -100,7 +100,7 @@ export async function POST(
     })
 
     if (!chat) {
-      return NextResponse.json(error('Chat not found', 'CHAT_NOT_FOUND'), { status: 404 })
+      return NextResponse.json(error({ message: 'Chat not found', code: 'CHAT_NOT_FOUND' }), { status: 404 })
     }
 
     if (!isDefaultTitle(chat.title)) {
@@ -187,7 +187,7 @@ export async function POST(
       'Failed to auto-generate chat title'
     )
     return NextResponse.json(
-      error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'),
+      error({ message: INTERNAL_ERROR_MESSAGE, code: 'INTERNAL_ERROR' }),
       { status: 500 }
     )
   }

@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { useUser, useClerk } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -62,8 +63,8 @@ export default function SecurityPage() {
         lastName,
       })
       setIsEditing(false)
-    } catch (error) {
-      console.error('Failed to update profile:', error)
+    } catch {
+      toast.error('Failed to update profile')
     } finally {
       setIsSaving(false)
     }
@@ -80,8 +81,8 @@ export default function SecurityPage() {
     setIsSaving(true)
     try {
       await user.setProfileImage({ file })
-    } catch (error) {
-      console.error('Failed to update avatar:', error)
+    } catch {
+      toast.error('Failed to update avatar')
     } finally {
       setIsSaving(false)
     }
@@ -95,8 +96,8 @@ export default function SecurityPage() {
       await user.delete()
       await signOut()
       router.push('/')
-    } catch (error) {
-      console.error('Failed to delete account:', error)
+    } catch {
+      toast.error('Failed to delete account')
       setIsDeleting(false)
     }
   }

@@ -244,7 +244,7 @@ Each request shows: Model, User Message, JSON Sent, and Response.
 
                     // Truncate long tool results
                     if (block.type === 'tool_result' && 'content' in block) {
-                        const content = (block as { content: unknown }).content
+                        const content = block.content
                         if (typeof content === 'string' && content.length > MAX_CONTENT_LENGTH) {
                             return {
                                 ...block,

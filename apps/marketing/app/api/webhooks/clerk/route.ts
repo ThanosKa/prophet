@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     if (!WEBHOOK_SECRET) {
       logger.error({}, 'Missing CLERK_WEBHOOK_SECRET')
       return NextResponse.json(
-        error('Webhook secret not configured', 'WEBHOOK_SECRET_MISSING'),
+        error({ message: 'Webhook secret not configured', code: 'WEBHOOK_SECRET_MISSING' }),
         { status: 500 }
       )
     }
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
 
     if (!svix_id || !svix_timestamp || !svix_signature) {
       return NextResponse.json(
-        error('Missing svix headers', 'MISSING_HEADERS'),
+        error({ message: 'Missing svix headers', code: 'MISSING_HEADERS' }),
         { status: 400 }
       )
     }
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     } catch (err) {
       logger.error({ error: err instanceof Error ? err.message : String(err) }, 'Webhook verification failed')
       return NextResponse.json(
-        error('Webhook verification failed', 'VERIFICATION_FAILED'),
+        error({ message: 'Webhook verification failed', code: 'VERIFICATION_FAILED' }),
         { status: 400 }
       )
     }
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
 
       logger.error({ issues: parsed.error.issues }, 'Invalid Clerk webhook payload')
       return NextResponse.json(
-        error('Invalid webhook payload', 'INVALID_PAYLOAD'),
+        error({ message: 'Invalid webhook payload', code: 'INVALID_PAYLOAD' }),
         { status: 400 }
       )
     }
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
       const primaryEmail = email_addresses[0]?.email_address
       if (!primaryEmail) {
         return NextResponse.json(
-          error('No email address found', 'NO_EMAIL'),
+          error({ message: 'No email address found', code: 'NO_EMAIL' }),
           { status: 400 }
         )
       }
@@ -160,7 +160,7 @@ export async function POST(req: Request) {
   } catch (err) {
     logger.error({ error: err instanceof Error ? err.message : String(err) }, 'Webhook processing error')
     return NextResponse.json(
-      error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'),
+      error({ message: INTERNAL_ERROR_MESSAGE, code: 'INTERNAL_ERROR' }),
       { status: 500 }
     )
   }

@@ -3,18 +3,26 @@ import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
-import { creditPurchases, users } from '@/lib/db/schema'
+import { creditPurchases, subscriptionStatusEnum, users } from '@/lib/db/schema'
 import { eq, sql } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
 import { TIER_CONFIG } from '@/lib/pricing'
 import { invalidateUserTierCache } from '@/lib/cache'
 import { sendPurchaseEmail } from '@/lib/email'
 
-type StripeInvoiceWithSubscription = Stripe.Invoice & {
-  subscription?: string
-  billing_reason?: string
-  period_start: number
-  period_end: number
+type SubscriptionStatus = (typeof subscriptionStatusEnum.enumValues)[number]
+
+function isSubscriptionStatus(value: string): value is SubscriptionStatus {
+  return subscriptionStatusEnum.enumValues.some((status) => status === value)
+}
+
+function stripeId(value: string | { id: string } | null): string | null {
+  if (value === null) return null
+  return typeof value === 'string' ? value : value.id
+}
+
+function hasSubscription(invoice: Stripe.Invoice): boolean {
+  return 'subscription' in invoice && Boolean(invoice.subscription)
 }
 
 export async function POST(request: Request) {
@@ -43,49 +51,27 @@ export async function POST(request: Request) {
   }
 
   try {
-    switch (event.type) {
-      // A delayed payment method (bank debit) completes the session unpaid, then succeeds
-      // later; the once-per-Checkout-Session record keeps the two from granting twice.
-      case 'checkout.session.completed':
-      case 'checkout.session.async_payment_succeeded': {
-        const session = event.data.object as Stripe.Checkout.Session
-        await handleCheckoutCompleted(session)
-        break
-      }
-
-      case 'checkout.session.async_payment_failed': {
-        const session = event.data.object as Stripe.Checkout.Session
-        logger.warn({ userId: session.metadata?.userId, sessionId: session.id }, 'Checkout delayed payment failed')
-        break
-      }
-
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription
-        await handleSubscriptionChange(subscription)
-        break
-      }
-
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription
-        await handleSubscriptionDeleted(subscription)
-        break
-      }
-
-      case 'invoice.payment_succeeded': {
-        const invoice = event.data.object as StripeInvoiceWithSubscription
-        await handlePaymentSucceeded(invoice)
-        break
-      }
-
-      case 'invoice.payment_failed': {
-        const invoice = event.data.object as Stripe.Invoice
-        await handlePaymentFailed(invoice)
-        break
-      }
-
-      default:
-        logger.info({ type: event.type }, 'Unhandled webhook event')
+    if (
+      event.type === 'checkout.session.completed' ||
+      event.type === 'checkout.session.async_payment_succeeded'
+    ) {
+      await handleCheckoutCompleted(event.data.object)
+    } else if (event.type === 'checkout.session.async_payment_failed') {
+      const session = event.data.object
+      logger.warn({ userId: session.metadata?.userId, sessionId: session.id }, 'Checkout delayed payment failed')
+    } else if (
+      event.type === 'customer.subscription.created' ||
+      event.type === 'customer.subscription.updated'
+    ) {
+      await handleSubscriptionChange(event.data.object)
+    } else if (event.type === 'customer.subscription.deleted') {
+      await handleSubscriptionDeleted(event.data.object)
+    } else if (event.type === 'invoice.payment_succeeded') {
+      await handlePaymentSucceeded(event.data.object)
+    } else if (event.type === 'invoice.payment_failed') {
+      await handlePaymentFailed(event.data.object)
+    } else {
+      logger.info({ type: event.type }, 'Unhandled webhook event')
     }
 
     return NextResponse.json({ received: true })
@@ -97,7 +83,7 @@ export async function POST(request: Request) {
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId
-  const customerId = session.customer as string
+  const customerId = stripeId(session.customer)
 
   if (!userId) {
     logger.error({ sessionId: session.id }, 'Missing userId in checkout session')
@@ -161,7 +147,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     }
   }
 
-  const tier = session.metadata?.tier as 'pro' | 'premium' | 'ultra'
+  const tier = session.metadata?.tier
 
   if (!tier) {
     logger.error({ sessionId: session.id }, 'Missing tier in subscription checkout session')
@@ -180,10 +166,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 }
 
 async function handleSubscriptionChange(subscription: Stripe.Subscription) {
-  const customerId = subscription.customer as string
-  const user = await db.query.users.findFirst({
-    where: eq(users.stripeCustomerId, customerId),
-  })
+  const customerId = stripeId(subscription.customer)
+  const user = customerId
+    ? await db.query.users.findFirst({
+        where: eq(users.stripeCustomerId, customerId),
+      })
+    : undefined
 
   if (!user) {
     logger.error({ customerId }, 'User not found for subscription')
@@ -197,12 +185,16 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   }
 
   const priceId = subscriptionItem.price.id
-  const status = subscription.status as 'active' | 'canceled' | 'past_due' | 'incomplete'
+  const status = subscription.status
 
   const tier = determineTierFromPrice(priceId)
   if (!tier) {
     logger.error({ priceId }, 'Could not determine tier from price')
     return
+  }
+
+  if (!isSubscriptionStatus(status)) {
+    throw new Error(`Unsupported subscription status: ${status}`)
   }
 
   const tierConfig = TIER_CONFIG[tier]
@@ -247,7 +239,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     })
     .where(eq(users.id, user.id))
 
-  await invalidateUserTierCache(user.id)
+  await invalidateUserTierCache({ userId: user.id })
 
   if (isNewSubscription) {
     const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
@@ -272,10 +264,12 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  const customerId = subscription.customer as string
-  const user = await db.query.users.findFirst({
-    where: eq(users.stripeCustomerId, customerId),
-  })
+  const customerId = stripeId(subscription.customer)
+  const user = customerId
+    ? await db.query.users.findFirst({
+        where: eq(users.stripeCustomerId, customerId),
+      })
+    : undefined
 
   if (!user) {
     logger.error({ customerId }, 'User not found for deleted subscription')
@@ -298,13 +292,13 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     })
     .where(eq(users.id, user.id))
 
-  await invalidateUserTierCache(user.id)
+  await invalidateUserTierCache({ userId: user.id })
 
   logger.info({ userId: user.id }, 'Subscription canceled, downgraded to free')
 }
 
-async function handlePaymentSucceeded(invoice: StripeInvoiceWithSubscription) {
-  if (!invoice.subscription) {
+async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
+  if (!hasSubscription(invoice)) {
     return
   }
 
@@ -312,10 +306,12 @@ async function handlePaymentSucceeded(invoice: StripeInvoiceWithSubscription) {
     return
   }
 
-  const customerId = invoice.customer as string
-  const user = await db.query.users.findFirst({
-    where: eq(users.stripeCustomerId, customerId),
-  })
+  const customerId = stripeId(invoice.customer)
+  const user = customerId
+    ? await db.query.users.findFirst({
+        where: eq(users.stripeCustomerId, customerId),
+      })
+    : undefined
 
   if (!user) {
     logger.error({ customerId }, 'User not found for payment')
@@ -347,10 +343,12 @@ async function handlePaymentSucceeded(invoice: StripeInvoiceWithSubscription) {
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  const customerId = invoice.customer as string
-  const user = await db.query.users.findFirst({
-    where: eq(users.stripeCustomerId, customerId),
-  })
+  const customerId = stripeId(invoice.customer)
+  const user = customerId
+    ? await db.query.users.findFirst({
+        where: eq(users.stripeCustomerId, customerId),
+      })
+    : undefined
 
   if (!user) {
     logger.error({ customerId }, 'User not found for failed payment')

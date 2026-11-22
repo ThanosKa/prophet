@@ -113,10 +113,13 @@ export const globalRatelimit = redis
     })
   : null
 
-export async function checkRateLimit(
-  userId: string,
-  type: 'chat' | 'api' = 'api'
-): Promise<{ success: boolean; limit?: number; remaining?: number; reset?: number }> {
+export async function checkRateLimit({
+  userId,
+  type = 'api',
+}: {
+  userId: string
+  type?: 'chat' | 'api'
+}): Promise<{ success: boolean; limit?: number; remaining?: number; reset?: number }> {
   if (globalRatelimit) {
     const globalCheck = await globalRatelimit.limit('global')
     keepRequestOpenUntil(globalCheck.pending)
@@ -131,7 +134,7 @@ export async function checkRateLimit(
     return { success: true }
   }
 
-  const tier = await getUserTier(userId)
+  const tier = await getUserTier({ userId })
   const limiter = limiters[tier]
 
   const { success, limit, remaining, reset, pending } = await limiter.limit(userId)

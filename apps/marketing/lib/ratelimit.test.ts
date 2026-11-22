@@ -19,7 +19,7 @@ describe('Rate Limiting', () => {
   describe('checkRateLimit', () => {
     it('returns success when rate limit disabled (no Redis)', async () => {
       if (!chatRatelimits) {
-        const result = await checkRateLimit('user_123', 'chat')
+        const result = await checkRateLimit({ userId: 'user_123', type: 'chat' })
         expect(result.success).toBe(true)
       } else {
         expect(true).toBe(true)
@@ -36,7 +36,7 @@ describe('Rate Limiting', () => {
 
       const globalLimitSpy = vi.spyOn(globalRatelimit, 'limit')
 
-      await checkRateLimit('user_123', 'chat')
+      await checkRateLimit({ userId: 'user_123', type: 'chat' })
 
       expect(globalLimitSpy).toHaveBeenCalledWith('global')
     })
@@ -49,9 +49,9 @@ describe('Rate Limiting', () => {
 
       vi.mocked(getUserTier).mockResolvedValue('pro')
 
-      await checkRateLimit('user_123', 'chat')
+      await checkRateLimit({ userId: 'user_123', type: 'chat' })
 
-      expect(getUserTier).toHaveBeenCalledWith('user_123')
+      expect(getUserTier).toHaveBeenCalledWith({ userId: 'user_123' })
     })
 
     it('defaults to free tier if user not found', async () => {
@@ -62,7 +62,7 @@ describe('Rate Limiting', () => {
 
       vi.mocked(getUserTier).mockResolvedValue('free')
 
-      const result = await checkRateLimit('user_123', 'chat')
+      const result = await checkRateLimit({ userId: 'user_123', type: 'chat' })
 
       expect(result).toBeDefined()
     })
@@ -75,7 +75,7 @@ describe('Rate Limiting', () => {
 
       vi.mocked(getUserTier).mockResolvedValue('free')
 
-      await checkRateLimit('user_123', 'chat')
+      await checkRateLimit({ userId: 'user_123', type: 'chat' })
 
       expect(getUserTier).toHaveBeenCalled()
     })
@@ -88,7 +88,7 @@ describe('Rate Limiting', () => {
 
       vi.mocked(getUserTier).mockResolvedValue('free')
 
-      await checkRateLimit('user_123', 'api')
+      await checkRateLimit({ userId: 'user_123', type: 'api' })
 
       expect(getUserTier).toHaveBeenCalled()
     })
@@ -134,7 +134,7 @@ describe('Rate Limiting', () => {
 
   describe('Response structure', () => {
     it('returns success, limit, remaining, and reset fields', async () => {
-      const result = await checkRateLimit('user_123', 'chat')
+      const result = await checkRateLimit({ userId: 'user_123', type: 'chat' })
 
       expect(result).toHaveProperty('success')
       expect(typeof result.success).toBe('boolean')

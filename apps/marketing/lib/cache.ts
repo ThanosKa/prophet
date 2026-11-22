@@ -29,7 +29,7 @@ export const redis =
  * Type guard to validate tier string
  */
 function isValidTier(value: string): value is UserTier {
-  return VALID_TIERS.includes(value as UserTier)
+  return VALID_TIERS.some((tier) => tier === value)
 }
 
 /**
@@ -44,10 +44,13 @@ function isValidTier(value: string): value is UserTier {
  * @param userId - The user ID to look up
  * @param redisClient - Optional Redis client (for testing)
  */
-export async function getUserTier(
-  userId: string,
-  redisClient: typeof redis = redis
-): Promise<UserTier> {
+export async function getUserTier({
+  userId,
+  redisClient = redis,
+}: {
+  userId: string
+  redisClient?: typeof redis
+}): Promise<UserTier> {
   const cacheKey = `${CACHE_KEY_PREFIX}${userId}`
 
   // Try cache first (if Redis available)
@@ -93,10 +96,13 @@ export async function getUserTier(
  * @param userId - The user ID to invalidate
  * @param redisClient - Optional Redis client (for testing)
  */
-export async function invalidateUserTierCache(
-  userId: string,
-  redisClient: typeof redis = redis
-): Promise<void> {
+export async function invalidateUserTierCache({
+  userId,
+  redisClient = redis,
+}: {
+  userId: string
+  redisClient?: typeof redis
+}): Promise<void> {
   if (!redisClient) return
 
   const cacheKey = `${CACHE_KEY_PREFIX}${userId}`
