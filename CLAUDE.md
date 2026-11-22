@@ -38,9 +38,24 @@ Installed extension builds outlive deploys, so the API keeps accepting what olde
 - Branch from `main` as `<type>/<topic>` (`feat/`, `fix/`, `chore/`, `docs/`, `seo/`) and open the PR against `main`. `autopilot/seo-*` branches belong to the SEO autopilot.
 - Write Conventional Commits with a scope, naming the behaviour: `fix(marketing): keep one live Run per chat`. Scopes in use: `marketing`, `sidepanel`, `shared`, `seo`, `db`, `claude`.
 - Production is the `prophet-marketing` Cloudflare Worker, serving `prophetchrome.com` since 2026-11-08. Merging to `main` updates it: `.github/workflows/deploy.yml` deploys once CI passes, and stops if migration files changed. By hand: from `apps/marketing`, `pnpm build:vinext` then `npx cf deploy --prebuilt`, on Node 24.22 or newer (README, Deployment). Vercel is no longer connected to GitHub; it serves only the `www` → root redirect and is kept as the way back. A schema change has an ordering rule: see `.claude/docs/database-schema.md`.
+- Logs: `npx wrangler tail prophet-marketing --format pretty` streams live requests through the owner's `wrangler login`, so start it before the request you want to see.
 - An extension release bumps the version in `apps/sidepanel/manifest.ts` and `apps/sidepanel/package.json`, and adds notes to `apps/sidepanel/RELEASE_NOTES.md`.
 - If your change makes a line in these docs false, fix that line in the same PR.
 
 ## Guardrails
 
 - Keep `ANTHROPIC_API_KEY` and every other secret server-side: the extension reaches Anthropic only through the marketing API, and client bundles read only public keys (`VITE_*`, `NEXT_PUBLIC_*`).
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are local markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default labels, recorded as a `Status:` line in each issue. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context. See `docs/agents/domain.md`.
