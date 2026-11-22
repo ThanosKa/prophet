@@ -33,7 +33,6 @@ const TURN_1_ECHO = {
   toolResults: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: 'Navigated' }],
 }
 
-/** The `kind` field of the "Starting agent stream" log, one entry per Turn. */
 function loggedKinds() {
   return loggerMock.debug.mock.calls
     .filter(([, message]) => message === 'Starting agent stream')

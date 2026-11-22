@@ -154,7 +154,6 @@ const faqItems = [
 
 const PAGE_URL = 'https://prophetchrome.com/best-claude-chrome-extensions'
 
-// Every pick has a $0 entry point except Anthropic's own, which needs Claude Pro.
 const ENTRY_PRICE: Record<number, string> = { 2: '20' }
 
 export default function BestClaudeChromeExtensionsPage() {

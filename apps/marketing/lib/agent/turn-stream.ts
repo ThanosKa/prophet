@@ -22,16 +22,10 @@ function searchQueryOf(input: unknown): string {
   return isToolInput(input) && typeof input.query === 'string' ? input.query : ''
 }
 
-/**
- * The narrow view of Claude's stream this module reads: the SDK's `MessageStream` in
- * production, a fake stream in tests.
- */
 export type TurnEventStream = AsyncIterable<MessageStreamEvent> & { finalMessage(): Promise<Message> }
 
-/** The first frame of every Turn; `runId` names the Run on a first Turn and a Run continuation. */
 export type SessionCreatedFrame = { type: 'session_created'; sessionId: string; runId?: string }
 
-/** A Turn's usage as the extension shows it, with `inputTokens` as the whole prompt. */
 export type ReportedUsage = {
   inputTokens: number
   cacheCreationInputTokens: number
@@ -40,7 +34,6 @@ export type ReportedUsage = {
   costCents: number
 }
 
-/** The frames sent while Claude streams, before the Turn ends. */
 export type LiveFrame =
   | { type: 'content_delta'; delta: string }
   | { type: 'thinking_delta'; delta: string }
@@ -55,23 +48,14 @@ export type LiveFrame =
 
 export type Citation = { url: string; title: string; citedText: string }
 
-/** A Turn that reached its final message. */
 export type FinishedTurn = {
   stopReason: StopReason | null
-  /** The final usage, which is the bill, with the web searches Anthropic billed. */
   usage: Required<TokenUsage>
-  /** The reply text. */
   text: string
-  /** Held back while streaming; the Turn's ending decides whether they are released. */
   clientToolCalls: StoredToolCall[]
-  /** The API's own blocks, which replay must echo untouched. */
   echoableContent: ContentBlockParam[]
   citations: Citation[]
   refusalCategory: RefusalStopDetails['category']
-  /**
-   * True when Claude asked for tools, or paused a long server-tool Turn (`pause_turn`)
-   * for the client to resume: the Run goes on unless this is its last Turn.
-   */
   runContinues: boolean
 }
 
@@ -79,7 +63,6 @@ export type TurnStreamResult =
   | { ended: 'finished'; final: FinishedTurn; partial: PartialTurn }
   | { ended: 'cut_short'; error: unknown; partial: PartialTurn }
 
-/** The frame that ends a Turn cut short by an error. Undefined fields are left out of the JSON. */
 export type ErrorFrame = {
   type: 'error'
   error: string
@@ -134,27 +117,22 @@ export function describeTurnError(err: unknown): ErrorFrame {
   } else if (err instanceof Error) {
     const errMessage = err.message
 
-    // Handle Anthropic rate limit errors (429)
     if (errMessage.includes('rate_limit_error') || errMessage.startsWith('429')) {
       userFriendlyError = 'AI service is temporarily busy. Please wait a moment and try again.'
       errorCode = 'ANTHROPIC_RATE_LIMIT'
-      // Try to extract retry info from error
       const retryMatch = errMessage.match(/try again later/i)
       if (retryMatch) {
         errorDetails = { retryAfter: 60 }
       }
     }
-    // Handle Anthropic overloaded errors (529)
     else if (errMessage.includes('overloaded') || errMessage.startsWith('529')) {
       userFriendlyError = 'AI service is experiencing high demand. Please try again in a few minutes.'
       errorCode = 'ANTHROPIC_OVERLOADED'
     }
-    // Handle authentication errors
     else if (errMessage.includes('authentication') || errMessage.includes('api_key')) {
       userFriendlyError = 'Service configuration error. Please contact support.'
       errorCode = 'ANTHROPIC_AUTH_ERROR'
     }
-    // For other errors, use a generic message (don't expose raw error to user)
     else {
       userFriendlyError = 'Something went wrong. Please try again.'
       errorCode = 'STREAMING_ERROR'
@@ -235,8 +213,6 @@ export async function readTurnStream({
     outputTokens,
     webSearchRequests,
   })
-  // What settlement charges if the Turn ends here: the usage so far, with the web
-  // searches that started.
   const partialTurn = (): PartialTurn => ({
     usageReported,
     usage: turnUsage(webSearchesStarted),
@@ -253,8 +229,6 @@ export async function readTurnStream({
       input: string
       isServerTool: boolean
     } | null = null
-    // Held back until the Turn ends cleanly with `tool_use`: a call released
-    // mid-stream would run even when the Turn is then cut off or refused.
     const clientToolCalls: StoredToolCall[] = []
 
     send(sessionFrame)
@@ -318,7 +292,6 @@ export async function readTurnStream({
         if (currentToolUse) {
           let parsedInput: unknown = {}
           try {
-            // Robust parsing: handle potential hallucinations or malformed JSON
             const rawInput = currentToolUse.input.trim()
             parsedInput = rawInput ? JSON.parse(rawInput) : {}
           } catch (e) {
@@ -333,7 +306,6 @@ export async function readTurnStream({
           }
 
           if (currentToolUse.isServerTool) {
-            // Anthropic runs this one; the client must never try to execute it.
             send({
               type: 'web_search_start',
               toolUseId: currentToolUse.id,
@@ -365,8 +337,6 @@ export async function readTurnStream({
 
     const finalMessage = await anthropicStream.finalMessage()
     const stopReason = finalMessage.stop_reason
-    // message_start predates any server-tool iterations, which add input and
-    // cache tokens; the final usage is the authoritative bill.
     inputTokens = finalMessage.usage.input_tokens
     cacheCreationInputTokens = finalMessage.usage.cache_creation_input_tokens ?? 0
     cacheReadInputTokens = finalMessage.usage.cache_read_input_tokens ?? 0
@@ -380,13 +350,19 @@ export async function readTurnStream({
         usage: turnUsage(webSearchRequests),
         text: fullTextResponse,
         clientToolCalls,
-        // The API's own blocks are authoritative for replay: they carry the
-        // encrypted web-search payloads that must round-trip untouched.
+        /*
+         * The API's own blocks are authoritative for replay: they carry the
+         * encrypted web-search payloads that must round-trip untouched.
+         * https://docs.claude.com/en/docs/agents-and-tools/tool-use/web-search-tool
+         */
         echoableContent: toEchoableContent(finalMessage.content),
         citations: extractCitations(finalMessage.content),
         refusalCategory: finalMessage.stop_details?.category ?? null,
-        // `pause_turn` means Anthropic stopped a long server-tool turn early and
-        // the client has to replay the assistant turn, so it is not final either.
+        /*
+         * `pause_turn` means Anthropic stopped a long server-tool turn early and
+         * the client has to replay the assistant turn, so it is not final either.
+         * https://docs.claude.com/en/api/handling-stop-reasons
+         */
         runContinues: stopReason === 'tool_use' || stopReason === 'pause_turn',
       },
       partial: partialTurn(),
@@ -396,10 +372,8 @@ export async function readTurnStream({
   }
 }
 
-/** Where the web searches Anthropic billed show up, beside the Turn's usage. */
 type ClosingUsage = ReportedUsage & { webSearchRequests: number; webSearchCostCents: number }
 
-/** The frames that end a finished Turn, in the order they are sent. */
 export type ClosingFrame =
   | { type: 'error'; error: string; code: string }
   | { type: 'tool_use'; toolUse: StoredToolCall }
@@ -456,8 +430,11 @@ export function closingFrames({
 }): ClosingFrame[] {
   const { stopReason, citations } = final
 
-  // Safety classifiers decline with HTTP 200 and no answer; without an error the
-  // extension would end the run on a blank reply.
+  /*
+   * Safety classifiers decline with HTTP 200 and no answer; without an error the
+   * extension would end the run on a blank reply.
+   * https://docs.claude.com/en/api/handling-stop-reasons
+   */
   if (stopReason === 'refusal') {
     return [
       {

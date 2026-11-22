@@ -38,7 +38,6 @@ export const navigate = activeTabTool<{ url: string }>({
 export const scrollPage = activeTabTool<{ direction: ScrollDirection; pixels?: number }>({
   failure: 'Failed to scroll',
   run: async ({ input, tab }) => {
-    // Negative pixels scroll the other way. Negate the number, not the text: `-${-500}` is `--500`, a syntax error.
     const pixels = input.pixels ?? 500
     let scrollExpression: string
 
@@ -81,8 +80,6 @@ export const scrollPage = activeTabTool<{ direction: ScrollDirection; pixels?: n
 export const getPageContent = activeTabTool<void>({
   failure: 'Failed to get page content',
   run: async ({ tab }) => {
-    // Capped at the shared page-content limit, so one page can't swell every later Turn's prompt
-    // Also filter out obvious JavaScript/CSS noise
     const result = evaluateResultSchema.parse(await cdpCommander.sendCommand(
       tab.id,
       'Runtime.evaluate',
@@ -147,9 +144,6 @@ export const goBack = activeTabTool<void>({
   },
 })
 
-/**
- * Navigate forward in browser history.
- */
 export const goForward = activeTabTool<void>({
   failure: 'Failed to go forward',
   run: async ({ tab }) => {
@@ -161,9 +155,6 @@ export const goForward = activeTabTool<void>({
   },
 })
 
-/**
- * Reload the current page.
- */
 export const reloadPage = activeTabTool<void>({
   failure: 'Failed to reload page',
   run: async ({ tab }) => {
@@ -173,9 +164,6 @@ export const reloadPage = activeTabTool<void>({
   },
 })
 
-/**
- * Get information about the current page.
- */
 export const getPageInfo = activeTabTool<void>({
   failure: 'Failed to get page info',
   run: async ({ tab }) => {

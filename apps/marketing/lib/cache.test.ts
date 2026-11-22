@@ -1,11 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-// Create mock Redis methods
 const mockGet = vi.fn()
 const mockSetex = vi.fn()
 const mockDel = vi.fn()
 
-// Create mock Redis client to inject into functions
 const mockRedis = {
   get: mockGet,
   setex: mockSetex,
@@ -30,7 +28,6 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
-// Import after mocks are set up
 const { db } = await import('@/lib/db')
 const { logger } = await import('@/lib/logger')
 const { getUserTier, invalidateUserTierCache, CACHE_TTL_SECONDS } = await import('./cache')

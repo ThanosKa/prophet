@@ -17,17 +17,12 @@ const clerkUserSchema = z.object({
   last_name: z.string().nullish(),
 })
 
-// public_metadata is deliberately not read: Stripe webhooks own `tier`.
 const clerkWebhookEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('user.created'), data: clerkUserSchema }),
   z.object({ type: z.literal('user.updated'), data: clerkUserSchema }),
   z.object({ type: z.literal('user.deleted'), data: z.object({ id: z.string() }) }),
 ])
 
-/**
- * POST /api/webhooks/clerk
- * Handle Clerk webhook events (user.created, user.updated, user.deleted)
- */
 export async function POST(req: Request) {
   try {
     const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
@@ -52,7 +47,7 @@ export async function POST(req: Request) {
       )
     }
 
-    // Verified as received: a JSON round trip can change bytes and break the signature.
+    // Verified as received: a JSON round trip can change bytes and break the signature. https://docs.svix.com/receiving/verifying-payloads/how
     const body = await req.text()
 
     const wh = new Webhook(WEBHOOK_SECRET)
@@ -103,7 +98,6 @@ export async function POST(req: Request) {
         )
       }
 
-      // Svix redelivers user.created after a slow or failed answer; the replay changes nothing.
       const inserted = await db
         .insert(users)
         .values({
@@ -123,7 +117,7 @@ export async function POST(req: Request) {
         return NextResponse.json(success({ received: true }))
       }
 
-      // Awaited, with a timeout inside: a Worker may cancel work left running after the response.
+      // Awaited, with a timeout inside: a Worker may cancel work left running after the response. https://developers.cloudflare.com/workers/runtime-apis/context/#waituntil
       await sendWelcomeEmail({
         to: primaryEmail,
         firstName: first_name,
@@ -150,7 +144,6 @@ export async function POST(req: Request) {
     } else {
       const { id } = evt.data
 
-      // Delete user from database (cascade will delete chats, messages, usage records)
       await db.delete(users).where(eq(users.id, id))
 
       logger.info({ userId: id }, 'User deleted from webhook')

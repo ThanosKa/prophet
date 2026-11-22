@@ -1,7 +1,3 @@
-/**
- * The dev route (`VITE_USE_DEV_API`) against the production route: the same fake Turns go
- * through both, and their frame lists are compared. The dev route only skips billing.
- */
 import { describe, it, expect, beforeAll, vi, afterEach } from "vitest";
 import {
   anthropicTurn,
@@ -151,7 +147,6 @@ describe("the dev route sends production's frames", () => {
     const production = await productionFrames(turn);
     const dev = await devFrames(turn);
 
-    // Each request starts its own Run, so the Run id is matched by shape only.
     const withoutRunId = (list: typeof dev) =>
       list.map(({ runId, ...frame }) => {
         if (runId !== undefined) expect(runId).toMatch(UUID);

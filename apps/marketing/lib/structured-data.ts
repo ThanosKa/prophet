@@ -158,7 +158,6 @@ export interface ListicleItem {
   name: string
   description: string
   url: string
-  /** Lowest advertised price for the product, as a decimal string. '0' for a real free tier. */
   price: string
 }
 
@@ -204,11 +203,6 @@ export function listicleItemListNode(params: {
   }
 }
 
-/**
- * For the free interactive calculators under /tools. WebApplication is the
- * accurate type — these run in the browser and require no install — and it
- * needs no rating, unlike the SoftwareApplication rich result.
- */
 export function webToolNode(params: { name: string; description: string; path: string }) {
   return {
     '@type': 'WebApplication',

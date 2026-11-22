@@ -8,9 +8,6 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  // The page argues that free unlimited Claude does not exist, so the snippet
-  // promises real limits rather than a bypass. Promising a workaround the page
-  // then denies is what produces the 0% CTR pattern elsewhere on this site.
   title: { absolute: "Free Claude AI: What's Actually Free in 2026 (Real Limits)" },
   description:
     'Claude is free, with caps. The real Sonnet 5.5 and Opus free limits, why free unlimited Claude is a myth, and the cheapest honest routes.',

@@ -1,3 +1,4 @@
+import { attempt } from '@prophet/shared'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { messages, chats } from '@/lib/db/schema'
@@ -93,7 +94,6 @@ export async function POST(req: Request) {
       }),
     })
     const anthropicMessages = runEnd ? withLastTurnNotice(builtMessages) : builtMessages
-    // Production names the Run on a first Turn and on a continuation that sends its id.
     const sessionRunId = isFirstTurn ? crypto.randomUUID() : runId
 
     logger.debug(
@@ -101,7 +101,6 @@ export async function POST(req: Request) {
       '[DEV] Starting agent stream'
     )
 
-    // DEV LOGGING: Log request to LLM
     await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking })
 
     const encoder = new TextEncoder()
@@ -120,11 +119,7 @@ export async function POST(req: Request) {
 
         const safeClose = () => {
           if (!controllerClosed) {
-            try {
-              controller.close()
-            } catch {
-              // Ignore
-            }
+            attempt(() => controller.close())
             controllerClosed = true
           }
         }
@@ -183,7 +178,6 @@ export async function POST(req: Request) {
             '[DEV] Agent stream completed'
           )
 
-          // DEV LOGGING: Log response from LLM
           await devLogger.logResponse(fullTextResponse, {
             input_tokens: inputTokens,
             output_tokens: outputTokens,
@@ -191,10 +185,8 @@ export async function POST(req: Request) {
             cache_creation_input_tokens: cacheCreationInputTokens,
           })
 
-          // Determine if this is the final turn of the agentic loop
           const isFinalTurn = runEnd !== null || !final.runContinues
 
-          // Save messages only on appropriate turns (same logic as production)
           const assistantToolCalls = final.clientToolCalls;
           const hasContent = fullTextResponse.trim().length > 0 || assistantToolCalls.length > 0;
 
@@ -202,7 +194,6 @@ export async function POST(req: Request) {
           const newContextTokens = Math.min(promptTokens + outputTokens, getModelContextWindow(model));
 
           await db.transaction(async (tx) => {
-            // Save user message on first turn only
             if (isFirstTurn && userMessage) {
               await tx.insert(messages).values({
                 chatId,
@@ -215,7 +206,6 @@ export async function POST(req: Request) {
               });
             }
 
-            // Only save assistant message on FINAL turn
             if (isFinalTurn && hasContent) {
               await tx.insert(messages).values({
                 chatId,
@@ -229,7 +219,6 @@ export async function POST(req: Request) {
               });
             }
 
-            // Update context tokens on final turn only
             if (isFinalTurn) {
               await tx
                 .update(chats)

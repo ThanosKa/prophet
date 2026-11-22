@@ -31,7 +31,6 @@ function post(body: Record<string, unknown>) {
   return postAgentChat({ chatId: CHAT_ID, model: 'claude-haiku-5-5', ...body })
 }
 
-/** Streams some text, then fails the way `afterText` says. */
 function interruptedTurn({ streamedText, afterText }: { streamedText: string; afterText: 'hang' | 'break' }) {
   streamMock.mockImplementationOnce((_params: unknown, options?: { signal?: AbortSignal }) => ({
     [Symbol.asyncIterator]: async function* () {
@@ -39,7 +38,6 @@ function interruptedTurn({ streamedText, afterText }: { streamedText: string; af
       yield { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }
       yield { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: streamedText } }
       if (afterText === 'break') throw new Error('socket hang up')
-      // Hangs until the route aborts upstream, which may already have happened.
       await new Promise((_resolve, reject) => {
         const signal = options?.signal
         if (!signal) return reject(new Error('no abort signal passed upstream'))
@@ -57,7 +55,6 @@ const OPENING_TURN_ECHO = {
   toolResults: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: 'Navigated' }],
 }
 
-/** Turn 1 of a Run: Claude opens a.com. */
 async function openRunWithOneToolCall() {
   streamMock.mockReturnValueOnce(anthropicTurn({ content: OPENING_TURN, stopReason: 'tool_use' }))
   await (await post({ userMessage: 'Open a.com' })).text()
@@ -149,7 +146,6 @@ describe('the Run progress record in POST /api/agent/chat', () => {
     await openRunWithOneToolCall()
     interruptedTurn({ streamedText: 'The page shows', afterText: 'hang' })
 
-    // The side panel's Stop cancels the response body.
     const response = await post({ previousTurns: [OPENING_TURN_ECHO] })
     const { reader } = await readUntil({ response, marker: 'content_delta' })
     await reader.cancel()
@@ -206,16 +202,13 @@ describe('the Run progress record in POST /api/agent/chat', () => {
   })
 
   it('never lets two legacy Runs in one chat overwrite each other', async () => {
-    // Run A opens a.com in one panel; Run B is answered in another panel meanwhile.
     await openRunWithOneToolCall()
     streamMock.mockReturnValueOnce(anthropicTurn({ content: [text('Hi there.')], stopReason: 'end_turn' }))
     await (await post({ userMessage: 'Hi' })).text()
-    // Run A's next Turn, in the form builds older than 1.0.5 send...
     streamMock.mockReturnValueOnce(anthropicTurn({ content: [text('a.com is open.')], stopReason: 'end_turn' }))
     await (
       await post({ previousContent: OPENING_TURN_ECHO.content, toolResults: OPENING_TURN_ECHO.toolResults })
     ).text()
-    // ...and in the form 1.0.5 sends.
     streamMock.mockReturnValueOnce(anthropicTurn({ content: [text('a.com is open.')], stopReason: 'end_turn' }))
     await (await post({ previousTurns: [OPENING_TURN_ECHO] })).text()
 

@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-// Round-trips the day so rollovers like 2026-02-30 are rejected.
 function isCalendarDay(day: string): boolean {
   const date = new Date(`${day}T00:00:00Z`)
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === day
@@ -24,7 +23,6 @@ export const dailyUsageQuerySchema = z.object({
   to: utcDaySchema.optional(),
 })
 
-/** Usage totals of one model on one UTC day. Credits are the Credits spent that day. */
 export const dailyUsageRowSchema = z.object({
   day: utcDaySchema,
   model: z.string(),
@@ -33,14 +31,12 @@ export const dailyUsageRowSchema = z.object({
   cacheWriteTokens: z.number().int(),
   cacheReadTokens: z.number().int(),
   outputTokens: z.number().int(),
-  /** input + cache write + cache read + output, so tokens and cost agree */
   tokens: z.number().int(),
   credits: z.number().int(),
 })
 
 export const dailyUsagePageSchema = z.object({
   rows: z.array(dailyUsageRowSchema),
-  /** Pass as `before` to fetch the next older page; null on the oldest page. */
   nextBefore: utcDaySchema.nullable(),
 })
 

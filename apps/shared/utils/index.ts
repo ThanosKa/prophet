@@ -1,19 +1,10 @@
-// Shared utility functions
-// Add utilities here as the project grows
-
 export * from './balance'
 export * from './text'
 
-/**
- * Rough token count estimation (1 token ≈ 4 characters)
- */
 export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4)
 }
 
-/**
- * Format a date for display
- */
 export function formatDate(date: Date | string): string {
   return new Date(date).toLocaleDateString('en-US', {
     month: 'short',
@@ -22,17 +13,11 @@ export function formatDate(date: Date | string): string {
   })
 }
 
-/**
- * Truncate text with ellipsis
- */
 export function truncate({ text, maxLength }: { text: string; maxLength: number }): string {
   if (text.length <= maxLength) return text
   return text.slice(0, maxLength - 3) + '...'
 }
 
-/**
- * Sanitize an object for logging by replacing long strings (likely base64) with a placeholder
- */
 export function sanitizeForLog(obj: unknown): unknown {
   if (typeof obj !== 'object' || obj === null) {
     if (typeof obj === 'string' && obj.length > 500) {
@@ -57,3 +42,4 @@ export function sanitizeForLog(obj: unknown): unknown {
   }
   return sanitized
 }
+export * from './attempt'

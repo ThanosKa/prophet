@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { AGENT_SIZE_LIMITS, MAX_AGENT_TURNS, RUN_SUPERSEDED_MESSAGE, currentAgentModelSchema } from '@prophet/shared'
 
-// Base64 spends 4 characters on every 3 bytes.
 const ATTACHED_IMAGE_MB = (AGENT_SIZE_LIMITS.attachedImageChars * 3) / 4 / 1_000_000
 
 export const USER_FACING_TEXT = {
@@ -22,8 +21,6 @@ export const USER_FACING_TEXT = {
   browserConnection: 'Prophet lost its connection to the browser. Reopen the side panel and try again.',
 } as const
 
-// Each field degrades to undefined on its own, so one malformed field from an older or newer server
-// never discards the rest of the details.
 const errorDetailsSchema = z.object({
   pricingUrl: z.string().optional().catch(undefined),
   retryAfter: z.number().optional().catch(undefined),
@@ -67,7 +64,6 @@ export function describeHttpFailure({ status, body }: { status: number; body: Er
 const NETWORK_ERROR_PATTERN = /failed to fetch|networkerror|network error/i
 const BROWSER_CONNECTION_PATTERN = /could not establish connection|receiving end does not exist|extension context invalidated/i
 
-// Thrown when the message is already written for the user, so describeThrownError passes it through.
 export class UserFacingError extends Error {}
 
 export function describeThrownError(error: unknown): string {

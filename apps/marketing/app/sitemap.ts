@@ -11,9 +11,6 @@ import { useCases } from '@/lib/seo/use-cases'
 
 const baseUrl = 'https://prophetchrome.com'
 
-// Bump only when the programmatic page templates or their source data actually
-// change. Emitting `new Date()` makes every URL look modified on every crawl,
-// which teaches Google to ignore lastmod entirely.
 const TEMPLATES_LAST_UPDATED = new Date('2026-07-29')
 
 type Entry = MetadataRoute.Sitemap[number]

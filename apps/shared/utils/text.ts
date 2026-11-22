@@ -1,7 +1,3 @@
-/**
- * Keeps at most `count` UTF-16 units from the start (or the end) of `text`, one fewer
- * when the cut would split a surrogate pair: half an emoji is not valid text.
- */
 export function keepChars({
   text,
   count,
@@ -21,7 +17,6 @@ export function keepChars({
   return isLowSurrogate(tail.charCodeAt(0)) ? tail.slice(1) : tail
 }
 
-/** The message of anything thrown, for logs: an Error's message, or the value as text. */
 export function errorMessage(thrown: unknown): string {
   return thrown instanceof Error ? thrown.message : String(thrown)
 }

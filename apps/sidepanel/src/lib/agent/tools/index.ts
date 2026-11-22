@@ -44,32 +44,26 @@ function withoutInput(run: ToolExecutor<undefined>): ToolExecutor<unknown> {
 }
 
 export const toolExecutors: Record<string, ToolExecutor<unknown>> = {
-  // Observation
   take_snapshot: takeSnapshot,
   search_snapshot: validated({ schema: searchSnapshotInputSchema, run: searchSnapshot }),
 
-  // Element Interaction
   click_element_by_uid: validated({ schema: clickElementInputSchema, run: clickElementByUid }),
   fill_element_by_uid: validated({ schema: fillElementInputSchema, run: fillElementByUid }),
   hover_element_by_uid: validated({ schema: hoverElementInputSchema, run: hoverElementByUid }),
 
-  // Navigation
   navigate: validated({ schema: navigateInputSchema, run: navigate }),
   go_back: withoutInput(goBack),
   go_forward: withoutInput(goForward),
   reload_page: withoutInput(reloadPage),
 
-  // Page
   scroll_page: validated({ schema: scrollPageInputSchema, run: scrollPage }),
   get_page_content: withoutInput(getPageContent),
   get_page_info: withoutInput(getPageInfo),
 
-  // Wait
   wait_for_selector: validated({ schema: waitForSelectorInputSchema, run: waitForSelector }),
   wait_for_navigation: validated({ schema: waitForNavigationInputSchema, run: waitForNavigation }),
   wait_for_timeout: validated({ schema: waitForTimeoutInputSchema, run: waitForTimeout }),
 
-  // Tabs
   list_tabs: listTabs,
   switch_tab: validated({ schema: switchTabInputSchema, run: switchTab }),
   close_tab: validated({ schema: closeTabInputSchema, run: closeTab }),
@@ -105,30 +99,23 @@ export async function executeTool({
 }
 
 export {
-  // Observation
   takeSnapshot,
   searchSnapshot,
-  // Element Interaction
   clickElementByUid,
   fillElementByUid,
   hoverElementByUid,
-  // Navigation
   navigate,
   goBack,
   goForward,
   reloadPage,
-  // Page
   scrollPage,
   getPageContent,
   getPageInfo,
-  // Wait
   waitForSelector,
   waitForNavigation,
   waitForTimeout,
-  // Tabs
   listTabs,
   switchTab,
   closeTab,
   openNewTab,
 }
-

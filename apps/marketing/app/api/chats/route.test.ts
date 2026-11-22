@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET } from './route'
 
-// Mock modules
 vi.mock('@clerk/nextjs/server', () => ({
   auth: vi.fn(),
 }))
@@ -32,7 +31,6 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
-// Import after mocks
 const { auth } = await import('@clerk/nextjs/server')
 const { db } = await import('@/lib/db')
 const { checkRateLimit } = await import('@/lib/ratelimit')
@@ -160,7 +158,6 @@ describe('GET /api/chats', () => {
     expect(response.status).toBe(200)
     expect(data.data.chats).toHaveLength(5)
 
-    // Verify findMany was called with lt condition for beforeUpdatedAt
     expect(db.query.chats.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.anything(),
@@ -189,7 +186,6 @@ describe('GET /api/chats', () => {
     expect(data.data.chats).toHaveLength(200)
     expect(data.data.hasMore).toBe(true)
 
-    // Verify findMany was called with limit 201 (200 + 1 for hasMore check)
     expect(db.query.chats.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         limit: 201,
@@ -227,7 +223,6 @@ describe('GET /api/chats', () => {
   })
 
   it('answers a database failure with a generic 500 that leaks no connection details', async () => {
-    // postgres-js connection errors carry these as own enumerable fields
     const dbError = Object.assign(new Error('connect ECONNREFUSED 10.0.0.12:6543'), {
       code: 'ECONNREFUSED',
       address: '10.0.0.12',

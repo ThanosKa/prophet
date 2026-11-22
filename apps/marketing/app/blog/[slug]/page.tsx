@@ -25,9 +25,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const post = getBlogPost(slug)
   if (!post) return {}
 
-  // `absolute` drops the "| Prophet" template suffix. Prophet has almost no brand
-  // search volume, so those 10 characters are better spent on the query phrase
-  // before Google truncates the SERP title at roughly 60 characters.
   return {
     title: { absolute: post.title },
     description: post.description,

@@ -1,40 +1,26 @@
 import { z } from "zod";
 import { keepChars } from "../utils/text";
 
-// The Turn limit: the extension's agent loop pauses after this many Turns per Run.
-// The server accepts up to this many earlier Turns, so older builds that stop sooner keep working.
 export const MAX_AGENT_TURNS = 20;
-// Extension 1.0.5's Turn limit. It sends no `runId`, so a request without one ends its Run here.
 export const LEGACY_MAX_AGENT_TURNS = 10;
-// The Run budget: a Turn whose estimated prompt reaches this is its Run's last. Measured with the
-// Hold's estimator, which over-counts 1.75-2x, so it stays under Haiku's 100K long-prompt tier.
 export const RUN_BUDGET_TOKENS = 90_000;
-// How much of the chat before a Run's opening message its prompt carries, by the same estimator.
 export const HISTORY_BUDGET_TOKENS = 20_000;
 
-// Why a Turn is its Run's last, as the `done` event's `runEnd` reports it.
 export const runEndSchema = z.enum(["turn_limit", "run_budget"]);
 export type RunEnd = z.infer<typeof runEndSchema>;
 
-// Error codes of the agent chat route that the extension acts on, not only shows.
 export const AGENT_ERROR_CODES = {
-  // 409: the chat's newest user row is another Run's opening.
   runSuperseded: "RUN_SUPERSEDED",
-  // 413: the body is over `AGENT_SIZE_LIMITS.requestBytes`.
   requestTooLarge: "REQUEST_TOO_LARGE",
 } as const;
 
 export const RUN_SUPERSEDED_MESSAGE = "This chat continued in another panel, so this task stopped here.";
 
-// Every size limit of an agent Run. The extension caps what it sends; the server's caps
-// sit well above them, so only a broken or hostile client ever reaches one.
 export const AGENT_SIZE_LIMITS = {
-  // Extension caps
   snapshotChars: 20_000,
   snapshotNodeTextChars: 200,
   pageContentChars: 15_000,
   attachedImageChars: 2_000_000,
-  // Server caps
   toolResultChars: 200_000,
   textChars: 200_000,
   toolInputJsonChars: 100_000,
@@ -42,11 +28,8 @@ export const AGENT_SIZE_LIMITS = {
   blocksPerTurn: 100,
   toolResultsPerTurn: 100,
   imageChars: 3_000_000,
-  // An earlier Run's record as a later Run's prompt shows it: text kept at its head and
-  // tail, and each action's input JSON
   recordTextChars: 8_000,
   recordActionInputChars: 300,
-  // Both: the extension checks before sending, the route answers 413 REQUEST_TOO_LARGE
   requestBytes: 4_000_000,
 } as const;
 
@@ -84,11 +67,8 @@ export function shortenToolResult(content: string): string {
   return `${kept}\n\n[Shortened by the server: this tool result had ${content.length} characters; only the first ${kept.length} are shown.]`;
 }
 
-// Server caps from AGENT_SIZE_LIMITS. The extension's own caps are far lower, so only a
-// broken or hostile client reaches one, and it gets a 400 instead of a costly prompt.
 const idSchema = z.string().max(AGENT_SIZE_LIMITS.idChars);
 const textSchema = z.string().max(AGENT_SIZE_LIMITS.textChars);
-// Measured on the JSON text: that is what Claude reads and what every later Turn resends.
 const toolInputSchema = z
   .record(z.unknown())
   .refine(
@@ -117,7 +97,6 @@ export const textContentSchema = z.object({
   citations: z.array(webSearchCitationSchema).nullable().optional(),
 });
 
-// Currently released Claude model IDs. These strings carry no date suffix.
 export const CLAUDE_MODELS = {
   HAIKU: "claude-haiku-5-5",
   SONNET: "claude-sonnet-5-5",
@@ -126,7 +105,6 @@ export const CLAUDE_MODELS = {
 
 export const DEFAULT_AGENT_MODEL = CLAUDE_MODELS.HAIKU;
 
-// Consolidated model configuration with labels and descriptions
 export const MODEL_CONFIG = [
   {
     id: CLAUDE_MODELS.HAIKU,
@@ -150,7 +128,6 @@ export const MODEL_CONFIG = [
 
 export type ModelConfig = typeof MODEL_CONFIG[number];
 
-/** The most tokens a model reads in one request: the chat's context meter and clamp use it. */
 export function getModelContextWindow(model: CurrentAgentModel): number {
   const config = MODEL_CONFIG.find((entry) => entry.id === model);
   if (!config) throw new Error(`No model config for ${model}`);
@@ -230,10 +207,6 @@ export const hoverElementInputSchema = z.object({
   uid: z.string().min(1, "UID is required"),
 });
 
-// The tool input schemas match what each tool does, not stricter: the extension checks a
-// tool call against them before it runs, and Claude retries when one fails.
-
-/** The URL the navigate and open_new_tab tools open: they add https:// when there's no http(s) scheme. */
 function opensAsUrl(url: string): boolean {
   const opened = url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
   try {
@@ -252,7 +225,6 @@ export const navigateInputSchema = z.object({
 
 export const scrollPageInputSchema = z.object({
   direction: z.enum(["up", "down", "left", "right", "top", "bottom"]),
-  // Negative pixels scroll the other way, and the page stops scrolling at its edge.
   pixels: z.number().optional().default(500),
 });
 
@@ -260,7 +232,6 @@ export const searchSnapshotInputSchema = z.object({
   query: z.string().min(1, "Query is required"),
 });
 
-// The wait tools clamp every wait to 30 seconds, so any non-negative wait is fine.
 const waitMsSchema = z.number().min(0);
 
 export const waitForSelectorInputSchema = z.object({
@@ -290,7 +261,6 @@ export const openNewTabInputSchema = z.object({
   active: z.boolean().optional().default(true),
 });
 
-// The extension's check before a tool runs. Tools without an entry take no input worth checking.
 export const toolInputSchemas: Partial<
   Record<z.infer<typeof toolNameSchema>, z.ZodType<Record<string, unknown>, z.ZodTypeDef, unknown>>
 > = {
@@ -308,14 +278,8 @@ export const toolInputSchemas: Partial<
   open_new_tab: openNewTabInputSchema,
 };
 
-// Who made a tool call: `{type: "direct"}`, or a server tool such as code execution.
-// Open on purpose: an echoed block must reach Anthropic exactly as Claude returned it,
-// and a caller type added later must not become a 400 mid-Run.
 export const toolCallerSchema = z.object({ type: z.string() }).passthrough();
 
-// An echoed tool call is checked by shape only. Claude already ran it, so a per-tool
-// check here could only turn a call the tool definitions allow into a 400 mid-Run.
-// The per-tool input schemas above are the extension's check before a tool runs.
 export const toolUseSchema = z.object({
   type: z.literal("tool_use"),
   id: idSchema,
@@ -324,10 +288,13 @@ export const toolUseSchema = z.object({
   caller: toolCallerSchema.optional(),
 });
 
-// Anthropic-executed web search. These blocks arrive inside the assistant turn and
-// must be echoed back byte-for-byte on continuation turns — the API decrypts
-// `encrypted_content` / `encrypted_index` to restore results into Claude's context,
-// and rejects the request if either is missing or altered.
+/*
+ * Anthropic-executed web search. These blocks arrive inside the assistant turn and
+ * must be echoed back byte-for-byte on continuation turns — the API decrypts
+ * `encrypted_content` / `encrypted_index` to restore results into Claude's context,
+ * and rejects the request if either is missing or altered.
+ * https://docs.claude.com/en/docs/agents-and-tools/tool-use/web-search-tool
+ */
 export const WEB_SEARCH_TOOL_NAME = "web_search" as const;
 
 export const webSearchResultSchema = z.object({
@@ -361,8 +328,6 @@ export const webSearchToolResultSchema = z.object({
   caller: toolCallerSchema.optional(),
 });
 
-// Replayed verbatim on the next turn of a run. The API verifies `signature` / `data`,
-// so a client cannot forge reasoning, and dropping them would change the prefix.
 export const thinkingBlockSchema = z.object({
   type: z.literal("thinking"),
   thinking: textSchema,
@@ -383,7 +348,6 @@ export const contentBlockSchema = z.union([
   redactedThinkingBlockSchema,
 ]);
 
-// One completed request of an agent run: what the model said, then what the tools returned.
 export const agentTurnSchema = z
   .object({
     content: z.array(contentBlockSchema).min(1).max(AGENT_SIZE_LIMITS.blocksPerTurn),
@@ -408,12 +372,8 @@ export const agentChatRequestSchema = z.object({
   chatId: z.string().uuid("Invalid chat ID"),
   model: agentModelSchema.default(DEFAULT_AGENT_MODEL),
   userMessage: z.string().min(1).max(50000).optional(),
-  // The Run's opening message id, from `session_created`. Builds up to 1.0.6 never send it.
   runId: z.string().uuid().optional(),
-  // Every earlier turn of the current run, oldest first. Resending them all keeps the
-  // conversation append-only, so each request is a prompt-cache hit on the last one.
   previousTurns: z.array(agentTurnSchema).min(1).max(MAX_AGENT_TURNS).optional(),
-  // Legacy single-turn form, still sent by already-installed extension builds.
   toolResults: z.array(toolResultSchema).max(AGENT_SIZE_LIMITS.toolResultsPerTurn).optional(),
   previousContent: z.array(contentBlockSchema).max(AGENT_SIZE_LIMITS.blocksPerTurn).optional(),
   image: imageDataSchema.optional(),

@@ -4,7 +4,6 @@ export * from './agent'
 export * from './usage'
 export * from './stored-tool-call'
 
-// Chat schemas
 export const createChatSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
 })
@@ -13,7 +12,6 @@ export const updateChatSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
 })
 
-// Message schemas
 export const createMessageSchema = z.object({
   chatId: z.string().uuid('Invalid chat ID'),
   content: z.string().min(1, 'Message content is required').max(10000, 'Message must be less than 10000 characters'),
@@ -24,23 +22,16 @@ export const streamMessageSchema = z.object({
   content: z.string().min(1, 'Message content is required').max(10000, 'Message must be less than 10000 characters'),
 })
 
-// User schemas
 export const updateUserSchema = z.object({
   tier: z.enum(['free', 'pro', 'premium', 'ultra']).optional(),
   creditsRemaining: z.number().int().min(0).optional(),
 })
 
-// The balance fields of GET /api/auth/user. `creditsRemaining` is the total
-// (Subscription credits plus Purchased credits); `purchasedCredits` is optional so
-// builds that predate it still parse the response.
 export const userBalanceSchema = z.object({
-  /** Total balance: Subscription credits plus Purchased credits. */
   creditsRemaining: z.number().int(),
-  /** The part of the total that never expires; absent from older servers. */
   purchasedCredits: z.number().int().min(0).optional(),
 })
 
-// Export types inferred from schemas
 export type CreateChatInput = z.infer<typeof createChatSchema>
 export type UpdateChatInput = z.infer<typeof updateChatSchema>
 export type CreateMessageInput = z.infer<typeof createMessageSchema>

@@ -163,7 +163,6 @@ describe('openNewTab', () => {
   })
 })
 
-// Ticket 33: the new tab can finish loading before chrome.tabs.create returns.
 describe('openNewTab when the new tab finishes loading while it is being created', () => {
   it('finishes without waiting 30 seconds, and removes its listener', async () => {
     chromeStub.tabs.create.mockImplementation(async () => {

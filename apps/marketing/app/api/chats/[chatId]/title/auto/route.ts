@@ -37,8 +37,6 @@ function isDefaultTitle(title: string): boolean {
   return title.startsWith('New Chat')
 }
 
-// The title must never stay at a 'New Chat' default once generation was attempted,
-// because the sidepanel re-requests generation for as long as it sees that prefix.
 function fallbackTitle(firstUserMessage: string): string {
   const title = firstUserMessage.replace(/\s+/g, ' ').trim().substring(0, MAX_FALLBACK_TITLE_CHARS).trim()
   return title && !isDefaultTitle(title) ? title : UNTITLED_CHAT
@@ -52,7 +50,7 @@ async function generateTitle({ userMessage, assistantMessage }: { userMessage: s
   const response = await anthropic.messages.create({
     model: CLAUDE_MODELS.HAIKU,
     max_tokens: 50,
-    // Haiku 5.5 thinks by default, which would spend this small budget before the title.
+    // Haiku 5.5 thinks by default, which would spend this small budget before the title. https://docs.claude.com/en/docs/build-with-claude/extended-thinking
     thinking: { type: 'disabled' },
     messages: [
       {
@@ -125,8 +123,6 @@ export async function POST(
     const firstAssistantMessage = assistantMessages[0].content
     const fallback = fallbackTitle(firstUserMessage)
 
-    // Claim the chat by swapping the default title for the fallback in one conditional
-    // UPDATE: only the request that wins it may call Anthropic, at most once per chat.
     const claimed = await db
       .update(chats)
       .set({ title: fallback, updatedAt: new Date() })
@@ -192,4 +188,3 @@ export async function POST(
     )
   }
 }
-

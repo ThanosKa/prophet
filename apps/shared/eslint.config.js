@@ -1,6 +1,46 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 
+const ALLOWED = [
+  /^\s*prettier-ignore\s*$/,
+  /^\s*eslint-(disable|enable)/,
+  /^\s*@(vitest|jest)-environment\s/,
+  /^\s*(@vite-ignore|webpackIgnore:)/,
+  /^\/\s*<reference\s/,
+  /https?:\/\/\S+/,
+  /\b(copyright|license|SPDX-License-Identifier)\b/i,
+];
+
+function isDocOnExport(comment, source) {
+  if (comment.type !== "Block" || !comment.value.startsWith("*")) return false;
+  return source.getTokenAfter(comment, { includeComments: false })?.value === "export";
+}
+
+const noComments = {
+  meta: {
+    type: "suggestion",
+    messages: {
+      banned:
+        "Delete this comment and let the code say it. Allowed: a license header, prettier-ignore, /** */ on an export, or a link to the issue, RFC or vendor doc that forces the behaviour.",
+    },
+  },
+  create(context) {
+    const source = context.sourceCode;
+    return {
+      Program() {
+        for (const comment of source.getAllComments()) {
+          if (comment.type === "Shebang") continue;
+          if (isDocOnExport(comment, source)) continue;
+          if (ALLOWED.some((pattern) => pattern.test(comment.value))) continue;
+          context.report({ loc: comment.loc, messageId: "banned" });
+        }
+      },
+    };
+  },
+};
+
+const localPlugin = { rules: { "no-comments": noComments } };
+
 export default [
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -42,5 +82,9 @@ export default [
       "@typescript-eslint/no-non-null-assertion": "off",
       "no-restricted-syntax": "off",
     },
+  },
+  {
+    plugins: { local: localPlugin },
+    rules: { "local/no-comments": "error" },
   },
 ];

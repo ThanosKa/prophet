@@ -9,7 +9,6 @@ type RecordDatabase = { transaction: <T>(run: (tx: RecordStore) => Promise<T>) =
 export type HistoryRow = Pick<typeof messages.$inferSelect, 'role' | 'content' | 'toolCalls'>
 export type RunOpening = { id: string; createdAt: Date }
 
-/** Takes the chat row's lock; every transaction that writes a Run's record takes it first. */
 async function lockChat({ tx, chatId }: { tx: RecordStore; chatId: string }): Promise<void> {
   await tx.select({ id: chats.id }).from(chats).where(eq(chats.id, chatId)).for('update')
 }
@@ -62,7 +61,6 @@ export async function openRun({
   })
 }
 
-/** Stands in for a refused Turn's text and tool calls in the Run's record. */
 export const DECLINED_NOTE = 'Claude declined to continue this request.'
 
 /**
@@ -87,14 +85,10 @@ export function resumeRun<Row extends HistoryRow & RunOpening>({
   }
 }
 
-/** Which request of a Run this is, as far as its record is concerned. */
 export type RunRequest =
   | { type: 'first'; opening: RunOpening }
-  /** Names its Run by `runId` and sends every earlier Turn, so the record is recomputed. */
   | { type: 'run'; opening: RunOpening; turns: AgentTurn[] }
-  /** Sends every earlier Turn of the Run (`previousTurns`), so the record is recomputed. */
   | { type: 'continuation'; turns: AgentTurn[] }
-  /** Builds older than 1.0.5 send only the latest Turn, so the record is appended to. */
   | { type: 'legacy'; turns: AgentTurn[] }
 
 export type TurnEnding =
@@ -107,7 +101,6 @@ export function isToolInput(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-/** The live view separates Turns' text with a newline; a reloaded record matches it. */
 function appendText({ content, text }: { content: string; text: string }): string {
   if (text.trim() === '') return content
   if (content === '') return text
@@ -159,14 +152,6 @@ function startsWith({ ids, prefix }: { ids: string[]; prefix: string[] }): boole
   return prefix.length <= ids.length && prefix.every((id, index) => ids[index] === id)
 }
 
-/**
- * Without a `runId`, the newest user row may open another panel's Run. A stored row is
- * this Run's only when its calls lead up to the request's: a prefix of every earlier
- * Turn's calls, or for legacy builds ending with the latest Turn's. A request with calls
- * can't be vouched for by a row with no calls, nor by no row at all: the newest user row
- * may then open a Run whose first Turn is still streaming, so the record is left alone.
- * `stored` is null when the Run has no assistant row yet.
- */
 function isThisRunsRecord({ request, stored }: { request: RunRequest; stored: StoredToolCall[] | null }): boolean {
   const requestIds = request.type === 'first' ? [] : requestToolCalls(request.turns).map((call) => call.id)
   if (stored === null) return request.type === 'first' || request.type === 'run' || requestIds.length === 0
@@ -199,11 +184,6 @@ function applyEnding({ record, ending }: { record: RunRecord; ending: TurnEnding
   }
 }
 
-/**
- * The live Run is the chat's newest user row. A request that knows its opening (a first
- * Turn, or a continuation with `runId`) is superseded once that row isn't the newest;
- * one that doesn't can only take the newest row as its opening.
- */
 async function findLiveOpening({
   tx,
   chatId,

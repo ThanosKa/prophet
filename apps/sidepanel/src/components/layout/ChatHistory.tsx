@@ -1,4 +1,3 @@
-
 import { Trash2, Plus, Loader2 } from 'lucide-react'
 import { useRef, useEffect, useMemo } from 'react'
 import {
@@ -47,7 +46,6 @@ export function ChatHistory({
         const scrollArea = scrollAreaRef.current
         if (!scrollArea) return
 
-        // Targeted fix for Radix ScrollArea: use the viewport as the root
         const viewport = scrollArea.querySelector('[data-radix-scroll-area-viewport]')
 
         const observer = new IntersectionObserver(
@@ -57,7 +55,7 @@ export function ChatHistory({
                 }
             },
             {
-                root: viewport, // Critical: observe within this scroll container
+                root: viewport,
                 threshold: 0.1
             }
         )

@@ -65,7 +65,6 @@ describe('rate limiting with Upstash', () => {
 
     await checkRateLimit({ userId: 'user_1', type: 'chat' })
 
-    // The global limiter and the user's tier limiter each write analytics.
     expect(keepRequestOpenUntil).toHaveBeenCalledTimes(2)
     expect(keepRequestOpenUntil).toHaveBeenCalledWith(analyticsWritten)
   })

@@ -2,10 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { currentRequestDb, keepRequestOpenUntil, serveWithRequestDb } from './request-scope'
 import type { Database, RequestClient } from './client'
 
-/**
- * A stand-in for one request's database client. Only its identity and whether it was
- * closed matter here; the real client is exercised by the burst on a local Worker.
- */
 function fakeClient(): RequestClient & { closed: boolean } {
   const client = {
     db: Object.create(null) satisfies Database,
@@ -26,7 +22,6 @@ function fakeContext() {
   const pending: Promise<unknown>[] = []
   return {
     ctx: { waitUntil: (promise: Promise<unknown>) => void pending.push(promise) },
-    /** Resolves once everything handed to `waitUntil` has finished. */
     finished: () => Promise.all(pending),
   }
 }
@@ -50,7 +45,6 @@ describe('serveWithRequestDb', () => {
           const before = currentRequestDb()
           if (seen.push(before) === 2) release()
           await bothStarted
-          // Still this request's client after the other request ran in between.
           expect(currentRequestDb()).toBe(before)
           return new Response('ok')
         },
@@ -87,7 +81,6 @@ describe('serveWithRequestDb', () => {
     const reader = bodyOf(response).getReader()
     if (!source) throw new Error('the source stream did not start')
     source.enqueue(encoder.encode('first'))
-    // The first chunk arrives while the stream is still open: nothing waits for the end.
     expect(new TextDecoder().decode((await reader.read()).value)).toBe('first')
     expect(client.closed).toBe(false)
 
@@ -156,7 +149,6 @@ describe('serveWithRequestDb', () => {
     })
 
     await bodyOf(response).cancel()
-    // Give a wrongly eager close every chance to run before the Hold is released.
     await new Promise((resolve) => setTimeout(resolve, 10))
     expect(client.closed).toBe(false)
 
@@ -232,7 +224,6 @@ describe('serveWithRequestDb', () => {
       ctx,
       openClient: open,
       handle: async () => {
-        // Work the handler started and did not wait for or declare.
         forgottenWork = gate.then(() => currentRequestDb())
         return new Response(null, { status: 204 })
       },

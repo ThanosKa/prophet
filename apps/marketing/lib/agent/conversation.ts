@@ -26,11 +26,6 @@ function capActionInput(input: Record<string, unknown>): string {
   return kept === json ? json : `${kept}…`
 }
 
-/**
- * An earlier Run's record as Claude reads it: its text plus a compact list of the
- * actions it took, which is how "continue" remembers them. Must stay deterministic:
- * every Turn of the next Run sends the same bytes for it, or the prompt cache misses.
- */
 function renderStoredMessage(row: HistoryRow): string {
   if (row.role === 'user') return row.content
   const actions = parseStoredToolCalls(row.toolCalls).map(
@@ -62,8 +57,6 @@ export function windowHistory(rows: HistoryRow[]): HistoryRow[] {
     used += size
     start -= 1
   }
-  // Start at the window's first user row; a window of assistant rows alone reaches back
-  // to the user row before them instead, so the newest row is never dropped.
   let userStart = start
   while (userStart < rows.length && rows[userStart]?.role !== 'user') userStart += 1
   if (userStart < rows.length) return rows.slice(userStart)
@@ -189,9 +182,7 @@ export function buildAgentMessages({
   const opening = rows.at(-1)
   const messages: MessageParam[] =
     opening?.role === 'user'
-      ? // Only the opening message's text is stored; the extension resends the run's
-        // image so the opening message matches the first turn's.
-        [...render(rows.slice(0, -1)), { role: 'user', content: userContent({ text: opening.content, image }) }]
+      ? [...render(rows.slice(0, -1)), { role: 'user', content: userContent({ text: opening.content, image }) }]
       : render(rows)
 
   for (const turn of runTurns) {

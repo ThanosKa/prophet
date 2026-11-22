@@ -26,9 +26,7 @@ export function useAgentChat() {
   const [remaining, setRemaining] = useState<number | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [status, setStatus] = useState<AgentStatus>('idle')
-  const [currentToolCall, setCurrentToolCall] = useState<ToolCall | null>(null) // Legacy support for ChatView
-  // Each sendMessage owns its run. Shared state (streaming flag, overlay) may only be torn down by the
-  // run that is still current, so a stopped run finishing late can never end or abort a newer one.
+  const [currentToolCall, setCurrentToolCall] = useState<ToolCall | null>(null)
   const activeRunRef = useRef<AbortController | null>(null)
   const overlayTabIdRef = useRef<number | null>(null)
   const overlayListenersRef = useRef<{
@@ -74,7 +72,6 @@ export function useAgentChat() {
 
   const sendAgentActiveToTab = useCallback((tabId: number) => {
     chrome.tabs.sendMessage(tabId, { type: 'AGENT_ACTIVE' }).catch(() => {
-      // Content script may not be ready immediately after navigation; retry once.
       setTimeout(() => {
         chrome.tabs.sendMessage(tabId, { type: 'AGENT_ACTIVE' }).catch(() => { })
       }, 250)
@@ -85,7 +82,6 @@ export function useAgentChat() {
     async (chatId: string, content: string, image?: ImageData) => {
       activeRunRef.current?.abort()
 
-      // Activate agent overlay
       setActive(true)
       const run = createAbortController()
       activeRunRef.current = run
@@ -100,7 +96,6 @@ export function useAgentChat() {
 
         cleanupOverlayListeners()
 
-        // Ensure the overlay persists through full navigations and tab switches while running.
         chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
           if (!tab?.id) return
 
@@ -130,11 +125,9 @@ export function useAgentChat() {
           overlayListenersRef.current = { onUpdated, onActivated }
         })
 
-        // Create user message via adapter
         const userMessageId = crypto.randomUUID()
         const userMessage = adapter.addUserMessage(userMessageId, image ? `${content}\n[Image attached]` : content)
 
-        // Convert UIMessage to legacy Message format for store
         addLegacyMessage(chatId, {
           id: userMessage.id,
           chatId,
@@ -143,7 +136,6 @@ export function useAgentChat() {
           createdAt: userMessage.createdAt,
         })
 
-        // Create assistant message via adapter
         const assistantMessageId = crypto.randomUUID()
         const assistantMessage = adapter.startAssistantMessage(assistantMessageId)
 
@@ -155,9 +147,6 @@ export function useAgentChat() {
           createdAt: assistantMessage.createdAt,
         })
 
-        // Mock mode (VITE_USE_DEV_API=mock) swaps in a fake Turn source and tool runner under the real loop.
-        // Use dev endpoint when VITE_USE_DEV_API=true to bypass credits
-        // Otherwise use production endpoint
         const eventStream = runAgentLoop({
           baseUrl: config.useDevApi
             ? `${config.apiUrl}/api/agent/chat/dev`
@@ -171,8 +160,6 @@ export function useAgentChat() {
           ...(config.useMockApi && createMockAdapters({ userMessage: content, enableThinking })),
         })
 
-        // A run counts as successful when the final turn completes without an error event.
-        // These two events are only emitted once the model finishes without requesting more tools.
         let finishedCleanly = false
         let sawError = false
         let truncated = false
@@ -187,14 +174,12 @@ export function useAgentChat() {
             continue
           }
 
-          // The loop sends it once the reply is in, so the notice shows after the reply.
           if (event.type === 'run_notice') {
             stoppedEarly = true
             setNotice(event.message)
             continue
           }
 
-          // Legacy: Handle currentToolCall
           if (event.type === 'tool_call_start' && event.toolCallId && event.toolName) {
             setCurrentToolCall({
               id: event.toolCallId,
@@ -205,16 +190,13 @@ export function useAgentChat() {
             setCurrentToolCall(null)
           }
 
-          // Process event through ChatAdapter
           const changedMessages = adapter.processEvent(event)
 
-          // Update status from adapter
           const adapterStatus = adapter.getStatus()
           if (adapterStatus !== status) {
             setStatus(adapterStatus)
           }
 
-          // Sync changed messages to legacy store
           for (const uiMessage of changedMessages) {
             const toolCalls = adapter.extractToolCalls(uiMessage)
             updateLegacyMessage(chatId, uiMessage.id, {
@@ -227,8 +209,6 @@ export function useAgentChat() {
             })
           }
 
-          // Each request carries the whole conversation, so its prompt size replaces
-          // the context reading instead of adding to it.
           if (event.type === 'metrics_update' && event.metrics) {
             setContextUsage({
               contextTokens: event.metrics.inputTokens + event.metrics.outputTokens,
@@ -241,7 +221,6 @@ export function useAgentChat() {
 
           if (event.type === 'done' || event.type === 'execution_complete') finishedCleanly = true
 
-          // Handle errors
           if (event.type === 'error') {
             sawError = true
             const details = parseErrorDetails(event.details)
@@ -279,7 +258,6 @@ export function useAgentChat() {
           if (status !== 'error') setStatus('idle')
           setCurrentToolCall(null)
 
-          // Deactivate agent overlay
           setActive(false)
           const lastOverlayTabId = overlayTabIdRef.current
           cleanupOverlayListeners()
@@ -314,8 +292,7 @@ export function useAgentChat() {
   )
 
   const abort = useCallback(() => {
-    setStreaming(false)  // Immediate feedback - stop spinner
-    // The ref is left set so the stopped run's own finally still removes the page overlay.
+    setStreaming(false)
     activeRunRef.current?.abort()
     abortAgentStore()
     adapter.clear()

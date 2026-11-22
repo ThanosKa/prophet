@@ -28,7 +28,6 @@ const { db } = await import('@/lib/db')
 const { TIER_CONFIG, EXTRA_CREDITS } = await import('@/lib/pricing')
 
 const USER_ID = 'user_checkout'
-// An active one-time price in the same Stripe account that costs less than Purchased credits.
 const FOREIGN_PRICE_ID = 'price_cheap_one_time'
 
 beforeAll(async () => {

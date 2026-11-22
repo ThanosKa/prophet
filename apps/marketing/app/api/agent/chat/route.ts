@@ -60,9 +60,12 @@ import type { MessageParam } from "@anthropic-ai/sdk/resources/messages";
 
 const BALANCE_HELD_RETRY_AFTER_SECONDS = 5;
 
-// Vercel only: a function killed at this limit never settles, so the user forfeits that
-// Turn's Hold. Workers ignore it; there a Turn's settlement runs under `waitUntil`
-// (`keepRequestOpenUntil`), which survives a hang-up but not an isolate that dies.
+/*
+ * Vercel only: a function killed at this limit never settles, so the user forfeits that
+ * Turn's Hold. Workers ignore it; there a Turn's settlement runs under `waitUntil`
+ * (`keepRequestOpenUntil`), which survives a hang-up but not an isolate that dies.
+ * https://vercel.com/docs/functions/configuring-functions/duration
+ */
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
@@ -137,9 +140,6 @@ export async function POST(req: Request) {
       enableThinking,
       enableWebSearch,
     } = validation.data;
-    // Installed extensions still send legacy model IDs; everything after this
-    // point — the API call, pricing, credit deduction, usage rows — uses the
-    // resolved model so cost always matches the model actually invoked.
     const requestedModel = validation.data.model ?? DEFAULT_AGENT_MODEL;
     const model = resolveAgentModel(requestedModel);
     const webSearchEnabled = shouldUseWebSearch(enableWebSearch);
@@ -175,14 +175,10 @@ export async function POST(req: Request) {
     const { runTurns } = requestKind;
     const isContinuationTurn = requestKind.kind !== "first";
 
-    // Read without a lock to size the Hold; a first Turn rebuilds its prompt from the
-    // read it takes under the chat lock once the Hold is in place.
     const unlockedHistory = await db.query.messages.findMany({
       where: eq(messages.chatId, chatId),
       orderBy: (messages, { asc }) => [asc(messages.createdAt)],
     });
-    // A continuation that names its Run goes on only while that Run is the live one,
-    // and stops before any Hold once another panel has started a newer Run.
     const resumed =
       requestKind.kind === "run"
         ? resumeRun({ history: unlockedHistory, runId: requestKind.runId })
@@ -213,10 +209,6 @@ export async function POST(req: Request) {
     const estimatedInputTokens = runEnd
       ? estimatePrompt(withLastTurnNotice(estimatedMessages))
       : estimatedPromptTokens;
-    // The Hold expects the cache: when the previous Turn already sent (and cached) this
-    // prompt minus its newest Turn, that prefix is priced as a cache read and the rest,
-    // the last-Turn notice included, as a cache write (`cachedPrefixTurns` says which
-    // requests have one). A miss settles as overage.
     const cachedTurns = cachedPrefixTurns(requestKind);
     const cachedPrefixTokens = cachedTurns
       ? estimatePrompt(
@@ -284,8 +276,6 @@ export async function POST(req: Request) {
 
     let history: HistoryRow[] = runHistory;
     let runRequest: RunRequest;
-    // Nothing was sent to Anthropic yet, so a failure from here to the stream gives the
-    // whole Hold back. Without this, the outer catch would answer 500 and keep it.
     let anthropicMessages: MessageParam[];
     try {
       if (requestKind.kind === "first") {
@@ -300,7 +290,6 @@ export async function POST(req: Request) {
       }
       const builtMessages = buildAgentMessages({ history, userMessage, image, runTurns });
       anthropicMessages = runEnd ? withLastTurnNotice(builtMessages) : builtMessages;
-      // DEV LOGGING: Log request to LLM
       await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking });
     } catch (startError) {
       logger.error(
@@ -332,7 +321,6 @@ export async function POST(req: Request) {
     const abortUpstream = () => upstream.abort();
     req.signal.addEventListener("abort", abortUpstream, { once: true });
     let clientConnected = !req.signal.aborted;
-    // The client can hang up long before the Turn settles its Hold in the `finally` below.
     let releaseRequestScope = () => {};
     keepRequestOpenUntil(new Promise<void>((resolve) => {
       releaseRequestScope = resolve;
@@ -368,7 +356,6 @@ export async function POST(req: Request) {
           close();
         };
 
-        // A Turn cut off before its stream opens measured nothing, so it is billed nothing.
         let partial: PartialTurn = {
           usageReported: false,
           usage: {
@@ -393,8 +380,6 @@ export async function POST(req: Request) {
               anthropic.messages.stream({
                 model,
                 max_tokens: maxTokens,
-                // Automatic caching moves this breakpoint to the newest block on every
-                // request, so each turn of a run reads the prefix the previous turn wrote.
                 cache_control: { type: "ephemeral" },
                 system: [
                   {
@@ -411,7 +396,6 @@ export async function POST(req: Request) {
             sessionFrame: {
               type: "session_created",
               sessionId: chatId,
-              // The extension names the Run by this id on every continuation.
               ...((runRequest.type === "first" || runRequest.type === "run") && {
                 runId: runRequest.opening.id,
               }),
@@ -419,7 +403,6 @@ export async function POST(req: Request) {
             model,
             send: (frame) => send(JSON.stringify(frame)),
           });
-          // From here on, a Turn that fails is settled from what it measured.
           partial = turn.partial;
           if (turn.ended === "cut_short") {
             failTurn(turn.error);
@@ -442,8 +425,6 @@ export async function POST(req: Request) {
 
           const isFinalTurn = runEnd !== null || !final.runContinues;
 
-          // A refused Turn's text isn't a reply the user should see again, and the
-          // tool calls it held were never released.
           const ending: TurnEnding =
             stopReason === "refusal"
               ? { type: "refused" }
@@ -453,7 +434,6 @@ export async function POST(req: Request) {
                   releasedToolCalls: releasedToolCalls({ final, runEnd }),
                 };
 
-          // Throws when the billing transaction fails; the `finally` then closes it unfinished.
           await turnHold.close({
             type: "finished",
             request: runRequest,
@@ -480,7 +460,6 @@ export async function POST(req: Request) {
             "Agent stream completed"
           );
 
-          // DEV LOGGING: Log response from LLM
           await devLogger.logResponse(final.text, {
             input_tokens: inputTokens,
             output_tokens: outputTokens,
@@ -510,7 +489,6 @@ export async function POST(req: Request) {
         } finally {
           try {
             req.signal.removeEventListener("abort", abortUpstream);
-            // Does nothing once the Turn's finished close has settled the Hold.
             await turnHold.close({ type: "unfinished", request: runRequest, partial });
           } finally {
             releaseRequestScope();

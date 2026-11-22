@@ -67,7 +67,6 @@ export function PromptInput({
   submitDisabled?: boolean;
   multiple?: boolean;
   globalDrop?: boolean;
-  /** Runs when a file is attached; a refused file is not attached and its message is shown. */
   validateFile?: (file: File) => FileCheck;
   className?: string;
 }) {

@@ -27,7 +27,6 @@ describe('EnhancedMessageList tool calls', () => {
     await act(async () => root.render(<EnhancedMessageList messages={messages} />))
   }
 
-  /** The collapsed tool-call rows, by their visible label. */
   const toolRows = () =>
     Array.from(container.querySelectorAll('button')).filter((button) =>
       button.querySelector('.font-medium')
@@ -74,7 +73,6 @@ describe('EnhancedMessageList tool calls', () => {
     expect(toolRows()).toHaveLength(2)
     expect(rowLabelled('Navigate')?.textContent).not.toContain('Failed')
     expect(rowLabelled('Click')?.textContent).toContain('Failed')
-    // Under the reply
     const reply = Array.from(container.querySelectorAll('p')).find((p) =>
       p.textContent?.includes('Your cart is checked out.')
     )

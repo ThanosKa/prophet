@@ -44,12 +44,6 @@ export function activeTabTool<Input>({
 
 type TabLoad = 'complete' | 'timed_out'
 
-/**
- * One chrome.tabs.onUpdated listener for a whole wait. It is added before the
- * navigation is requested, so a load that finishes during the request is not
- * missed. Until `waitFor` is called it records each tab's status changes; then
- * it resolves on the tab's next load-complete. `waitFor` and `stop` remove it.
- */
 function watchTabStatus(): {
   statusesOf: (tabId: number) => string[]
   waitFor: (args: { tabId: number; timeoutMs: number }) => Promise<TabLoad>

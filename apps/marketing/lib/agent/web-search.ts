@@ -52,7 +52,6 @@ export function buildAgentTools({
     : clientTools
 }
 
-// Headroom for adaptive thinking on top of a full answer when the user turned Thinking on.
 const THINKING_HEADROOM_TOKENS = 8000
 
 /**
@@ -78,11 +77,6 @@ export function buildOutputConfig(enableThinking: boolean): { effort: 'low' } | 
   return enableThinking ? null : { effort: 'low' }
 }
 
-/**
- * Smallest `max_tokens` a low balance may shrink a turn to: one full non-thinking
- * answer, plus thinking headroom when thinking was requested. Below this, turns
- * tend to end mid-`tool_use` or inside thinking with no answer.
- */
 export function getAgentMinTokens(enableThinking: boolean): number {
   return enableThinking ? THINKING_HEADROOM_TOKENS + AGENT_MAX_TOKENS : AGENT_MAX_TOKENS
 }

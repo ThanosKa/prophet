@@ -47,7 +47,6 @@ export async function GET(req: Request) {
       orderBy: [desc(usageRecords.createdAt)],
     })
 
-    // Create CSV content
     const headers = ['Date', 'Model', 'Input Tokens', 'Output Tokens']
     const rows = records.map(r => [
       r.createdAt.toISOString(),
@@ -72,4 +71,3 @@ export async function GET(req: Request) {
     return new Response('Internal server error', { status: 500 })
   }
 }
-

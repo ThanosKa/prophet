@@ -24,9 +24,6 @@ class ApiClient {
       })
       const token = tokenResponse?.token
 
-      // console.log('[API] Token retrieved:', token ? 'yes' : 'no')
-      // console.log('[API] Request:', endpoint)
-
       const url = new URL(endpoint, this._baseUrl)
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',

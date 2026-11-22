@@ -31,7 +31,6 @@ function useActiveTab(tab: { id?: number; title?: string; url?: string } | undef
   chromeStub.tabs.query.mockResolvedValue(tab ? [tab] : [])
 }
 
-/** Settles a promise state without advancing timers, to tell "still waiting" from "done". */
 function track<T>(promise: Promise<T>) {
   const state = { done: false }
   void promise.then(() => {
@@ -108,7 +107,6 @@ describe('page tool failures', () => {
 
   it.each(cases)('%s returns an Error message as the error', async (_name, run, arrange) => {
     arrange()
-    // Replace the rejection with a real Error carrying a message
     const error = new Error('tab crashed')
     chromeStub.tabs.update.mockRejectedValue(error)
     chromeStub.tabs.goBack.mockRejectedValue(error)
@@ -433,9 +431,6 @@ describe('waiting for a page to load', () => {
   })
 })
 
-// Ticket 33: the tab's load can finish while the navigation request is still in
-// progress (a page restored from the back/forward cache, for example). The tool
-// must not miss that load and wait its full timeout.
 describe('a load that finishes while the navigation is being requested', () => {
   const requests: Array<[string, () => Promise<{ success: boolean }>, () => ReturnType<typeof vi.fn>, number]> = [
     ['navigate', () => navigate({ url: 'example.com' }), () => chromeStub.tabs.update, 30_000],
@@ -467,7 +462,6 @@ describe('a load that finishes while the navigation is being requested', () => {
         return [{ id: TAB_ID, title: 'Shop', url: 'https://shop.example' }]
       })
       request().mockImplementation(async () => {
-        // The old page's load-complete, with no new load started yet
         emit(TAB_ID, 'complete')
       })
 

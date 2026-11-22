@@ -17,7 +17,6 @@ function post(body: Record<string, unknown>) {
   return postAgentChat({ chatId: CHAT_ID, ...body })
 }
 
-/** The SDK's own factory, so the error has the exact class and message a real 400 has. */
 function anthropicBadRequest(message: string) {
   return APIError.generate(
     400,

@@ -20,35 +20,24 @@ if (!publishableKey) {
   logger.error('Background', 'VITE_CLERK_PUBLISHABLE_KEY is not set')
 }
 
-// Agent state stored in memory (service worker)
 let agentState: AgentState = { ...DEFAULT_AGENT_STATE }
 let abortController: AbortController | null = null
 const sidepanelPorts: Set<chrome.runtime.Port> = new Set()
 
-// ============================================================================
-// Sidepanel Behavior
-// ============================================================================
-
 chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: true })
   .catch((error) => logger.error('Background', 'Failed to set sidepanel behavior:', error))
-
-// ============================================================================
-// Port-based Communication (for streaming events to sidepanel)
-// ============================================================================
 
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === 'sidepanel') {
     logger.log('Background', 'Sidepanel connected')
     sidepanelPorts.add(port)
 
-    // Send current agent state on connect
     port.postMessage({
       type: 'AGENT_STATE',
       state: agentState,
     })
 
-    // Send any pending events
     for (const event of agentState.pendingEvents) {
       port.postMessage({
         type: 'AGENT_EVENT',
@@ -63,12 +52,7 @@ chrome.runtime.onConnect.addListener((port) => {
   }
 })
 
-// ============================================================================
-// Message Handlers
-// ============================================================================
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // Auth token request
   if (message.type === 'GET_AUTH_TOKEN') {
     createClerkClient({ publishableKey })
       .then((clerk) => {
@@ -90,7 +74,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true
   }
 
-  // Close auth tab request
   if (message.type === 'CLOSE_AUTH_TAB') {
     if (sender.tab?.id) {
       chrome.tabs.remove(sender.tab.id).catch(() => {
@@ -100,7 +83,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true
   }
 
-  // Open side panel request (from auth success page)
   if (message.type === 'OPEN_SIDE_PANEL') {
     if (sender.tab?.id) {
       chrome.sidePanel.open({ tabId: sender.tab.id, windowId: sender.tab.windowId })
@@ -110,19 +92,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true
   }
 
-  // Tool execution request
   if (isExecuteToolRequest(message)) {
     handleToolExecution({ request: message, sendResponse })
     return true
   }
 
-  // Get agent state request
   if (isGetAgentStateRequest(message)) {
     sendResponse({ type: 'AGENT_STATE', state: agentState })
     return true
   }
 
-  // Stop agent loop request
   if (isStopAgentLoopRequest(message)) {
     if (abortController) {
       abortController.abort()
@@ -133,7 +112,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true
   }
 
-  // Agent abort request from content script pause button
   if (message.type === 'AGENT_ABORT') {
     logger.log('Background', 'Agent abort requested')
     if (abortController) {
@@ -142,7 +120,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     agentState = { ...DEFAULT_AGENT_STATE }
 
-    // Notify content script to hide overlay
     chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
       if (tab?.id) {
         chrome.tabs.sendMessage(tab.id, { type: 'AGENT_INACTIVE' }).catch(() => { })
@@ -156,10 +133,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false
 })
 
-// ============================================================================
-// Tool Execution Handler
-// ============================================================================
-
 async function handleToolExecution({
   request,
   sendResponse,
@@ -172,14 +145,12 @@ async function handleToolExecution({
 
   logger.log('Background', `Executing tool: ${toolName}`, toolInput)
 
-  // Update agent states
   agentState.currentToolExecution = {
     toolName,
     toolInput,
     startedAt: startTime,
   }
 
-  // Send status update to content script with friendly message
   const statusMessages: Record<string, (input: Record<string, unknown>) => string> = {
     navigate: (input) => `Navigating to ${input.url}...`,
     take_snapshot: () => 'Analyzing page elements...',
@@ -246,12 +217,7 @@ async function handleToolExecution({
   }
 }
 
-// ============================================================================
-// Visual Feedback to Content Script
-// ============================================================================
-
 async function sendAgentStatus(status: string): Promise<void> {
-  // 1. Update sidepanel ports
   const statusEvent = {
     type: 'AGENT_STATUS_UPDATE',
     status,
@@ -266,18 +232,9 @@ async function sendAgentStatus(status: string): Promise<void> {
   }
 }
 
-// ============================================================================
-// Cleanup on Tab Close
-// ============================================================================
-
 chrome.tabs.onRemoved.addListener((tabId) => {
-  // Let debugger manager handle its own cleanup
   debuggerManager.handleTabRemoved(tabId)
   snapshotManager.clearSnapshot(tabId)
 })
-
-// ============================================================================
-// Export for testing
-// ============================================================================
 
 export { agentState, debuggerManager, snapshotManager }

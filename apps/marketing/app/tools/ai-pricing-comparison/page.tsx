@@ -28,7 +28,6 @@ import Link from 'next/link'
 import { TIER_CONFIG, calculateCostInCredits, type ModelName } from '@/lib/pricing'
 import { formatDollars } from '@prophet/shared'
 
-// Prophet runs Claude only, so these are the models it can estimate a Prophet bill for.
 const MODEL_OPTIONS = {
   'claude-haiku': { name: 'Claude Haiku 5.5', prophetModel: 'claude-haiku-5-5' },
   'claude-sonnet': { name: 'Claude Sonnet 5.5', prophetModel: 'claude-sonnet-5-5' },
@@ -81,7 +80,6 @@ export default function AiPricingComparisonPage() {
   const tokens = LENGTH_TOKENS[msgLength]
   const model = MODEL_OPTIONS[selectedModel]
 
-  // What Prophet charges for one message, in dollars: rounded up to whole Credits, never below the Minimum charge.
   const perMessage = calculateCostInCredits({ model: model.prophetModel, inputTokens: tokens.input, outputTokens: tokens.output }) / 100
   const prophetMonthlyCost = perMessage * messagesPerDay * 30
   const breakeven = Math.floor(20 / (perMessage * 30))

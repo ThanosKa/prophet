@@ -33,7 +33,6 @@ function claudeModel({ name, prophetModel }: { name: string; prophetModel: Model
   return { name, provider: 'Anthropic', input, output, prophetModel }
 }
 
-// Prophet runs Claude only; the other models are here to compare raw API prices.
 const MODELS = {
   'claude-haiku': claudeModel({ name: 'Claude Haiku 5.5', prophetModel: 'claude-haiku-5-5' }),
   'claude-sonnet': claudeModel({ name: 'Claude Sonnet 5.5', prophetModel: 'claude-sonnet-5-5' }),
@@ -88,7 +87,6 @@ export default function AiApiCostCalculatorPage() {
     return inputCost + outputCost
   }, [effectiveTokens, pricing])
 
-  // What Prophet charges per request, in dollars: rounded up to whole Credits, never below the Minimum charge.
   const prophetModel = pricing.prophetModel
   const prophetCostPerRequest = prophetModel
     ? calculateCostInCredits({ model: prophetModel, inputTokens: effectiveTokens.input, outputTokens: effectiveTokens.output }) / 100

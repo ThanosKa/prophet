@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   let event: Stripe.Event
 
   try {
-    // The sync version throws on Workers, whose WebCrypto is async, so every event would get a 400.
+    // The sync version throws on Workers, whose WebCrypto is async, so every event would get a 400. https://github.com/stripe/stripe-node#webhook-signing
     event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret)
   } catch (error) {
     logger.error({ error }, 'Webhook signature verification failed')
@@ -131,7 +131,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         where: eq(users.id, userId),
       })
       if (user) {
-        // Awaited, with a timeout inside: a Worker may cancel work left running after the response.
+        // Awaited, with a timeout inside: a Worker may cancel work left running after the response. https://developers.cloudflare.com/workers/runtime-apis/context/#waituntil
         await sendPurchaseEmail({
           to: user.email,
           firstName: user.firstName,
@@ -204,14 +204,9 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   const isFirstSubscription = !user.stripeSubscriptionId
   const now = new Date()
 
-  // Stripe fires subscription.updated for cancel/resume toggles, payment method and
-  // status changes, and plan switches. Only the first activation of a subscription is
-  // paid for here; monthly refills happen on invoice.payment_succeeded, and plan
-  // changes keep the balance so toggling plans can't mint credits.
   const isNewSubscription = status === 'active' &&
     (user.stripeSubscriptionId !== subscription.id || user.subscriptionStatus === 'incomplete')
 
-  // For mid-cycle upgrades, preserve existing billing period if it's still in the future
   const shouldPreserveBillingPeriod = !isFirstSubscription &&
     user.billingPeriodEnd &&
     user.billingPeriodEnd > now
@@ -243,7 +238,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
 
   if (isNewSubscription) {
     const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
-    // Awaited, with a timeout inside: a Worker may cancel work left running after the response.
+    // Awaited, with a timeout inside: a Worker may cancel work left running after the response. https://developers.cloudflare.com/workers/runtime-apis/context/#waituntil
     await sendPurchaseEmail({
       to: user.email,
       firstName: user.firstName,
@@ -284,7 +279,6 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       stripePriceId: null,
       subscriptionStatus: null,
       creditsIncluded: TIER_CONFIG.free.credits,
-      // Unused paid credits lapse to the free allocation, but a negative balance is kept
       creditsRemaining: sql`least(${users.creditsRemaining}, ${TIER_CONFIG.free.credits})`,
       billingPeriodStart: null,
       billingPeriodEnd: null,
@@ -367,7 +361,6 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 }
 
 export function determineTierFromPrice(priceId: string): 'pro' | 'premium' | 'ultra' | null {
-  // Match against actual price IDs from TIER_CONFIG
   if (TIER_CONFIG.pro.priceId && priceId === TIER_CONFIG.pro.priceId) return 'pro'
   if (TIER_CONFIG.premium.priceId && priceId === TIER_CONFIG.premium.priceId) return 'premium'
   if (TIER_CONFIG.ultra.priceId && priceId === TIER_CONFIG.ultra.priceId) return 'ultra'

@@ -33,7 +33,6 @@ async function balance(): Promise<number | undefined> {
   return row?.creditsRemaining
 }
 
-/** The database with a switch that makes the next call of one method fail. */
 function faultyDb() {
   const failing = new Set<PropertyKey>()
   const faulty = new Proxy(db, {
@@ -60,8 +59,6 @@ async function firstTurn() {
   return { type: 'first' as const, opening }
 }
 
-// Sonnet 5.5: $2 per MTok in, $10 per MTok out, plus the 25% Margin, rounded up.
-// 100K in + 10K out = $0.30, 38 Credits; 1M in = $2.00, 250 Credits.
 const USAGE_38 = { inputTokens: 100_000, cacheCreationInputTokens: 0, cacheReadInputTokens: 0, outputTokens: 10_000 }
 const USAGE_250 = { inputTokens: 1_000_000, cacheCreationInputTokens: 0, cacheReadInputTokens: 0, outputTokens: 0 }
 
@@ -199,8 +196,6 @@ describe('close(unfinished)', () => {
     expect(await assistantRows()).toMatchObject([{ content: 'Open', costCents: 0, toolCalls: null }])
   })
 
-  // 20,000 ASCII characters streamed estimate 10K output tokens, more than the 1 reported:
-  // 100K in + 10K out is 38 Credits.
   it.each([
     { reserveCents: 100, chargedCents: 38 },
     { reserveCents: 30, chargedCents: 30 },

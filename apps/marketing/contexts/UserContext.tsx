@@ -5,7 +5,6 @@ import type { User } from '@prophet/shared'
 import type { Balance } from '@/lib/credit-balance'
 
 interface UserContextValue {
-  /** The DB row: `creditsRemaining` is Subscription credits only; read `balance` to show a balance. */
   user: User | null
   balance: Balance | null
   isLoading: boolean

@@ -10,16 +10,10 @@ type RequestScope = {
 
 const scopes = new AsyncLocalStorage<RequestScope>()
 
-/**
- * Bodies that can still be producing, and reaching the database, after the handler has
- * returned: a Turn's SSE and React's streamed HTML and RSC payloads. Everything else is
- * finished and left alone, because rewrapping it would drop its Content-Length.
- */
 const STILL_RENDERING = /^text\/(event-stream|html|x-component)\b/
 
 let scopesInUse = false
 
-/** The part of a Worker's ExecutionContext a request scope needs. */
 export type WaitUntilContext = { waitUntil: (promise: Promise<unknown>) => void }
 
 /** True once this process has served a request through a scope, which only a Worker does. */
@@ -27,11 +21,9 @@ export function requestScopesInUse(): boolean {
   return scopesInUse
 }
 
-/** This request's database, opened on first use, or `undefined` outside a Worker request. */
 export function currentRequestDb(): Database | undefined {
   const scope = scopes.getStore()
   if (!scope) return undefined
-  // Work nobody waited for: its client would never be closed.
   if (scope.ended) throw new Error('Database used after its request ended')
   scope.client ??= scope.openClient()
   return scope.client.db
@@ -56,10 +48,6 @@ async function closeWhenIdle(scope: RequestScope): Promise<void> {
   await scope.client?.close()
 }
 
-/**
- * Runs one Worker request with its own database client, closed once the handler has
- * returned and the response body has ended.
- */
 export function serveWithRequestDb({
   ctx,
   openClient,
@@ -76,7 +64,6 @@ export function serveWithRequestDb({
       if (!response.body || !STILL_RENDERING.test(response.headers.get('Content-Type') ?? '')) {
         return response
       }
-      // An identity stream holds no chunks back, so a Turn's SSE still flows as it is written.
       const { readable, writable } = new TransformStream()
       scope.pending.add(response.body.pipeTo(writable).catch(() => {}))
       return new Response(readable, response)

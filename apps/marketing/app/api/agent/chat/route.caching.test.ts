@@ -22,7 +22,6 @@ beforeEach(async () => {
   await seedUserWithChat({ userId: USER_ID, chatId: CHAT_ID, credits: 10_000 })
 })
 
-/** One Anthropic response: streams `content`, then reports it from finalMessage(). */
 function anthropicTurn(content: ApiBlock[], stopReason: 'tool_use' | 'end_turn') {
   return harnessTurn({ content, stopReason, usage: { input_tokens: 100, output_tokens: 50 } })
 }
@@ -66,7 +65,6 @@ async function seedEarlierExchange() {
   ])
 }
 
-/** Drives three requests of one agent run the way the extension sends them. */
 async function runThreeTurns(extra: Record<string, unknown> = {}) {
   streamMock
     .mockReturnValueOnce(anthropicTurn(NAVIGATE_TURN.content, 'tool_use'))
@@ -217,7 +215,6 @@ describe('append-only agent runs in POST /api/agent/chat', () => {
 })
 
 describe('echoed tool calls in POST /api/agent/chat', () => {
-  /** A run history with one Turn that made `toolUse`, as the extension echoes it back. */
   function echoing(toolUse: ApiBlock) {
     return [
       {
@@ -247,7 +244,6 @@ describe('echoed tool calls in POST /api/agent/chat', () => {
 
   it('still accepts a continuation shaped like extension 1.0.5 sends it', async () => {
     streamMock.mockReturnValue(anthropicTurn([{ type: 'text', text: 'Done.' }], 'end_turn'))
-    // 1.0.5 sends its baked-in model id, no runId, and each Turn's server contentBlocks unchanged.
     const previousTurns = [
       {
         content: [

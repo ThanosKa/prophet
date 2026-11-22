@@ -36,9 +36,9 @@ const { logger } = await import('@/lib/logger')
 
 const USER_ID = 'user_123'
 const CUSTOMER_ID = 'cus_123'
-const PERIOD_START = 1_767_225_600 // 2026-01-01
-const PERIOD_END = 1_769_904_000 // 2026-02-01
-const NEXT_PERIOD_END = 1_772_323_200 // 2026-03-01
+const PERIOD_START = 1_767_225_600
+const PERIOD_END = 1_769_904_000
+const NEXT_PERIOD_END = 1_772_323_200
 const DAY_MS = 24 * 60 * 60 * 1000
 
 beforeAll(async () => {
@@ -92,7 +92,6 @@ async function postWebhook(event: unknown) {
   return POST(new Request('http://localhost/api/stripe/webhook', { method: 'POST', body: '{}' }))
 }
 
-/** The answer stays pending until the email settles: a Worker may cancel work left running after it. */
 async function expectAnswerToWaitForEmail(event: unknown) {
   let finishEmail = () => {}
   mocks.sendPurchaseEmail.mockImplementationOnce(() => new Promise<void>((resolve) => { finishEmail = resolve }))

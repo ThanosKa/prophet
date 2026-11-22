@@ -1,9 +1,5 @@
 import type { ToolExecutionResult, AgentLoopEvent } from './types'
 
-// ============================================================================
-// Sidepanel → Background Messages
-// ============================================================================
-
 export interface ExecuteToolRequest {
   type: 'EXECUTE_TOOL'
   toolName: string
@@ -51,10 +47,6 @@ export type SidepanelToBackgroundMessage =
   | CloseAuthTabRequest
   | OpenSidePanelRequest
 
-// ============================================================================
-// Background → Sidepanel Messages
-// ============================================================================
-
 export interface ToolExecutionResponse {
   type: 'TOOL_RESULT'
   requestId: string
@@ -78,10 +70,6 @@ export type BackgroundToSidepanelMessage =
   | AgentEventMessage
   | AgentStateResponse
 
-// ============================================================================
-// Background → Content Script Messages
-// ============================================================================
-
 export interface AgentActiveRequest {
   type: 'AGENT_ACTIVE'
 }
@@ -93,10 +81,6 @@ export interface AgentInactiveRequest {
 export type BackgroundToContentMessage =
   | AgentActiveRequest
   | AgentInactiveRequest
-
-// ============================================================================
-// Agent State (stored in chrome.storage.local)
-// ============================================================================
 
 export interface AgentState {
   isRunning: boolean
@@ -121,10 +105,6 @@ export const DEFAULT_AGENT_STATE: AgentState = {
   accumulatedContent: '',
   error: null,
 }
-
-// ============================================================================
-// Type Guards
-// ============================================================================
 
 function messageOfType(type: string) {
   return (msg: unknown): msg is { type: string } =>

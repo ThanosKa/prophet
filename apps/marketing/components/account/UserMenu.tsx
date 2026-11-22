@@ -28,11 +28,9 @@ export function UserMenu() {
   const { signOut } = useAuth();
   const userContext = useUserOptional();
 
-  // Use context if available (inside account layout), otherwise fetch
   const [fetchedUser, setFetchedUser] = React.useState<User | null>(null);
 
   React.useEffect(() => {
-    // Skip fetch if we have context (inside account layout)
     if (userContext?.user) return;
 
     fetch("/api/auth/user")
@@ -43,7 +41,6 @@ export function UserMenu() {
       .catch(() => undefined);
   }, [userContext?.user]);
 
-  // The context carries the DB row and its named balances; /api/auth/user sends the total.
   const contextBalance = userContext?.balance;
   const balance = contextBalance
     ? describeAccountBalance(contextBalance)

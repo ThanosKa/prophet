@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CloudflareWebAnalytics } from './cloudflare-web-analytics'
 
 function render(): string {
-  vi.stubGlobal('React', React) // This Vitest config compiles JSX to React.createElement.
+  vi.stubGlobal('React', React)
   return renderToString(React.createElement(CloudflareWebAnalytics))
 }
 

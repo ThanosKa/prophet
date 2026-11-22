@@ -81,7 +81,6 @@ export function ContextTrigger() {
         className="h-6 w-6 p-0 hover:bg-transparent hover:opacity-80 transition-opacity"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" className="relative">
-          {/* Background circle */}
           <circle
             cx="12"
             cy="12"
@@ -91,7 +90,6 @@ export function ContextTrigger() {
             strokeWidth="4"
             className="text-muted-foreground/40"
           />
-          {/* Progress circle */}
           <circle
             cx="12"
             cy="12"

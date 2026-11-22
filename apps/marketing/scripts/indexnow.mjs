@@ -1,11 +1,3 @@
-// Submits every URL in the production sitemap to IndexNow (Bing, Yandex, Seznam, Naver...).
-// Run by hand AFTER a deploy, once the key file below is live on production:
-//
-//   node apps/marketing/scripts/indexnow.mjs            # submit
-//   node apps/marketing/scripts/indexnow.mjs --dry-run  # print what would be sent
-//
-// Google does not use IndexNow; this does not replace Search Console.
-
 const HOST = 'prophetchrome.com'
 const KEY = 'd70f122b238b657996b85f9e8e4049be'
 const KEY_LOCATION = `https://${HOST}/${KEY}.txt`
@@ -43,7 +35,7 @@ async function main() {
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
     body: JSON.stringify(payload),
   })
-  // 200 = accepted, 202 = accepted and key validation pending. Anything else is a problem.
+  // 200 = accepted, 202 = accepted and key validation pending. Anything else is a problem. https://www.indexnow.org/documentation
   console.log(`IndexNow responded ${response.status} ${response.statusText}`)
   if (response.status !== 200 && response.status !== 202) process.exitCode = 1
 }

@@ -13,7 +13,6 @@ function turn(n: number): AgentTurn {
   }
 }
 
-// Bodies go through the real schema, as the route's do.
 function body(fields: Record<string, unknown>): AgentChatRequest {
   return agentChatRequestSchema.parse({ chatId: CHAT_ID, ...fields })
 }

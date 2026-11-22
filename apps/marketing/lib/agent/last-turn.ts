@@ -26,8 +26,6 @@ export function lastTurnReason({
   hasRunId: boolean
   estimatedPromptTokens: number
 }): RunEnd | null {
-  // A system message can't follow an assistant message, so a `pause_turn` resume (no
-  // tool results) leaves the decision to the next Turn that has some.
   const newest = runTurns.at(-1)
   if (!newest || newest.toolResults.length === 0) return null
   if (runTurns.length >= MAX_AGENT_TURNS - 1) return 'turn_limit'

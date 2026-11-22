@@ -3,8 +3,6 @@ import { MAX_AGENT_TURNS } from '@prophet/shared'
 import { runAgentLoop, type AgentRunEvent } from './agent-loop'
 import { createMockAdapters } from './mock-agent'
 
-// Runs mock mode's scenarios through the real Run loop: no module mocks, no fetch, no chrome.
-
 async function runMock(userMessage: string, options: { enableThinking?: boolean } = {}): Promise<AgentRunEvent[]> {
   const { openTurn, runTool } = createMockAdapters({ userMessage, enableThinking: options.enableThinking, wait: async () => {} })
   const events: AgentRunEvent[] = []

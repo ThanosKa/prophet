@@ -1,3 +1,4 @@
+import { attemptAsync } from '@prophet/shared'
 import { debuggerManager } from './debugger-manager'
 
 export type {
@@ -58,11 +59,9 @@ export class CdpCommander {
   }
 
   async disable(tabId: number, domain: string): Promise<void> {
-    try {
+    await attemptAsync(async () => {
       await this.sendCommand(tabId, `${domain}.disable`)
-    } catch {
-      // Ignore errors when disabling
-    }
+    })
   }
 }
 
@@ -88,4 +87,3 @@ export interface BoxModel {
   width: number
   height: number
 }
-

@@ -1,16 +1,9 @@
 import type { OpenSidePanelRequest } from './lib/agent/messages'
 import { logger } from './lib/logger'
 
-// Agent Overlay State
-// ============================================================================
-
 let agentOverlayContainer: HTMLDivElement | null = null
 let viewportBorder: HTMLDivElement | null = null
 let pauseButton: HTMLButtonElement | null = null
-
-// ============================================================================
-// Agent Overlay Functions
-// ============================================================================
 
 function createAgentOverlay(): void {
   if (agentOverlayContainer) return
@@ -139,10 +132,6 @@ function hideAgentOverlay(): void {
   if (pauseButton) pauseButton.style.display = 'none'
 }
 
-// ============================================================================
-// Message Handlers
-// ============================================================================
-
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   try {
     switch (message.type) {
@@ -179,17 +168,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return true
 })
 
-// ============================================================================
-// Auth Success Page Handler
-// ============================================================================
-
 if (window.location.pathname === '/auth-success') {
   const handleOpenProphet = () => {
     const msg: OpenSidePanelRequest = { type: 'OPEN_SIDE_PANEL' }
     chrome.runtime.sendMessage(msg)
   }
 
-  // Look for the button immediately and also observe for it (React hydration)
   const setupButtonListener = () => {
     const btn = document.querySelector('[data-open-prophet]')
     if (btn) {

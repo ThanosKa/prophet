@@ -28,13 +28,11 @@ export function useChats() {
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor?.beforeUpdatedAt,
-    staleTime: 1000 * 60 * 5,  // 5 minutes - consistent with other queries
+    staleTime: 1000 * 60 * 5,
   })
 
-  // Flatten all pages into single list
   const chats = useMemo(() => data?.pages.flatMap(page => page.chats) ?? [], [data?.pages])
 
-  // Hydrate store on initial load
   useEffect(() => {
     if (chats.length > 0) {
       setChats(chats)

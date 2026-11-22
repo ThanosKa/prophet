@@ -51,7 +51,6 @@ describe('snapshot tools', () => {
   })
 
   it('shortens an over-size snapshot to 20,000 chars and hints at search_snapshot', async () => {
-    // 400 buttons of ~150 chars each: about 60,000 chars of snapshot text
     servePage(
       Array.from({ length: 400 }, (_, i) => button({ id: i + 1, name: `Product ${i} ${'x'.repeat(120)}` }))
     )
@@ -63,7 +62,6 @@ describe('snapshot tools', () => {
     expect(text).toContain('button "Product 0 ')
     expect(text).not.toContain('Product 399 ')
     expect(text).toMatch(/search_snapshot/)
-    // The cut falls between node lines, never inside one
     const lines = text.split('\n')
     const lastNodeLine = lines.filter((line) => line.includes('uid=')).at(-1)
     expect(lastNodeLine).toMatch(/"Product \d+ x{120}" <|"Product \d+ x{120}"$/)

@@ -3,9 +3,6 @@ import { useEffect } from 'react'
 import { useChatStore } from '@/store/chatStore'
 import { apiClient } from '@/lib/api'
 
-/**
- * Hook for fetching messages for a chat with pagination support
- */
 type MessagesPage = NonNullable<Awaited<ReturnType<typeof apiClient.getMessages>>['data']>
 
 export function useMessages(chatId: string | null) {
@@ -31,10 +28,9 @@ export function useMessages(chatId: string | null) {
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor?.beforeCreatedAt,
     enabled: !!chatId && !chatId.startsWith('draft-'),
-    staleTime: 1000 * 60 * 5,  // 5 minutes - don't refetch on every focus
+    staleTime: 1000 * 60 * 5,
   })
 
-  // Hydrate store with initial page
   useEffect(() => {
     if (data && chatId) {
       const existing = useChatStore.getState().messages[chatId]

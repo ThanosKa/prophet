@@ -4,15 +4,15 @@ export default defineConfig({
   worker: defineWorker({
     name: "prophet-marketing",
     entrypoint: "./worker/index.ts",
-    // Production since 2026-11-08. www stays a DNS-only record to Vercel, which answers 308
-    // to the root. The temporary cf-test host was removed at cutover; workers.dev still
-    // answers with X-Robots-Tag: noindex (worker/edge-headers.ts).
     domains: ["prophetchrome.com"],
-    // A domain turns workers.dev off unless this is set.
+    // A domain turns workers.dev off unless this is set. https://developers.cloudflare.com/workers/configuration/routing/workers-dev/
     workersDev: true,
     compatibilityDate: "2026-11-07",
-    // enable_request_signal: request.signal aborts when the client hangs up, so a Turn
-    // stops Anthropic even if a wrapper ever breaks the stream's cancel() chain.
+    /*
+     * enable_request_signal: request.signal aborts when the client hangs up, so a Turn
+     * stops Anthropic even if a wrapper ever breaks the stream's cancel() chain.
+     * https://developers.cloudflare.com/workers/configuration/compatibility-flags/
+     */
     compatibilityFlags: ["nodejs_compat", "enable_request_signal"],
     observability: { enabled: true },
     assets: {
@@ -23,18 +23,23 @@ export default defineConfig({
     env: {
       ASSETS: bindings.assets(),
       IMAGES: bindings.images(),
-      // Caching is off on this config: Credits must never be read stale. The address and
-      // password live in Cloudflare, not here. It uses Supabase's direct address with
-      // verify-full against Supabase's root certificate: the pooler's own link to Postgres
-      // has no TLS, and a Worker's own connection rejects Supabase's private certificate.
+      /*
+       * Caching is off on this config: Credits must never be read stale. The address and
+       * password live in Cloudflare, not here. It uses Supabase's direct address with
+       * verify-full against Supabase's root certificate: the pooler's own link to Postgres
+       * has no TLS, and a Worker's own connection rejects Supabase's private certificate.
+       * https://developers.cloudflare.com/hyperdrive/concepts/query-caching/
+       */
       HYPERDRIVE: bindings.hyperdrive({
         id: "9840e527d3db42df9022a7a8e1f580b6",
-        // Local previews stay off the real database unless someone points them there.
         dev: { connectionString: "postgresql://ci:ci@localhost:5432/ci" },
       }),
-      // Only declared names reach the Worker's process.env. Values come from
-      // .env.<mode>.local locally and from Worker secrets once deployed. No DATABASE_URL
-      // or DIRECT_URL: the Worker reaches the database only through HYPERDRIVE.
+      /*
+       * Only declared names reach the Worker's process.env. Values come from
+       * .env.<mode>.local locally and from Worker secrets once deployed. No DATABASE_URL
+       * or DIRECT_URL: the Worker reaches the database only through HYPERDRIVE.
+       * https://developers.cloudflare.com/workers/configuration/environment-variables/
+       */
       ANTHROPIC_API_KEY: bindings.secret(),
       CLERK_SECRET_KEY: bindings.secret(),
       CLERK_WEBHOOK_SECRET: bindings.secret(),

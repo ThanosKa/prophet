@@ -7,11 +7,8 @@ import { cn } from '@/lib/utils'
 interface InstallCtaProps {
   title: string
   description: string
-  /** Extra content rendered between the description and the buttons (e.g. contextual links). */
   children?: ReactNode
-  /** Optional second, outlined button next to "Add to Chrome". */
   secondary?: { href: string; label: string }
-  /** Spacing for the outer section; defaults to a full-width page footer band. */
   className?: string
 }
 

@@ -9,7 +9,6 @@ import { z } from 'zod'
 export const storedToolCallSchema = z.object({
   type: z.literal('tool_use'),
   id: z.string(),
-  // Not the tool-name enum: a renamed tool must not hide a stored Run's calls.
   name: z.string(),
   input: z.record(z.unknown()),
   isError: z.boolean().optional(),
@@ -29,7 +28,6 @@ export function readStoredToolCalls(value: unknown): StoredToolCall[] {
   })
 }
 
-/** Reads the `tool_calls` text column by the same rule; a column that isn't JSON reads as no calls. */
 export function parseStoredToolCalls(column: string | null): StoredToolCall[] {
   if (column === null) return []
   try {

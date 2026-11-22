@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET } from './route'
 
-// Mock modules
 vi.mock('@clerk/nextjs/server', () => ({
   auth: vi.fn(),
 }))
@@ -25,7 +24,6 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
-// Import after mocks
 const { auth } = await import('@clerk/nextjs/server')
 const { db } = await import('@/lib/db')
 const { checkRateLimit } = await import('@/lib/ratelimit')
@@ -85,4 +83,3 @@ describe('GET /api/usage/export', () => {
     expect(db.query.usageRecords.findMany).not.toHaveBeenCalled()
   })
 })
-

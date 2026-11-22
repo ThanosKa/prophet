@@ -161,8 +161,8 @@ describe('waitForNavigation', () => {
     expect(listeners.size).toBe(1)
 
     for (const l of [...listeners]) {
-      l(99, { status: 'complete' }) // another tab
-      l(7, { status: 'loading' }) // not complete yet
+      l(99, { status: 'complete' })
+      l(7, { status: 'loading' })
     }
     expect(listeners.size).toBe(1)
     for (const l of [...listeners]) l(7, { status: 'complete' })
@@ -255,8 +255,6 @@ describe('waitForTimeout', () => {
   })
 })
 
-// Ticket 33: the page can finish loading while the "already loaded" check is in
-// progress. Wait for navigation must not miss that load and return its timeout error.
 describe('waitForNavigation when the load finishes during the "already loaded" check', () => {
   beforeEach(() => {
     vi.resetAllMocks()
@@ -267,7 +265,6 @@ describe('waitForNavigation when the load finishes during the "already loaded" c
     vi.useRealTimers()
   })
 
-  /** The check reads 'loading', and the given statuses arrive while it is in progress. */
   function stubCheck(statuses: string[]) {
     const listeners = new Set<UpdateListener>()
     const emit = (status: string) => [...listeners].forEach((l) => l(7, { status }))

@@ -19,18 +19,14 @@ export async function ensureDbUser() {
     throw new Error('Unauthorized')
   }
 
-  // Try to find user first
   const user = await db.query.users.findFirst({
     where: eq(users.id, userId),
   })
 
-  // If user exists and was updated recently, return it
-  // (Optional: add a threshold for sync frequency if needed)
   if (user) {
     return user
   }
 
-  // If not found, sync from Clerk
   const client = await clerkClient()
   const clerkUser = await client.users.getUser(userId)
 
@@ -66,4 +62,3 @@ export async function ensureDbUser() {
   logger.info({ userId }, 'User synced to database via ensureDbUser')
   return newUser
 }
-

@@ -8,20 +8,15 @@ export interface ComparisonEntry {
   slug: string
   competitor: string
   h1: string
-  /** SERP title tag. Kept short and query-first; the h1 is the on-page headline. */
   title: string
   description: string
   keyword: string
   featureMatrix: FeatureMatrixEntry[]
   prophetAdvantages: string[]
   competitorAdvantages: string[]
-  /** Unique per-competitor prose. Replaces the generic templated verdict. */
   verdict: string
-  /** Concrete cost arithmetic against this specific competitor's price points. */
   pricingReality: { heading: string; body: string }
-  /** What actually happens when someone moves between the two products. */
   switchingNotes: string
-  /** Honest statement of who should not pick Prophet over this competitor. */
   chooseCompetitorIf: string
   faq: { question: string; answer: string }[]
 }
@@ -30,7 +25,6 @@ export interface AlternativeEntry {
   slug: string
   competitor: string
   h1: string
-  /** SERP title tag. Kept short and query-first; the h1 is the on-page headline. */
   title: string
   description: string
   painPoints: string[]

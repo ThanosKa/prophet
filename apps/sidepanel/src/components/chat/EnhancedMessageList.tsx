@@ -23,7 +23,6 @@ import { readStoredToolCalls, type Message as MessageType, type ToolCall } from 
 import { toolPartView, type MessagePart } from "@/lib/agent/chat-adapter";
 
 interface AgentMessage extends MessageType {
-  /** From the messages API after a reload, so validated before it is shown. */
   toolCalls?: unknown;
   thinkingContent?: string;
   parts?: MessagePart[];
@@ -68,7 +67,6 @@ function MessageWithActions({
   const isAssistant = message.role === "assistant";
   const displayContent = message.content;
   const hasParts = message.parts && message.parts.length > 0;
-  // A reloaded message has no live parts; its Run's actions come from the stored tool calls
   const storedToolCalls = hasParts ? [] : readStoredToolCalls(message.toolCalls);
   const hasThinking = Boolean(message.thinkingContent);
   const showThinking = hasThinking && isStreaming && !displayContent && !hasParts;

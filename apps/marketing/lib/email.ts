@@ -30,6 +30,7 @@ export interface SendPurchaseEmailParams {
 /**
  * Webhooks await their email before answering (a Worker cancels work left running after
  * the response), so a slow Resend must not hold the answer past the sender's timeout.
+ * https://developers.cloudflare.com/workers/runtime-apis/context/#waituntil
  */
 const SEND_TIMEOUT_MS = 5_000
 
@@ -47,7 +48,6 @@ async function sendWithin(payload: Parameters<Resend['emails']['send']>[0]): Pro
   }
 }
 
-// Logs name the email by its Resend id, never by the recipient's address.
 export async function sendWelcomeEmail({ to, firstName, lastName }: SendWelcomeEmailParams): Promise<void> {
   const html = buildWelcomeHtml({ firstName, lastName })
 
@@ -106,8 +106,6 @@ function formatName({
   const parts = [firstName, lastName].filter(Boolean)
   return parts.length > 0 ? parts.join(' ') : null
 }
-
-// ─── Shared email style constants ───
 
 const GOLD_PRIMARY = '#D4960A'
 const GOLD_GRADIENT_START = '#FFD700'

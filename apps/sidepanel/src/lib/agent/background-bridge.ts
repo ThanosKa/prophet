@@ -1,3 +1,4 @@
+import { attempt } from '@prophet/shared'
 import type { ToolExecutionResult, AgentLoopEvent } from './types'
 import { logger } from '../logger'
 import type {
@@ -42,11 +43,9 @@ function ensureConnection(): chrome.runtime.Port {
   })
 
   backgroundPort.onDisconnect.addListener(() => {
-    // console.log('[BackgroundBridge] Disconnected from background')
     backgroundPort = null
   })
 
-  // console.log('[BackgroundBridge] Connected to background')
   return backgroundPort
 }
 
@@ -148,11 +147,7 @@ export function subscribeToAgentState(
 
 export function reconnectToBackground(): void {
   if (backgroundPort) {
-    try {
-      backgroundPort.disconnect()
-    } catch {
-      // Ignore disconnect errors
-    }
+    attempt(() => backgroundPort?.disconnect())
     backgroundPort = null
   }
   ensureConnection()

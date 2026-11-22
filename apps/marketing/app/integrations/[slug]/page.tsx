@@ -29,8 +29,6 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
   const integration = getIntegrationBySlug(slug)
   if (!integration) notFound()
 
-  // Rotate rather than slice(0, 4): a fixed slice put the same four links on all ten
-  // pages, leaving the rest of the set with no internal links at all.
   const currentIndex = integrations.findIndex((i) => i.slug === integration.slug)
   const relatedIntegrations = Array.from(
     { length: Math.min(4, integrations.length - 1) },

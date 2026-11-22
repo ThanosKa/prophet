@@ -28,8 +28,6 @@ vi.mock('@/lib/ratelimit', () => ({
   checkRateLimit: vi.fn(),
 }))
 
-// The Run record has its own PGlite tests (route.run-record.test.ts); here the route
-// only needs a started Run.
 vi.mock('@/lib/agent/run-record', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/agent/run-record')>()
   return {
@@ -39,7 +37,6 @@ vi.mock('@/lib/agent/run-record', async (importOriginal) => {
   }
 })
 
-// The reserve/settle SQL has its own PGlite tests; here the route only needs a hold.
 vi.mock('@/lib/credit-reservation', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/credit-reservation')>()
   return {
@@ -309,7 +306,6 @@ describe('Legacy model ids from already-installed extensions', () => {
 
     const events = await drain(await post({ model: 'claude-opus-4-6' }))
 
-    // Opus 5.5: (1000/1M x $4) + (500/1M x $20) = $0.014 -> x1.25 Margin = 1.75c -> 2 credits
     const expected = calculateCostInCredits({ model: 'claude-opus-5-5', inputTokens: 1000, outputTokens: 500 })
     expect(expected).toBe(2)
 

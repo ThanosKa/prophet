@@ -10,7 +10,6 @@ export interface SEOPageData {
 
 export interface ProfessionData extends SEOPageData {
   scenarios: Array<{ title: string; description: string }>
-  /** Rendered as links to /use-cases/{slug}, so only real use-case slugs are valid. */
   relatedUseCases: UseCaseSlug[]
   recommendedModel: 'haiku' | 'sonnet' | 'opus'
   typicalSessionCost: string

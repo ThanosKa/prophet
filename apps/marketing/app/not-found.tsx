@@ -9,7 +9,6 @@ export default function NotFound() {
             <Header />
             <main className="flex-1 flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in duration-500">
                 <div className="space-y-6 max-w-md mx-auto">
-                    {/* 404 Visual */}
                     <div className="relative">
                         <h1 className="text-[150px] font-black leading-none tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-foreground to-foreground/20 select-none">
                             404

@@ -3,8 +3,6 @@ import { MAX_AGENT_TURNS, type AgentStreamEvent } from '@prophet/shared'
 import { runAgentLoop, type AgentRunEvent, type ToolRunner, type TurnSource } from './agent-loop'
 import type { ToolExecutionResult } from './types'
 
-// Runs the Run loop against a fake Turn source and a fake tool runner: no module mocks, no fetch, no chrome.
-
 const RUN_ID = '3f0c8a2e-6b1d-4c7a-9e5f-2a8b7c6d5e4f'
 
 const SNAPSHOT_RESULT: ToolExecutionResult = { success: true, data: 'page snapshot', durationMs: 1 }
@@ -16,7 +14,6 @@ const toolUse = (id: string): AgentStreamEvent => ({
 
 const done = (stopReason: string): AgentStreamEvent => ({ type: 'done', stopReason })
 
-/** A Turn source that answers each Turn with the next planned events and keeps every request body. */
 function fakeTurns(planTurn: (turnNumber: number) => AgentStreamEvent[]) {
   const bodies: Array<Record<string, unknown>> = []
   const openTurn: TurnSource = async function* ({ body }) {

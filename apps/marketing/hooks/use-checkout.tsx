@@ -22,7 +22,6 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
 export function useCheckout() {
   const context = useContext(CheckoutContext)
   if (!context) {
-    // Return default values if used outside provider (graceful degradation)
     return { isProcessing: false, setProcessing: () => {} }
   }
   return context

@@ -1,30 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock background tool execution bridge
 vi.mock('./background-bridge', () => ({
   executeToolViaBackground: vi.fn(),
 }))
 
-// Mock chrome.runtime API
 global.chrome = {
   runtime: {
     sendMessage: vi.fn(),
   },
 } as any
 
-// Import after mocks
 const { executeToolViaBackground } = await import('./background-bridge')
 const { runAgentLoop } = await import('./agent-loop')
 
 const API = 'http://localhost:3000'
 
-/** An SSE body with one `data:` frame per event. */
 const sse = (events: unknown[]) => events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join('')
 
 const requestBodies = (fetchMock: ReturnType<typeof vi.fn>) =>
   fetchMock.mock.calls.map((call) => JSON.parse(String(call[1]?.body)))
 
-/** Answers each request with the next Turn's events, in order. */
 function serveTurns(turns: unknown[][]) {
   const fetchMock = vi.fn()
   for (const turn of turns) fetchMock.mockResolvedValueOnce(new Response(sse(turn)))
@@ -32,7 +27,6 @@ function serveTurns(turns: unknown[][]) {
   return { fetchMock, bodies: () => requestBodies(fetchMock) }
 }
 
-/** Answers every request with the same Turn (a fresh Response each time: a body reads once). */
 function serveEveryTurn(turn: unknown[]) {
   const fetchMock = vi.fn(() => Promise.resolve(new Response(sse(turn))))
   vi.stubGlobal('fetch', fetchMock)
@@ -51,7 +45,6 @@ describe('runAgentLoop', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Mock auth token
     vi.mocked(chrome.runtime.sendMessage).mockResolvedValue({
       token: 'mock-token',
     })
@@ -83,7 +76,7 @@ describe('runAgentLoop', () => {
       const events: any[] = []
       for await (const event of runAgentLoop({ baseUrl: API, chatId: 'chat-1', userMessage: 'Hi' })) {
         events.push(event)
-        if (events.length > 10) break // Safety
+        if (events.length > 10) break
       }
 
       expect(global.fetch).toHaveBeenCalled()
@@ -197,7 +190,6 @@ describe('runAgentLoop', () => {
       expect(toolComplete).toBeDefined()
       expect(toolComplete.toolName).toBe('take_snapshot')
     })
-
   })
 
   describe('Tool input check', () => {
@@ -275,7 +267,6 @@ describe('runAgentLoop', () => {
       { type: 'tool_use', toolUse: { type: 'tool_use', id, name: 'take_snapshot', input: {} } },
       { type: 'done', stopReason: 'tool_use' },
     ]
-    // The server releases no tool calls on a last Turn, but done still names the one Claude asked for.
     const lastTurn = (runEnd: string) => [
       { type: 'content_delta', delta: 'I found two invoices; the March one is still open.' },
       { type: 'execution_complete', stopReason: 'tool_use', finalOutput: 'I found two invoices; the March one is still open.' },
@@ -334,7 +325,6 @@ describe('runAgentLoop', () => {
     ]
 
     it("doesn't send a request over the limit in UTF-8 bytes, and ends the Run with its notice", async () => {
-      // 1.5M characters is well under 4,000,000 as string length, but each euro sign is 3 bytes.
       const page = '€'.repeat(1_500_000)
       const { fetchMock } = serveTurns([snapshotTurn])
       vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: page, durationMs: 1 })
@@ -471,7 +461,6 @@ describe('runAgentLoop', () => {
   })
 
   describe('Silent stops', () => {
-
     it('sends an is_error tool_result for a tool that threw, so the next turn stays valid', async () => {
       const { fetchMock, bodies } = serveTurns([
         [{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'click_element_by_uid', input: { uid: 'a' } } }, { type: 'done' }],
@@ -641,7 +630,6 @@ describe('runAgentLoop', () => {
   describe('Cancellation', () => {
     const encoder = new TextEncoder()
 
-    // A response whose body stays open after the first chunk, like a long generation.
     const openStreamingResponse = () => {
       const cancel = vi.fn()
       const body = new ReadableStream<Uint8Array>({

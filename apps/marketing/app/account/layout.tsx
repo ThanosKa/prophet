@@ -19,7 +19,6 @@ export default async function AccountLayout({
     redirect("/sign-in")
   }
 
-  // Fetch user once in layout, share via context
   let user = null
   try {
     user = await ensureDbUser()
@@ -45,4 +44,3 @@ export default async function AccountLayout({
     </UserProvider>
   )
 }
-

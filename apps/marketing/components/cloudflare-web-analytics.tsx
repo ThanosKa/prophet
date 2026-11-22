@@ -1,6 +1,5 @@
 import { isWorkerRuntime } from '@/lib/runtime'
 
-// The beacon token is public: it ships in every page's HTML by design.
 const BEACON_TOKEN = '78e27d1fb0b6460fbece52cca9cfb15a'
 
 /**

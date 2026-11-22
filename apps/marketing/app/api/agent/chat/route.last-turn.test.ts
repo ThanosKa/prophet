@@ -36,14 +36,12 @@ function post(body: Record<string, unknown>) {
 
 const snapshotCall = (id: string): ApiBlock => ({ type: 'tool_use', id, name: 'take_snapshot', input: {} })
 
-/** Claude takes another snapshot, the reply a last Turn must not act on. */
 function claudeCallsATool() {
   streamMock.mockReturnValue(
     anthropicTurn({ content: [text('Taking another snapshot.'), snapshotCall('toolu_next')], stopReason: 'tool_use' })
   )
 }
 
-/** One finished Turn of the Run as the extension echoes it, with its snapshot result. */
 function earlierTurn({ index, snapshot = 'Snapshot of the page' }: { index: number; snapshot?: string }) {
   const id = `toolu_${index}`
   return {
@@ -56,7 +54,6 @@ function earlierTurns(count: number) {
   return Array.from({ length: count }, (_, index) => earlierTurn({ index: index + 1 }))
 }
 
-/** The Run's opening user row, as Turn 1 saved it. */
 async function seedOpening() {
   await db.insert(schema.messages).values({
     id: OPENING_ID,
@@ -67,7 +64,6 @@ async function seedOpening() {
   })
 }
 
-/** Snapshot-like page text, `chars` characters long. */
 function realisticSnapshot(chars: number) {
   const lines = Array.from(
     { length: 1000 },
@@ -76,10 +72,6 @@ function realisticSnapshot(chars: number) {
   return lines.join('\n').slice(0, chars)
 }
 
-/**
- * Earlier chat, far larger than the history window: 30 rows of 3,990 characters, so
- * each one is 1,995 estimated tokens and exactly the newest 10 fit in 20,000.
- */
 const LONG_HISTORY = Array.from({ length: 30 }, (_, i) => ({
   role: i % 2 === 0 ? ('user' as const) : ('assistant' as const),
   content: `${i}`.padStart(2, '0') + 'x'.repeat(3988),
@@ -121,27 +113,20 @@ const releasedToolUses = (events: Frame[]) => events.filter((event) => event.typ
 const systemMessages = (call = 0): unknown[] =>
   sentParams(call).messages.filter((message: { role: string }) => message.role === 'system')
 
-/**
- * The Hold's estimate of a prompt the route sent. The Run budget is defined on this
- * estimator, so the boundary tests size their prompts with it.
- */
 function estimateOfSentPrompt(call: number) {
   const { tools, messages } = sentParams(call)
   return estimateInputTokens({ system: AGENT_SYSTEM_PROMPT, tools, messages })
 }
 
 describe('the Run budget in POST /api/agent/chat', () => {
-  /** A continuation whose one snapshot result is `chars` ASCII characters long. */
   const withSnapshot = (chars: number) => ({
     runId: OPENING_ID,
     previousTurns: [earlierTurn({ index: 1, snapshot: 'x'.repeat(chars) })],
   })
 
-  /** Snapshot length that puts the prompt's estimate exactly at `RUN_BUDGET_TOKENS`. */
   async function charsForBudget() {
     const probeChars = 1000
     await continueRun(withSnapshot(probeChars))
-    // Every two more ASCII characters add one estimated token.
     return probeChars + 2 * (RUN_BUDGET_TOKENS - estimateOfSentPrompt(0))
   }
 

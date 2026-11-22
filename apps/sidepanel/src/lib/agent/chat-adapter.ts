@@ -1,14 +1,6 @@
-/**
- * 
- * Converts raw agent events into structured UI messages.
- * Bundles multiple tool calls into a single message.
- * Handles text/tool interleaving correctly.
- */
-
 import type { AgentStatus, ToolName } from '@prophet/shared'
 import { isRecord } from '../utils'
 
-// Message part types for interleaving
 export interface TextPart {
     type: 'text'
     text: string
@@ -26,7 +18,6 @@ export interface ToolPart {
 
 export type MessagePart = TextPart | ToolPart
 
-/** A tool part as the tool-call list shows it. */
 export interface ToolPartView {
     id: string
     name: ToolName
@@ -73,19 +64,14 @@ export interface AgentEvent {
 export class ChatAdapter {
     private messages: Map<string, UIMessage> = new Map()
     private currentAssistantId: string | null = null
-    private pendingToolCalls: Map<string, string> = new Map() // toolCallId -> toolName
+    private pendingToolCalls: Map<string, string> = new Map()
     private status: AgentStatus = 'idle'
 
-    /**
-     * Process an agent event and return the updated message(s).
-     * Returns only the messages that changed.
-     */
     processEvent(event: AgentEvent): UIMessage[] {
         const changedMessages: UIMessage[] = []
 
         switch (event.type) {
             case 'session_created':
-                // No message change needed
                 break
 
             case 'content_delta': {
@@ -94,14 +80,10 @@ export class ChatAdapter {
                     const msg = this.updateCurrentAssistant((m) => {
                         const lastPart = m.parts[m.parts.length - 1]
 
-                        // If the last part is text, append to it
                         if (lastPart && lastPart.type === 'text') {
                             lastPart.text += delta
                         } else {
-                            // Otherwise push a new text part
-                            // Add a newline if there's already content to separate turns
                             const hasContent = m.parts.length > 0
-                            // Avoid double-newlines here; markdown rendering + prose spacing amplifies it.
                             const text = hasContent ? `\n${delta}` : delta
                             m.parts.push({ type: 'text', text })
                         }
@@ -217,7 +199,6 @@ export class ChatAdapter {
             }
 
             case 'error':
-                // The error banner shows the text; writing it here would put words in Claude's mouth.
                 this.status = 'error'
                 break
 
@@ -230,9 +211,6 @@ export class ChatAdapter {
         return changedMessages
     }
 
-    /**
-     * Start a new user message.
-     */
     addUserMessage(id: string, content: string): UIMessage {
         const message: UIMessage = {
             id,
@@ -244,9 +222,6 @@ export class ChatAdapter {
         return message
     }
 
-    /**
-     * Start a new assistant message.
-     */
     startAssistantMessage(id: string): UIMessage {
         const message: UIMessage = {
             id,
@@ -259,40 +234,24 @@ export class ChatAdapter {
         return message
     }
 
-    /**
-     * Get current status.
-     */
     getStatus(): AgentStatus {
         return this.status
     }
 
-    /**
-     * Get all messages.
-     */
     getMessages(): UIMessage[] {
         return Array.from(this.messages.values())
     }
 
-    /**
-     * Get a message by ID.
-     */
     getMessage(id: string): UIMessage | undefined {
         return this.messages.get(id)
     }
 
-    /**
-   * Convert UIMessage to legacy ToolCall array for compatibility.
-   */
     extractToolCalls(message: UIMessage): ToolPartView[] {
         return message.parts
-            // Keep tool history stable: executing tool is rendered separately as `currentToolCall`.
             .filter((p): p is ToolPart => p.type === 'tool' && p.state !== 'executing')
             .map(toolPartView)
     }
 
-    /**
-     * Get plain text content from message.
-     */
     getTextContent(message: UIMessage): string {
         return message.parts
             .filter((p): p is TextPart => p.type === 'text')
@@ -300,9 +259,6 @@ export class ChatAdapter {
             .join('')
     }
 
-    /**
-     * Clear all messages.
-     */
     clear(): void {
         this.messages.clear()
         this.currentAssistantId = null
@@ -310,9 +266,6 @@ export class ChatAdapter {
         this.status = 'idle'
     }
 
-    /**
-     * Update the current assistant message.
-     */
     private updateCurrentAssistant(
         updater: (message: UIMessage) => UIMessage
     ): UIMessage | null {

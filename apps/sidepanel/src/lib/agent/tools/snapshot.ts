@@ -3,10 +3,6 @@ import { capNodeText, snapshotManager } from '../snapshot-manager'
 import { type ToolExecutionResult } from '../types'
 import { activeTabTool } from './tab-tool'
 
-/**
- * Keeps a snapshot within the shared limit so one big page can't fill the context.
- * The cut falls between node lines, and the note (counted in the limit) points Claude at search_snapshot.
- */
 function capSnapshotText(text: string): string {
   const limit = AGENT_SIZE_LIMITS.snapshotChars
   if (text.length <= limit) return text

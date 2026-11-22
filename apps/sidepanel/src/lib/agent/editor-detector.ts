@@ -1,10 +1,3 @@
-/**
- * 
- * Detects Monaco, CodeMirror, and Ace editors and provides
- * specialized fill methods that use the editor's internal API
- * instead of generic input simulation.
- */
-
 import { cdpCommander } from './cdp-commander'
 import { evaluateResultSchema } from './cdp-results'
 import { logger } from '../logger'
@@ -13,9 +6,6 @@ const UID_ATTRIBUTE = 'data-prophet-nodeid'
 
 export type EditorType = 'monaco' | 'codemirror' | 'ace' | 'none'
 
-/**
- * Detect if an element is part of a rich text editor.
- */
 export async function detectEditor({ tabId, uid }: { tabId: number; uid: string }): Promise<EditorType> {
   try {
     const result = evaluateResultSchema.parse(await cdpCommander.sendCommand(
@@ -61,9 +51,6 @@ export async function detectEditor({ tabId, uid }: { tabId: number; uid: string 
   }
 }
 
-/**
- * Fill a Monaco editor with the given value.
- */
 export async function fillMonaco({
   tabId,
   uid,
@@ -74,7 +61,6 @@ export async function fillMonaco({
   value: string
 }): Promise<boolean> {
   try {
-    // Escape the value for use in JavaScript string
     const escapedValue = value
       .replace(/\\/g, '\\\\')
       .replace(/'/g, "\\'")
@@ -131,9 +117,6 @@ export async function fillMonaco({
   }
 }
 
-/**
- * Fill a CodeMirror editor with the given value.
- */
 export async function fillCodeMirror({
   tabId,
   uid,
@@ -198,9 +181,6 @@ export async function fillCodeMirror({
   }
 }
 
-/**
- * Fill an Ace editor with the given value.
- */
 export async function fillAce({
   tabId,
   uid,
@@ -262,10 +242,6 @@ export async function fillAce({
   }
 }
 
-/**
- * Try to fill any detected editor type.
- * Returns true if editor was detected and filled, false otherwise.
- */
 export async function tryFillEditor({
   tabId,
   uid,

@@ -8,11 +8,8 @@ import { resolveRunTurns } from '@/lib/agent/conversation'
  */
 export type RequestKind =
   | { kind: 'first'; userMessage: string; runTurns: AgentTurn[]; runId?: string }
-  /** 1.0.7+: names its Run by `runId`. `sendsWholeRun` is false for a legacy body. */
   | { kind: 'run'; runId: string; runTurns: AgentTurn[]; sendsWholeRun: boolean }
-  /** 1.0.5-1.0.6: `previousTurns` with no `runId`. */
   | { kind: 'continuation'; runTurns: AgentTurn[] }
-  /** Before 1.0.5: `previousContent` and `toolResults` only. */
   | { kind: 'legacy'; runTurns: AgentTurn[] }
 
 export type RequestKindOrInvalid = RequestKind | { kind: 'invalid' }

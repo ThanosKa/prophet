@@ -400,7 +400,6 @@ const allProfessions: ProfessionData[] = [
   },
 ]
 
-// Professions whose page is 301ed elsewhere (lib/seo/pruned.mjs) must not be listed or linked.
 export const professions: ProfessionData[] = allProfessions.filter(
   (p) => !redirectedPaths.has(`/for/${p.slug}`)
 )

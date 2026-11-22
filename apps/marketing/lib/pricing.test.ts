@@ -31,23 +31,19 @@ describe('Margin, rounding and the Minimum charge', () => {
   })
 
   it('charges a Haiku Turn with an Anthropic cost of 0.8 cents exactly 1 Credit (0.8 x 1.25 = 1.0)', () => {
-    // 80,000 input tokens x $0.10/MTok = $0.008
     expect(calculateUsageCostInCredits({ model: 'claude-haiku-5-5', usage: haikuInput(80_000) })).toBe(1)
   })
 
   it('rounds up: a 1.6-cent Turn costs 2 Credits (1.6 x 1.25 = 2.0), a 2-cent Turn costs 3 (2.5)', () => {
-    // Sonnet input at $2/MTok: 8,000 tokens = $0.016, 10,000 tokens = $0.02
     expect(calculateCostInCredits({ model: 'claude-sonnet-5-5', inputTokens: 8_000, outputTokens: 0 })).toBe(2)
     expect(calculateCostInCredits({ model: 'claude-sonnet-5-5', inputTokens: 10_000, outputTokens: 0 })).toBe(3)
   })
 
   it('does not round float noise up into an extra Credit: a 5.6-cent Turn costs exactly 7', () => {
-    // Sonnet input: 28,000 tokens x $2/MTok = $0.056; 5.6 x 1.25 = 7.0
     expect(calculateCostInCredits({ model: 'claude-sonnet-5-5', inputTokens: 28_000, outputTokens: 0 })).toBe(7)
   })
 
   it('applies the Margin to a large Turn: a 100-cent Opus Turn costs 125 Credits', () => {
-    // 250,000 input tokens x $4/MTok = $1.00
     expect(calculateCostInCredits({ model: 'claude-opus-5-5', inputTokens: 250_000, outputTokens: 0 })).toBe(125)
   })
 
@@ -84,9 +80,6 @@ describe('Plans, extra credits and the Free grant', () => {
 })
 
 describe('Worst-case profit after Stripe fees', () => {
-  // A buyer who spends every Credit: Anthropic cost is at most Credits / 1.25, because
-  // rounding up and the Minimum charge only ever charge more than cost x 1.25.
-  // Stripe takes about 2.9% + $0.30 per charge.
   it.each([
     { name: 'Pro', plan: TIER_CONFIG.pro, expectedCents: 140 },
     { name: 'Premium', plan: TIER_CONFIG.premium, expectedCents: 482 },
@@ -185,8 +178,6 @@ describe('TIER_CONFIG Structure', () => {
   })
 
   it('all tiers have access to all models (balance-only system)', () => {
-    // All tiers have access to all models - credits are the only limit
-    // This is verified by the existence of ALL_MODELS constant
     expect(ALL_MODELS).toBeDefined()
     expect(ALL_MODELS.length).toBe(3)
   })
@@ -347,14 +338,12 @@ describe('calculateUsageCostInCredits (prompt-cache-aware billing)', () => {
   }
 
   it('charges Opus 5.5 cache reads at $0.20/MTok, not the base input rate', () => {
-    // 1M x $0.20 = $0.20 -> x1.25 = 25 credits
     expect(
       calculateUsageCostInCredits({ model: 'claude-opus-5-5', usage: { ...noUsage, cacheReadInputTokens: 1_000_000 } })
     ).toBe(25)
   })
 
   it('charges Sonnet 5.5 cache reads at $0.10/MTok (0.05x input)', () => {
-    // 1M x $0.10 = $0.10 -> x1.25 = 12.5 -> 13 credits
     expect(
       calculateUsageCostInCredits({ model: 'claude-sonnet-5-5', usage: { ...noUsage, cacheReadInputTokens: 1_000_000 } })
     ).toBe(13)
@@ -362,7 +351,6 @@ describe('calculateUsageCostInCredits (prompt-cache-aware billing)', () => {
 
   it('charges 5-minute cache writes at 1.25x input: Sonnet $2.50, Opus $5.00 per MTok', () => {
     const write = { ...noUsage, cacheCreationInputTokens: 1_000_000 }
-    // $2.50 -> x1.25 = 312.5 -> 313; $5.00 -> x1.25 = 625
     expect(calculateUsageCostInCredits({ model: 'claude-sonnet-5-5', usage: write })).toBe(313)
     expect(calculateUsageCostInCredits({ model: 'claude-opus-5-5', usage: write })).toBe(625)
   })
@@ -375,17 +363,14 @@ describe('calculateUsageCostInCredits (prompt-cache-aware billing)', () => {
   }
 
   it('bills every input bucket plus output on Sonnet 5.5', () => {
-    // $0.002 input + $0.005 write + $0.01 read + $0.005 output = $0.022 -> x1.25 = 2.75 -> 3
     expect(calculateUsageCostInCredits({ model: 'claude-sonnet-5-5', usage: cachedAgentTurn })).toBe(3)
   })
 
   it('bills every input bucket plus output on Opus 5.5', () => {
-    // $0.004 input + $0.01 write + $0.02 read + $0.01 output = $0.044 -> x1.25 = 5.5 -> 6
     expect(calculateUsageCostInCredits({ model: 'claude-opus-5-5', usage: cachedAgentTurn })).toBe(6)
   })
 
   it('adds the per-search fee on top of cached tokens', () => {
-    // $0.044 tokens + 2 x $0.01 searches = $0.064 -> x1.25 = 8
     expect(
       calculateUsageCostInCredits({ model: 'claude-opus-5-5', usage: { ...cachedAgentTurn, webSearchRequests: 2 } })
     ).toBe(8)
@@ -401,12 +386,10 @@ describe('Haiku 5.5 prompt-length rate cards', () => {
   })
 
   it('bills a prompt of up to 100K tokens at $0.10 / $0.50', () => {
-    // 100K x $0.10 + 100K x $0.50 = $0.06 -> x1.25 = 7.5 -> 8
     expect(calculateUsageCostInCredits({ model: 'claude-haiku-5-5', usage: usage(100_000, 100_000) })).toBe(8)
   })
 
   it('bills the whole request, output included, at $0.50 / $2.50 once the prompt passes 100K', () => {
-    // 200K x $0.50 + 100K x $2.50 = $0.35 -> x1.25 = 43.75 -> 44
     expect(calculateUsageCostInCredits({ model: 'claude-haiku-5-5', usage: usage(200_000, 100_000) })).toBe(44)
   })
 
@@ -417,7 +400,6 @@ describe('Haiku 5.5 prompt-length rate cards', () => {
       cacheReadInputTokens: 1_000_000,
       outputTokens: 0,
     }
-    // $0.0005 input + 1M x $0.05 read = $0.0505 -> x1.25 = 6.31 -> 7 (short card would be 2)
     expect(calculateUsageCostInCredits({ model: 'claude-haiku-5-5', usage: cachedLongPrompt })).toBe(7)
   })
 

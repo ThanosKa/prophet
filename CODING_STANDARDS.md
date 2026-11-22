@@ -1,6 +1,6 @@
 # Coding Standards
 
-The rules every diff in this repo is checked against, one per line, alongside the guardrails in `CLAUDE.md`. Writing code: every rule that touches the files you change holds before you finish. Reviewing: check the diff against every rule in turn. Some older code predates a rule; new and changed code follows it. Lint enforces `any`, type assertions (`as const` aside), non-null `!`, `console`, exhaustive `switch` and positional parameters: resolve each lint error in the code itself.
+The rules every diff in this repo is checked against, one per line, alongside the guardrails in `CLAUDE.md`. Writing code: every rule that touches the files you change holds before you finish. Reviewing: check the diff against every rule in turn. Some older code predates a rule; new and changed code follows it. Lint enforces `any`, type assertions (`as const` aside), non-null `!`, `console`, exhaustive `switch`, positional parameters and comments: resolve each lint error in the code itself.
 
 ## Security guardrails
 
@@ -43,6 +43,7 @@ The rules every diff in this repo is checked against, one per line, alongside th
 - Check a literal against a type with `satisfies`, which keeps its literal types.
 - Give a function you write with more than one parameter a single object argument (`reserveCredits({ db, userId, reserveCents })`); callbacks and framework signatures keep their shape.
 - Annotate return types on exported functions in `lib/` and `apps/shared`; React components, route handlers and locals infer theirs.
+- Write no comments: let names and types say it. Allowed: a license header, `prettier-ignore`, lint suppressions only for faulty, pedantic or style-only rules, `/** */` on an export that states a contract, and a link to the issue, RFC or vendor doc that forces non-obvious behaviour.
 
 ## UI
 

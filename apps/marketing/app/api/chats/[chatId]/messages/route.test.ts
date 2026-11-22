@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET } from './route'
 import type { Message } from '@/lib/db/schema'
 
-// Mock modules
 vi.mock('@clerk/nextjs/server', () => ({
   auth: vi.fn(),
 }))
@@ -31,14 +30,12 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
-// Import after mocks
 const { auth } = await import('@clerk/nextjs/server')
 const { db } = await import('@/lib/db')
 const { checkRateLimit } = await import('@/lib/ratelimit')
 
 const chatId = '550e8400-e29b-41d4-a716-446655440000'
 
-/** An assistant row as the database returns it. */
 function storedMessage(fields: Pick<Message, 'id' | 'content' | 'createdAt' | 'toolCalls'>): Message {
   return {
     chatId,
@@ -80,7 +77,6 @@ describe('GET /api/chats/[chatId]/messages', () => {
     expect(data.data.messages).toHaveLength(5)
     expect(data.data.hasMore).toBe(false)
     expect(data.data.nextCursor).toBe(null)
-    // Messages should be reversed (chronological order)
     expect(data.data.messages[0].id).toBe('msg_4')
     expect(data.data.messages[4].id).toBe('msg_0')
   })
@@ -153,7 +149,7 @@ describe('GET /api/chats/[chatId]/messages', () => {
     await GET(request, { params: Promise.resolve({ chatId }) })
 
     expect(db.query.messages.findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.anything(), // drizzle-orm objects are hard to match exactly here
+      where: expect.anything(),
       limit: 51,
       orderBy: expect.anything(),
     }))

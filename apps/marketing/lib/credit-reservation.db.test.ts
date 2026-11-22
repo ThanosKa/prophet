@@ -7,15 +7,6 @@ import postgres from 'postgres'
 import { users } from '@/lib/db/schema'
 import { reserveCredits, settleCredits } from './credit-reservation'
 
-/**
- * Real SQL semantics for the reserve/settle statements. PGlite always runs; it is a
- * single connection, so it proves the guard holds against interleaved promises.
- * Row-lock re-checks between truly parallel transactions need a real server:
- *   docker run -d --rm --name prophet-optb-pg -e POSTGRES_PASSWORD=test \
- *     -p 127.0.0.1:55432:5432 postgres:16
- *   CREDIT_TEST_PG_URL=postgres://postgres:test@127.0.0.1:55432/postgres pnpm test:run
- * Only loopback URLs are accepted so this can never point at a shared database.
- */
 const LOCAL_PG_URL = process.env.CREDIT_TEST_PG_URL
 const isLoopback = (url: string) => ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(url).hostname)
 

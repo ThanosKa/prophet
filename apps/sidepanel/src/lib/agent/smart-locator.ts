@@ -40,7 +40,6 @@ export class SmartLocator {
 
     const clickCount = doubleClick ? 2 : 1
 
-    // CDP "Trusted" click - simulates real hardware mouse
     await cdpCommander.sendCommand(tabId, 'Input.dispatchMouseEvent', {
       type: 'mousePressed',
       x: centerX,
@@ -49,7 +48,6 @@ export class SmartLocator {
       clickCount,
     })
 
-    // Small delay for React/Angular apps to register the click
     await new Promise(r => setTimeout(r, 50))
 
     await cdpCommander.sendCommand(tabId, 'Input.dispatchMouseEvent', {
@@ -61,9 +59,6 @@ export class SmartLocator {
     })
   }
 
-  /**
-   * Uses document.elementFromPoint to check what's actually at the click coordinates.
-   */
   private async isElementCovered(tabId: number, uid: string, x: number, y: number): Promise<boolean> {
     try {
       const result = evaluateResultSchema.parse(await cdpCommander.sendCommand(tabId, 'Runtime.evaluate', {
@@ -94,7 +89,7 @@ export class SmartLocator {
       }))
 
       if (result.exceptionDetails) {
-        return false // If check fails, proceed with normal click
+        return false
       }
 
       const value = coverCheckSchema.safeParse(result.result.value)
@@ -106,7 +101,7 @@ export class SmartLocator {
 
       return value.data.isCovered
     } catch {
-      return false // If check fails, proceed with normal click
+      return false
     }
   }
 
@@ -125,7 +120,6 @@ export class SmartLocator {
       return
     }
 
-    // Generic fill for standard inputs
     await this.focusElement(tabId, uid)
     await this.selectAll(tabId)
 

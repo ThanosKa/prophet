@@ -11,14 +11,13 @@ import { checkRateLimit } from '@/lib/ratelimit'
 
 const utcDay = sql<string>`to_char(${usageRecords.createdAt} AT TIME ZONE 'UTC', 'YYYY-MM-DD')`
 
-// count() and sum() over integer columns return bigint, which drivers hand back as strings.
+// count() and sum() over integer columns return bigint, which drivers hand back as strings. https://node-postgres.com/features/types
 const total = (column: AnyPgColumn) => sql`coalesce(sum(${column}), 0)`.mapWith(Number)
 
 const startOfUtcDay = (day: string) => new Date(`${day}T00:00:00.000Z`)
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 const startOfNextUtcDay = (day: string) => new Date(startOfUtcDay(day).getTime() + MS_PER_DAY)
 
-/** Daily usage totals per model for the signed-in user, paged by UTC day, newest first. */
 export async function GET(req: Request) {
   try {
     const { userId } = await auth()
@@ -55,8 +54,6 @@ export async function GET(req: Request) {
       to ? lt(usageRecords.createdAt, startOfNextUtcDay(to)) : undefined
     )
 
-    // Pick the page's days first (one extra to learn whether older days exist), so a
-    // page never splits a day's models across two pages.
     const pageDays = await db
       .select({ day: utcDay })
       .from(usageRecords)

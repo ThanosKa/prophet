@@ -9,26 +9,24 @@ interface RateLimitErrorProps {
 }
 
 export function RateLimitError({ error, retryAfter, remaining, onDismiss }: RateLimitErrorProps) {
-  const [countdown, setCountdown] = useState(0)
+  const [elapsed, setElapsed] = useState(0)
+  const [seenRetryAfter, setSeenRetryAfter] = useState(retryAfter)
+  if (seenRetryAfter !== retryAfter) {
+    setSeenRetryAfter(retryAfter)
+    setElapsed(0)
+  }
+
+  const total = retryAfter && retryAfter > 0 ? retryAfter : 0
+  const countdown = Math.max(0, total - elapsed)
+  const running = countdown > 0
 
   useEffect(() => {
-    if (!retryAfter || retryAfter <= 0) return
+    if (!running) return
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Need to reset countdown when retryAfter prop changes
-    setCountdown(retryAfter)
-
-    const interval = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
+    const interval = setInterval(() => setElapsed((prev) => prev + 1), 1000)
 
     return () => clearInterval(interval)
-  }, [retryAfter])
+  }, [running, retryAfter])
 
   const progressPercent = retryAfter ? ((retryAfter - countdown) / retryAfter) * 100 : 0
 

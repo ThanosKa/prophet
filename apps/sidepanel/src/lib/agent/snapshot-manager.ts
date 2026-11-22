@@ -1,3 +1,4 @@
+import { attemptAsync } from '@prophet/shared'
 import { cdpCommander } from './cdp-commander'
 import {
   axTreeResultSchema,
@@ -20,7 +21,6 @@ function generateUid(): string {
   return result
 }
 
-/** Caps a node's name or value at the shared node-text limit, marking the cut with an ellipsis. */
 export function capNodeText(text: string): string {
   const limit = AGENT_SIZE_LIMITS.snapshotNodeTextChars
   if (text.length <= limit) return text
@@ -142,7 +142,6 @@ class SnapshotManagerClass {
       if (typeof roleValue !== 'string' || !roleValue) continue
       if (!node.backendDOMNodeId) continue
 
-      // Skip our Prophet overlay elements - the STOP button has text-transform: uppercase
       const nodeName = node.name?.value
       if (typeof nodeName === 'string') {
         const lowerName = nodeName.toLowerCase()
@@ -185,13 +184,14 @@ class SnapshotManagerClass {
 
       await Promise.all(
         batch.map(async (node) => {
-          if (!node.backendDOMNodeId) return
+          const backendId = node.backendDOMNodeId
+          if (!backendId) return
 
-          try {
+          await attemptAsync(async () => {
             const resolved = resolveNodeResultSchema.parse(await cdpCommander.sendCommand(
               tabId,
               'DOM.resolveNode',
-              { backendNodeId: node.backendDOMNodeId }
+              { backendNodeId: backendId }
             ))
 
             if (!resolved.object.objectId) return
@@ -212,15 +212,13 @@ class SnapshotManagerClass {
             ))
 
             if (typeof result.result.value === 'string' && result.result.value) {
-              existingUids.set(node.backendDOMNodeId, result.result.value)
+              existingUids.set(backendId, result.result.value)
             }
 
             await cdpCommander.sendCommand(tabId, 'Runtime.releaseObject', {
               objectId: resolved.object.objectId,
             })
-          } catch {
-            // Ignore errors for individual nodes
-          }
+          })
         })
       )
     }
@@ -230,18 +228,19 @@ class SnapshotManagerClass {
 
       await Promise.all(
         batch.map(async (node) => {
-          if (!node.backendDOMNodeId) return
+          const backendId = node.backendDOMNodeId
+          if (!backendId) return
 
-          const existingUid = existingUids.get(node.backendDOMNodeId)
+          const existingUid = existingUids.get(backendId)
           if (existingUid) return
 
           const uid = generateUid()
 
-          try {
+          await attemptAsync(async () => {
             const resolved = resolveNodeResultSchema.parse(await cdpCommander.sendCommand(
               tabId,
               'DOM.resolveNode',
-              { backendNodeId: node.backendDOMNodeId }
+              { backendNodeId: backendId }
             ))
 
             if (!resolved.object.objectId) return
@@ -261,14 +260,12 @@ class SnapshotManagerClass {
               }
             )
 
-            existingUids.set(node.backendDOMNodeId, uid)
+            existingUids.set(backendId, uid)
 
             await cdpCommander.sendCommand(tabId, 'Runtime.releaseObject', {
               objectId: resolved.object.objectId,
             })
-          } catch {
-            // Ignore errors for individual nodes
-          }
+          })
         })
       )
     }

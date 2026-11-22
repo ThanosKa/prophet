@@ -4,7 +4,6 @@ import { CWS_REVIEWS_URL } from '@/lib/review-prompt'
 import { useReviewPromptStore } from '@/store/reviewPromptStore'
 
 interface ReviewPromptProps {
-  /** Hidden while a run is in progress so it never interrupts work. */
   isRunning: boolean
 }
 

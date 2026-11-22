@@ -128,7 +128,6 @@ export default function App() {
     }
   }
 
-  // Resolves false when nothing was sent, so the input keeps the user's draft.
   const handleSendMessage = async ({ message: content, image }: { message: string; image?: ImageData }): Promise<boolean> => {
     let chatId = activeChatId
     if (!chatId || chatId.startsWith('draft-')) {
