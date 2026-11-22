@@ -82,3 +82,6 @@ apps/marketing/logs/
 
 # Chrome Web Store upload bundles
 *.zip
+
+# Local specs and tickets
+.scratch/
