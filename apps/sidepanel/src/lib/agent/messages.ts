@@ -126,34 +126,59 @@ export const DEFAULT_AGENT_STATE: AgentState = {
 // Type Guards
 // ============================================================================
 
+function messageOfType(type: string) {
+  return (msg: unknown): msg is { type: string } =>
+    typeof msg === 'object' && msg !== null && 'type' in msg && msg.type === type
+}
+
 export function isExecuteToolRequest(msg: unknown): msg is ExecuteToolRequest {
   return (
-    typeof msg === 'object' &&
-    msg !== null &&
-    (msg as ExecuteToolRequest).type === 'EXECUTE_TOOL'
+    messageOfType('EXECUTE_TOOL')(msg) &&
+    'toolName' in msg &&
+    typeof msg.toolName === 'string' &&
+    'toolInput' in msg &&
+    typeof msg.toolInput === 'object' &&
+    msg.toolInput !== null &&
+    'requestId' in msg &&
+    typeof msg.requestId === 'string'
   )
 }
 
 export function isStartAgentLoopRequest(msg: unknown): msg is StartAgentLoopRequest {
   return (
-    typeof msg === 'object' &&
-    msg !== null &&
-    (msg as StartAgentLoopRequest).type === 'START_AGENT_LOOP'
+    messageOfType('START_AGENT_LOOP')(msg) &&
+    'chatId' in msg &&
+    typeof msg.chatId === 'string' &&
+    'userMessage' in msg &&
+    typeof msg.userMessage === 'string' &&
+    'model' in msg &&
+    typeof msg.model === 'string' &&
+    (!('image' in msg) || msg.image === undefined || (typeof msg.image === 'object' && msg.image !== null))
   )
 }
 
 export function isGetAgentStateRequest(msg: unknown): msg is GetAgentStateRequest {
-  return (
-    typeof msg === 'object' &&
-    msg !== null &&
-    (msg as GetAgentStateRequest).type === 'GET_AGENT_STATE'
-  )
+  return messageOfType('GET_AGENT_STATE')(msg)
 }
 
 export function isStopAgentLoopRequest(msg: unknown): msg is StopAgentLoopRequest {
+  return messageOfType('STOP_AGENT_LOOP')(msg)
+}
+
+export function isAgentEventMessage(msg: unknown): msg is AgentEventMessage {
   return (
-    typeof msg === 'object' &&
-    msg !== null &&
-    (msg as StopAgentLoopRequest).type === 'STOP_AGENT_LOOP'
+    messageOfType('AGENT_EVENT')(msg) &&
+    'event' in msg &&
+    typeof msg.event === 'object' &&
+    msg.event !== null
+  )
+}
+
+export function isAgentStateResponse(msg: unknown): msg is AgentStateResponse {
+  return (
+    messageOfType('AGENT_STATE')(msg) &&
+    'state' in msg &&
+    typeof msg.state === 'object' &&
+    msg.state !== null
   )
 }

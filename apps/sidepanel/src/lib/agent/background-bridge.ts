@@ -1,10 +1,10 @@
 import type { ToolExecutionResult, AgentLoopEvent } from './types'
+import { logger } from '../logger'
 import type {
   AgentState,
   ToolExecutionResponse,
-  AgentEventMessage,
-  AgentStateResponse,
 } from './messages'
+import { isAgentEventMessage, isAgentStateResponse } from './messages'
 
 let backgroundPort: chrome.runtime.Port | null = null
 const eventListeners: Set<(event: AgentLoopEvent) => void> = new Set()
@@ -18,24 +18,24 @@ function ensureConnection(): chrome.runtime.Port {
   backgroundPort = chrome.runtime.connect({ name: 'sidepanel' })
 
   backgroundPort.onMessage.addListener((message) => {
-    if (message.type === 'AGENT_EVENT') {
-      const agentEvent = (message as AgentEventMessage).event
+    if (isAgentEventMessage(message)) {
+      const agentEvent = message.event
       for (const listener of eventListeners) {
         try {
           listener(agentEvent)
         } catch (error) {
-          console.error('[BackgroundBridge] Event listener error:', error)
+          logger.error('BackgroundBridge', 'Event listener error:', error)
         }
       }
     }
 
-    if (message.type === 'AGENT_STATE') {
-      const state = (message as AgentStateResponse).state
+    if (isAgentStateResponse(message)) {
+      const state = message.state
       for (const listener of stateListeners) {
         try {
           listener(state)
         } catch (error) {
-          console.error('[BackgroundBridge] State listener error:', error)
+          logger.error('BackgroundBridge', 'State listener error:', error)
         }
       }
     }
@@ -50,10 +50,13 @@ function ensureConnection(): chrome.runtime.Port {
   return backgroundPort
 }
 
-export async function executeToolViaBackground(
-  toolName: string,
+export async function executeToolViaBackground({
+  toolName,
+  toolInput,
+}: {
+  toolName: string
   toolInput: Record<string, unknown>
-): Promise<ToolExecutionResult> {
+}): Promise<ToolExecutionResult> {
   const requestId = crypto.randomUUID()
 
   return new Promise((resolve, reject) => {
@@ -93,7 +96,7 @@ export async function getAgentState(): Promise<AgentState | null> {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage({ type: 'GET_AGENT_STATE' }, (response) => {
       if (chrome.runtime.lastError) {
-        console.error('[BackgroundBridge] Error getting agent state:', chrome.runtime.lastError)
+        logger.error('BackgroundBridge', 'Error getting agent state:', chrome.runtime.lastError)
         resolve(null)
         return
       }
@@ -111,7 +114,7 @@ export async function stopAgentLoop(): Promise<boolean> {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage({ type: 'STOP_AGENT_LOOP' }, (response) => {
       if (chrome.runtime.lastError) {
-        console.error('[BackgroundBridge] Error stopping agent loop:', chrome.runtime.lastError)
+        logger.error('BackgroundBridge', 'Error stopping agent loop:', chrome.runtime.lastError)
         resolve(false)
         return
       }

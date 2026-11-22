@@ -48,7 +48,7 @@ function ScrollTrigger({ scrollRef }: { scrollRef: React.RefObject<{ scrollToBot
 
   useEffect(() => {
     if (scrollRef.current === null) {
-      (scrollRef as React.MutableRefObject<{ scrollToBottom: () => void } | null>).current = { scrollToBottom };
+      scrollRef.current = { scrollToBottom };
     }
   }, [scrollToBottom, scrollRef]);
 

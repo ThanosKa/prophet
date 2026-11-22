@@ -30,6 +30,8 @@ export function RateLimitError({ error, retryAfter, remaining, onDismiss }: Rate
     return () => clearInterval(interval)
   }, [retryAfter])
 
+  const progressPercent = retryAfter ? ((retryAfter - countdown) / retryAfter) * 100 : 0
+
   const formatTime = (seconds: number): string => {
     if (seconds < 60) {
       return `${seconds} second${seconds !== 1 ? 's' : ''}`
@@ -51,7 +53,7 @@ export function RateLimitError({ error, retryAfter, remaining, onDismiss }: Rate
                 <div
                   className="h-full bg-destructive transition-all duration-1000 ease-linear"
                   style={{
-                    width: `${((retryAfter! - countdown) / retryAfter!) * 100}%`,
+                    width: `${progressPercent}%`,
                   }}
                 />
               </div>

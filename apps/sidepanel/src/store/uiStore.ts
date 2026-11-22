@@ -61,7 +61,7 @@ export const useUIStore = create<UIState>()(
       contextReasoningTokens: 0,
       contextCachedInputTokens: 0,
       selectedModel: DEFAULT_AGENT_MODEL,
-      theme: 'dark' as Theme,
+      theme: 'dark',
       enableThinking: false,
 
       setDrawerOpen: (open) => set({ drawerOpen: open }),

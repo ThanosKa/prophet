@@ -16,7 +16,7 @@ import {
   calculateUsageCostInCredits,
   type ModelName,
 } from './pricing'
-import { CLAUDE_MODELS, LEGACY_MODEL_ALIASES, resolveAgentModel } from '@prophet/shared'
+import { CLAUDE_MODELS, LEGACY_MODEL_ALIASES, LEGACY_MODEL_IDS, resolveAgentModel } from '@prophet/shared'
 
 describe('Margin, rounding and the Minimum charge', () => {
   const haikuInput = (inputTokens: number) => ({
@@ -254,7 +254,7 @@ describe('Model Pricing Table', () => {
   })
 
   it('every legacy alias resolves to a priced model', () => {
-    for (const legacy of Object.keys(LEGACY_MODEL_ALIASES)) {
+    for (const legacy of LEGACY_MODEL_IDS) {
       const resolved = resolveAgentModel(legacy)
       expect(MODEL_PRICING).toHaveProperty(resolved)
     }
@@ -323,7 +323,8 @@ describe('Web Search Cost Accounting', () => {
   })
 
   it('legacy alias resolves to the same cost as the model actually called', () => {
-    for (const [legacy, current] of Object.entries(LEGACY_MODEL_ALIASES)) {
+    for (const legacy of LEGACY_MODEL_IDS) {
+      const current = LEGACY_MODEL_ALIASES[legacy]
       const viaAlias = calculateCostInCredits(
         resolveAgentModel(legacy) as ModelName,
         10000,

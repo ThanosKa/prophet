@@ -5,7 +5,8 @@
  * Handles text/tool interleaving correctly.
  */
 
-import type { AgentStatus } from '@prophet/shared'
+import type { AgentStatus, ToolName } from '@prophet/shared'
+import { isRecord } from '../utils'
 
 // Message part types for interleaving
 export interface TextPart {
@@ -16,7 +17,7 @@ export interface TextPart {
 export interface ToolPart {
     type: 'tool'
     toolCallId: string
-    toolName: string
+    toolName: ToolName
     state: 'executing' | 'completed' | 'error'
     input?: Record<string, unknown>
     output?: string
@@ -28,7 +29,7 @@ export type MessagePart = TextPart | ToolPart
 /** A tool part as the tool-call list shows it. */
 export interface ToolPartView {
     id: string
-    name: string
+    name: ToolName
     input: Record<string, unknown>
     result?: string
     isError: boolean
@@ -58,7 +59,7 @@ export interface AgentEvent {
     type: string
     delta?: string
     toolCallId?: string
-    toolName?: string
+    toolName?: ToolName
     params?: unknown
     result?: unknown
     error?: string
@@ -87,20 +88,21 @@ export class ChatAdapter {
                 // No message change needed
                 break
 
-            case 'content_delta':
-                if (event.delta) {
+            case 'content_delta': {
+                const { delta } = event
+                if (delta) {
                     const msg = this.updateCurrentAssistant((m) => {
                         const lastPart = m.parts[m.parts.length - 1]
 
                         // If the last part is text, append to it
                         if (lastPart && lastPart.type === 'text') {
-                            lastPart.text += event.delta
+                            lastPart.text += delta
                         } else {
                             // Otherwise push a new text part
                             // Add a newline if there's already content to separate turns
                             const hasContent = m.parts.length > 0
                             // Avoid double-newlines here; markdown rendering + prose spacing amplifies it.
-                            const text = hasContent ? `\n${event.delta!}` : event.delta!
+                            const text = hasContent ? `\n${delta}` : delta
                             m.parts.push({ type: 'text', text })
                         }
 
@@ -110,29 +112,33 @@ export class ChatAdapter {
                     this.status = 'streaming'
                 }
                 break
+            }
 
-            case 'thinking_delta':
-                if (event.delta) {
+            case 'thinking_delta': {
+                const { delta } = event
+                if (delta) {
                     const msg = this.updateCurrentAssistant((m) => {
-                        m.thinkingContent = (m.thinkingContent || '') + event.delta
+                        m.thinkingContent = (m.thinkingContent || '') + delta
                         return m
                     })
                     if (msg) changedMessages.push(msg)
                     this.status = 'streaming'
                 }
                 break
+            }
 
-            case 'tool_call_start':
-                if (event.toolCallId && event.toolName) {
-                    this.pendingToolCalls.set(event.toolCallId, event.toolName)
+            case 'tool_call_start': {
+                const { toolCallId, toolName, params } = event
+                if (toolCallId && toolName) {
+                    this.pendingToolCalls.set(toolCallId, toolName)
 
                     const msg = this.updateCurrentAssistant((m) => {
                         m.parts.push({
                             type: 'tool',
-                            toolCallId: event.toolCallId!,
-                            toolName: event.toolName!,
+                            toolCallId,
+                            toolName,
                             state: 'executing',
-                            input: event.params as Record<string, unknown>,
+                            input: isRecord(params) ? params : undefined,
                         })
                         return m
                     })
@@ -140,6 +146,7 @@ export class ChatAdapter {
                     this.status = 'executing_tools'
                 }
                 break
+            }
 
             case 'tool_call_complete':
                 if (event.toolCallId) {
@@ -151,7 +158,7 @@ export class ChatAdapter {
 
                         if (part) {
                             part.state = 'completed'
-                            part.output = event.result as string
+                            part.output = typeof event.result === 'string' ? event.result : undefined
                         }
 
                         return m
@@ -182,29 +189,32 @@ export class ChatAdapter {
                 }
                 break
 
-            case 'metrics_update':
-                if (event.metrics) {
+            case 'metrics_update': {
+                const { metrics } = event
+                if (metrics) {
                     const msg = this.updateCurrentAssistant((m) => {
-                        m.inputTokens = (m.inputTokens || 0) + (event.metrics!.inputTokens || 0)
-                        m.outputTokens = (m.outputTokens || 0) + (event.metrics!.outputTokens || 0)
+                        m.inputTokens = (m.inputTokens || 0) + (metrics.inputTokens || 0)
+                        m.outputTokens = (m.outputTokens || 0) + (metrics.outputTokens || 0)
                         return m
                     })
                     if (msg) changedMessages.push(msg)
                 }
                 break
+            }
 
-            case 'execution_complete':
-                // Update metrics only - keep accumulated streaming content
-                if (event.metrics) {
+            case 'execution_complete': {
+                const { metrics } = event
+                if (metrics) {
                     const msg = this.updateCurrentAssistant((m) => {
-                        m.inputTokens = event.metrics!.inputTokens
-                        m.outputTokens = event.metrics!.outputTokens
+                        m.inputTokens = metrics.inputTokens
+                        m.outputTokens = metrics.outputTokens
                         return m
                     })
                     if (msg) changedMessages.push(msg)
                 }
                 this.status = 'idle'
                 break
+            }
 
             case 'error':
                 // The error banner shows the text; writing it here would put words in Claude's mouth.

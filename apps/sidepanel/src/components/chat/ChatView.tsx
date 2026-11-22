@@ -58,7 +58,7 @@ export function ChatView({
   }, [messages.length])
 
   const handleSuggestionClick = (suggestion: string) => {
-    void onSend(suggestion)
+    void onSend({ message: suggestion })
   }
 
   return (

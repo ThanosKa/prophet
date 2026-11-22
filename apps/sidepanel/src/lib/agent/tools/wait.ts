@@ -1,4 +1,5 @@
-import { cdpCommander, type EvaluateResult } from '../cdp-commander'
+import { cdpCommander } from '../cdp-commander'
+import { evaluateResultSchema } from '../cdp-results'
 import { type ToolExecutionResult } from '../types'
 import { activeTabTool, waitForLoadUnlessComplete } from './tab-tool'
 
@@ -20,7 +21,7 @@ export const waitForSelector = activeTabTool<{
     const escapedSelector = input.selector.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
     const checkVisible = input.visible ?? false
 
-    const result = await cdpCommander.sendCommand<EvaluateResult>(
+    const result = evaluateResultSchema.parse(await cdpCommander.sendCommand(
       tab.id,
       'Runtime.evaluate',
       {
@@ -72,7 +73,7 @@ export const waitForSelector = activeTabTool<{
         returnByValue: true,
       },
       timeout + 1000, // CDP timeout slightly longer than JS timeout
-    )
+    ))
 
     if (result.exceptionDetails) {
       return {

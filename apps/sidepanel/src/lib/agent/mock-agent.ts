@@ -150,7 +150,7 @@ export function createMockAdapters({
     await wait(100)
 
     if (isFirstTurn && (enableThinking || scenario.forceThinking)) {
-      for (const char of generateMockThinking(userMessage, scenario.tools)) {
+      for (const char of generateMockThinking({ userMessage, tools: scenario.tools })) {
         yield { type: 'thinking_delta', delta: char }
         await wait(Math.random() * 15 + 5)
       }
@@ -173,7 +173,7 @@ export function createMockAdapters({
             type: 'tool_use',
             id: `toolu_mock_${turnNumber}_${toolName}`,
             name: toolName,
-            input: generateMockToolInput(toolName, userMessage),
+            input: generateMockToolInput({ toolName, userMessage }),
           },
         }
       }
@@ -203,7 +203,7 @@ export function createMockAdapters({
 /**
  * Generate mock thinking content based on user message and tools
  */
-function generateMockThinking(userMessage: string, tools: string[]): string {
+function generateMockThinking({ userMessage, tools }: { userMessage: string; tools: string[] }): string {
   const thoughts = [
     `Let me analyze this request: "${userMessage.slice(0, 50)}${userMessage.length > 50 ? '...' : ''}"`,
     '',
@@ -235,7 +235,13 @@ function generateMockThinking(userMessage: string, tools: string[]): string {
 /**
  * Generate mock tool input based on tool name
  */
-function generateMockToolInput(toolName: string, userMessage: string): Record<string, unknown> {
+function generateMockToolInput({
+  toolName,
+  userMessage,
+}: {
+  toolName: string
+  userMessage: string
+}): Record<string, unknown> {
   switch (toolName) {
     // Observation
     case 'take_snapshot':

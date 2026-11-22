@@ -92,7 +92,7 @@ describe('waitForSelector', () => {
   })
 
   it('returns the exception text when the page reports a timeout', async () => {
-    cdp.sendCommand.mockResolvedValue({ exceptionDetails: { text: 'Uncaught (in promise)' } })
+    cdp.sendCommand.mockResolvedValue({ result: { type: 'object', subtype: 'error' }, exceptionDetails: { text: 'Uncaught (in promise)' } })
 
     expect(await waitForSelector({ selector: '#a' })).toEqual({
       success: false,
@@ -102,7 +102,7 @@ describe('waitForSelector', () => {
   })
 
   it('falls back to "Timeout waiting for selector" when the exception has no text', async () => {
-    cdp.sendCommand.mockResolvedValue({ exceptionDetails: { text: '' } })
+    cdp.sendCommand.mockResolvedValue({ result: { type: 'object', subtype: 'error' }, exceptionDetails: { text: '' } })
 
     expect(await waitForSelector({ selector: '#a' })).toMatchObject({
       success: false,

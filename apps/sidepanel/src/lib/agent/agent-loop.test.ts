@@ -93,6 +93,34 @@ describe('runAgentLoop', () => {
     })
   })
 
+  describe('Stream frames', () => {
+    it('skips frames with an unknown event type and keeps reading', async () => {
+      serveTurns([
+        [{ type: 'future_event', delta: 'x' }, { type: 'content_delta', delta: 'Hi' }, { type: 'done' }],
+      ])
+
+      const events = await collect()
+
+      expect(events.filter((e) => e.type === 'content_delta')).toEqual([{ type: 'content_delta', delta: 'Hi' }])
+    })
+
+    it('ignores a field of the wrong type instead of acting on it', async () => {
+      serveTurns([[{ type: 'content_delta', delta: 42 }, { type: 'done' }]])
+
+      const events = await collect()
+
+      expect(events.some((e) => e.type === 'content_delta')).toBe(false)
+    })
+
+    it('skips a frame that is not a JSON object', async () => {
+      serveTurns([['not-an-object', { type: 'content_delta', delta: 'Hi' }, { type: 'done' }]])
+
+      const events = await collect()
+
+      expect(events.filter((e) => e.type === 'content_delta')).toHaveLength(1)
+    })
+  })
+
   describe('Content Streaming', () => {
     it('yields content_delta events', async () => {
       const mockResponseText = `data: {"type":"content_delta","delta":"Hello"}\n\ndata: {"type":"done"}\n\n`
@@ -163,7 +191,7 @@ describe('runAgentLoop', () => {
         if (events.length > 10) break
       }
 
-      expect(executeToolViaBackground).toHaveBeenCalledWith('take_snapshot', {})
+      expect(executeToolViaBackground).toHaveBeenCalledWith({ toolName: 'take_snapshot', toolInput: {} })
 
       const toolComplete = events.find((e) => e.type === 'tool_call_complete')
       expect(toolComplete).toBeDefined()
@@ -200,7 +228,7 @@ describe('runAgentLoop', () => {
 
       await collect()
 
-      expect(executeToolViaBackground).toHaveBeenCalledWith('scroll_page', { direction: 'down', pixels: 500 })
+      expect(executeToolViaBackground).toHaveBeenCalledWith({ toolName: 'scroll_page', toolInput: { direction: 'down', pixels: 500 } })
     })
   })
 
@@ -446,7 +474,7 @@ describe('runAgentLoop', () => {
 
     it('sends an is_error tool_result for a tool that threw, so the next turn stays valid', async () => {
       const { fetchMock, bodies } = serveTurns([
-        [{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'click', input: { ref: 'a' } } }, { type: 'done' }],
+        [{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'click_element_by_uid', input: { uid: 'a' } } }, { type: 'done' }],
         [{ type: 'content_delta', delta: 'ok' }, { type: 'done' }],
       ])
       vi.mocked(executeToolViaBackground).mockRejectedValue(new Error('Could not establish connection'))
@@ -486,7 +514,7 @@ describe('runAgentLoop', () => {
     it('runs no tools on Turn 20, and the Turn-limit notice follows the reply', async () => {
       const { fetchMock } = serveEveryTurn([
         { type: 'content_delta', delta: 'Scrolling.' },
-        { type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'scroll', input: {} } },
+        { type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'take_snapshot', input: {} } },
         { type: 'execution_complete', stopReason: 'tool_use', finalOutput: 'Scrolling.' },
         { type: 'done', stopReason: 'tool_use' },
       ])
@@ -514,7 +542,7 @@ describe('runAgentLoop', () => {
     })
 
     it('does not start another turn when a tool turn was cut before done', async () => {
-      const { fetchMock } = serveEveryTurn([{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'click', input: {} } }])
+      const { fetchMock } = serveEveryTurn([{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'take_snapshot', input: {} } }])
       vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'ok', durationMs: 1 })
 
       const events = await collect()
@@ -663,8 +691,8 @@ describe('runAgentLoop', () => {
 
     it('does not execute further tools from the same turn once aborted', async () => {
       const payload = [
-        '{"type":"tool_use","toolUse":{"type":"tool_use","id":"t1","name":"click","input":{"ref":"a"}}}',
-        '{"type":"tool_use","toolUse":{"type":"tool_use","id":"t2","name":"click","input":{"ref":"b"}}}',
+        '{"type":"tool_use","toolUse":{"type":"tool_use","id":"t1","name":"click_element_by_uid","input":{"uid":"a"}}}',
+        '{"type":"tool_use","toolUse":{"type":"tool_use","id":"t2","name":"click_element_by_uid","input":{"uid":"b"}}}',
         '{"type":"done"}',
       ]
         .map((line) => `data: ${line}\n\n`)

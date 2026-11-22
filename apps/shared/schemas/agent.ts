@@ -174,10 +174,6 @@ export const LEGACY_MODEL_ALIASES = {
   "claude-opus-4-6": CLAUDE_MODELS.OPUS,
 } as const;
 
-export const LEGACY_MODEL_IDS = Object.keys(
-  LEGACY_MODEL_ALIASES
-) as Array<keyof typeof LEGACY_MODEL_ALIASES>;
-
 export const currentAgentModelSchema = z.enum([
   CLAUDE_MODELS.HAIKU,
   CLAUDE_MODELS.SONNET,
@@ -197,14 +193,22 @@ export const agentModelSchema = z.enum([
 
 export type CurrentAgentModel = z.infer<typeof currentAgentModelSchema>;
 
+function isLegacyModelId(
+  model: z.infer<typeof agentModelSchema>
+): model is keyof typeof LEGACY_MODEL_ALIASES {
+  return Object.hasOwn(LEGACY_MODEL_ALIASES, model);
+}
+
+export const LEGACY_MODEL_IDS = agentModelSchema.options.filter(isLegacyModelId);
+
 /**
  * Maps a client-supplied model ID to the model the API will actually call.
  * Everything downstream — pricing, credit deduction, usage rows — must use the
  * return value, never the raw request field, or billing drifts from real cost.
  */
-export function resolveAgentModel(model: string): CurrentAgentModel {
-  const alias = (LEGACY_MODEL_ALIASES as Record<string, CurrentAgentModel>)[model];
-  return alias ?? (model as CurrentAgentModel);
+export function resolveAgentModel(model: z.infer<typeof agentModelSchema>): CurrentAgentModel {
+  if (isLegacyModelId(model)) return LEGACY_MODEL_ALIASES[model];
+  return model;
 }
 
 export const imageDataSchema = z.object({

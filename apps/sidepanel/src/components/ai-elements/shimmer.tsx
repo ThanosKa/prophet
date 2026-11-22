@@ -2,11 +2,17 @@
 
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { type CSSProperties, type ElementType, memo, useMemo } from "react";
+import { memo, useMemo } from "react";
+
+declare module "react" {
+  interface CSSProperties {
+    "--spread"?: string;
+  }
+}
 
 export type TextShimmerProps = {
   children: string;
-  as?: ElementType;
+  as?: "p" | "span" | "div" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
   className?: string;
   duration?: number;
   spread?: number;
@@ -19,7 +25,7 @@ const ShimmerComponent = ({
   duration = 2,
   spread = 2,
 }: TextShimmerProps) => {
-  const MotionComponent = motion[Component as keyof typeof motion] as any;
+  const MotionComponent = motion[Component];
 
   const dynamicSpread = useMemo(
     () => (children?.length ?? 0) * spread,
@@ -35,13 +41,11 @@ const ShimmerComponent = ({
         className
       )}
       initial={{ backgroundPosition: "100% center" }}
-      style={
-        {
-          "--spread": `${dynamicSpread}px`,
-          backgroundImage:
-            "var(--bg), linear-gradient(var(--color-muted-foreground), var(--color-muted-foreground))",
-        } as CSSProperties
-      }
+      style={{
+        "--spread": `${dynamicSpread}px`,
+        backgroundImage:
+          "var(--bg), linear-gradient(var(--color-muted-foreground), var(--color-muted-foreground))",
+      }}
       transition={{
         repeat: Number.POSITIVE_INFINITY,
         duration,

@@ -5,7 +5,8 @@
  * instead of generic input simulation.
  */
 
-import { cdpCommander, type EvaluateResult } from './cdp-commander'
+import { cdpCommander } from './cdp-commander'
+import { evaluateResultSchema } from './cdp-results'
 import { logger } from '../logger'
 
 const UID_ATTRIBUTE = 'data-prophet-nodeid'
@@ -15,9 +16,9 @@ export type EditorType = 'monaco' | 'codemirror' | 'ace' | 'none'
 /**
  * Detect if an element is part of a rich text editor.
  */
-export async function detectEditor(tabId: number, uid: string): Promise<EditorType> {
+export async function detectEditor({ tabId, uid }: { tabId: number; uid: string }): Promise<EditorType> {
   try {
-    const result = await cdpCommander.sendCommand<EvaluateResult>(
+    const result = evaluateResultSchema.parse(await cdpCommander.sendCommand(
       tabId,
       'Runtime.evaluate',
       {
@@ -46,13 +47,15 @@ export async function detectEditor(tabId: number, uid: string): Promise<EditorTy
         `,
         returnByValue: true,
       }
-    )
+    ))
 
     if (result.exceptionDetails) {
       return 'none'
     }
 
-    return (result.result.value as EditorType) || 'none'
+    const detected = result.result.value
+    if (detected === 'monaco' || detected === 'codemirror' || detected === 'ace') return detected
+    return 'none'
   } catch {
     return 'none'
   }
@@ -61,7 +64,15 @@ export async function detectEditor(tabId: number, uid: string): Promise<EditorTy
 /**
  * Fill a Monaco editor with the given value.
  */
-export async function fillMonaco(tabId: number, uid: string, value: string): Promise<boolean> {
+export async function fillMonaco({
+  tabId,
+  uid,
+  value,
+}: {
+  tabId: number
+  uid: string
+  value: string
+}): Promise<boolean> {
   try {
     // Escape the value for use in JavaScript string
     const escapedValue = value
@@ -70,7 +81,7 @@ export async function fillMonaco(tabId: number, uid: string, value: string): Pro
       .replace(/\n/g, '\\n')
       .replace(/\r/g, '\\r')
 
-    const result = await cdpCommander.sendCommand<EvaluateResult>(
+    const result = evaluateResultSchema.parse(await cdpCommander.sendCommand(
       tabId,
       'Runtime.evaluate',
       {
@@ -112,7 +123,7 @@ export async function fillMonaco(tabId: number, uid: string, value: string): Pro
         `,
         returnByValue: true,
       }
-    )
+    ))
 
     return result.result.value === true
   } catch {
@@ -123,7 +134,15 @@ export async function fillMonaco(tabId: number, uid: string, value: string): Pro
 /**
  * Fill a CodeMirror editor with the given value.
  */
-export async function fillCodeMirror(tabId: number, uid: string, value: string): Promise<boolean> {
+export async function fillCodeMirror({
+  tabId,
+  uid,
+  value,
+}: {
+  tabId: number
+  uid: string
+  value: string
+}): Promise<boolean> {
   try {
     const escapedValue = value
       .replace(/\\/g, '\\\\')
@@ -131,7 +150,7 @@ export async function fillCodeMirror(tabId: number, uid: string, value: string):
       .replace(/\n/g, '\\n')
       .replace(/\r/g, '\\r')
 
-    const result = await cdpCommander.sendCommand<EvaluateResult>(
+    const result = evaluateResultSchema.parse(await cdpCommander.sendCommand(
       tabId,
       'Runtime.evaluate',
       {
@@ -171,7 +190,7 @@ export async function fillCodeMirror(tabId: number, uid: string, value: string):
         `,
         returnByValue: true,
       }
-    )
+    ))
 
     return result.result.value === true
   } catch {
@@ -182,7 +201,15 @@ export async function fillCodeMirror(tabId: number, uid: string, value: string):
 /**
  * Fill an Ace editor with the given value.
  */
-export async function fillAce(tabId: number, uid: string, value: string): Promise<boolean> {
+export async function fillAce({
+  tabId,
+  uid,
+  value,
+}: {
+  tabId: number
+  uid: string
+  value: string
+}): Promise<boolean> {
   try {
     const escapedValue = value
       .replace(/\\/g, '\\\\')
@@ -190,7 +217,7 @@ export async function fillAce(tabId: number, uid: string, value: string): Promis
       .replace(/\n/g, '\\n')
       .replace(/\r/g, '\\r')
 
-    const result = await cdpCommander.sendCommand<EvaluateResult>(
+    const result = evaluateResultSchema.parse(await cdpCommander.sendCommand(
       tabId,
       'Runtime.evaluate',
       {
@@ -227,7 +254,7 @@ export async function fillAce(tabId: number, uid: string, value: string): Promis
         `,
         returnByValue: true,
       }
-    )
+    ))
 
     return result.result.value === true
   } catch {
@@ -239,24 +266,28 @@ export async function fillAce(tabId: number, uid: string, value: string): Promis
  * Try to fill any detected editor type.
  * Returns true if editor was detected and filled, false otherwise.
  */
-export async function tryFillEditor(
-  tabId: number,
-  uid: string,
+export async function tryFillEditor({
+  tabId,
+  uid,
+  value,
+}: {
+  tabId: number
+  uid: string
   value: string
-): Promise<boolean> {
-  const editorType = await detectEditor(tabId, uid)
+}): Promise<boolean> {
+  const editorType = await detectEditor({ tabId, uid })
 
   switch (editorType) {
     case 'monaco':
       logger.log('EditorDetector', 'Monaco editor detected, using setValue')
-      return fillMonaco(tabId, uid, value)
+      return fillMonaco({ tabId, uid, value })
     case 'codemirror':
       logger.log('EditorDetector', 'CodeMirror editor detected, using setValue')
-      return fillCodeMirror(tabId, uid, value)
+      return fillCodeMirror({ tabId, uid, value })
     case 'ace':
       logger.log('EditorDetector', 'Ace editor detected, using setValue')
-      return fillAce(tabId, uid, value)
-    default:
+      return fillAce({ tabId, uid, value })
+    case 'none':
       return false
   }
 }

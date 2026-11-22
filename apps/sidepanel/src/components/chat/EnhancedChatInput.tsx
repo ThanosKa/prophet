@@ -36,7 +36,7 @@ import { AGENT_SIZE_LIMITS, imageDataSchema, type ImageData } from "@prophet/sha
 import { USER_FACING_TEXT } from "@/lib/user-facing-errors";
 
 // Resolving to false means the message was not sent, so the input keeps the draft.
-export type OnSend = (message: string, image?: ImageData) => void | Promise<boolean | void>;
+export type OnSend = (args: { message: string; image?: ImageData }) => void | Promise<boolean | void>;
 
 /** Refuses an image at attach time rather than starting a Run the server would reject. */
 function checkAttachedImage(file: File): FileCheck {
@@ -106,7 +106,7 @@ export function EnhancedChatInput({
         : file
         ? "Sent with attachments"
         : "";
-    return onSend(text, imageForApi);
+    return onSend({ message: text, image: imageForApi });
   };
 
   return (

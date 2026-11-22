@@ -293,7 +293,8 @@ describe('getPageInfo', () => {
 
   it('uses "Untitled" and an empty URL when the tab has neither', async () => {
     useActiveTab({ id: TAB_ID })
-    cdp.sendCommand.mockResolvedValue({ result: { value: { readyState: 'loading' } } })
+    const viewport = { width: 800, height: 600, scrollX: 0, scrollY: 0, scrollHeight: 600, scrollWidth: 800 }
+    cdp.sendCommand.mockResolvedValue({ result: { value: { readyState: 'loading', viewport } } })
 
     const result = await getPageInfo()
 
@@ -302,6 +303,7 @@ describe('getPageInfo', () => {
       url: '',
       tabId: TAB_ID,
       readyState: 'loading',
+      viewport,
     })
   })
 })

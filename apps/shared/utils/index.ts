@@ -25,7 +25,7 @@ export function formatDate(date: Date | string): string {
 /**
  * Truncate text with ellipsis
  */
-export function truncate(text: string, maxLength: number): string {
+export function truncate({ text, maxLength }: { text: string; maxLength: number }): string {
   if (text.length <= maxLength) return text
   return text.slice(0, maxLength - 3) + '...'
 }
@@ -46,7 +46,7 @@ export function sanitizeForLog(obj: unknown): unknown {
   }
 
   const sanitized: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(obj)) {
     if (typeof value === 'string' && value.length > 500) {
       sanitized[key] = `[LONG_STRING_TRUNCATED: ${value.length} chars]`
     } else if (typeof value === 'object' && value !== null) {

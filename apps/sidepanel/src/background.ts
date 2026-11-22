@@ -17,7 +17,7 @@ import {
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
 if (!publishableKey) {
-  console.error('[Background] VITE_CLERK_PUBLISHABLE_KEY is not set')
+  logger.error('Background', 'VITE_CLERK_PUBLISHABLE_KEY is not set')
 }
 
 // Agent state stored in memory (service worker)
@@ -31,7 +31,7 @@ const sidepanelPorts: Set<chrome.runtime.Port> = new Set()
 
 chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: true })
-  .catch((error) => console.error('[Background] Failed to set sidepanel behavior:', error))
+  .catch((error) => logger.error('Background', 'Failed to set sidepanel behavior:', error))
 
 // ============================================================================
 // Port-based Communication (for streaming events to sidepanel)
@@ -53,7 +53,7 @@ chrome.runtime.onConnect.addListener((port) => {
       port.postMessage({
         type: 'AGENT_EVENT',
         event,
-      } as AgentEventMessage)
+      } satisfies AgentEventMessage)
     }
 
     port.onDisconnect.addListener(() => {
@@ -104,7 +104,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'OPEN_SIDE_PANEL') {
     if (sender.tab?.id) {
       chrome.sidePanel.open({ tabId: sender.tab.id, windowId: sender.tab.windowId })
-        .catch((err) => console.error('[Background] Failed to open side panel:', err))
+        .catch((err) => logger.error('Background', 'Failed to open side panel:', err))
     }
     sendResponse({ success: true })
     return true
@@ -112,7 +112,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Tool execution request
   if (isExecuteToolRequest(message)) {
-    handleToolExecution(message, sendResponse)
+    handleToolExecution({ request: message, sendResponse })
     return true
   }
 
@@ -160,10 +160,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Tool Execution Handler
 // ============================================================================
 
-async function handleToolExecution(
-  request: ExecuteToolRequest,
+async function handleToolExecution({
+  request,
+  sendResponse,
+}: {
+  request: ExecuteToolRequest
   sendResponse: (response: ToolExecutionResponse) => void
-): Promise<void> {
+}): Promise<void> {
   const { toolName, toolInput, requestId } = request
   const startTime = Date.now()
 
@@ -224,7 +227,7 @@ async function handleToolExecution(
     sendResponse(response)
   } catch (error) {
     const durationMs = Date.now() - startTime
-    console.error(`[Background] Tool ${toolName} failed:`, error)
+    logger.error('Background', `Tool ${toolName} failed:`, error)
 
     const response: ToolExecutionResponse = {
       type: 'TOOL_RESULT',

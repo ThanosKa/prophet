@@ -112,10 +112,10 @@ export const Reasoning = React.memo(
 Reasoning.displayName = "Reasoning"
 
 export type ReasoningTriggerProps = React.ComponentProps<typeof CollapsibleTrigger> & {
-  getThinkingMessage?: (isStreaming: boolean, duration?: number) => React.ReactNode
+  getThinkingMessage?: (args: { isStreaming: boolean; duration?: number }) => React.ReactNode
 }
 
-const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
+const defaultGetThinkingMessage = ({ isStreaming, duration }: { isStreaming: boolean; duration?: number }) => {
   if (isStreaming || duration === 0) {
     return <Shimmer duration={1}>Thinking...</Shimmer>
   }
@@ -145,7 +145,7 @@ export const ReasoningTrigger = React.memo(
         {children ?? (
           <>
             <Brain className="size-4" />
-            {getThinkingMessage(isStreaming, duration)}
+            {getThinkingMessage({ isStreaming, duration })}
             <ChevronDown
               className={cn(
                 "size-4 transition-transform",

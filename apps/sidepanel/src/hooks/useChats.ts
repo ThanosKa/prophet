@@ -1,8 +1,10 @@
 import { useEffect, useMemo } from 'react'
-import { useMutation, useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useInfiniteQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { useChatStore } from '@/store/chatStore'
 import { apiClient } from '@/lib/api'
 import { USER_FACING_TEXT, UserFacingError } from '@/lib/user-facing-errors'
+
+type ChatsPage = NonNullable<Awaited<ReturnType<typeof apiClient.getChats>>['data']>
 
 export function useChats() {
   const queryClient = useQueryClient()
@@ -15,16 +17,16 @@ export function useChats() {
     isFetchingNextPage,
     isLoading,
     error,
-  } = useInfiniteQuery({
+  } = useInfiniteQuery<ChatsPage, Error, InfiniteData<ChatsPage, string | undefined>, string[], string | undefined>({
     queryKey: ['chats'],
     queryFn: async ({ pageParam }) => {
       const response = await apiClient.getChats(15, pageParam)
       if (response.data) {
         return response.data
       }
-      return { chats: [], nextCursor: null, hasMore: false }
+      return { chats: [], hasMore: false }
     },
-    initialPageParam: undefined as string | undefined,
+    initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor?.beforeUpdatedAt,
     staleTime: 1000 * 60 * 5,  // 5 minutes - consistent with other queries
   })

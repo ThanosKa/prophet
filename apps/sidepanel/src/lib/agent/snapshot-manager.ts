@@ -1,4 +1,10 @@
-import { cdpCommander, type AXNode, type AXTreeResult, type ResolveNodeResult, type CallFunctionOnResult } from './cdp-commander'
+import { cdpCommander } from './cdp-commander'
+import {
+  axTreeResultSchema,
+  callFunctionOnResultSchema,
+  resolveNodeResultSchema,
+  type AXNode,
+} from './cdp-results'
 import { type Snapshot, type SnapshotNode, INTERACTIVE_ROLES, SEMANTIC_ROLES } from './types'
 import { AGENT_SIZE_LIMITS, keepChars } from '@prophet/shared'
 
@@ -32,10 +38,10 @@ class SnapshotManagerClass {
     const url = tab.url || ''
     const title = tab.title || ''
 
-    const axTree = await cdpCommander.sendCommand<AXTreeResult>(
+    const axTree = axTreeResultSchema.parse(await cdpCommander.sendCommand(
       tabId,
       'Accessibility.getFullAXTree'
-    )
+    ))
 
     const nodeMap = new Map<string, AXNode>()
     for (const node of axTree.nodes) {
@@ -44,10 +50,10 @@ class SnapshotManagerClass {
 
     const interestingNodes = this.filterInterestingNodes(axTree.nodes, nodeMap)
 
-    await this.injectUids(tabId, interestingNodes)
+    const uids = await this.injectUids(tabId, interestingNodes)
 
     const idToNode = new Map<string, SnapshotNode>()
-    const root = this.buildSnapshotTree(interestingNodes, nodeMap, idToNode)
+    const root = this.buildSnapshotTree(interestingNodes, nodeMap, idToNode, uids)
 
     const snapshot: Snapshot = {
       root,
@@ -132,7 +138,8 @@ class SnapshotManagerClass {
 
     for (const node of nodes) {
       if (node.ignored) continue
-      if (!node.role?.value) continue
+      const roleValue = node.role?.value
+      if (typeof roleValue !== 'string' || !roleValue) continue
       if (!node.backendDOMNodeId) continue
 
       // Skip our Prophet overlay elements - the STOP button has text-transform: uppercase
@@ -142,7 +149,7 @@ class SnapshotManagerClass {
         if (lowerName === 'stop' || lowerName.includes('prophet-agent')) continue
       }
 
-      const role = node.role.value.toLowerCase()
+      const role = roleValue.toLowerCase()
 
       if (INTERACTIVE_ROLES.has(role) || SEMANTIC_ROLES.has(role)) {
         interesting.push(node)
@@ -169,7 +176,7 @@ class SnapshotManagerClass {
     return false
   }
 
-  private async injectUids(tabId: number, nodes: AXNode[]): Promise<void> {
+  private async injectUids(tabId: number, nodes: AXNode[]): Promise<Map<number, string>> {
     const existingUids = new Map<number, string>()
 
     const batchSize = 20
@@ -181,15 +188,15 @@ class SnapshotManagerClass {
           if (!node.backendDOMNodeId) return
 
           try {
-            const resolved = await cdpCommander.sendCommand<ResolveNodeResult>(
+            const resolved = resolveNodeResultSchema.parse(await cdpCommander.sendCommand(
               tabId,
               'DOM.resolveNode',
               { backendNodeId: node.backendDOMNodeId }
-            )
+            ))
 
             if (!resolved.object.objectId) return
 
-            const result = await cdpCommander.sendCommand<CallFunctionOnResult>(
+            const result = callFunctionOnResultSchema.parse(await cdpCommander.sendCommand(
               tabId,
               'Runtime.callFunctionOn',
               {
@@ -202,10 +209,10 @@ class SnapshotManagerClass {
                 }`,
                 returnByValue: true,
               }
-            )
+            ))
 
-            if (result.result.value) {
-              existingUids.set(node.backendDOMNodeId, result.result.value as string)
+            if (typeof result.result.value === 'string' && result.result.value) {
+              existingUids.set(node.backendDOMNodeId, result.result.value)
             }
 
             await cdpCommander.sendCommand(tabId, 'Runtime.releaseObject', {
@@ -231,15 +238,15 @@ class SnapshotManagerClass {
           const uid = generateUid()
 
           try {
-            const resolved = await cdpCommander.sendCommand<ResolveNodeResult>(
+            const resolved = resolveNodeResultSchema.parse(await cdpCommander.sendCommand(
               tabId,
               'DOM.resolveNode',
               { backendNodeId: node.backendDOMNodeId }
-            )
+            ))
 
             if (!resolved.object.objectId) return
 
-            await cdpCommander.sendCommand<CallFunctionOnResult>(
+            await cdpCommander.sendCommand(
               tabId,
               'Runtime.callFunctionOn',
               {
@@ -266,20 +273,14 @@ class SnapshotManagerClass {
       )
     }
 
-    for (const node of nodes) {
-      if (node.backendDOMNodeId) {
-        const uid = existingUids.get(node.backendDOMNodeId)
-        if (uid) {
-          (node as AXNode & { uid?: string }).uid = uid
-        }
-      }
-    }
+    return existingUids
   }
 
   private buildSnapshotTree(
     nodes: AXNode[],
     _nodeMap: Map<string, AXNode>,
-    idToNode: Map<string, SnapshotNode>
+    idToNode: Map<string, SnapshotNode>,
+    uids: Map<number, string>
   ): SnapshotNode {
     const root: SnapshotNode = {
       uid: 'root',
@@ -289,7 +290,7 @@ class SnapshotManagerClass {
     }
 
     for (const axNode of nodes) {
-      const uid = (axNode as AXNode & { uid?: string }).uid
+      const uid = axNode.backendDOMNodeId ? uids.get(axNode.backendDOMNodeId) : undefined
       if (!uid) continue
 
       const snapshotNode = this.axNodeToSnapshotNode(axNode, uid)
@@ -301,8 +302,10 @@ class SnapshotManagerClass {
   }
 
   private axNodeToSnapshotNode(axNode: AXNode, uid: string): SnapshotNode {
-    const role = axNode.role?.value || 'unknown'
-    const name = axNode.name?.value as string || ''
+    const roleValue = axNode.role?.value
+    const role = typeof roleValue === 'string' && roleValue ? roleValue : 'unknown'
+    const nameValue = axNode.name?.value
+    const name = typeof nameValue === 'string' ? nameValue : ''
     const value = axNode.value?.value
 
     const properties: Record<string, boolean | undefined> = {}
@@ -312,7 +315,7 @@ class SnapshotManagerClass {
         if (prop.name === 'disabled' && prop.value.value) properties.disabled = true
         if (prop.name === 'checked' && prop.value.value) properties.checked = true
         if (prop.name === 'selected' && prop.value.value) properties.selected = true
-        if (prop.name === 'expanded') properties.expanded = prop.value.value as boolean
+        if (prop.name === 'expanded') properties.expanded = typeof prop.value.value === 'boolean' ? prop.value.value : undefined
       }
     }
 

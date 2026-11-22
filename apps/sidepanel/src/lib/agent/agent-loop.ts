@@ -1,12 +1,16 @@
 import { z } from "zod";
+import { logger } from "../logger";
 import { executeToolViaBackground } from "./background-bridge";
 import {
   AGENT_ERROR_CODES,
   AGENT_SIZE_LIMITS,
   DEFAULT_AGENT_MODEL,
   MAX_AGENT_TURNS,
+  contentBlockSchema,
   runEndSchema,
   toolInputSchemas,
+  toolNameSchema,
+  toolUseSchema,
   type RunEnd,
 } from "@prophet/shared";
 import {
@@ -71,6 +75,88 @@ const CANCELLED_EVENT: AgentRunEvent = {
   type: "error",
   error: "Agent execution cancelled by user",
 };
+
+const optionalField = <T extends z.ZodTypeAny>(schema: T) => schema.optional().catch(undefined);
+
+const metricsSchema = z.object({
+  inputTokens: z.number(),
+  cacheCreationInputTokens: z.number().optional(),
+  cacheReadInputTokens: z.number().optional(),
+  outputTokens: z.number(),
+  costCents: z.number().optional(),
+  durationMs: z.number().optional(),
+  webSearchRequests: z.number().optional(),
+  webSearchCostCents: z.number().optional(),
+});
+
+const streamEventSchema = z
+  .object({
+    type: z.enum([
+      "content_delta",
+      "thinking_delta",
+      "tool_use_start",
+      "tool_use",
+      "tool_use_complete",
+      "done",
+      "error",
+      "session_created",
+      "metrics_update",
+      "execution_complete",
+      "tool_call_start",
+      "tool_call_complete",
+      "tool_call_error",
+      "web_search_start",
+      "web_search_results",
+      "web_search_error",
+      "citations",
+    ]),
+    content: optionalField(z.string()),
+    delta: optionalField(z.string()),
+    id: optionalField(z.string()),
+    name: optionalField(toolNameSchema),
+    toolUse: optionalField(toolUseSchema),
+    error: optionalField(z.string()),
+    code: optionalField(z.string()),
+    details: z.unknown().transform(parseErrorDetails),
+    toolUseId: optionalField(z.string()),
+    query: optionalField(z.string()),
+    sources: optionalField(
+      z.array(z.object({ url: z.string(), title: z.string(), pageAge: z.string().nullable().optional() }))
+    ),
+    errorCode: optionalField(z.string()),
+    citations: optionalField(z.array(z.object({ url: z.string(), title: z.string(), citedText: z.string() }))),
+    contentBlocks: optionalField(z.array(contentBlockSchema)),
+    stopReason: optionalField(z.string().nullable()),
+    usage: optionalField(
+      z.object({
+        inputTokens: z.number(),
+        cacheCreationInputTokens: z.number().optional(),
+        cacheReadInputTokens: z.number().optional(),
+        outputTokens: z.number(),
+        costCents: z.number().optional(),
+        webSearchRequests: z.number().optional(),
+        webSearchCostCents: z.number().optional(),
+      })
+    ),
+    metrics: optionalField(metricsSchema),
+    finalOutput: optionalField(z.string()),
+    sessionId: optionalField(z.string()),
+    toolCallId: optionalField(z.string()),
+    toolName: optionalField(toolNameSchema),
+    params: z.unknown(),
+    input: optionalField(z.record(z.unknown())),
+    result: z.unknown(),
+  })
+  .passthrough();
+
+function parseStreamEvent(payload: string): AgentStreamEvent | null {
+  try {
+    const parsed = streamEventSchema.safeParse(JSON.parse(payload));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
 
 type ToolInputCheck = { ok: true; input: Record<string, unknown> } | { ok: false; error: string };
 
@@ -146,7 +232,7 @@ async function* streamAgentChat({
       };
     } else {
       if (!errorData.error) {
-        console.error("[agent-loop] HTTP error without a JSON error body", response.status);
+        logger.error("agent-loop", "HTTP error without a JSON error body", response.status);
       }
       const retryAfterHeader = Number.parseInt(response.headers.get("Retry-After") ?? "", 10);
       const details =
@@ -167,7 +253,7 @@ async function* streamAgentChat({
 
   const reader = response.body?.getReader();
   if (!reader) {
-    console.error("[agent-loop] Response had no body", response.status);
+    logger.error("agent-loop", "Response had no body", response.status);
     yield {
       type: "error",
       error: USER_FACING_TEXT.serverUnavailable,
@@ -206,23 +292,15 @@ async function* streamAgentChat({
 
       for (const line of lines) {
         if (line.startsWith("data: ")) {
-          try {
-            const data = JSON.parse(line.slice(6)) as AgentStreamEvent;
-            yield data;
-          } catch {
-            // Skip malformed JSON
-          }
+          const data = parseStreamEvent(line.slice(6));
+          if (data) yield data;
         }
       }
     }
 
     if (buffer.startsWith("data: ")) {
-      try {
-        const data = JSON.parse(buffer.slice(6)) as AgentStreamEvent;
-        yield data;
-      } catch {
-        // Skip malformed JSON
-      }
+      const data = parseStreamEvent(buffer.slice(6));
+      if (data) yield data;
     }
   } finally {
     signal?.removeEventListener("abort", cancelBody);
@@ -236,7 +314,7 @@ async function* streamAgentChat({
 /** Runs one tool call, already checked against its tool's input schema, and reports what it did. */
 export type ToolRunner = (call: { name: ToolName; input: Record<string, unknown> }) => Promise<ToolExecutionResult>;
 
-const runToolViaBackground: ToolRunner = ({ name, input }) => executeToolViaBackground(name, input);
+const runToolViaBackground: ToolRunner = ({ name, input }) => executeToolViaBackground({ toolName: name, toolInput: input });
 
 /** Opens one Turn: sends its JSON request body and yields the Turn's events as they stream in. */
 export type TurnSource = (request: { body: string; signal?: AbortSignal }) => AsyncIterable<AgentStreamEvent>;
@@ -377,7 +455,7 @@ export async function* runAgentLoop({
               ? {
                   type: "tool_use" as const,
                   id: event.id,
-                  name: event.name as ToolName,
+                  name: event.name,
                   input: event.input || {},
                 }
               : null);
@@ -536,6 +614,16 @@ export async function* runAgentLoop({
             details: parseErrorDetails(event.details),
           };
           return;
+
+        case "tool_use_start":
+        case "tool_use_complete":
+        case "tool_call_complete":
+        case "tool_call_error":
+        case "web_search_start":
+        case "web_search_results":
+        case "web_search_error":
+        case "citations":
+          break;
       }
     }
 
@@ -546,7 +634,7 @@ export async function* runAgentLoop({
 
     // The server always ends a turn with done or error; anything else means a function timeout or proxy cut.
     if (!doneEvent) {
-      console.error("[agent-loop] Stream ended without done or error", { chatId, turnCount });
+      logger.error("agent-loop", "Stream ended without done or error", { chatId, turnCount });
       yield { type: "error", error: USER_FACING_TEXT.streamCut };
       return;
     }

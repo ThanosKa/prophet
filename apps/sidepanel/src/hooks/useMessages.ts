@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, type InfiniteData } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useChatStore } from '@/store/chatStore'
 import { apiClient } from '@/lib/api'
@@ -6,6 +6,8 @@ import { apiClient } from '@/lib/api'
 /**
  * Hook for fetching messages for a chat with pagination support
  */
+type MessagesPage = NonNullable<Awaited<ReturnType<typeof apiClient.getMessages>>['data']>
+
 export function useMessages(chatId: string | null) {
   const { setMessages, prependMessages } = useChatStore()
 
@@ -16,7 +18,7 @@ export function useMessages(chatId: string | null) {
     isFetchingNextPage,
     isLoading,
     error,
-  } = useInfiniteQuery({
+  } = useInfiniteQuery<MessagesPage, Error, InfiniteData<MessagesPage, string | undefined>, (string | null)[], string | undefined>({
     queryKey: ['messages', chatId],
     queryFn: async ({ pageParam }) => {
       if (!chatId) return { messages: [], nextCursor: null, hasMore: false }
@@ -26,7 +28,7 @@ export function useMessages(chatId: string | null) {
       }
       return { messages: [], nextCursor: null, hasMore: false }
     },
-    initialPageParam: undefined as string | undefined,
+    initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor?.beforeCreatedAt,
     enabled: !!chatId && !chatId.startsWith('draft-'),
     staleTime: 1000 * 60 * 5,  // 5 minutes - don't refetch on every focus

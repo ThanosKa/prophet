@@ -54,7 +54,7 @@ export default [
           message: "Take one object argument instead of positional params.",
         },
         {
-          selector: "VariableDeclarator > ArrowFunctionExpression[params.length>1]",
+          selector: "VariableDeclarator:not([id.name=/^(listener|onUpdated)$/]) > ArrowFunctionExpression[params.length>1]",
           message: "Take one object argument instead of positional params.",
         },
       ],
@@ -74,6 +74,18 @@ export default [
       "@typescript-eslint/consistent-type-assertions": "off",
       "@typescript-eslint/no-non-null-assertion": "off",
       "no-restricted-syntax": "off",
+    },
+  },
+  {
+    files: ["src/lib/logger.ts"],
+    rules: {
+      "no-console": "off",
+    },
+  },
+  {
+    files: ["vite.config.ts"],
+    rules: {
+      "@typescript-eslint/consistent-type-assertions": "off",
     },
   },
   {

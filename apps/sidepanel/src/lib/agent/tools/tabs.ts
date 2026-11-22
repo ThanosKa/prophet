@@ -31,14 +31,20 @@ export async function listTabs(): Promise<ToolExecutionResult> {
             return true
         })
 
-        const tabInfos: TabInfo[] = userTabs.map((tab) => ({
-            id: tab.id!,
-            title: tab.title || 'Untitled',
-            url: tab.url || '',
-            active: tab.active || false,
-            windowId: tab.windowId,
-            index: tab.index,
-        }))
+        const tabInfos: TabInfo[] = userTabs.flatMap((tab) =>
+            tab.id === undefined
+                ? []
+                : [
+                      {
+                          id: tab.id,
+                          title: tab.title || 'Untitled',
+                          url: tab.url || '',
+                          active: tab.active || false,
+                          windowId: tab.windowId,
+                          index: tab.index,
+                      },
+                  ]
+        )
 
         // Sort by window, then by index
         tabInfos.sort((a, b) => {

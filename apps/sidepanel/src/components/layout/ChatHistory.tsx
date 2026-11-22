@@ -74,8 +74,8 @@ export function ChatHistory({
         setDrawerOpen(false)
     }
 
-    const handleDelete = (e: React.MouseEvent, id: string) => {
-        e.stopPropagation()
+    const handleDelete = ({ event, id }: { event: React.MouseEvent; id: string }) => {
+        event.stopPropagation()
         onDeleteChat(id)
     }
 
@@ -178,7 +178,7 @@ export function ChatHistory({
                                                         <div
                                                             role="button"
                                                             tabIndex={0}
-                                                            onClick={(e) => handleDelete(e, chat.id)}
+                                                            onClick={(e) => handleDelete({ event: e, id: chat.id })}
                                                             className={cn(
                                                                 "shrink-0 flex-none p-1.5 rounded-md transition-all outline-none",
                                                                 "text-muted-foreground/60",

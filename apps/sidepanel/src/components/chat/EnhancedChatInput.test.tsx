@@ -82,7 +82,7 @@ describe('EnhancedChatInput image attach', () => {
     await submit()
 
     expect(onSend).toHaveBeenCalledTimes(1)
-    const [, image] = onSend.mock.calls[0]
+    const [{ image }] = onSend.mock.calls[0]
     expect(image?.mediaType).toBe('image/webp')
     expect(image?.base64.length).toBe(1_866_668)
   })

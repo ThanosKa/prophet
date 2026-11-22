@@ -1,4 +1,5 @@
 import type { OpenSidePanelRequest } from './lib/agent/messages'
+import { logger } from './lib/logger'
 
 // Agent Overlay State
 // ============================================================================
@@ -171,7 +172,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         return false
     }
   } catch (error) {
-    console.error('[Prophet Content] Error handling message:', error)
+    logger.error('Prophet Content', 'Error handling message:', error)
     sendResponse({ success: false, error: String(error) })
   }
 

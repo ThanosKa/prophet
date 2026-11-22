@@ -5,6 +5,8 @@ import { useAgentStore } from '@/store/agentStore'
 import { useReviewPromptStore } from '@/store/reviewPromptStore'
 import { runAgentLoop } from '@/lib/agent'
 import { config } from '@/lib/config'
+import { logger } from '@/lib/logger'
+import { isRecord } from '@/lib/utils'
 import { chatAdapter } from '@/lib/agent/chat-adapter'
 import { createMockAdapters } from '@/lib/agent/mock-agent'
 import { USER_FACING_TEXT, describeThrownError, parseErrorDetails, type ErrorInfo } from '@/lib/user-facing-errors'
@@ -196,8 +198,8 @@ export function useAgentChat() {
           if (event.type === 'tool_call_start' && event.toolCallId && event.toolName) {
             setCurrentToolCall({
               id: event.toolCallId,
-              name: event.toolName as ToolCall['name'],
-              input: (event.params as Record<string, unknown>) || {},
+              name: event.toolName,
+              input: isRecord(event.params) ? event.params : {},
             })
           } else if (event.type === 'tool_call_complete' || event.type === 'tool_call_error') {
             setCurrentToolCall(null)
@@ -218,7 +220,7 @@ export function useAgentChat() {
             updateLegacyMessage(chatId, uiMessage.id, {
               content: adapter.getTextContent(uiMessage),
               thinkingContent: uiMessage.thinkingContent,
-              toolCalls: toolCalls.length > 0 ? (toolCalls as ToolCall[]) : undefined,
+              toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
               parts: uiMessage.parts,
               inputTokens: uiMessage.inputTokens,
               outputTokens: uiMessage.outputTokens,
@@ -266,7 +268,7 @@ export function useAgentChat() {
         }
       } catch (err) {
         if (!signal.aborted) {
-          console.error('[useAgentChat] Agent run failed:', err)
+          logger.error('useAgentChat', 'Agent run failed:', err)
           setStatus('error')
           setError(describeThrownError(err))
         }
