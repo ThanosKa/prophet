@@ -8,9 +8,9 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: { absolute: 'Best Claude Extensions for Chrome (2026): Official + 4 More' },
+  title: { absolute: 'Claude Chrome Extension (2026): Official + 4 Alternatives' },
   description:
-    "Anthropic's official Claude in Chrome needs a paid Claude plan. Compare it with 4 more Claude extensions on models, automation and price, incl. pay-per-use.",
+    "The official Claude extension is Anthropic's Claude in Chrome: paid plans and Google Chrome only. How to install it, plus 4 Claude alternatives compared.",
   alternates: { canonical: '/best-claude-chrome-extensions' },
 }
 
@@ -28,7 +28,7 @@ const extensions = [
       'Browser automation with 19 tools for real page interaction',
       'Pay-per-use credits charged by the Claude tokens you use',
       'Open source for full transparency',
-      'Accessibility tree approach is faster and cheaper than screenshot methods',
+      'Reads pages as a text snapshot of the accessibility tree, with no screenshots',
       'Persistent chat history with conversation management',
     ],
     cons: [
@@ -41,21 +41,20 @@ const extensions = [
     rank: 2,
     name: 'Claude in Chrome (by Anthropic)',
     tagline: 'Official Anthropic browser extension',
-    url: 'https://www.anthropic.com/news/claude-for-chrome',
+    url: 'https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn',
     claudeModels: 'All public Claude models (per Anthropic, November 2026)',
     pricing: 'Included with paid Claude plans (Pro from $20/mo, Max, Ultra, Team, Enterprise); not on the Free plan',
-    description: 'Claude in Chrome is Anthropic\'s official browser extension. It provides Claude as a sidebar assistant that can see and interact with web pages using Computer Use, Anthropic\'s screenshot-based browser automation technology. Since it comes directly from Anthropic, it has the deepest integration with Claude\'s capabilities and is the first to receive new features. As of November 2026 the Anthropic help center lists it on paid plans only (Pro, Max, Ultra, Team and Enterprise), not on the Free plan. Computer Use works by taking screenshots of the page, analyzing them with Claude\'s vision capabilities, and then simulating mouse clicks at specific coordinates. This approach is flexible but inherently slower and more expensive in tokens than text-based methods. Claude in Chrome is the best choice for users already paying for a Claude subscription who want official support and the latest Claude features. However, the subscription-based pricing means you pay the same whether you use the extension for 5 minutes or 5 hours per day.',
+    description: 'Claude in Chrome is Anthropic\'s official browser extension, listed simply as "Claude" (publisher: Anthropic) in the Chrome Web Store. It opens Claude in a side panel next to the page you are on. Per Anthropic\'s help center (November 2026), it reads the text of web pages and, when you ask it to complete a task, controls the browser by clicking buttons, typing text and taking screenshots; you can also share a screenshot of part of the screen. It is available on paid Claude plans only (Pro, Max, Ultra, Team and Enterprise), not on the Free plan, and it runs only in Google Chrome: Anthropic says it is not supported on other Chromium-based browsers or on mobile. On Team and Enterprise plans, admins can turn it off or limit which sites it may visit. Claude in Chrome is the best choice if you already pay for a Claude plan and want first-party support. The trade-off is the subscription: you pay the same whether you use it for 5 minutes or 5 hours a day.',
     pros: [
       'Official Anthropic product with first-party support',
-      'Computer Use for visual browser automation',
-      'Deep Claude integration with the latest model features',
-      'Works within an existing paid Claude plan; no separate fee',
+      'Reads pages and acts on them: clicks, types, navigates and fills forms',
+      'Included in an existing paid Claude plan; no separate fee',
+      'Team and Enterprise admins can restrict sites or turn it off',
     ],
     cons: [
       'Not available on the Free Claude plan; Pro starts at $20/mo',
-      'Screenshot-based approach is slower than accessibility tree methods',
-      'Higher token costs due to vision processing (images are expensive)',
-      'Coordinate-based clicking is less precise than UID-based targeting',
+      'Google Chrome only: not supported on Edge, Brave, other Chromium browsers or mobile',
+      'Flat subscription, whether you use it a little or a lot',
     ],
   },
   {
@@ -132,7 +131,7 @@ const faqItems = [
   },
   {
     question: 'Is Prophet better than Claude in Chrome from Anthropic?',
-    answer: 'They serve different use cases. Claude in Chrome uses screenshot-based Computer Use for browser automation, which is flexible but slower and more expensive in tokens. Prophet uses the accessibility tree, which is faster, cheaper, and more deterministic for structured web interactions. Claude in Chrome benefits from first-party Anthropic support and always has the latest Claude features. Prophet offers pay-per-use pricing, open source transparency, and the choice between three Claude models. If you already pay for a Claude subscription, Claude in Chrome is convenient. If you want cost-efficient automation with model flexibility, Prophet is the better fit.',
+    answer: 'They serve different use cases. Both read the page and act on it. Per Anthropic, Claude in Chrome reads page text and controls the browser by clicking, typing and taking screenshots. Prophet reads a text snapshot of the page\'s accessibility tree and targets elements by ID, without screenshots. Claude in Chrome benefits from first-party Anthropic support and always has the latest Claude features. Prophet offers pay-per-use pricing, open source transparency, and the choice between three Claude models. If you already pay for a Claude subscription, Claude in Chrome is convenient. If you want cost-efficient automation with model flexibility, Prophet is the better fit.',
   },
   {
     question: 'Can I use Claude for free in a Chrome extension?',
@@ -140,11 +139,11 @@ const faqItems = [
   },
   {
     question: 'What are the best browser extensions for Claude AI in 2026?',
-    answer: 'As of November 2026, the strongest browser extensions for Claude AI are Prophet (Haiku 5.5, Sonnet 5.5, and Opus 5.5 with pay-per-use credits and accessibility-tree browser automation), Anthropic\'s official Claude in Chrome (needs a paid Claude plan, from $20/mo for Pro, and uses screenshot-based Computer Use), Monica and Sider (multi-model sidebars that include Claude alongside GPT and Gemini), and Harpa AI (bring-your-own-Anthropic-key for unmarked Claude API access). Prophet is the only one in this list built exclusively around Claude.',
+    answer: 'As of November 2026, the strongest browser extensions for Claude AI are Prophet (Haiku 5.5, Sonnet 5.5, and Opus 5.5 with pay-per-use credits and accessibility-tree browser automation), Anthropic\'s official Claude in Chrome (needs a paid Claude plan, from $20/mo for Pro, and runs only in Google Chrome), Monica and Sider (multi-model sidebars that include Claude alongside GPT and Gemini), and Harpa AI (bring-your-own-Anthropic-key for unmarked Claude API access). Prophet is the only one in this list built exclusively around Claude.',
   },
   {
     question: 'Which is the best Claude Chrome extension for 2026?',
-    answer: 'For most users in 2026, Prophet is the best Claude Chrome extension. It is the only sidebar that offers all three production Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5), pairs them with 19 browser automation tools, and bills pay-per-use against your actual Anthropic API spend instead of a flat monthly fee. If you already pay for a Claude plan, Anthropic\'s own Claude in Chrome is the safer pick for first-party support, though it costs more per browser-automation task because Computer Use sends screenshots on every step.',
+    answer: 'For most users in 2026, Prophet is the best Claude Chrome extension. It is the only sidebar that offers all three production Claude models (Haiku 5.5, Sonnet 5.5, Opus 5.5), pairs them with 19 browser automation tools, and bills pay-per-use against your actual Anthropic API spend instead of a flat monthly fee. If you already pay for a Claude plan, Anthropic\'s own Claude in Chrome is the natural pick for first-party support, as long as you use Google Chrome.',
   },
   {
     question: 'Is there a Claude AI Chrome extension in 2026?',
@@ -187,34 +186,51 @@ export default function BestClaudeChromeExtensionsPage() {
       <article className="py-20 flex-1">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-12">
-            <h1 className="text-4xl sm:text-5xl font-bold mb-4">Best Chrome Extensions for Claude AI in 2026 (Tested)</h1>
-            <p className="text-sm text-muted-foreground mb-6">Last updated: November 9, 2026</p>
+            <h1 className="text-4xl sm:text-5xl font-bold mb-4">Claude Chrome Extensions in 2026: the Official One and 4 Alternatives</h1>
+            <p className="text-sm text-muted-foreground mb-6">Last updated: November 23, 2026</p>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              The official Claude extension for Chrome is Anthropic&apos;s Claude in Chrome, and it only works on a paid Claude plan (Pro from $20/month, Max, Ultra, Team or Enterprise), not on the Free plan, as of November 2026. If you do not want a Claude subscription, Prophet gives you Claude Haiku, Sonnet and Opus in the Chrome side panel on pay-per-use credits, and Monica, Sider and Harpa AI offer Claude as one model among several. All five are compared below on Claude models, browser automation and price.
+              The official Claude extension for Chrome is Anthropic&apos;s Claude in Chrome, and it only works on a paid Claude plan (Pro from $20/month, Max, Ultra, Team or Enterprise), not on the Free plan, and it runs only in Google Chrome, as of November 2026. If you do not want a Claude subscription, Prophet gives you Claude Haiku, Sonnet and Opus in the Chrome side panel on pay-per-use credits, and Monica, Sider and Harpa AI offer Claude as one model among several. All five are compared below on Claude models, browser automation and price.
             </p>
             <p className="text-muted-foreground leading-relaxed mt-4">
-              We focused this comparison on how well each extension leverages Claude specifically. Having access to Claude is table stakes; what matters is the depth of integration, which Claude models are available, and whether the extension adds capabilities beyond what you get at claude.ai. Browser automation, pay-per-use pricing, and transparency about Claude API usage all factored into our rankings. Want to use Claude without paying for a subscription? See our guide on{' '}
+              We focused this comparison on how well each extension leverages Claude specifically. Having access to Claude is table stakes; what matters is the depth of integration, which Claude models are available, and whether the extension adds capabilities beyond what you get at claude.ai. Browser automation, pay-per-use pricing, and transparency about Claude API usage all factored into the rankings. Pricing and feature claims come from each vendor&apos;s own pages and store listings. Want to use Claude without paying for a subscription? See our guide on{' '}
               <Link href="/blog/is-claude-ai-free" className="text-primary hover:underline">every free way to use Claude AI in 2026</Link>.
             </p>
-            <aside className="mt-8 rounded-lg border border-border bg-muted/50 p-4 text-sm">
-              <p className="font-semibold mb-1">About our testing</p>
-              <p className="text-muted-foreground">
-                Rankings reflect hands-on use in May 2026 across three tasks: reading a long article and asking follow-up questions, drafting an email reply from a thread, and (where supported) extracting structured data from a page. Pricing and feature claims come from each vendor&apos;s published documentation. A controlled benchmark with measured latency and cost figures is in progress; this page will be updated when complete.
-              </p>
-            </aside>
           </div>
+
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-4">How to install the official Claude extension for Chrome</h2>
+            <p className="text-muted-foreground leading-relaxed mb-4">
+              Anthropic&apos;s help center gives these steps (November 2026). You need a paid Claude plan and Google Chrome.
+            </p>
+            <ol className="list-decimal pl-6 space-y-2 text-muted-foreground">
+              <li>Open Google Chrome. Other Chromium browsers such as Edge or Brave are not supported.</li>
+              <li>
+                Open the{' '}
+                <a href="https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn" className="text-primary hover:underline" rel="noopener noreferrer" target="_blank">Claude listing in the Chrome Web Store</a>{' '}
+                and click &quot;Add to Chrome&quot;.
+              </li>
+              <li>Sign in with your Claude account.</li>
+              <li>Pin the extension: click the puzzle-piece icon, then the pin next to &quot;Claude&quot;.</li>
+              <li>Grant the permissions it asks for. Reading pages needs the scripting permission; clicking and typing need the debugger permission.</li>
+            </ol>
+            <p className="text-muted-foreground leading-relaxed mt-4">
+              Several third-party extensions in the Chrome Web Store have &quot;Claude&quot; in their names. The official one is listed as &quot;Claude&quot; with Anthropic as the publisher. Source:{' '}
+              <a href="https://support.claude.com/en/articles/12012173" className="text-primary hover:underline" rel="noopener noreferrer" target="_blank">Get started with Claude in Chrome</a>.
+              On the Free plan, or in another browser, one of the four alternatives below is the way to get Claude next to the page.
+            </p>
+          </section>
 
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">Claude AI Chrome Extension Picks for 2026</h2>
             <p className="text-muted-foreground leading-relaxed">
-              If you are searching for a Claude AI Chrome extension in 2026 or the best Claude Chrome extension for 2026, the five options below are the production-quality picks worth installing today. Each one was tested in May 2026 against three real tasks: reading a long article and asking follow-up questions, drafting an email reply from a thread, and (where the extension supports it) extracting structured data from a page. Prophet, Anthropic&apos;s official Claude in Chrome, Monica, Sider, and Harpa AI cover the full spectrum from Claude-exclusive automation to multi-model sidebars to bring-your-own-key power-user setups.
+              If you are searching for a Claude AI Chrome extension in 2026 or the best Claude Chrome extension for 2026, the five options below are the picks worth installing today. Prophet, Anthropic&apos;s official Claude in Chrome, Monica, Sider, and Harpa AI cover the full spectrum from Claude-exclusive automation to multi-model sidebars to bring-your-own-key power-user setups.
             </p>
           </section>
 
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">Browser Extensions for Claude AI</h2>
             <p className="text-muted-foreground leading-relaxed">
-              "Chrome extension" and "browser extension" describe the same thing here — a small add-on that lives in Chrome (or a Chromium-based browser like Edge, Brave, or Arc) and surfaces Claude in a sidebar, side panel, or popup. All five browser extensions for Claude AI ranked below install from the Chrome Web Store and run on any Chromium browser. If you are on Firefox or Safari, none of the Claude-specific options below are available natively; the closest equivalents there are general-purpose AI sidebars without dedicated Claude integration.
+              "Chrome extension" and "browser extension" describe the same thing here — a small add-on that lives in Chrome (or a Chromium-based browser like Edge, Brave, or Arc) and surfaces Claude in a sidebar, side panel, or popup. All five browser extensions for Claude AI ranked below install from the Chrome Web Store. Four of them also run on other Chromium browsers; Anthropic&apos;s Claude in Chrome is the exception, as Anthropic supports it only in Google Chrome. If you are on Firefox or Safari, none of the Claude-specific options below are available natively; the closest equivalents there are general-purpose AI sidebars without dedicated Claude integration.
             </p>
           </section>
 
@@ -279,7 +295,7 @@ export default function BestClaudeChromeExtensionsPage() {
                 </thead>
                 <tbody className="text-muted-foreground">
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Prophet</td><td className="py-3 px-3">Haiku, Sonnet, Opus</td><td className="py-3 px-3">Yes (19 tools)</td><td className="py-3 px-3">Yes</td><td className="py-3 px-3">Free / $9.99</td></tr>
-                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Claude in Chrome</td><td className="py-3 px-3">All public models</td><td className="py-3 px-3">Computer Use</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Paid Claude plan ($20/mo+)</td></tr>
+                  <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Claude in Chrome</td><td className="py-3 px-3">All public models</td><td className="py-3 px-3">Yes (reads, clicks, types)</td><td className="py-3 px-3">No</td><td className="py-3 px-3">Paid Claude plan ($20/mo+)</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Monica</td><td className="py-3 px-3">Claude + GPT + Gemini</td><td className="py-3 px-3">No</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$9.90/mo</td></tr>
                   <tr className="border-b"><td className="py-3 px-3 font-medium text-foreground">Sider</td><td className="py-3 px-3">Claude + GPT + Gemini</td><td className="py-3 px-3">No</td><td className="py-3 px-3">No</td><td className="py-3 px-3">$8.99/mo</td></tr>
                   <tr><td className="py-3 px-3 font-medium text-foreground">Harpa AI</td><td className="py-3 px-3">Any (BYOK)</td><td className="py-3 px-3">Monitoring</td><td className="py-3 px-3">Partial</td><td className="py-3 px-3">Free (BYOK)</td></tr>
@@ -300,7 +316,7 @@ export default function BestClaudeChromeExtensionsPage() {
                 <Link href="/compare/prophet-vs-claude-in-chrome" className="text-primary font-medium hover:underline">
                   Prophet vs Claude in Chrome
                 </Link>{' '}
-                — the accessibility tree against Anthropic&apos;s screenshot-based Computer Use, and
+                — two ways of letting Claude act on a page, and
                 what the $20/mo subscription requirement actually buys you.
               </li>
               <li>
