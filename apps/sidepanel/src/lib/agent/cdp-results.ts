@@ -29,7 +29,7 @@ const axValueSchema = z.object({ type: z.string().optional(), value: z.unknown()
 
 export const axNodeSchema = z.object({
   nodeId: z.string(),
-  ignored: z.boolean(),
+  ignored: z.boolean().optional(),
   ignoredReasons: z.array(z.object({ name: z.string(), value: axValueSchema.optional() })).optional(),
   role: axValueSchema.optional(),
   name: axValueSchema.optional(),
@@ -42,7 +42,12 @@ export const axNodeSchema = z.object({
 })
 
 export const axTreeResultSchema = z.object({
-  nodes: z.array(axNodeSchema),
+  nodes: z.array(z.unknown()).transform((nodes) =>
+    nodes.flatMap((node) => {
+      const parsed = axNodeSchema.safeParse(node)
+      return parsed.success ? [parsed.data] : []
+    })
+  ),
 })
 
 export type RemoteObject = z.infer<typeof remoteObjectSchema>

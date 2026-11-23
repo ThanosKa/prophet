@@ -55,4 +55,26 @@ describe('background message guards', () => {
     expect(isAgentStateResponse({ type: 'AGENT_STATE', state: DEFAULT_AGENT_STATE })).toBe(true)
     expect(isAgentStateResponse({ type: 'AGENT_STATE', state: null })).toBe(false)
   })
+
+  it('rejects an AGENT_EVENT whose event has no known type', () => {
+    expect(isAgentEventMessage({ type: 'AGENT_EVENT', event: {} })).toBe(false)
+    expect(isAgentEventMessage({ type: 'AGENT_EVENT', event: { type: 'toString' } })).toBe(false)
+    expect(isAgentEventMessage({ type: 'AGENT_EVENT', event: { type: 'future_event' } })).toBe(false)
+  })
+
+  it('checks each field of an AGENT_STATE', () => {
+    const running = {
+      ...DEFAULT_AGENT_STATE,
+      isRunning: true,
+      chatId: '8f14e45f-ceea-467f-a0e6-1b2c3d4e5f60',
+      model: 'claude-sonnet-5-5',
+      currentToolExecution: { toolName: 'navigate', toolInput: { url: 'https://example.com' }, startedAt: 1763856000000 },
+      pendingEvents: [{ type: 'content_delta', delta: 'Opening' }],
+    }
+    expect(isAgentStateResponse({ type: 'AGENT_STATE', state: running })).toBe(true)
+    expect(isAgentStateResponse({ type: 'AGENT_STATE', state: { ...running, isRunning: 'yes' } })).toBe(false)
+    expect(isAgentStateResponse({ type: 'AGENT_STATE', state: { ...running, pendingEvents: [{}] } })).toBe(false)
+    expect(isAgentStateResponse({ type: 'AGENT_STATE', state: { ...running, currentToolExecution: {} } })).toBe(false)
+    expect(isAgentStateResponse({ type: 'AGENT_STATE', state: {} })).toBe(false)
+  })
 })

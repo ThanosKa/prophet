@@ -1,4 +1,9 @@
-import type { ContentBlockParam, MessageParam, ToolUseBlockParam, WebSearchToolRequestError } from '@anthropic-ai/sdk/resources/messages'
+import type {
+  ContentBlockParam,
+  MessageParam,
+  WebSearchResultBlockParam,
+  WebSearchToolResultBlockParamContent,
+} from '@anthropic-ai/sdk/resources/messages'
 import {
   AGENT_SIZE_LIMITS,
   HISTORY_BUDGET_TOKENS,
@@ -64,56 +69,50 @@ export function windowHistory(rows: HistoryRow[]): HistoryRow[] {
   return rows.slice(start)
 }
 
-type ToolCaller = NonNullable<ToolUseBlockParam['caller']>
-
-function isToolCaller(caller: { type: string; tool_id?: unknown }): caller is ToolCaller {
-  return caller.type === 'direct' || typeof caller.tool_id === 'string'
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }
 
-function toToolCaller(caller: { type: string } | undefined): ToolCaller | undefined {
-  return caller && isToolCaller(caller) ? caller : undefined
-}
-
-type SearchErrorCode = WebSearchToolRequestError['error_code']
-
-function isSearchErrorCode(code: string): code is SearchErrorCode {
+function isSearchResultParam(value: unknown): value is WebSearchResultBlockParam {
   return (
-    code === 'invalid_tool_input' ||
-    code === 'unavailable' ||
-    code === 'max_uses_exceeded' ||
-    code === 'too_many_requests' ||
-    code === 'query_too_long' ||
-    code === 'request_too_large'
+    isRecord(value) &&
+    value.type === 'web_search_result' &&
+    typeof value.url === 'string' &&
+    typeof value.title === 'string' &&
+    typeof value.encrypted_content === 'string'
   )
 }
 
-function toSearchErrorCode(code: string): SearchErrorCode {
-  return isSearchErrorCode(code) ? code : 'unavailable'
+function isSearchResultContent(value: unknown): value is WebSearchToolResultBlockParamContent {
+  if (Array.isArray(value)) return value.every(isSearchResultParam)
+  return isRecord(value) && value.type === 'web_search_tool_result_error' && typeof value.error_code === 'string'
 }
 
-function toContentBlockParam(block: ContentBlock): ContentBlockParam {
+function isContentBlockParam<T>(block: T): block is T & ContentBlockParam {
+  if (!isRecord(block)) return false
   switch (block.type) {
     case 'text':
-      return {
-        ...block,
-        citations:
-          block.citations && block.citations.map((citation) => ({ ...citation, title: citation.title ?? null })),
-      }
-    case 'tool_use':
-    case 'server_tool_use':
-      return { ...block, caller: toToolCaller(block.caller) }
-    case 'web_search_tool_result':
-      return {
-        ...block,
-        content: Array.isArray(block.content)
-          ? block.content
-          : { type: block.content.type, error_code: toSearchErrorCode(block.content.error_code) },
-        caller: toToolCaller(block.caller),
-      }
+      return typeof block.text === 'string'
     case 'thinking':
+      return typeof block.thinking === 'string' && typeof block.signature === 'string'
     case 'redacted_thinking':
-      return block
+      return typeof block.data === 'string'
+    case 'tool_use':
+      return typeof block.id === 'string' && typeof block.name === 'string' && 'input' in block
+    case 'server_tool_use':
+      return typeof block.id === 'string' && block.name === 'web_search' && 'input' in block
+    case 'web_search_tool_result':
+      return typeof block.tool_use_id === 'string' && isSearchResultContent(block.content)
+    default:
+      return false
   }
+}
+
+function echoedContent(content: ContentBlock[]): ContentBlockParam[] {
+  return content.map((block) => {
+    if (isContentBlockParam(block)) return block
+    throw new Error(`A ${block.type} block lacks a field Anthropic requires`)
+  })
 }
 
 function userContent({
@@ -186,7 +185,7 @@ export function buildAgentMessages({
       : render(rows)
 
   for (const turn of runTurns) {
-    messages.push({ role: 'assistant', content: turn.content.map(toContentBlockParam) })
+    messages.push({ role: 'assistant', content: echoedContent(turn.content) })
     if (turn.toolResults.length > 0) {
       messages.push({
         role: 'user',

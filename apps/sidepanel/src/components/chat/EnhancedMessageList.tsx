@@ -17,9 +17,9 @@ import {
   MessageActions,
   MessageResponse,
 } from "@/components/ai-elements/message";
-import { ToolCallCollapsible } from "./ToolCallCollapsible";
+import { ToolCallCollapsible, type ToolCallView } from "./ToolCallCollapsible";
 import { useStickToBottomContext } from "use-stick-to-bottom";
-import { readStoredToolCalls, type Message as MessageType, type ToolCall } from "@prophet/shared";
+import { readStoredToolCalls, type Message as MessageType } from "@prophet/shared";
 import { toolPartView, type MessagePart } from "@/lib/agent/chat-adapter";
 
 interface AgentMessage extends MessageType {
@@ -36,7 +36,7 @@ interface EnhancedMessageListProps {
   messages: AgentMessage[];
   isLoading?: boolean;
   isStreaming?: boolean;
-  currentToolCall?: ToolCall | null;
+  currentToolCall?: ToolCallView | null;
   hasMore?: boolean;
   isLoadingOlder?: boolean;
   onLoadOlder?: () => void;
@@ -61,7 +61,7 @@ function MessageWithActions({
 }: {
   message: AgentMessage;
   isStreaming?: boolean;
-  currentToolCall?: ToolCall | null;
+  currentToolCall?: ToolCallView | null;
 }) {
   const [copied, setCopied] = useState(false);
   const isAssistant = message.role === "assistant";

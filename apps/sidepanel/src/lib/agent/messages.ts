@@ -145,20 +145,75 @@ export function isStopAgentLoopRequest(msg: unknown): msg is StopAgentLoopReques
   return messageOfType('STOP_AGENT_LOOP')(msg)
 }
 
-export function isAgentEventMessage(msg: unknown): msg is AgentEventMessage {
+const AGENT_LOOP_EVENT_TYPES: Record<AgentLoopEvent['type'], true> = {
+  session_created: true,
+  session_resumed: true,
+  content_delta: true,
+  thinking_delta: true,
+  tool_call_start: true,
+  tool_call_complete: true,
+  tool_call_error: true,
+  web_search_start: true,
+  web_search_results: true,
+  web_search_error: true,
+  citations: true,
+  metrics_update: true,
+  execution_complete: true,
+  error: true,
+  done: true,
+}
+
+function isAgentLoopEvent(value: unknown): value is AgentLoopEvent {
   return (
-    messageOfType('AGENT_EVENT')(msg) &&
-    'event' in msg &&
-    typeof msg.event === 'object' &&
-    msg.event !== null
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    typeof value.type === 'string' &&
+    Object.hasOwn(AGENT_LOOP_EVENT_TYPES, value.type)
   )
 }
 
-export function isAgentStateResponse(msg: unknown): msg is AgentStateResponse {
+function isStringOrNull(value: unknown): value is string | null {
+  return value === null || typeof value === 'string'
+}
+
+function isToolExecution(value: unknown): value is AgentState['currentToolExecution'] {
   return (
-    messageOfType('AGENT_STATE')(msg) &&
-    'state' in msg &&
-    typeof msg.state === 'object' &&
-    msg.state !== null
+    value === null ||
+    (typeof value === 'object' &&
+      'toolName' in value &&
+      typeof value.toolName === 'string' &&
+      'startedAt' in value &&
+      typeof value.startedAt === 'number')
   )
+}
+
+function isAgentState(value: unknown): value is AgentState {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'isRunning' in value &&
+    typeof value.isRunning === 'boolean' &&
+    'chatId' in value &&
+    isStringOrNull(value.chatId) &&
+    'model' in value &&
+    isStringOrNull(value.model) &&
+    'currentToolExecution' in value &&
+    isToolExecution(value.currentToolExecution) &&
+    'pendingEvents' in value &&
+    Array.isArray(value.pendingEvents) &&
+    value.pendingEvents.every(isAgentLoopEvent) &&
+    'accumulatedContent' in value &&
+    typeof value.accumulatedContent === 'string' &&
+    'error' in value &&
+    isStringOrNull(value.error)
+  )
+}
+
+export function isAgentEventMessage(msg: unknown): msg is AgentEventMessage {
+  return messageOfType('AGENT_EVENT')(msg) && 'event' in msg && isAgentLoopEvent(msg.event)
+}
+
+export function isAgentStateResponse(msg: unknown): msg is AgentStateResponse {
+  return messageOfType('AGENT_STATE')(msg) && 'state' in msg && isAgentState(msg.state)
 }

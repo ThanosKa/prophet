@@ -42,4 +42,14 @@ describe('CDP result schemas', () => {
     expect(tree.nodes[0].backendDOMNodeId).toBe(7)
     expect(() => axTreeResultSchema.parse({})).toThrow()
   })
+
+  it('skips an accessibility node of an unexpected shape and keeps the rest of the tree', () => {
+    const tree = axTreeResultSchema.parse({
+      nodes: [
+        { nodeId: '1', ignored: false, role: { type: 'role', value: 'button' }, properties: [{ name: 'focused' }] },
+        { nodeId: '2', role: { type: 'role', value: 'link' }, backendDOMNodeId: 8 },
+      ],
+    })
+    expect(tree.nodes.map((node) => node.nodeId)).toEqual(['2'])
+  })
 })

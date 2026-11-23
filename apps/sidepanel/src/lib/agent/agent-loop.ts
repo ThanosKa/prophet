@@ -1,16 +1,15 @@
 import { z } from "zod";
 import { logger } from "../logger";
+import { isRecord } from "../utils";
 import { executeToolViaBackground } from "./background-bridge";
 import {
   AGENT_ERROR_CODES,
   AGENT_SIZE_LIMITS,
   DEFAULT_AGENT_MODEL,
   MAX_AGENT_TURNS,
-  contentBlockSchema,
   runEndSchema,
   toolInputSchemas,
   toolNameSchema,
-  toolUseSchema,
   type RunEnd,
 } from "@prophet/shared";
 import {
@@ -27,8 +26,6 @@ import type {
   ContentBlock,
   ImageData,
   AgentLoopEvent,
-  AgentTurn,
-  ToolName,
 } from "@prophet/shared";
 import type { ToolExecutionResult } from "./types";
 
@@ -36,7 +33,7 @@ interface StreamAgentChatOptions {
   chatId: string;
   model: AgentModel;
   userMessage?: string;
-  previousTurns?: AgentTurn[];
+  previousTurns?: RunTurn[];
   runId?: string;
   image?: ImageData;
   enableThinking?: boolean;
@@ -46,8 +43,14 @@ export type AgentRunErrorEvent = { type: "error"; error: string; code?: string; 
 
 export type RunNoticeReason = RunEnd | "superseded" | "request_too_large";
 
+type ToolCallEvent =
+  | { type: "tool_call_start"; toolName: string; params: unknown; toolCallId: string }
+  | { type: "tool_call_complete"; toolName: string; result: unknown; toolCallId: string }
+  | { type: "tool_call_error"; toolName: string; error: string; toolCallId: string };
+
 export type AgentRunEvent =
-  | Exclude<AgentLoopEvent, { type: "error" }>
+  | Exclude<AgentLoopEvent, { type: "error" | ToolCallEvent["type"] }>
+  | ToolCallEvent
   | AgentRunErrorEvent
   | { type: "output_truncated"; reducedForBalance: boolean }
   | { type: "run_notice"; reason: RunNoticeReason; message: string };
@@ -73,6 +76,24 @@ const CANCELLED_EVENT: AgentRunEvent = {
 };
 
 const optionalField = <T extends z.ZodTypeAny>(schema: T) => schema.optional().catch(undefined);
+
+type StreamedToolUse = { type?: unknown; id: string; name: string; input: Record<string, unknown> };
+
+type RunTurn = { content: unknown[]; toolResults: ToolResult[] };
+
+export type TurnEvent = Omit<AgentStreamEvent, "name" | "toolUse" | "contentBlocks"> & {
+  name?: string;
+  toolUse?: StreamedToolUse;
+  contentBlocks?: unknown[];
+};
+
+function isStreamedToolUse(value: unknown): value is StreamedToolUse {
+  return isRecord(value) && typeof value.id === "string" && typeof value.name === "string" && isRecord(value.input);
+}
+
+function blockList(value: unknown): unknown[] | undefined {
+  return Array.isArray(value) ? value : undefined;
+}
 
 const metricsSchema = z.object({
   inputTokens: z.number(),
@@ -109,8 +130,8 @@ const streamEventSchema = z
     content: optionalField(z.string()),
     delta: optionalField(z.string()),
     id: optionalField(z.string()),
-    name: optionalField(toolNameSchema),
-    toolUse: optionalField(toolUseSchema),
+    name: optionalField(z.string()),
+    toolUse: z.unknown().transform((value) => (isStreamedToolUse(value) ? value : undefined)),
     error: optionalField(z.string()),
     code: optionalField(z.string()),
     details: z.unknown().transform(parseErrorDetails),
@@ -121,7 +142,7 @@ const streamEventSchema = z
     ),
     errorCode: optionalField(z.string()),
     citations: optionalField(z.array(z.object({ url: z.string(), title: z.string(), citedText: z.string() }))),
-    contentBlocks: optionalField(z.array(contentBlockSchema)),
+    contentBlocks: z.unknown().transform(blockList),
     stopReason: optionalField(z.string().nullable()),
     usage: optionalField(
       z.object({
@@ -145,7 +166,7 @@ const streamEventSchema = z
   })
   .passthrough();
 
-function parseStreamEvent(payload: string): AgentStreamEvent | null {
+function parseStreamEvent(payload: string): TurnEvent | null {
   try {
     const parsed = streamEventSchema.safeParse(JSON.parse(payload));
     return parsed.success ? parsed.data : null;
@@ -156,8 +177,9 @@ function parseStreamEvent(payload: string): AgentStreamEvent | null {
 
 type ToolInputCheck = { ok: true; input: Record<string, unknown> } | { ok: false; error: string };
 
-function checkToolInput({ name, input }: { name: ToolName; input: Record<string, unknown> }): ToolInputCheck {
-  const schema = toolInputSchemas[name];
+function checkToolInput({ name, input }: { name: string; input: Record<string, unknown> }): ToolInputCheck {
+  const knownName = toolNameSchema.safeParse(name);
+  const schema = knownName.success ? toolInputSchemas[knownName.data] : undefined;
   if (!schema) return { ok: true, input };
   const parsed = schema.safeParse(input);
   if (parsed.success) return { ok: true, input: parsed.data };
@@ -173,7 +195,7 @@ async function* streamAgentChat({
   baseUrl: string;
   body: string;
   signal?: AbortSignal;
-}): AsyncGenerator<AgentStreamEvent> {
+}): AsyncGenerator<TurnEvent> {
   const tokenResponse = await chrome.runtime.sendMessage({
     type: "GET_AUTH_TOKEN",
   });
@@ -300,11 +322,11 @@ async function* streamAgentChat({
   }
 }
 
-export type ToolRunner = (call: { name: ToolName; input: Record<string, unknown> }) => Promise<ToolExecutionResult>;
+export type ToolRunner = (call: { name: string; input: Record<string, unknown> }) => Promise<ToolExecutionResult>;
 
 const runToolViaBackground: ToolRunner = ({ name, input }) => executeToolViaBackground({ toolName: name, toolInput: input });
 
-export type TurnSource = (request: { body: string; signal?: AbortSignal }) => AsyncIterable<AgentStreamEvent>;
+export type TurnSource = (request: { body: string; signal?: AbortSignal }) => AsyncIterable<TurnEvent>;
 
 export interface RunAgentLoopOptions {
   baseUrl: string;
@@ -329,7 +351,7 @@ export async function* runAgentLoop({
   runTool = runToolViaBackground,
   openTurn = (request) => streamAgentChat({ baseUrl, ...request }),
 }: RunAgentLoopOptions): AsyncGenerator<AgentRunEvent> {
-  const previousTurns: AgentTurn[] = [];
+  const previousTurns: RunTurn[] = [];
   let turnCount = 0;
   let toolResults: ToolResult[] = [];
   let isFirstRequest = true;
@@ -370,11 +392,11 @@ export async function* runAgentLoop({
     const isLastTurn = turnCount === maxTurns;
     let hasToolUse = false;
     let skippedToolCall = false;
-    let doneEvent: AgentStreamEvent | undefined;
+    let doneEvent: TurnEvent | undefined;
     let finalAnswer: AgentRunEvent | undefined;
-    let serverContent: ContentBlock[] | undefined;
+    let serverContent: unknown[] | undefined;
     toolResults = [];
-    const assistantContent: ContentBlock[] = [];
+    const assistantContent: Array<ContentBlock | StreamedToolUse> = [];
     let turnTextContent = "";
 
     for await (const event of openTurn({ body, signal })) {

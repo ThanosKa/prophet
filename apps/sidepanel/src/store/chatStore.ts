@@ -1,9 +1,9 @@
 import { create } from 'zustand'
-import type { Chat, Message, ToolCall } from '@prophet/shared'
-import type { MessagePart } from '@/lib/agent/chat-adapter'
+import type { Chat, Message } from '@prophet/shared'
+import type { MessagePart, ToolPartView } from '@/lib/agent/chat-adapter'
 
 export type StoredMessage = Message & {
-  toolCalls?: ToolCall[]
+  toolCalls?: ToolPartView[]
   parts?: MessagePart[]
 }
 

@@ -10,7 +10,8 @@ import { isRecord } from '@/lib/utils'
 import { chatAdapter } from '@/lib/agent/chat-adapter'
 import { createMockAdapters } from '@/lib/agent/mock-agent'
 import { USER_FACING_TEXT, describeThrownError, parseErrorDetails, type ErrorInfo } from '@/lib/user-facing-errors'
-import type { Message, ImageData, AgentStatus, ToolCall } from '@prophet/shared'
+import type { Message, ImageData, AgentStatus } from '@prophet/shared'
+import type { ToolCallView } from '@/components/chat/ToolCallCollapsible'
 
 export interface AgentMessage extends Message {
   streamingContent?: string
@@ -26,7 +27,7 @@ export function useAgentChat() {
   const [remaining, setRemaining] = useState<number | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [status, setStatus] = useState<AgentStatus>('idle')
-  const [currentToolCall, setCurrentToolCall] = useState<ToolCall | null>(null)
+  const [currentToolCall, setCurrentToolCall] = useState<ToolCallView | null>(null)
   const activeRunRef = useRef<AbortController | null>(null)
   const overlayTabIdRef = useRef<number | null>(null)
   const overlayListenersRef = useRef<{

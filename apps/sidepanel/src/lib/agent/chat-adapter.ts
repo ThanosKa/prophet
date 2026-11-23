@@ -1,4 +1,4 @@
-import type { AgentStatus, ToolName } from '@prophet/shared'
+import type { AgentStatus } from '@prophet/shared'
 import { isRecord } from '../utils'
 
 export interface TextPart {
@@ -9,7 +9,7 @@ export interface TextPart {
 export interface ToolPart {
     type: 'tool'
     toolCallId: string
-    toolName: ToolName
+    toolName: string
     state: 'executing' | 'completed' | 'error'
     input?: Record<string, unknown>
     output?: string
@@ -20,7 +20,7 @@ export type MessagePart = TextPart | ToolPart
 
 export interface ToolPartView {
     id: string
-    name: ToolName
+    name: string
     input: Record<string, unknown>
     result?: string
     isError: boolean
@@ -50,7 +50,7 @@ export interface AgentEvent {
     type: string
     delta?: string
     toolCallId?: string
-    toolName?: ToolName
+    toolName?: string
     params?: unknown
     result?: unknown
     error?: string

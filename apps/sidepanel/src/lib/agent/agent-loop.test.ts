@@ -222,6 +222,28 @@ describe('runAgentLoop', () => {
 
       expect(executeToolViaBackground).toHaveBeenCalledWith({ toolName: 'scroll_page', toolInput: { direction: 'down', pixels: 500 } })
     })
+
+    it('sends a tool call with a name it does not know to the executor and answers it with a tool_result', async () => {
+      const futureTool = { type: 'tool_use', id: 'toolu_01Future', name: 'read_clipboard', input: { format: 'text' } }
+      const { bodies } = serveTurns([
+        [{ type: 'tool_use', toolUse: futureTool }, { type: 'done', stopReason: 'tool_use' }],
+        [{ type: 'done', stopReason: 'end_turn' }],
+      ])
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: false, error: 'Unknown tool: read_clipboard' })
+
+      const events = await collect()
+
+      expect(executeToolViaBackground).toHaveBeenCalledWith({ toolName: 'read_clipboard', toolInput: { format: 'text' } })
+      expect(bodies()[1].previousTurns[0]).toEqual({
+        content: [futureTool],
+        toolResults: [
+          { type: 'tool_result', tool_use_id: 'toolu_01Future', content: 'Unknown tool: read_clipboard', is_error: true },
+        ],
+      })
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: 'tool_call_start', toolName: 'read_clipboard', toolCallId: 'toolu_01Future' })
+      )
+    })
   })
 
   describe('Run id', () => {
@@ -947,6 +969,22 @@ describe('runAgentLoop', () => {
           { type: 'done', stopReason: 'tool_use', contentBlocks },
         ],
         [{ type: 'content_delta', delta: 'Done.' }, { type: 'done', stopReason: 'end_turn' }],
+      ])
+
+      await run({ model: 'claude-sonnet-5-5', enableThinking: true })
+
+      expect(bodies()[1].previousTurns[0].content).toEqual(contentBlocks)
+    })
+
+    it("replays the server's content blocks as sent when one has a block type it does not know", async () => {
+      const contentBlocks = [
+        { type: 'thinking', thinking: 'The inbox is one click away.', signature: 'sig-abc' },
+        { type: 'container_upload', file_id: 'file_011CNha8iCJcU1wXNR6q4V8w' },
+        navigate,
+      ]
+      const { bodies } = serveTurns([
+        [{ type: 'tool_use', toolUse: navigate }, { type: 'done', stopReason: 'tool_use', contentBlocks }],
+        [{ type: 'done', stopReason: 'end_turn' }],
       ])
 
       await run({ model: 'claude-sonnet-5-5', enableThinking: true })

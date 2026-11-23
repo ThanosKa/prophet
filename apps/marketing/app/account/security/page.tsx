@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { useUser, useClerk } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
+import { attemptAsync } from '@prophet/shared'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -57,17 +57,14 @@ export default function SecurityPage() {
     if (!user) return
 
     setIsSaving(true)
-    try {
-      await user.update({
+    const saved = await attemptAsync(() =>
+      user.update({
         firstName,
         lastName,
       })
-      setIsEditing(false)
-    } catch {
-      toast.error('Failed to update profile')
-    } finally {
-      setIsSaving(false)
-    }
+    )
+    if (saved) setIsEditing(false)
+    setIsSaving(false)
   }
 
   const handleAvatarClick = () => {
@@ -79,27 +76,20 @@ export default function SecurityPage() {
     if (!file || !user) return
 
     setIsSaving(true)
-    try {
-      await user.setProfileImage({ file })
-    } catch {
-      toast.error('Failed to update avatar')
-    } finally {
-      setIsSaving(false)
-    }
+    await attemptAsync(() => user.setProfileImage({ file }))
+    setIsSaving(false)
   }
 
   const handleDeleteAccount = async () => {
     if (!user) return
 
     setIsDeleting(true)
-    try {
+    const deleted = await attemptAsync(async () => {
       await user.delete()
       await signOut()
       router.push('/')
-    } catch {
-      toast.error('Failed to delete account')
-      setIsDeleting(false)
-    }
+    })
+    if (!deleted) setIsDeleting(false)
   }
 
   if (!isLoaded) {
