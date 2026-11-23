@@ -117,6 +117,4 @@ export const SEMANTIC_ROLES = new Set([
 
 export type { ToolCall };
 
-// Re-export AgentLoopEvent for backward compatibility in this file if needed, 
-// but we should ideally use the shared one.
 export type AgentLoopEvent = SharedAgentLoopEvent;

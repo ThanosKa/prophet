@@ -19,9 +19,9 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const rateLimitResult = await checkRateLimit(userId, 'api')
+    const rateLimitResult = await checkRateLimit({ userId, type: 'api' })
     if (!rateLimitResult.success) {
-      return NextResponse.json(errorBody('Too many requests', 'RATE_LIMIT_EXCEEDED'), {
+      return NextResponse.json(errorBody({ message: 'Too many requests', code: 'RATE_LIMIT_EXCEEDED' }), {
         status: 429,
         headers: {
           'X-RateLimit-Limit': rateLimitResult.limit?.toString() || '',
@@ -51,7 +51,7 @@ export async function POST() {
       line_items: [{ price: EXTRA_CREDITS.priceId, quantity: 1 }],
       success_url: `${appUrl}/account/billing`,
       cancel_url: `${appUrl}/account/billing`,
-      allow_promotion_codes: false, // No promo codes for one-time credits
+      allow_promotion_codes: false,
       metadata: {
         userId,
         type: 'extra_credits',

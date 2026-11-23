@@ -1,10 +1,15 @@
-import { cdpCommander, type EvaluateResult } from './cdp-commander'
+import { z } from 'zod'
+import { cdpCommander } from './cdp-commander'
+import { evaluateResultSchema } from './cdp-results'
 import { snapshotManager } from './snapshot-manager'
 import { tryFillEditor } from './editor-detector'
 import { type BoundingBox } from './types'
 import { logger } from '../logger'
 
 const UID_ATTRIBUTE = 'data-prophet-nodeid'
+
+const coverCheckSchema = z.object({ isCovered: z.boolean(), coveredBy: z.string().optional() })
+const boundingBoxSchema = z.object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() })
 
 export class SmartLocator {
   async click(tabId: number, uid: string, doubleClick: boolean = false): Promise<void> {
@@ -35,7 +40,6 @@ export class SmartLocator {
 
     const clickCount = doubleClick ? 2 : 1
 
-    // CDP "Trusted" click - simulates real hardware mouse
     await cdpCommander.sendCommand(tabId, 'Input.dispatchMouseEvent', {
       type: 'mousePressed',
       x: centerX,
@@ -44,7 +48,6 @@ export class SmartLocator {
       clickCount,
     })
 
-    // Small delay for React/Angular apps to register the click
     await new Promise(r => setTimeout(r, 50))
 
     await cdpCommander.sendCommand(tabId, 'Input.dispatchMouseEvent', {
@@ -56,12 +59,9 @@ export class SmartLocator {
     })
   }
 
-  /**
-   * Uses document.elementFromPoint to check what's actually at the click coordinates.
-   */
   private async isElementCovered(tabId: number, uid: string, x: number, y: number): Promise<boolean> {
     try {
-      const result = await cdpCommander.sendCommand<EvaluateResult>(tabId, 'Runtime.evaluate', {
+      const result = evaluateResultSchema.parse(await cdpCommander.sendCommand(tabId, 'Runtime.evaluate', {
         expression: `
           (function() {
             const target = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
@@ -86,21 +86,22 @@ export class SmartLocator {
           })()
         `,
         returnByValue: true,
-      })
+      }))
 
       if (result.exceptionDetails) {
-        return false // If check fails, proceed with normal click
+        return false
       }
 
-      const value = result.result.value as { isCovered: boolean; coveredBy?: string }
+      const value = coverCheckSchema.safeParse(result.result.value)
+      if (!value.success) return false
 
-      if (value.isCovered && value.coveredBy) {
-        logger.warn('SmartLocator', `Element covered by <${value.coveredBy}>`)
+      if (value.data.isCovered && value.data.coveredBy) {
+        logger.warn('SmartLocator', `Element covered by <${value.data.coveredBy}>`)
       }
 
-      return value.isCovered
+      return value.data.isCovered
     } catch {
-      return false // If check fails, proceed with normal click
+      return false
     }
   }
 
@@ -112,14 +113,13 @@ export class SmartLocator {
 
     await this.scrollIntoView(tabId, uid)
 
-    const filledViaEditor = await tryFillEditor(tabId, uid, value)
+    const filledViaEditor = await tryFillEditor({ tabId, uid, value })
     if (filledViaEditor) {
       logger.log('SmartLocator', 'Filled via editor API')
       await this.dispatchInputEvents(tabId, uid, value)
       return
     }
 
-    // Generic fill for standard inputs
     await this.focusElement(tabId, uid)
     await this.selectAll(tabId)
 
@@ -218,7 +218,7 @@ export class SmartLocator {
         backendNodeId: node.backendDOMNodeId,
       })
     } catch {
-      await cdpCommander.sendCommand<EvaluateResult>(tabId, 'Runtime.evaluate', {
+      await cdpCommander.sendCommand(tabId, 'Runtime.evaluate', {
         expression: `
           (function() {
             const el = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
@@ -235,7 +235,7 @@ export class SmartLocator {
   }
 
   private async getBoundingBox(tabId: number, uid: string): Promise<BoundingBox | null> {
-    const result = await cdpCommander.sendCommand<EvaluateResult>(tabId, 'Runtime.evaluate', {
+    const result = evaluateResultSchema.parse(await cdpCommander.sendCommand(tabId, 'Runtime.evaluate', {
       expression: `
         (function() {
           const el = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
@@ -250,17 +250,18 @@ export class SmartLocator {
         })()
       `,
       returnByValue: true,
-    })
+    }))
 
     if (result.exceptionDetails || !result.result.value) {
       return null
     }
 
-    return result.result.value as BoundingBox
+    const box = boundingBoxSchema.safeParse(result.result.value)
+    return box.success ? box.data : null
   }
 
   private async focusElement(tabId: number, uid: string): Promise<void> {
-    await cdpCommander.sendCommand<EvaluateResult>(tabId, 'Runtime.evaluate', {
+    await cdpCommander.sendCommand(tabId, 'Runtime.evaluate', {
       expression: `
         (function() {
           const el = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
@@ -295,7 +296,7 @@ export class SmartLocator {
   }
 
   private async dispatchInputEvents(tabId: number, uid: string, _value: string): Promise<void> {
-    await cdpCommander.sendCommand<EvaluateResult>(tabId, 'Runtime.evaluate', {
+    await cdpCommander.sendCommand(tabId, 'Runtime.evaluate', {
       expression: `
         (function() {
           const el = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');
@@ -310,7 +311,7 @@ export class SmartLocator {
   }
 
   private async syntheticClick(tabId: number, uid: string, doubleClick: boolean): Promise<void> {
-    await cdpCommander.sendCommand<EvaluateResult>(tabId, 'Runtime.evaluate', {
+    await cdpCommander.sendCommand(tabId, 'Runtime.evaluate', {
       expression: `
         (function() {
           const el = document.querySelector('[${UID_ATTRIBUTE}="${uid}"]');

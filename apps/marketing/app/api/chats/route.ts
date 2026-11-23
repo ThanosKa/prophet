@@ -14,13 +14,13 @@ export async function GET(req: Request) {
     const auth_ = await auth()
     userId = auth_.userId
     if (!userId) {
-      return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
+      return NextResponse.json(error({ message: 'Unauthorized', code: 'UNAUTHORIZED' }), { status: 401 })
     }
 
-    const rateLimitResult = await checkRateLimit(userId, 'api')
+    const rateLimitResult = await checkRateLimit({ userId, type: 'api' })
     if (!rateLimitResult.success) {
       return NextResponse.json(
-        error('Too many requests', 'RATE_LIMIT_EXCEEDED'),
+        error({ message: 'Too many requests', code: 'RATE_LIMIT_EXCEEDED' }),
         {
           status: 429,
           headers: {
@@ -38,7 +38,7 @@ export async function GET(req: Request) {
 
     const parsedLimit = parseInt(limitParam || '50')
     if (isNaN(parsedLimit)) {
-      return NextResponse.json(error('Invalid limit parameter', 'INVALID_PARAM'), { status: 400 })
+      return NextResponse.json(error({ message: 'Invalid limit parameter', code: 'INVALID_PARAM' }), { status: 400 })
     }
     const limit = Math.min(Math.max(parsedLimit, 1), 200)
 
@@ -46,7 +46,7 @@ export async function GET(req: Request) {
     if (beforeUpdatedAtParam) {
       beforeUpdatedAt = new Date(beforeUpdatedAtParam)
       if (isNaN(beforeUpdatedAt.getTime())) {
-        return NextResponse.json(error('Invalid date format', 'INVALID_DATE'), { status: 400 })
+        return NextResponse.json(error({ message: 'Invalid date format', code: 'INVALID_DATE' }), { status: 400 })
       }
     }
 
@@ -76,7 +76,7 @@ export async function GET(req: Request) {
   } catch (err) {
     logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to fetch chats')
     return NextResponse.json(
-      error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'),
+      error({ message: INTERNAL_ERROR_MESSAGE, code: 'INTERNAL_ERROR' }),
       { status: 500 }
     )
   }
@@ -88,13 +88,13 @@ export async function POST(req: Request) {
     const auth_ = await auth()
     userId = auth_.userId
     if (!userId) {
-      return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
+      return NextResponse.json(error({ message: 'Unauthorized', code: 'UNAUTHORIZED' }), { status: 401 })
     }
 
-    const rateLimitResult = await checkRateLimit(userId, 'api')
+    const rateLimitResult = await checkRateLimit({ userId, type: 'api' })
     if (!rateLimitResult.success) {
       return NextResponse.json(
-        error('Too many requests', 'RATE_LIMIT_EXCEEDED'),
+        error({ message: 'Too many requests', code: 'RATE_LIMIT_EXCEEDED' }),
         {
           status: 429,
           headers: {
@@ -111,7 +111,7 @@ export async function POST(req: Request) {
 
     if (!validation.success) {
       return NextResponse.json(
-        error('Invalid request body', 'VALIDATION_ERROR', validation.error.issues),
+        error({ message: 'Invalid request body', code: 'VALIDATION_ERROR', details: validation.error.issues }),
         { status: 400 }
       )
     }
@@ -131,7 +131,7 @@ export async function POST(req: Request) {
   } catch (err) {
     logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to create chat')
     return NextResponse.json(
-      error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'),
+      error({ message: INTERNAL_ERROR_MESSAGE, code: 'INTERNAL_ERROR' }),
       { status: 500 }
     )
   }

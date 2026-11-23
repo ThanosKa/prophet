@@ -16,8 +16,6 @@ interface WorkflowStep {
   tools: string[]
 }
 
-// Per-use-case account of what Prophet actually executes in the browser. Tool names
-// are the real handlers in lib/agent/tools.ts, so this stays verifiable if they change.
 const workflows: Record<string, WorkflowStep[]> = {
   research: [
     { action: 'Reads the page you are on', detail: 'Prophet builds an accessibility-tree snapshot of the article, paper, or docs page instead of screenshotting it, so headings, tables, and footnotes arrive as structured text.', tools: ['take_snapshot', 'get_page_content'] },

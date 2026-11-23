@@ -91,7 +91,6 @@ export default async function AlternativePage({ params }: Props) {
             </p>
           </div>
 
-          {/* Why Users Switch */}
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">
               Why Users Switch From {data.competitor}
@@ -115,7 +114,6 @@ export default async function AlternativePage({ params }: Props) {
             </div>
           </section>
 
-          {/* How Prophet Solves These Problems */}
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">
               How Prophet Solves These Problems
@@ -139,8 +137,7 @@ export default async function AlternativePage({ params }: Props) {
             </div>
           </section>
 
-          {/* Condensed Comparison Table */}
-          {condensedMatrix.length > 0 && (
+          {comparison && condensedMatrix.length > 0 && (
             <section className="mb-12">
               <h2 className="text-2xl font-bold mb-4">
                 Prophet vs {data.competitor} at a Glance
@@ -149,7 +146,7 @@ export default async function AlternativePage({ params }: Props) {
                 A condensed comparison of the key differences. For the full
                 breakdown, see the{' '}
                 <Link
-                  href={`/compare/${comparison!.slug}`}
+                  href={`/compare/${comparison.slug}`}
                   className="text-primary hover:underline"
                 >
                   detailed comparison page
@@ -177,7 +174,6 @@ export default async function AlternativePage({ params }: Props) {
             </section>
           )}
 
-          {/* Switching Takes 2 Minutes */}
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">
               Switching Takes 2 Minutes
@@ -220,7 +216,6 @@ export default async function AlternativePage({ params }: Props) {
         </div>
       </div>
 
-      {/* CTA */}
       <section className="py-16 text-center border-t">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold mb-4">

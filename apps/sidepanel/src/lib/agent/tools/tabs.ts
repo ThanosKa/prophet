@@ -12,17 +12,12 @@ interface TabInfo {
     index: number
 }
 
-/**
- * List all open browser tabs.
- * Filters out extension and chrome:// pages.
- */
 export async function listTabs(): Promise<ToolExecutionResult> {
     const startTime = Date.now()
 
     try {
         const tabs = await chrome.tabs.query({})
 
-        // Filter out extension pages and chrome:// URLs
         const userTabs = tabs.filter((tab) => {
             if (!tab.url) return false
             if (tab.url.startsWith('chrome://')) return false
@@ -31,16 +26,21 @@ export async function listTabs(): Promise<ToolExecutionResult> {
             return true
         })
 
-        const tabInfos: TabInfo[] = userTabs.map((tab) => ({
-            id: tab.id!,
-            title: tab.title || 'Untitled',
-            url: tab.url || '',
-            active: tab.active || false,
-            windowId: tab.windowId,
-            index: tab.index,
-        }))
+        const tabInfos: TabInfo[] = userTabs.flatMap((tab) =>
+            tab.id === undefined
+                ? []
+                : [
+                      {
+                          id: tab.id,
+                          title: tab.title || 'Untitled',
+                          url: tab.url || '',
+                          active: tab.active || false,
+                          windowId: tab.windowId,
+                          index: tab.index,
+                      },
+                  ]
+        )
 
-        // Sort by window, then by index
         tabInfos.sort((a, b) => {
             if (a.windowId !== b.windowId) return a.windowId - b.windowId
             return a.index - b.index
@@ -64,15 +64,10 @@ export async function listTabs(): Promise<ToolExecutionResult> {
     }
 }
 
-/**
- * Switch to a different tab.
- * Also focuses the window containing the tab.
- */
 export async function switchTab(input: { tabId: number }): Promise<ToolExecutionResult> {
     const startTime = Date.now()
 
     try {
-        // Validate tab exists
         const tab = await chrome.tabs.get(input.tabId)
         if (!tab) {
             return {
@@ -82,10 +77,8 @@ export async function switchTab(input: { tabId: number }): Promise<ToolExecution
             }
         }
 
-        // Activate the tab
         await chrome.tabs.update(input.tabId, { active: true })
 
-        // Focus the window containing the tab
         if (tab.windowId) {
             await chrome.windows.update(tab.windowId, { focused: true })
         }
@@ -104,15 +97,10 @@ export async function switchTab(input: { tabId: number }): Promise<ToolExecution
     }
 }
 
-/**
- * Close a tab and clean up associated resources.
- * Detaches debugger and clears snapshot.
- */
 export async function closeTab(input: { tabId: number }): Promise<ToolExecutionResult> {
     const startTime = Date.now()
 
     try {
-        // Validate tab exists
         const tab = await chrome.tabs.get(input.tabId)
         if (!tab) {
             return {
@@ -124,15 +112,12 @@ export async function closeTab(input: { tabId: number }): Promise<ToolExecutionR
 
         const tabTitle = tab.title || 'Untitled'
 
-        // Clean up debugger if attached
         if (debuggerManager.isAttached(input.tabId)) {
             await debuggerManager.detach(input.tabId)
         }
 
-        // Clean up snapshot
         snapshotManager.clearSnapshot(input.tabId)
 
-        // Close the tab
         await chrome.tabs.remove(input.tabId)
 
         return {
@@ -149,10 +134,6 @@ export async function closeTab(input: { tabId: number }): Promise<ToolExecutionR
     }
 }
 
-/**
- * Open a URL in a new tab.
- * Optionally switch to the new tab immediately.
- */
 export async function openNewTab(input: {
     url: string
     active?: boolean
@@ -161,14 +142,12 @@ export async function openNewTab(input: {
 
     try {
         let url = input.url
-        // Normalize URL
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
             url = `https://${url}`
         }
 
         const active = input.active ?? true
 
-        // Create the new tab and wait for it to finish loading
         const newTab = await openTabAndWaitForLoad({
             timeoutMs: 30000,
             open: () => chrome.tabs.create({ url, active }),
@@ -182,7 +161,6 @@ export async function openNewTab(input: {
             }
         }
 
-        // Get updated tab info
         const updatedTab = await chrome.tabs.get(newTab.id)
 
         return {

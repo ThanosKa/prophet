@@ -1,6 +1,3 @@
-// Agent-specific type definitions for browser automation
-// Note: ToolName, ToolUse, ToolResult, ContentBlock, AgentChatRequest are exported from schemas/agent.ts
-
 import type { ToolName, ToolUse, ContentBlock } from "../schemas/agent";
 
 export interface WebSearchSource {
@@ -26,7 +23,6 @@ export interface ToolDefinition {
 }
 
 export interface AgentMetrics {
-  // Whole prompt: uncached input plus cache writes and cache reads.
   inputTokens: number;
   cacheCreationInputTokens?: number;
   cacheReadInputTokens?: number;

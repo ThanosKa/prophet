@@ -1,9 +1,3 @@
-/**
- * Fake Anthropic streams for tests: the stubbed Turn, its block events and the openable
- * gate. Importing this module mocks nothing and loads neither the database nor the route,
- * so any test can borrow it.
- */
-
 export type ApiBlock = { type: string } & Record<string, unknown>
 export type StopReason = 'tool_use' | 'end_turn' | 'max_tokens' | 'refusal' | 'pause_turn'
 export type Usage = {
@@ -25,7 +19,6 @@ export const toolUse = ({
   input: Record<string, unknown>
 }): ApiBlock => ({ type: 'tool_use', id, name, input })
 
-/** The stream events Anthropic sends for one finished content block. */
 export function* blockEvents({ index, block }: { index: number; block: ApiBlock }) {
   if (block.type === 'tool_use') {
     yield { type: 'content_block_start', index, content_block: { ...block, input: {} } }
@@ -43,12 +36,10 @@ export function* blockEvents({ index, block }: { index: number; block: ApiBlock 
   yield { type: 'content_block_stop', index }
 }
 
-/** One streamed text block: start, a single delta, stop. */
 export function* textBlockEvents({ index, value }: { index: number; value: string }) {
   yield* blockEvents({ index, block: text(value) })
 }
 
-/** One streamed client tool call; `partialJson` lets a test cut the input off mid-way. */
 export function* toolUseBlockEvents({
   index,
   id,
@@ -67,10 +58,6 @@ export function* toolUseBlockEvents({
 
 export const DEFAULT_USAGE: Usage = { input_tokens: 1000, output_tokens: 50 }
 
-/**
- * One Anthropic response: streams `content` (or the given block `events`), then reports
- * `content` from finalMessage(). With a `gate`, the Turn stays in flight until it opens.
- */
 export function anthropicTurn({
   content,
   stopReason,

@@ -60,9 +60,12 @@ import type { MessageParam } from "@anthropic-ai/sdk/resources/messages";
 
 const BALANCE_HELD_RETRY_AFTER_SECONDS = 5;
 
-// Vercel only: a function killed at this limit never settles, so the user forfeits that
-// Turn's Hold. Workers ignore it; there a Turn's settlement runs under `waitUntil`
-// (`keepRequestOpenUntil`), which survives a hang-up but not an isolate that dies.
+/*
+ * Vercel only: a function killed at this limit never settles, so the user forfeits that
+ * Turn's Hold. Workers ignore it; there a Turn's settlement runs under `waitUntil`
+ * (`keepRequestOpenUntil`), which survives a hang-up but not an isolate that dies.
+ * https://vercel.com/docs/functions/configuring-functions/duration
+ */
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
@@ -70,26 +73,23 @@ export async function POST(req: Request) {
     const auth_ = await auth();
     const userId = auth_.userId;
     if (!userId) {
-      return NextResponse.json(error(SESSION_EXPIRED_MESSAGE, "UNAUTHORIZED"), {
+      return NextResponse.json(error({ message: SESSION_EXPIRED_MESSAGE, code: "UNAUTHORIZED" }), {
         status: 401,
       });
     }
 
-    const rateLimitResult = await checkRateLimit(userId, "chat");
+    const rateLimitResult = await checkRateLimit({ userId, type: "chat" });
     if (!rateLimitResult.success) {
       logger.warn(
         { userId, remaining: rateLimitResult.remaining },
         "Rate limit exceeded for agent chat"
       );
       return NextResponse.json(
-        error(
-          "Too many requests. Please try again later.",
-          "RATE_LIMIT_EXCEEDED"
-        ),
+        error({ message: "Too many requests. Please try again later.", code: "RATE_LIMIT_EXCEEDED" }),
         {
           status: 429,
           headers: {
-            "Retry-After": String(Math.ceil((rateLimitResult.reset! - Date.now()) / 1000)),
+            "Retry-After": String(Math.ceil(((rateLimitResult.reset ?? Date.now()) - Date.now()) / 1000)),
             "X-RateLimit-Limit": rateLimitResult.limit?.toString() || "",
             "X-RateLimit-Remaining":
               rateLimitResult.remaining?.toString() || "",
@@ -103,17 +103,14 @@ export async function POST(req: Request) {
     if (bounded.status === "too_large") {
       logger.warn({ userId }, "Agent chat request body over the size limit");
       return NextResponse.json(
-        error(
-          "This request is too large to send. Start a new chat to continue.",
-          AGENT_ERROR_CODES.requestTooLarge
-        ),
+        error({ message: "This request is too large to send. Start a new chat to continue.", code: AGENT_ERROR_CODES.requestTooLarge }),
         { status: 413 }
       );
     }
     const parsed = parseJsonBody(bounded.text);
     if (parsed.status === "invalid") {
       logger.warn({ userId }, "Agent chat request body is not JSON");
-      return NextResponse.json(error("Request body must be JSON", "VALIDATION_ERROR"), {
+      return NextResponse.json(error({ message: "Request body must be JSON", code: "VALIDATION_ERROR" }), {
         status: 400,
       });
     }
@@ -130,7 +127,7 @@ export async function POST(req: Request) {
         "Validation failed for agent chat request"
       );
       return NextResponse.json(
-        error("Invalid request body", "VALIDATION_ERROR", validation.error.issues),
+        error({ message: "Invalid request body", code: "VALIDATION_ERROR", details: validation.error.issues }),
         { status: 400 }
       );
     }
@@ -143,11 +140,8 @@ export async function POST(req: Request) {
       enableThinking,
       enableWebSearch,
     } = validation.data;
-    // Installed extensions still send legacy model IDs; everything after this
-    // point — the API call, pricing, credit deduction, usage rows — uses the
-    // resolved model so cost always matches the model actually invoked.
     const requestedModel = validation.data.model ?? DEFAULT_AGENT_MODEL;
-    const model = resolveAgentModel(requestedModel) as ModelName;
+    const model = resolveAgentModel(requestedModel);
     const webSearchEnabled = shouldUseWebSearch(enableWebSearch);
 
     const [chat, user] = await Promise.all([
@@ -160,13 +154,13 @@ export async function POST(req: Request) {
     ]);
 
     if (!chat) {
-      return NextResponse.json(error("Chat not found", "CHAT_NOT_FOUND"), {
+      return NextResponse.json(error({ message: "Chat not found", code: "CHAT_NOT_FOUND" }), {
         status: 404,
       });
     }
 
     if (!user) {
-      return NextResponse.json(error("User not found", "USER_NOT_FOUND"), {
+      return NextResponse.json(error({ message: "User not found", code: "USER_NOT_FOUND" }), {
         status: 404,
       });
     }
@@ -174,24 +168,17 @@ export async function POST(req: Request) {
     const requestKind = readRequestKind(validation.data);
     if (requestKind.kind === "invalid") {
       return NextResponse.json(
-        error(
-          "Either userMessage or toolResults is required",
-          "VALIDATION_ERROR"
-        ),
+        error({ message: "Either userMessage or toolResults is required", code: "VALIDATION_ERROR" }),
         { status: 400 }
       );
     }
     const { runTurns } = requestKind;
     const isContinuationTurn = requestKind.kind !== "first";
 
-    // Read without a lock to size the Hold; a first Turn rebuilds its prompt from the
-    // read it takes under the chat lock once the Hold is in place.
     const unlockedHistory = await db.query.messages.findMany({
       where: eq(messages.chatId, chatId),
       orderBy: (messages, { asc }) => [asc(messages.createdAt)],
     });
-    // A continuation that names its Run goes on only while that Run is the live one,
-    // and stops before any Hold once another panel has started a newer Run.
     const resumed =
       requestKind.kind === "run"
         ? resumeRun({ history: unlockedHistory, runId: requestKind.runId })
@@ -199,7 +186,7 @@ export async function POST(req: Request) {
     if (resumed === null) {
       logger.info({ userId, chatId, runId }, "Continuation of a superseded Run");
       return NextResponse.json(
-        error(RUN_SUPERSEDED_MESSAGE, AGENT_ERROR_CODES.runSuperseded),
+        error({ message: RUN_SUPERSEDED_MESSAGE, code: AGENT_ERROR_CODES.runSuperseded }),
         { status: 409 }
       );
     }
@@ -210,7 +197,7 @@ export async function POST(req: Request) {
       image,
       runTurns,
     });
-    const tools = buildAgentTools(AGENT_TOOLS, webSearchEnabled);
+    const tools = buildAgentTools({ clientTools: AGENT_TOOLS, enableWebSearch: webSearchEnabled });
     const estimatePrompt = (promptMessages: MessageParam[]) =>
       estimateInputTokens({ system: AGENT_SYSTEM_PROMPT, tools, messages: promptMessages });
     const estimatedPromptTokens = estimatePrompt(estimatedMessages);
@@ -222,10 +209,6 @@ export async function POST(req: Request) {
     const estimatedInputTokens = runEnd
       ? estimatePrompt(withLastTurnNotice(estimatedMessages))
       : estimatedPromptTokens;
-    // The Hold expects the cache: when the previous Turn already sent (and cached) this
-    // prompt minus its newest Turn, that prefix is priced as a cache read and the rest,
-    // the last-Turn notice included, as a cache write (`cachedPrefixTurns` says which
-    // requests have one). A miss settles as overage.
     const cachedTurns = cachedPrefixTurns(requestKind);
     const cachedPrefixTokens = cachedTurns
       ? estimatePrompt(
@@ -269,7 +252,7 @@ export async function POST(req: Request) {
         fits: (option) => planFor(option).ok,
       });
       return NextResponse.json(
-        error(message, "INSUFFICIENT_BALANCE", details),
+        error({ message, code: "INSUFFICIENT_BALANCE", details }),
         { status: 402 }
       );
     }
@@ -281,11 +264,7 @@ export async function POST(req: Request) {
         "Credit reservation lost a race for the balance"
       );
       return NextResponse.json(
-        error(
-          "Some of your balance is held by another request that's still running. Try again in a few seconds.",
-          "BALANCE_HELD",
-          { retryAfter: BALANCE_HELD_RETRY_AFTER_SECONDS }
-        ),
+        error({ message: "Some of your balance is held by another request that's still running. Try again in a few seconds.", code: "BALANCE_HELD", details: { retryAfter: BALANCE_HELD_RETRY_AFTER_SECONDS } }),
         {
           status: 409,
           headers: { "Retry-After": String(BALANCE_HELD_RETRY_AFTER_SECONDS) },
@@ -297,8 +276,6 @@ export async function POST(req: Request) {
 
     let history: HistoryRow[] = runHistory;
     let runRequest: RunRequest;
-    // Nothing was sent to Anthropic yet, so a failure from here to the stream gives the
-    // whole Hold back. Without this, the outer catch would answer 500 and keep it.
     let anthropicMessages: MessageParam[];
     try {
       if (requestKind.kind === "first") {
@@ -313,7 +290,6 @@ export async function POST(req: Request) {
       }
       const builtMessages = buildAgentMessages({ history, userMessage, image, runTurns });
       anthropicMessages = runEnd ? withLastTurnNotice(builtMessages) : builtMessages;
-      // DEV LOGGING: Log request to LLM
       await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking });
     } catch (startError) {
       logger.error(
@@ -321,7 +297,7 @@ export async function POST(req: Request) {
         "Failed to start the Turn; returning its hold"
       );
       await turnHold.close({ type: "not_started" });
-      return NextResponse.json(error(INTERNAL_ERROR_MESSAGE, "INTERNAL_ERROR"), { status: 500 });
+      return NextResponse.json(error({ message: INTERNAL_ERROR_MESSAGE, code: "INTERNAL_ERROR" }), { status: 500 });
     }
 
     logger.debug(
@@ -345,7 +321,6 @@ export async function POST(req: Request) {
     const abortUpstream = () => upstream.abort();
     req.signal.addEventListener("abort", abortUpstream, { once: true });
     let clientConnected = !req.signal.aborted;
-    // The client can hang up long before the Turn settles its Hold in the `finally` below.
     let releaseRequestScope = () => {};
     keepRequestOpenUntil(new Promise<void>((resolve) => {
       releaseRequestScope = resolve;
@@ -381,7 +356,6 @@ export async function POST(req: Request) {
           close();
         };
 
-        // A Turn cut off before its stream opens measured nothing, so it is billed nothing.
         let partial: PartialTurn = {
           usageReported: false,
           usage: {
@@ -406,8 +380,6 @@ export async function POST(req: Request) {
               anthropic.messages.stream({
                 model,
                 max_tokens: maxTokens,
-                // Automatic caching moves this breakpoint to the newest block on every
-                // request, so each turn of a run reads the prefix the previous turn wrote.
                 cache_control: { type: "ephemeral" },
                 system: [
                   {
@@ -424,7 +396,6 @@ export async function POST(req: Request) {
             sessionFrame: {
               type: "session_created",
               sessionId: chatId,
-              // The extension names the Run by this id on every continuation.
               ...((runRequest.type === "first" || runRequest.type === "run") && {
                 runId: runRequest.opening.id,
               }),
@@ -432,7 +403,6 @@ export async function POST(req: Request) {
             model,
             send: (frame) => send(JSON.stringify(frame)),
           });
-          // From here on, a Turn that fails is settled from what it measured.
           partial = turn.partial;
           if (turn.ended === "cut_short") {
             failTurn(turn.error);
@@ -449,14 +419,12 @@ export async function POST(req: Request) {
             webSearchRequests,
           } = final.usage;
 
-          const costCents = calculateUsageCostInCredits(model, final.usage);
+          const costCents = calculateUsageCostInCredits({ model, usage: final.usage });
           const webSearchCostCents =
             calculateWebSearchCostInCredits(webSearchRequests);
 
           const isFinalTurn = runEnd !== null || !final.runContinues;
 
-          // A refused Turn's text isn't a reply the user should see again, and the
-          // tool calls it held were never released.
           const ending: TurnEnding =
             stopReason === "refusal"
               ? { type: "refused" }
@@ -466,7 +434,6 @@ export async function POST(req: Request) {
                   releasedToolCalls: releasedToolCalls({ final, runEnd }),
                 };
 
-          // Throws when the billing transaction fails; the `finally` then closes it unfinished.
           await turnHold.close({
             type: "finished",
             request: runRequest,
@@ -493,7 +460,6 @@ export async function POST(req: Request) {
             "Agent stream completed"
           );
 
-          // DEV LOGGING: Log response from LLM
           await devLogger.logResponse(final.text, {
             input_tokens: inputTokens,
             output_tokens: outputTokens,
@@ -523,7 +489,6 @@ export async function POST(req: Request) {
         } finally {
           try {
             req.signal.removeEventListener("abort", abortUpstream);
-            // Does nothing once the Turn's finished close has settled the Hold.
             await turnHold.close({ type: "unfinished", request: runRequest, partial });
           } finally {
             releaseRequestScope();
@@ -549,7 +514,7 @@ export async function POST(req: Request) {
       "Agent chat endpoint error"
     );
     return NextResponse.json(
-      error(INTERNAL_ERROR_MESSAGE, "INTERNAL_ERROR"),
+      error({ message: INTERNAL_ERROR_MESSAGE, code: "INTERNAL_ERROR" }),
       { status: 500 }
     );
   }

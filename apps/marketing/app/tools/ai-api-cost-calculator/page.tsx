@@ -28,16 +28,15 @@ import { MODEL_PRICING, calculateCostInCredits, type ModelName } from '@/lib/pri
 
 type CalculatorModel = { name: string; provider: string; input: number; output: number; prophetModel?: ModelName }
 
-function claudeModel(name: string, prophetModel: ModelName): CalculatorModel {
+function claudeModel({ name, prophetModel }: { name: string; prophetModel: ModelName }): CalculatorModel {
   const { input, output } = MODEL_PRICING[prophetModel]
   return { name, provider: 'Anthropic', input, output, prophetModel }
 }
 
-// Prophet runs Claude only; the other models are here to compare raw API prices.
 const MODELS = {
-  'claude-haiku': claudeModel('Claude Haiku 5.5', 'claude-haiku-5-5'),
-  'claude-sonnet': claudeModel('Claude Sonnet 5.5', 'claude-sonnet-5-5'),
-  'claude-opus': claudeModel('Claude Opus 5.5', 'claude-opus-5-5'),
+  'claude-haiku': claudeModel({ name: 'Claude Haiku 5.5', prophetModel: 'claude-haiku-5-5' }),
+  'claude-sonnet': claudeModel({ name: 'Claude Sonnet 5.5', prophetModel: 'claude-sonnet-5-5' }),
+  'claude-opus': claudeModel({ name: 'Claude Opus 5.5', prophetModel: 'claude-opus-5-5' }),
   'gpt-4o': { name: 'GPT-4o', provider: 'OpenAI', input: 2.5, output: 10 },
   'gpt-4.5': { name: 'GPT-4.5', provider: 'OpenAI', input: 75, output: 150 },
   'gemini-2.5-pro': { name: 'Gemini 2.5 Pro', provider: 'Google', input: 1.25, output: 10 },
@@ -45,11 +44,23 @@ const MODELS = {
 
 type ModelKey = keyof typeof MODELS
 
+function isModelKey(value: string): value is ModelKey {
+  return Object.hasOwn(MODELS, value)
+}
+
+function isInputMode(value: string): value is 'tokens' | 'messages' {
+  return value === 'tokens' || value === 'messages'
+}
+
 const AVG_TOKENS_MAP = {
   short: { input: 200, output: 300 },
   medium: { input: 500, output: 800 },
   long: { input: 1500, output: 2000 },
 } as const
+
+function isAvgLength(value: string): value is keyof typeof AVG_TOKENS_MAP {
+  return Object.hasOwn(AVG_TOKENS_MAP, value)
+}
 
 export default function AiApiCostCalculatorPage() {
   const [model, setModel] = useState<ModelKey>('claude-sonnet')
@@ -76,10 +87,9 @@ export default function AiApiCostCalculatorPage() {
     return inputCost + outputCost
   }, [effectiveTokens, pricing])
 
-  // What Prophet charges per request, in dollars: rounded up to whole Credits, never below the Minimum charge.
   const prophetModel = pricing.prophetModel
   const prophetCostPerRequest = prophetModel
-    ? calculateCostInCredits(prophetModel, effectiveTokens.input, effectiveTokens.output) / 100
+    ? calculateCostInCredits({ model: prophetModel, inputTokens: effectiveTokens.input, outputTokens: effectiveTokens.output }) / 100
     : null
 
   const effectiveRequestsPerDay = inputMode === 'messages' ? messageCount : requestsPerDay
@@ -114,7 +124,7 @@ export default function AiApiCostCalculatorPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Model</Label>
-                  <Select value={model} onValueChange={(v) => setModel(v as ModelKey)}>
+                  <Select value={model} onValueChange={(v) => { if (isModelKey(v)) setModel(v) }}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -130,7 +140,7 @@ export default function AiApiCostCalculatorPage() {
 
                 <div className="space-y-2">
                   <Label>Input method</Label>
-                  <Select value={inputMode} onValueChange={(v) => setInputMode(v as 'tokens' | 'messages')}>
+                  <Select value={inputMode} onValueChange={(v) => { if (isInputMode(v)) setInputMode(v) }}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -184,7 +194,7 @@ export default function AiApiCostCalculatorPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Average message length</Label>
-                      <Select value={avgLength} onValueChange={(v) => setAvgLength(v as 'short' | 'medium' | 'long')}>
+                      <Select value={avgLength} onValueChange={(v) => { if (isAvgLength(v)) setAvgLength(v) }}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>

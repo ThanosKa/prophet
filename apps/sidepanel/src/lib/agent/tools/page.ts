@@ -1,7 +1,21 @@
+import { z } from 'zod'
 import { AGENT_SIZE_LIMITS } from '@prophet/shared'
-import { cdpCommander, type EvaluateResult } from '../cdp-commander'
+import { cdpCommander } from '../cdp-commander'
+import { evaluateResultSchema } from '../cdp-results'
 import { activeTabTool, navigateAndWaitForLoad } from './tab-tool'
 import { type ScrollDirection, type PageContent } from '../types'
+
+const pageInfoSchema = z.object({
+  readyState: z.string(),
+  viewport: z.object({
+    width: z.number(),
+    height: z.number(),
+    scrollX: z.number(),
+    scrollY: z.number(),
+    scrollHeight: z.number(),
+    scrollWidth: z.number(),
+  }),
+})
 
 export const navigate = activeTabTool<{ url: string }>({
   failure: 'Failed to navigate',
@@ -24,7 +38,6 @@ export const navigate = activeTabTool<{ url: string }>({
 export const scrollPage = activeTabTool<{ direction: ScrollDirection; pixels?: number }>({
   failure: 'Failed to scroll',
   run: async ({ input, tab }) => {
-    // Negative pixels scroll the other way. Negate the number, not the text: `-${-500}` is `--500`, a syntax error.
     const pixels = input.pixels ?? 500
     let scrollExpression: string
 
@@ -51,7 +64,7 @@ export const scrollPage = activeTabTool<{ direction: ScrollDirection; pixels?: n
         return { error: `Invalid scroll direction: ${input.direction}` }
     }
 
-    await cdpCommander.sendCommand<EvaluateResult>(tab.id, 'Runtime.evaluate', {
+    await cdpCommander.sendCommand(tab.id, 'Runtime.evaluate', {
       expression: scrollExpression,
       awaitPromise: false,
     })
@@ -67,9 +80,7 @@ export const scrollPage = activeTabTool<{ direction: ScrollDirection; pixels?: n
 export const getPageContent = activeTabTool<void>({
   failure: 'Failed to get page content',
   run: async ({ tab }) => {
-    // Capped at the shared page-content limit, so one page can't swell every later Turn's prompt
-    // Also filter out obvious JavaScript/CSS noise
-    const result = await cdpCommander.sendCommand<EvaluateResult>(
+    const result = evaluateResultSchema.parse(await cdpCommander.sendCommand(
       tab.id,
       'Runtime.evaluate',
       {
@@ -106,7 +117,7 @@ export const getPageContent = activeTabTool<void>({
         `,
         returnByValue: true,
       }
-    )
+    ))
 
     if (result.exceptionDetails) {
       throw new Error(result.exceptionDetails.text || 'Failed to get page content')
@@ -115,7 +126,7 @@ export const getPageContent = activeTabTool<void>({
     const content: PageContent = {
       url: tab.url || '',
       title: tab.title || '',
-      text: (result.result.value as string) || '',
+      text: (typeof result.result.value === 'string' && result.result.value) || '',
     }
 
     return { data: `Page: ${content.title}\nURL: ${content.url}\n\nContent:\n${content.text}` }
@@ -133,9 +144,6 @@ export const goBack = activeTabTool<void>({
   },
 })
 
-/**
- * Navigate forward in browser history.
- */
 export const goForward = activeTabTool<void>({
   failure: 'Failed to go forward',
   run: async ({ tab }) => {
@@ -147,9 +155,6 @@ export const goForward = activeTabTool<void>({
   },
 })
 
-/**
- * Reload the current page.
- */
 export const reloadPage = activeTabTool<void>({
   failure: 'Failed to reload page',
   run: async ({ tab }) => {
@@ -159,13 +164,10 @@ export const reloadPage = activeTabTool<void>({
   },
 })
 
-/**
- * Get information about the current page.
- */
 export const getPageInfo = activeTabTool<void>({
   failure: 'Failed to get page info',
   run: async ({ tab }) => {
-    const result = await cdpCommander.sendCommand<EvaluateResult>(
+    const result = evaluateResultSchema.parse(await cdpCommander.sendCommand(
       tab.id,
       'Runtime.evaluate',
       {
@@ -186,19 +188,9 @@ export const getPageInfo = activeTabTool<void>({
         `,
         returnByValue: true,
       }
-    )
+    ))
 
-    const pageData = result.result.value as {
-      readyState: string
-      viewport: {
-        width: number
-        height: number
-        scrollX: number
-        scrollY: number
-        scrollHeight: number
-        scrollWidth: number
-      }
-    }
+    const pageData = pageInfoSchema.parse(result.result.value)
 
     const info = {
       title: tab.title || 'Untitled',

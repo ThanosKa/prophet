@@ -1,17 +1,3 @@
-// Conversion numbers for the SEO autopilot report (seo/AUTOPILOT.md): sign-ups, activation
-// and paid conversions from the production database and Stripe.
-//
-//   cd apps/marketing && node --env-file=.env.local scripts/seo-conversions.mjs
-//
-// Read-only by construction: the SQL runs inside a READ ONLY transaction and Stripe is only
-// listed. It prints aggregate counts and never an email, name or user id.
-//
-// Hours with more than BURST_PER_HOUR sign-ups are reported separately and left out of the
-// weekly baseline: a burst like that is not search traffic.
-//
-// The output contains business numbers. This repo is public: never commit it, paste it into a
-// PR, or write it into seo/.
-
 import postgres from 'postgres'
 import Stripe from 'stripe'
 

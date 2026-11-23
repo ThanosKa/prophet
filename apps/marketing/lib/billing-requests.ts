@@ -1,4 +1,3 @@
-/** Turn a Stripe session endpoint's answer into a redirect, or an error for the user (a 429 included). */
 export async function redirectToStripeSession({
   request,
   redirect,
@@ -25,7 +24,6 @@ export async function redirectToStripeSession({
   }
 }
 
-/** Hand the usage CSV to `save`, or show an error for the user (a 429 included) instead of leaving the page. */
 export async function downloadUsageExport({
   request,
   save,

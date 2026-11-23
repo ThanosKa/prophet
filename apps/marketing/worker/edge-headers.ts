@@ -1,22 +1,12 @@
-/**
- * Hosts that serve the production Worker for testing only. They must stay out of search
- * engines: they carry the whole site and API on the live database. cf-test is no longer
- * routed to the Worker (removed at cutover); its check stays so a re-added test host is covered.
- */
 function isTestHost(hostname: string): boolean {
   return hostname === 'cf-test.prophetchrome.com' || hostname.endsWith('.workers.dev')
 }
 
-/** vinext applies next.config `headers()` to everything but redirects; Vercel sends these on them too. */
 const REDIRECT_SECURITY_HEADERS = [
   ['X-Content-Type-Options', 'nosniff'],
   ['X-Frame-Options', 'SAMEORIGIN'],
 ] as const
 
-/**
- * Headers the Worker adds on top of vinext's answer. A response with nothing to add comes
- * back as the same object, so its body and Content-Length are untouched.
- */
 export function withEdgeHeaders({ request, response }: { request: Request; response: Response }): Response {
   const additions: Array<readonly [string, string]> = []
   if (isTestHost(new URL(request.url).hostname)) additions.push(['X-Robots-Tag', 'noindex, nofollow'])
@@ -29,7 +19,7 @@ export function withEdgeHeaders({ request, response }: { request: Request; respo
   try {
     additions.forEach(([name, value]) => target.headers.set(name, value))
   } catch {
-    // Static files and Response.redirect() have immutable headers.
+    // Static files and Response.redirect() have immutable headers. https://developer.mozilla.org/en-US/docs/Web/API/Response/redirect_static
     target = new Response(response.body, response)
     additions.forEach(([name, value]) => target.headers.set(name, value))
   }

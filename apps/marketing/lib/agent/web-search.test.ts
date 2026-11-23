@@ -55,27 +55,27 @@ describe('Web search kill switch', () => {
 describe('buildAgentTools', () => {
   it('omits web search when the request did not opt in', () => {
     vi.stubEnv('ENABLE_WEB_SEARCH', 'true')
-    const tools = buildAgentTools(AGENT_TOOLS, false)
+    const tools = buildAgentTools({ clientTools: AGENT_TOOLS, enableWebSearch: false })
     expect(tools).toHaveLength(AGENT_TOOLS.length)
     expect(tools.some((t) => 'type' in t && t.type === WEB_SEARCH_TOOL_TYPE)).toBe(false)
   })
 
   it('omits web search when the kill switch is off, even if requested', () => {
     vi.stubEnv('ENABLE_WEB_SEARCH', '')
-    const tools = buildAgentTools(AGENT_TOOLS, true)
+    const tools = buildAgentTools({ clientTools: AGENT_TOOLS, enableWebSearch: true })
     expect(tools).toHaveLength(AGENT_TOOLS.length)
   })
 
   it('appends web search when both the flag and the request allow it', () => {
     vi.stubEnv('ENABLE_WEB_SEARCH', 'true')
-    const tools = buildAgentTools(AGENT_TOOLS, true)
+    const tools = buildAgentTools({ clientTools: AGENT_TOOLS, enableWebSearch: true })
     expect(tools).toHaveLength(AGENT_TOOLS.length + 1)
     expect(tools[tools.length - 1]).toBe(WEB_SEARCH_TOOL)
   })
 
   it('never drops a browser tool', () => {
     vi.stubEnv('ENABLE_WEB_SEARCH', 'true')
-    const names = buildAgentTools(AGENT_TOOLS, true).map((t) => t.name)
+    const names = buildAgentTools({ clientTools: AGENT_TOOLS, enableWebSearch: true }).map((t) => t.name)
     for (const tool of AGENT_TOOLS) {
       expect(names).toContain(tool.name)
     }

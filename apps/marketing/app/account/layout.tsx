@@ -6,6 +6,7 @@ import { AccountHeader } from "@/components/account/AccountHeader"
 import { ensureDbUser } from "@/lib/db/user"
 import { UserProvider } from "@/contexts/UserContext"
 import { balanceOf } from "@/lib/credit-balance"
+import { logger } from "@/lib/logger"
 
 export default async function AccountLayout({
   children,
@@ -18,12 +19,11 @@ export default async function AccountLayout({
     redirect("/sign-in")
   }
 
-  // Fetch user once in layout, share via context
   let user = null
   try {
     user = await ensureDbUser()
   } catch (error) {
-    console.error("Failed to ensure DB user in layout:", error)
+    logger.error({ error, userId }, "Failed to ensure DB user in layout")
   }
 
   return (
@@ -44,4 +44,3 @@ export default async function AccountLayout({
     </UserProvider>
   )
 }
-

@@ -6,7 +6,6 @@ vi.mock('@clerk/nextjs/server', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@clerk/nextjs/server')>()
   return {
     ...actual,
-    // Runs the app's handler with a signed-out session, without Clerk's handshake.
     clerkMiddleware:
       (handler: (auth: () => Promise<{ userId: null }>, req: NextRequest) => unknown) =>
       (req: NextRequest) =>

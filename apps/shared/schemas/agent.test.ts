@@ -131,7 +131,6 @@ describe('server size caps in agentChatRequestSchema', () => {
     const result = withTurn([
       { type: 'thinking', thinking: 't'.repeat(200_000), signature: 's'.repeat(200_000) },
       { type: 'text', text: 'a'.repeat(200_000) },
-      // {"value":"…"} is 12 chars of JSON around the value.
       { type: 'tool_use', id: 'i'.repeat(256), name: 'fill_element_by_uid', input: { value: 'v'.repeat(99_988) } },
       snapshotCall(),
     ])
@@ -277,7 +276,7 @@ describe('clickElementInputSchema', () => {
     const result = clickElementInputSchema.safeParse(data)
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.doubleClick).toBe(false) // Default value
+      expect(result.data.doubleClick).toBe(false)
     }
   })
 
@@ -467,7 +466,7 @@ describe('scrollPageInputSchema', () => {
     const result = scrollPageInputSchema.safeParse(data)
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.pixels).toBe(500) // Default
+      expect(result.data.pixels).toBe(500)
     }
   })
 

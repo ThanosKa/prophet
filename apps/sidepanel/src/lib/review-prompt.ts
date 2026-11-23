@@ -1,14 +1,3 @@
-/**
- * Rating prompt trigger logic. Everything here is pure so it can be unit tested;
- * persistence lives in store/reviewPromptStore.ts.
- *
- * Rules:
- * - Ask after the 5th successful run.
- * - "Not now" snoozes the prompt for 10 more successful runs.
- * - "Don't ask again" (and following the review link) opts out for good.
- * - No review gating: nobody is asked "are you happy?" first, and everyone gets the same prompt.
- */
-
 export const EXTENSION_STORE_ID = 'febgdmgcdimmjfkfblbpjmkjfepmfkif'
 export const CWS_REVIEWS_URL = `https://chromewebstore.google.com/detail/prophet/${EXTENSION_STORE_ID}/reviews`
 
@@ -18,7 +7,6 @@ export const REVIEW_PROMPT_STORAGE_KEY = 'prophet-review-prompt'
 
 export interface ReviewPromptState {
   successfulRuns: number
-  /** The prompt is due once successfulRuns reaches this number. */
   nextPromptAtRun: number
   optedOut: boolean
 }
@@ -53,7 +41,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-/** Validates whatever chrome.storage returned; anything malformed falls back to a fresh state. */
 export function parseReviewPromptState(value: unknown): ReviewPromptState {
   if (!isRecord(value)) return INITIAL_REVIEW_PROMPT_STATE
   const { successfulRuns, nextPromptAtRun, optedOut } = value

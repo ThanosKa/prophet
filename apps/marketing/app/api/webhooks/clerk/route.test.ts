@@ -4,7 +4,6 @@ import { TIER_CONFIG } from '@/lib/pricing'
 const mocks = vi.hoisted(() => {
   const where = vi.fn()
   const set = vi.fn((_values: Record<string, unknown>) => ({ where }))
-  // What the insert's RETURNING yields: the new row, or nothing when the user already exists.
   const inserted = vi.fn(() => Promise.resolve([{ id: 'user_123' }]))
   const values = vi.fn((_values: Record<string, unknown>) => ({
     onConflictDoNothing: () => ({ returning: inserted }),
@@ -229,7 +228,6 @@ describe('POST /api/webhooks/clerk', () => {
   })
 
   it('verifies the signature over the body exactly as Clerk sent it', async () => {
-    // Spacing and key order a JSON round trip would change, breaking the signature.
     const rawBody = '{"data": {"id": "sess_123"}, "type": "session.created", "amount": 1.0}'
 
     await postWebhook({ type: 'session.created', data: { id: 'sess_123' } }, rawBody)

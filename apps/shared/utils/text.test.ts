@@ -13,7 +13,6 @@ describe('keepChars', () => {
   })
 
   it('never keeps half of an emoji at the cut', () => {
-    // '😀' is two UTF-16 units; a cut through it drops the half.
     expect(keepChars({ text: 'ab😀cd', count: 3 })).toBe('ab')
     expect(keepChars({ text: 'ab😀cd', count: 3, from: 'end' })).toBe('cd')
     expect(keepChars({ text: 'ab😀cd', count: 4 })).toBe('ab😀')

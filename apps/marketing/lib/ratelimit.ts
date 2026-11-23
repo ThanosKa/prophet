@@ -8,8 +8,6 @@ const isFakeCredentials =
   process.env.UPSTASH_REDIS_REST_URL?.includes('fake') ||
   process.env.UPSTASH_REDIS_REST_TOKEN === 'faketoken123'
 
-// Requests still pass without Upstash (CODING_STANDARDS: Redis is optional), but in
-// production that leaves Turns and Anthropic spend unlimited, so it is an error there.
 const reportDisabled = (reason: string) => {
   const message = `${reason}. Rate limiting is disabled.`
   if (process.env.NODE_ENV === 'production') logger.error(message)
@@ -113,10 +111,13 @@ export const globalRatelimit = redis
     })
   : null
 
-export async function checkRateLimit(
-  userId: string,
-  type: 'chat' | 'api' = 'api'
-): Promise<{ success: boolean; limit?: number; remaining?: number; reset?: number }> {
+export async function checkRateLimit({
+  userId,
+  type = 'api',
+}: {
+  userId: string
+  type?: 'chat' | 'api'
+}): Promise<{ success: boolean; limit?: number; remaining?: number; reset?: number }> {
   if (globalRatelimit) {
     const globalCheck = await globalRatelimit.limit('global')
     keepRequestOpenUntil(globalCheck.pending)
@@ -131,11 +132,11 @@ export async function checkRateLimit(
     return { success: true }
   }
 
-  const tier = await getUserTier(userId)
+  const tier = await getUserTier({ userId })
   const limiter = limiters[tier]
 
   const { success, limit, remaining, reset, pending } = await limiter.limit(userId)
-  // Analytics writes finish after the answer; on a Worker they would be cancelled.
+  // Analytics writes finish after the answer; on a Worker they would be cancelled. https://developers.cloudflare.com/workers/runtime-apis/context/#waituntil
   keepRequestOpenUntil(pending)
 
   return { success, limit, remaining, reset }

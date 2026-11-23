@@ -60,7 +60,6 @@
     --ring: hsl(0 0% 8%);
     --radius: 0.5rem;
 
-    /* Chatbot specific variables */
     --chatbot-bg: hsl(0 0% 98.5%);
     --chatbot-card: hsl(0 0% 100%);
     --chatbot-muted: hsl(0 0% 92%);
@@ -87,7 +86,6 @@
     --input: hsl(0 0% 100% / 15%);
     --ring: hsl(0 0% 83%);
 
-    /* Chatbot specific variables */
     --chatbot-bg: hsl(0 0% 18%);
     --chatbot-card: hsl(0 0% 22%);
     --chatbot-muted: hsl(0 0% 16%);
@@ -285,8 +283,6 @@
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
 
-/* Fix for Radix UI ScrollArea breaking flexbox truncation */
-/* See: https://github.com/radix-ui/primitives/issues/926 */
 [data-radix-scroll-area-viewport] {
   display: block !important;
 }
@@ -325,4 +321,3 @@
     }
   }
 }
-

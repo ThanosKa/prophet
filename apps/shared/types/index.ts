@@ -1,6 +1,3 @@
-// Shared type definitions
-// Add types here as the project grows
-
 import type { UserBalance } from '../schemas'
 
 export * from './agent'
@@ -8,7 +5,6 @@ export * from './agent'
 export type Tier = 'free' | 'pro' | 'premium' | 'ultra'
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'incomplete'
 
-/** A user as `GET /api/auth/user` sends it; the balance fields come from `userBalanceSchema`. */
 export interface User extends UserBalance {
   id: string
   email: string
@@ -76,7 +72,6 @@ export interface ApiResponse<T> {
   code?: string
 }
 
-// Streaming types
 export interface StreamEvent {
   type: 'token' | 'done' | 'error'
   content?: string
@@ -92,7 +87,6 @@ export interface StreamChunk {
   timestamp: number
 }
 
-// Pagination types
 export interface PaginatedResponse<T> {
   data: T[]
   pagination: {
@@ -103,7 +97,6 @@ export interface PaginatedResponse<T> {
   }
 }
 
-// Error types
 export interface ApiError {
   error: string
   code: string

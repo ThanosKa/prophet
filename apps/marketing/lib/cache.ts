@@ -25,48 +25,31 @@ export const redis =
       })
     : null
 
-/**
- * Type guard to validate tier string
- */
 function isValidTier(value: string): value is UserTier {
-  return VALID_TIERS.includes(value as UserTier)
+  return VALID_TIERS.some((tier) => tier === value)
 }
 
-/**
- * Get user tier with Redis caching
- *
- * Cache-aside pattern:
- * 1. Try cache first
- * 2. On miss, query database
- * 3. Populate cache for next request
- * 4. Graceful degradation if Redis unavailable
- *
- * @param userId - The user ID to look up
- * @param redisClient - Optional Redis client (for testing)
- */
-export async function getUserTier(
-  userId: string,
-  redisClient: typeof redis = redis
-): Promise<UserTier> {
+export async function getUserTier({
+  userId,
+  redisClient = redis,
+}: {
+  userId: string
+  redisClient?: typeof redis
+}): Promise<UserTier> {
   const cacheKey = `${CACHE_KEY_PREFIX}${userId}`
 
-  // Try cache first (if Redis available)
   if (redisClient) {
     try {
       const cached = await redisClient.get<string>(cacheKey)
 
-      // Validate cached value is a valid tier
       if (cached && isValidTier(cached)) {
         return cached
       }
-
-      // Invalid cached value - continue to DB (don't log, just fallback)
     } catch (error) {
       logger.error({ error, userId }, 'Redis get failed, falling back to DB')
     }
   }
 
-  // Cache miss or Redis unavailable - query database
   const user = await db.query.users.findFirst({
     where: eq(users.id, userId),
     columns: { tier: true },
@@ -74,7 +57,6 @@ export async function getUserTier(
 
   const tier: UserTier = user?.tier ?? 'free'
 
-  // Populate cache (best effort, only if user exists)
   if (redisClient && user) {
     try {
       await redisClient.setex(cacheKey, CACHE_TTL_SECONDS, tier)
@@ -86,17 +68,13 @@ export async function getUserTier(
   return tier
 }
 
-/**
- * Invalidate cached user tier
- * Call this when user's tier changes (subscription updates, webhooks)
- *
- * @param userId - The user ID to invalidate
- * @param redisClient - Optional Redis client (for testing)
- */
-export async function invalidateUserTierCache(
-  userId: string,
-  redisClient: typeof redis = redis
-): Promise<void> {
+export async function invalidateUserTierCache({
+  userId,
+  redisClient = redis,
+}: {
+  userId: string
+  redisClient?: typeof redis
+}): Promise<void> {
   if (!redisClient) return
 
   const cacheKey = `${CACHE_KEY_PREFIX}${userId}`

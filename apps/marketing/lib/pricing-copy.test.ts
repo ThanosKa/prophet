@@ -29,7 +29,6 @@ const publishedText: ReadonlyArray<readonly [string, string]> = [
   ),
 ]
 
-/** Pricing claims that stopped being true when the Margin went to 25% and the Bonus went away. */
 const STALE_PRICING_CLAIMS: ReadonlyArray<readonly [string, RegExp]> = [
   ['a Margin percentage', /\d+% (platform |service )?(margin|markup|fee)|Prophet \(\d+%\)/i],
   ['a Bonus', /\+\d+%|\d+% bonus|bonus (credits?|value)|credit bonus/i],
@@ -48,11 +47,6 @@ describe('published pricing claims', () => {
   })
 })
 
-/**
- * What visitors and AI assistants read about pricing must match the product: plans give
- * Credits equal to their price (no Bonus), the Free grant is $0.07, and no Margin
- * percentage is published.
- */
 describe('SoftwareApplication offers', () => {
   it.each([
     ['Free', '0', '$0.07'],

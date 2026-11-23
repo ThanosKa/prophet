@@ -1,15 +1,3 @@
-// Reversible SEO pruning list. Delete an entry to undo it.
-//
-// One list drives everything, so the pieces cannot drift apart:
-//   - next.config.js    sends 'X-Robots-Tag: noindex, follow' for 'noindex' entries and a permanent
-//                       redirect for 'redirect' entries (via redirects.mjs)
-//   - app/sitemap.ts    leaves both kinds out of sitemap.xml
-//   - hub listings      (/blog, /for) skip redirected entries so no kept page links to a redirect
-//
-// Keep thresholds applied when this list was written (GSC, 2026-10-01 export plus the July export):
-// never prune a URL with >= 1 click in either export, or >= 100 impressions in the current one.
-// The 'gsc' field is the 2026-10-01 export (90 days to 2026-09-28).
-
 /**
  * @typedef {{ clicks: number, impressions: number }} PrunedGsc
  * @typedef {{ path: string, action: 'noindex', reason: string, gsc: PrunedGsc }} NoindexEntry

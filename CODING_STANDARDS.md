@@ -1,13 +1,13 @@
 # Coding Standards
 
-The rules every diff in this repo is checked against, one per line, alongside the guardrails in `CLAUDE.md`. Writing code: every rule that touches the files you change holds before you finish. Reviewing: check the diff against every rule in turn. Some older code predates a rule; new and changed code follows it.
+The rules every diff in this repo is checked against, one per line, alongside the guardrails in `CLAUDE.md`. Writing code: every rule that touches the files you change holds before you finish. Reviewing: check the diff against every rule in turn. Some older code predates a rule; new and changed code follows it. Lint enforces `any`, type assertions (`as const` aside), non-null `!`, `console`, exhaustive `switch`, positional parameters and comments: resolve each lint error in the code itself.
 
 ## Security guardrails
 
 - Open every API route with Clerk `auth()` and return 401 when `userId` is missing. Exceptions: webhook routes authenticate by signature and are listed in `isPublicRoute` in `apps/marketing/proxy.ts`; `/api/agent/chat/dev` answers 403 outside `NODE_ENV=development`.
 - Scope every query on user-owned rows by `userId` as well as the row id (`and(eq(chats.id, chatId), eq(chats.userId, userId))`), returning 404 when nothing matches.
 - Parse every request input (body, query, params) with a Zod schema via `safeParse`, returning 400 on failure; data from the extension and content scripts is untrusted.
-- Rate-limit every authenticated API route with `checkRateLimit(userId, type)` (`apps/marketing/lib/ratelimit.ts`) right after `auth()`: `'chat'` for the agent route, `'api'` for the rest.
+- Rate-limit every authenticated API route with `checkRateLimit({ userId, type })` (`apps/marketing/lib/ratelimit.ts`) right after `auth()`: `'chat'` for the agent route, `'api'` for the rest.
 - Verify webhook signatures before trusting the payload: Stripe with `await stripe.webhooks.constructEventAsync` on the raw `request.text()` body (the sync `constructEvent` throws on Workers), Clerk with `svix` on the raw `req.text()` body.
 
 ## Credits and billing
@@ -18,7 +18,7 @@ The rules every diff in this repo is checked against, one per line, alongside th
 
 ## API responses and logging
 
-- Build response bodies with `success(data)` / `error(message, code)` from `apps/marketing/types`, with an UPPER_SNAKE `code`.
+- Build response bodies with `success(data)` / `error({ message, code })` from `apps/marketing/types`, with an UPPER_SNAKE `code`.
 - Answer unexpected failures with status 500 and `error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR')`; the real error and stack go to the log, not the client.
 - Log server-side through `logger` (`apps/marketing/lib/logger.ts`).
 
@@ -34,8 +34,16 @@ The rules every diff in this repo is checked against, one per line, alongside th
 - Type values of unknown shape as `unknown` and narrow them, never `any`.
 - Fix type errors at the source: `strict` stays on, and non-null `!` only where the value is provably set.
 - Use string-literal unions or `as const` objects in place of `enum`.
+- Parse external data once, at the boundary, into a named domain type, and trust it from there on. Hand-write a type guard only where no schema fits.
+- A type guard, named `isX` or `hasX`, checks every property its return type claims.
+- Narrow in this order: discriminant `switch`, then `in`, then `typeof` or `instanceof`, then a type guard.
+- Model variants as a union on one literal discriminant field, so each state carries only its own fields: `{ kind: "loading" } | { kind: "success"; data: User } | { kind: "error"; error: string }`.
+- Shape the type so the illegal value cannot be built: `[T, ...T[]]` for a non-empty list, `start` plus `duration` for a range. Keep `T[]` while every operation on it stays total; strengthen it only where the loose type would force `!`, a cast, or a "should never happen" throw.
+- Brand primitives that must stay apart, such as IDs: `string & { readonly __brand: "UserId" }`. A brand comes from a verifying type guard (`input is UserId`).
+- Check a literal against a type with `satisfies`, which keeps its literal types.
 - Give a function you write with more than one parameter a single object argument (`reserveCredits({ db, userId, reserveCents })`); callbacks and framework signatures keep their shape.
 - Annotate return types on exported functions in `lib/` and `apps/shared`; React components, route handlers and locals infer theirs.
+- Write no comments: let names and types say it. Allowed: a license header, `prettier-ignore`, lint suppressions only for faulty, pedantic or style-only rules, `/** */` on an export that states a contract, and a link to the issue, RFC or vendor doc that forces non-obvious behaviour.
 
 ## UI
 
@@ -44,6 +52,7 @@ The rules every diff in this repo is checked against, one per line, alongside th
 ## Tests
 
 - Colocate tests as `*.test.ts(x)` beside their source; billing, credit-calculation and auth changes always ship with tests.
+- Run the real thing: the framework's test primitives, a real or in-memory implementation, a running build for UI. Mock only what cannot run locally.
 
 ## Where the detail lives
 

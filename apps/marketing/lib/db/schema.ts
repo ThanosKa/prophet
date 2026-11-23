@@ -1,7 +1,6 @@
 import { relations, sql } from 'drizzle-orm'
 import { pgTable, uuid, text, integer, timestamp, pgEnum, index, boolean, check } from 'drizzle-orm/pg-core'
 
-// Enums
 export const userTierEnum = pgEnum('user_tier', ['free', 'pro', 'premium', 'ultra'])
 export const messageRoleEnum = pgEnum('message_role', ['user', 'assistant'])
 export const subscriptionStatusEnum = pgEnum('subscription_status', [
@@ -11,7 +10,6 @@ export const subscriptionStatusEnum = pgEnum('subscription_status', [
   'incomplete',
 ])
 
-// Users table
 export const users = pgTable(
   'users',
   {
@@ -22,7 +20,6 @@ export const users = pgTable(
     profileImageUrl: text('profile_image_url'),
 
     tier: userTierEnum('tier').notNull().default('free'),
-    // Subscription credits plus the Free grant; may go negative when a Turn costs more than its hold.
     creditsRemaining: integer('credits_remaining').notNull().default(0),
     purchasedCredits: integer('purchased_credits').notNull().default(0),
     creditsIncluded: integer('credits_included').notNull().default(0),
@@ -46,14 +43,13 @@ export const users = pgTable(
   ]
 )
 
-// Chats table
 export const chats = pgTable(
   'chats',
   {
     id: uuid('id').defaultRandom().primaryKey(),
     userId: text('user_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }), // Cascade delete chats when user is deleted
+      .references(() => users.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     contextTokens: integer('context_tokens').notNull().default(0),
     contextInputTokens: integer('context_input_tokens').notNull().default(0),
@@ -69,7 +65,6 @@ export const chats = pgTable(
   ]
 )
 
-// Messages table
 export const messages = pgTable(
   'messages',
   {
@@ -83,7 +78,7 @@ export const messages = pgTable(
     inputTokens: integer('input_tokens'),
     outputTokens: integer('output_tokens'),
     costCents: integer('cost_cents'),
-    toolCalls: text('tool_calls'), // Store as JSON string
+    toolCalls: text('tool_calls'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -92,7 +87,6 @@ export const messages = pgTable(
   ]
 )
 
-// Usage records table
 export const usageRecords = pgTable(
   'usage_records',
   {
@@ -114,7 +108,6 @@ export const usageRecords = pgTable(
   ]
 )
 
-// One row per paid extra-credits checkout; the session id makes webhook redelivery a no-op.
 export const creditPurchases = pgTable(
   'credit_purchases',
   {
@@ -128,7 +121,6 @@ export const creditPurchases = pgTable(
   (table) => [index('credit_purchases_user_id_idx').on(table.userId)]
 )
 
-// Relations (for Drizzle ORM query builder)
 export const usersRelations = relations(users, ({ many }) => ({
   chats: many(chats),
   usageRecords: many(usageRecords),
@@ -156,7 +148,6 @@ export const usageRecordsRelations = relations(usageRecords, ({ one }) => ({
   }),
 }))
 
-// Type exports for use in application
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type Chat = typeof chats.$inferSelect

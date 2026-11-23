@@ -1,9 +1,3 @@
-/**
- * Shared harness for the agent chat route tests that run on an in-memory Postgres
- * (pglite). Importing it mocks the route's collaborators: the database, Clerk, the rate
- * limiter, Anthropic and the loggers. Each test file gets its own pglite instance,
- * because Vitest isolates modules per file.
- */
 import { vi, type Mock } from 'vitest'
 import { generateDrizzleJson, generateMigration } from 'drizzle-kit/api'
 import { asc, eq, sql } from 'drizzle-orm'
@@ -25,7 +19,6 @@ export type { ApiBlock, StopReason, Usage } from './anthropic-stream-stubs'
 const mocks = vi.hoisted(() => ({
   auth: vi.fn<() => Promise<{ userId: string | null }>>(),
   checkRateLimit: vi.fn<typeof checkRateLimit>(),
-  // A plain vi.fn, so tests can hand it stub streams without casting to MessageStream.
   stream: vi.fn(),
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
   logRequest: vi.fn(),
@@ -49,10 +42,8 @@ const { POST } = await import('./route')
 export { db }
 export const streamMock: Mock = mocks.stream
 export const loggerMock: Record<'debug' | 'info' | 'warn' | 'error', Mock> = mocks.logger
-/** The development logger's request hook: the last step before a Turn starts streaming. */
 export const logRequestMock: Mock = mocks.logRequest
 
-/** Creates the tables from the Drizzle schema; no migration files are involved. */
 export async function createTables(): Promise<void> {
   const statements = await generateMigration(generateDrizzleJson({}), generateDrizzleJson(schema))
   for (const statement of statements) {
@@ -60,7 +51,6 @@ export async function createTables(): Promise<void> {
   }
 }
 
-/** Clears every mock and every user (chats, messages and usage cascade), then signs `userId` in. */
 export async function resetAs(userId: string): Promise<void> {
   vi.clearAllMocks()
   await db.delete(schema.users)
@@ -113,7 +103,6 @@ function isFrame(value: unknown): value is Frame {
   return typeof value === 'object' && value !== null && 'type' in value && typeof value.type === 'string'
 }
 
-/** Parses an SSE body into its `data:` frames. */
 export function frames(events: string): Frame[] {
   return events
     .split('\n\n')
@@ -122,7 +111,6 @@ export function frames(events: string): Frame[] {
     .filter(isFrame)
 }
 
-/** Reads the response until `marker` shows up and hands back the reader for the rest. */
 export async function readUntil({
   response,
   marker,
@@ -149,14 +137,12 @@ export async function readToEnd(reader: ReadableStreamDefaultReader<Uint8Array>)
   }
 }
 
-/** The params of the route's `call`-th Anthropic request (typed loosely, for assertions). */
 export function sentParams(call = 0) {
   const params = streamMock.mock.calls[call]?.[0]
   if (!params) throw new Error(`no Anthropic call #${call}`)
   return params
 }
 
-/** The chat's rows in order, with tool calls parsed from their JSON column. */
 export async function storedMessages(
   chatId: string
 ): Promise<Array<{ role: string; content: string; toolCalls: unknown }>> {

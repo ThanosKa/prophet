@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// Never connects: nothing here runs a query, and this address is CI's placeholder.
 const PLACEHOLDER_URL = 'postgresql://ci:ci@localhost:5432/ci'
 
 const noopContext = { waitUntil: () => {} }

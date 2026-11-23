@@ -40,16 +40,18 @@ export function shouldUseWebSearch(requested: boolean): boolean {
   return requested && isWebSearchEnabled()
 }
 
-export function buildAgentTools(
-  clientTools: ToolUnion[],
+export function buildAgentTools({
+  clientTools,
+  enableWebSearch,
+}: {
+  clientTools: ToolUnion[]
   enableWebSearch: boolean
-): ToolUnion[] {
+}): ToolUnion[] {
   return shouldUseWebSearch(enableWebSearch)
     ? [...clientTools, WEB_SEARCH_TOOL]
     : clientTools
 }
 
-// Headroom for adaptive thinking on top of a full answer when the user turned Thinking on.
 const THINKING_HEADROOM_TOKENS = 8000
 
 /**
@@ -75,23 +77,9 @@ export function buildOutputConfig(enableThinking: boolean): { effort: 'low' } | 
   return enableThinking ? null : { effort: 'low' }
 }
 
-/**
- * Smallest `max_tokens` a low balance may shrink a turn to: one full non-thinking
- * answer, plus thinking headroom when thinking was requested. Below this, turns
- * tend to end mid-`tool_use` or inside thinking with no answer.
- */
 export function getAgentMinTokens(enableThinking: boolean): number {
   return enableThinking ? THINKING_HEADROOM_TOKENS + AGENT_MAX_TOKENS : AGENT_MAX_TOKENS
 }
-
-const ECHOABLE_BLOCK_TYPES = new Set([
-  'thinking',
-  'redacted_thinking',
-  'text',
-  'tool_use',
-  'server_tool_use',
-  'web_search_tool_result',
-])
 
 /**
  * Blocks the client sends back unchanged in `previousTurns`. Thinking blocks are kept
@@ -100,7 +88,17 @@ const ECHOABLE_BLOCK_TYPES = new Set([
  * so their `encrypted_content` still decrypts on the next turn.
  */
 export function toEchoableContent(blocks: ContentBlock[]): ContentBlockParam[] {
-  return blocks.filter((block) =>
-    ECHOABLE_BLOCK_TYPES.has(block.type)
-  ) as unknown as ContentBlockParam[]
+  return blocks.flatMap((block): ContentBlockParam[] => {
+    if (
+      block.type === 'thinking' ||
+      block.type === 'redacted_thinking' ||
+      block.type === 'text' ||
+      block.type === 'tool_use' ||
+      block.type === 'server_tool_use' ||
+      block.type === 'web_search_tool_result'
+    ) {
+      return [block]
+    }
+    return []
+  })
 }

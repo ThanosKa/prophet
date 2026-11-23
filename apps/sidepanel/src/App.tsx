@@ -128,8 +128,7 @@ export default function App() {
     }
   }
 
-  // Resolves false when nothing was sent, so the input keeps the user's draft.
-  const handleSendMessage = async (content: string, image?: ImageData): Promise<boolean> => {
+  const handleSendMessage = async ({ message: content, image }: { message: string; image?: ImageData }): Promise<boolean> => {
     let chatId = activeChatId
     if (!chatId || chatId.startsWith('draft-')) {
       try {
@@ -137,7 +136,7 @@ export default function App() {
         chatId = chat.id
         setActiveChatId(chatId)
       } catch (err) {
-        console.error('Failed to create chat:', err)
+        logger.error('App', 'Failed to create chat:', err)
         showError(describeThrownError(err))
         return false
       }
@@ -163,7 +162,7 @@ export default function App() {
           queryClient.invalidateQueries({ queryKey: ['chats'] })
         }
       } catch (err) {
-        console.error('Failed to auto-generate title:', err)
+        logger.error('App', 'Failed to auto-generate title:', err)
       }
     }
   }

@@ -2,13 +2,11 @@ import { config } from 'dotenv'
 import { fileURLToPath } from 'url'
 import { dirname, resolve } from 'path'
 
-// Load .env.local before anything else (ESM-compatible)
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const envPath = resolve(__dirname, '../.env.local')
 config({ path: envPath })
 
-// Debug: Check if env loaded
 if (!process.env.DATABASE_URL) {
   console.error('❌ DATABASE_URL not found in .env.local')
   console.error(`Tried to load from: ${envPath}`)
@@ -16,20 +14,16 @@ if (!process.env.DATABASE_URL) {
   process.exit(1)
 }
 
-// Environment check - only allow in development
 if (process.env.NODE_ENV === 'production') {
   console.error('❌ Cannot run seed script in production!')
   process.exit(1)
 }
 
-// Use dynamic imports to ensure env is loaded first
 const { db } = await import('../lib/db/index.js')
 const { chats, messages, users } = await import('../lib/db/schema.js')
 const { eq, asc } = await import('drizzle-orm')
 
-// Auto-detect user from database
 async function getUserId(): Promise<{ id: string; email: string }> {
-  // Allow override via env var (optional)
   if (process.env.SEED_USER_ID && !process.env.SEED_USER_ID.includes('xxx')) {
     const user = await db.query.users.findFirst({
       where: eq(users.id, process.env.SEED_USER_ID),
@@ -40,7 +34,6 @@ async function getUserId(): Promise<{ id: string; email: string }> {
     console.warn(`⚠️ SEED_USER_ID ${process.env.SEED_USER_ID} not found, auto-detecting...`)
   }
 
-  // Auto-detect: get first user from database
   const firstUser = await db.query.users.findFirst({
     orderBy: [asc(users.createdAt)],
   })
@@ -60,7 +53,6 @@ async function getUserId(): Promise<{ id: string; email: string }> {
   return { id: firstUser.id, email: firstUser.email }
 }
 
-// Template Q&As to build long conversations
 const qaTemplates = [
   { q: 'How do I get started with React?', a: 'Great question! To get started with React, you\'ll need Node.js installed. Then run `npx create-react-app my-app` to create a new React project. React is a JavaScript library for building user interfaces, particularly single-page applications.' },
   { q: 'What are hooks?', a: 'Hooks are functions that let you use React features like state and lifecycle methods in functional components. The most common hooks are `useState` for managing state and `useEffect` for side effects like data fetching or subscriptions.' },
@@ -79,8 +71,7 @@ const qaTemplates = [
   { q: 'What\'s the difference between useMemo and useCallback?', a: '`useMemo` memoizes a computed value, `useCallback` memoizes a function. Use `useMemo` for expensive calculations, `useCallback` to prevent child re-renders when passing callbacks as props. Both take a dependency array.' },
 ]
 
-// Generate a long conversation by repeating Q&As
-function generateLongConversation(title: string, messageCount: number) {
+function generateLongConversation({ title, messageCount }: { title: string; messageCount: number }) {
   const msgs: Array<{ role: 'user' | 'assistant'; content: string }> = []
   let qaIndex = 0
 
@@ -95,11 +86,11 @@ function generateLongConversation(title: string, messageCount: number) {
 }
 
 const mockConversations = [
-  generateLongConversation('Building a React App', 60),
-  generateLongConversation('TypeScript Best Practices', 80),
-  generateLongConversation('API Design Patterns', 100),
-  generateLongConversation('Database Performance', 50),
-  generateLongConversation('Testing Strategies', 70),
+  generateLongConversation({ title: 'Building a React App', messageCount: 60 }),
+  generateLongConversation({ title: 'TypeScript Best Practices', messageCount: 80 }),
+  generateLongConversation({ title: 'API Design Patterns', messageCount: 100 }),
+  generateLongConversation({ title: 'Database Performance', messageCount: 50 }),
+  generateLongConversation({ title: 'Testing Strategies', messageCount: 70 }),
 ]
 
 async function seed() {
@@ -109,14 +100,12 @@ async function seed() {
   console.log(`📍 User: ${email} (${seedUserId})`)
   console.log('')
 
-  // Delete existing seed data for this user
   console.log('🧹 Cleaning up existing data...')
   await db.delete(chats).where(eq(chats.userId, seedUserId))
 
   let totalChats = 0
   let totalMessages = 0
 
-  // Create conversations
   for (const conv of mockConversations) {
     const [chat] = await db
       .insert(chats)
@@ -129,7 +118,6 @@ async function seed() {
 
     totalChats++
 
-    // Add messages for this chat
     for (const msg of conv.messages) {
       await db.insert(messages).values({
         chatId: chat.id,
@@ -146,7 +134,6 @@ async function seed() {
     console.log(`✅ Created: ${chat.title} (${conv.messages.length} messages)`)
   }
 
-  // Create additional chats to test pagination (empty chats)
   const additionalTitles = [
     'Docker Containers',
     'CI/CD Pipeline Setup',
@@ -199,7 +186,6 @@ async function reset() {
   console.log('   (Messages were cascade deleted)')
 }
 
-// Run based on command
 const command = process.argv[2]
 
 if (command === 'reset') {

@@ -1,4 +1,9 @@
-import type { ContentBlockParam, MessageParam } from '@anthropic-ai/sdk/resources/messages'
+import type {
+  ContentBlockParam,
+  MessageParam,
+  WebSearchResultBlockParam,
+  WebSearchToolResultBlockParamContent,
+} from '@anthropic-ai/sdk/resources/messages'
 import {
   AGENT_SIZE_LIMITS,
   HISTORY_BUDGET_TOKENS,
@@ -6,6 +11,7 @@ import {
   parseStoredToolCalls,
   type AgentChatRequest,
   type AgentTurn,
+  type ContentBlock,
   type ImageData,
 } from '@prophet/shared'
 import type { HistoryRow } from '@/lib/agent/run-record'
@@ -25,11 +31,6 @@ function capActionInput(input: Record<string, unknown>): string {
   return kept === json ? json : `${kept}…`
 }
 
-/**
- * An earlier Run's record as Claude reads it: its text plus a compact list of the
- * actions it took, which is how "continue" remembers them. Must stay deterministic:
- * every Turn of the next Run sends the same bytes for it, or the prompt cache misses.
- */
 function renderStoredMessage(row: HistoryRow): string {
   if (row.role === 'user') return row.content
   const actions = parseStoredToolCalls(row.toolCalls).map(
@@ -61,8 +62,6 @@ export function windowHistory(rows: HistoryRow[]): HistoryRow[] {
     used += size
     start -= 1
   }
-  // Start at the window's first user row; a window of assistant rows alone reaches back
-  // to the user row before them instead, so the newest row is never dropped.
   let userStart = start
   while (userStart < rows.length && rows[userStart]?.role !== 'user') userStart += 1
   if (userStart < rows.length) return rows.slice(userStart)
@@ -70,7 +69,59 @@ export function windowHistory(rows: HistoryRow[]): HistoryRow[] {
   return rows.slice(start)
 }
 
-function userContent(text: string, image: ImageData | undefined): MessageParam['content'] {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function isSearchResultParam(value: unknown): value is WebSearchResultBlockParam {
+  return (
+    isRecord(value) &&
+    value.type === 'web_search_result' &&
+    typeof value.url === 'string' &&
+    typeof value.title === 'string' &&
+    typeof value.encrypted_content === 'string'
+  )
+}
+
+function isSearchResultContent(value: unknown): value is WebSearchToolResultBlockParamContent {
+  if (Array.isArray(value)) return value.every(isSearchResultParam)
+  return isRecord(value) && value.type === 'web_search_tool_result_error' && typeof value.error_code === 'string'
+}
+
+function isContentBlockParam<T>(block: T): block is T & ContentBlockParam {
+  if (!isRecord(block)) return false
+  switch (block.type) {
+    case 'text':
+      return typeof block.text === 'string'
+    case 'thinking':
+      return typeof block.thinking === 'string' && typeof block.signature === 'string'
+    case 'redacted_thinking':
+      return typeof block.data === 'string'
+    case 'tool_use':
+      return typeof block.id === 'string' && typeof block.name === 'string' && 'input' in block
+    case 'server_tool_use':
+      return typeof block.id === 'string' && block.name === 'web_search' && 'input' in block
+    case 'web_search_tool_result':
+      return typeof block.tool_use_id === 'string' && isSearchResultContent(block.content)
+    default:
+      return false
+  }
+}
+
+function echoedContent(content: ContentBlock[]): ContentBlockParam[] {
+  return content.map((block) => {
+    if (isContentBlockParam(block)) return block
+    throw new Error(`A ${block.type} block lacks a field Anthropic requires`)
+  })
+}
+
+function userContent({
+  text,
+  image,
+}: {
+  text: string
+  image: ImageData | undefined
+}): MessageParam['content'] {
   if (!image) return text
   return [
     {
@@ -123,20 +174,18 @@ export function buildAgentMessages({
     windowHistory(rows).map((row) => ({ role: row.role, content: renderStoredMessage(row) }))
 
   if (userMessage) {
-    return [...render(history), { role: 'user', content: userContent(userMessage, image) }]
+    return [...render(history), { role: 'user', content: userContent({ text: userMessage, image }) }]
   }
 
   const rows = history.at(-1)?.role === 'assistant' ? history.slice(0, -1) : history
   const opening = rows.at(-1)
   const messages: MessageParam[] =
     opening?.role === 'user'
-      ? // Only the opening message's text is stored; the extension resends the run's
-        // image so the opening message matches the first turn's.
-        [...render(rows.slice(0, -1)), { role: 'user', content: userContent(opening.content, image) }]
+      ? [...render(rows.slice(0, -1)), { role: 'user', content: userContent({ text: opening.content, image }) }]
       : render(rows)
 
   for (const turn of runTurns) {
-    messages.push({ role: 'assistant', content: turn.content as ContentBlockParam[] })
+    messages.push({ role: 'assistant', content: echoedContent(turn.content) })
     if (turn.toolResults.length > 0) {
       messages.push({
         role: 'user',

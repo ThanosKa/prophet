@@ -16,9 +16,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const rateLimitResult = await checkRateLimit(userId, 'api')
+    const rateLimitResult = await checkRateLimit({ userId, type: 'api' })
     if (!rateLimitResult.success) {
-      return NextResponse.json(errorBody('Too many requests', 'RATE_LIMIT_EXCEEDED'), {
+      return NextResponse.json(errorBody({ message: 'Too many requests', code: 'RATE_LIMIT_EXCEEDED' }), {
         status: 429,
         headers: {
           'X-RateLimit-Limit': rateLimitResult.limit?.toString() || '',

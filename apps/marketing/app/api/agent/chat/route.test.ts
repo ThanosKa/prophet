@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST } from './route'
 
-// Mock modules
 vi.mock('@clerk/nextjs/server', () => ({
   auth: vi.fn(),
 }))
@@ -42,7 +41,6 @@ vi.mock('@/lib/db', () => ({
   },
 }))
 
-// The reserve/settle SQL has its own PGlite tests; here the route only needs a hold.
 vi.mock('@/lib/credit-reservation', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/credit-reservation')>()
   return {
@@ -59,8 +57,6 @@ vi.mock('@/lib/ratelimit', () => ({
   checkRateLimit: vi.fn(),
 }))
 
-// The Run record has its own PGlite tests (route.run-record.test.ts); here the route
-// only needs a started Run.
 vi.mock('@/lib/agent/run-record', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/agent/run-record')>()
   return {
@@ -87,7 +83,6 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
-// Import after mocks
 const { auth } = await import('@clerk/nextjs/server')
 const { db } = await import('@/lib/db')
 const { checkRateLimit } = await import('@/lib/ratelimit')
@@ -194,7 +189,6 @@ describe('POST /api/agent/chat', () => {
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 
-      // Mock streaming response
       const mockStream = {
         [Symbol.asyncIterator]: async function* () {
           yield { type: 'message_start', message: { usage: { input_tokens: 10 } } }
@@ -308,7 +302,6 @@ describe('POST /api/agent/chat', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chatId: '550e8400-e29b-41d4-a716-446655440000',
-          // Neither userMessage nor toolResults
         }),
       })
 
@@ -340,7 +333,7 @@ describe('POST /api/agent/chat', () => {
         id: 'user1',
         email: 'test@example.com',
         creditsRemaining: 1000,
-        purchasedCredits: 0, // read before a parallel request drained it
+        purchasedCredits: 0,
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
       vi.mocked(reserveCredits).mockResolvedValueOnce(null)
@@ -386,7 +379,7 @@ describe('POST /api/agent/chat', () => {
         id: 'user1',
         email: 'test@example.com',
         creditsRemaining: 0,
-        purchasedCredits: 0, // even the cheapest Haiku turn costs 1
+        purchasedCredits: 0,
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 
@@ -426,7 +419,7 @@ describe('POST /api/agent/chat', () => {
         id: 'user1',
         email: 'test@example.com',
         creditsRemaining: 10,
-        purchasedCredits: 0, // Exactly 10
+        purchasedCredits: 0,
       } as any)
       vi.mocked(db.query.messages.findMany).mockResolvedValue([])
 
@@ -535,7 +528,6 @@ describe('POST /api/agent/chat', () => {
         purchasedCredits: 0,
       } as any)
 
-      // Simulate DB having user message + assistant message from previous turn
       vi.mocked(db.query.messages.findMany).mockResolvedValue([
         {
           id: 'msg1',
@@ -569,7 +561,6 @@ describe('POST /api/agent/chat', () => {
         return mockStream as any
       })
 
-      // Continuation turn: toolResults + previousContent
       const request = new Request('http://localhost:3000/api/agent/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -592,9 +583,6 @@ describe('POST /api/agent/chat', () => {
       const response = await POST(request)
       expect(response.status).toBe(200)
 
-      // Verify message format: should NOT have consecutive assistant messages
-      // Expected: [user (from DB), assistant (from previousContent), user (tool_result)]
-      // The fix removes the duplicate assistant from DB loading
       for (let i = 1; i < capturedMessages.length; i++) {
         const prevRole = capturedMessages[i - 1].role
         const currRole = capturedMessages[i].role

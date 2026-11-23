@@ -100,7 +100,6 @@ export default function BillingPage() {
         </p>
       </motion.div>
 
-      {/* Status Alerts */}
       <motion.div variants={itemVariants}>
         <SubscriptionAlerts
           tier={currentTier}
@@ -115,7 +114,6 @@ export default function BillingPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Current Plan</CardTitle>
-                {/* Tier Badge */}
                 {currentTier === 'free' && (
                   <Badge variant="secondary">Free</Badge>
                 )}
@@ -207,7 +205,6 @@ export default function BillingPage() {
           </Card>
         </motion.div>
 
-        {/* Buy Extra Credits */}
         <motion.div variants={itemVariants}>
           <Card className="border-primary/50">
             <CardHeader>

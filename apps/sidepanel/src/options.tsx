@@ -13,8 +13,6 @@ function OptionsApp() {
     const { signOut } = useAuth()
 
     const handleSignOut = () => {
-        // The callback runs once the session is gone, so the panel never reloads while still
-        // signed in, and it keeps this page from navigating and writing Clerk's token again.
         signOut(() => {
             chrome.runtime.sendMessage({ type: 'SIGN_OUT' })
         }).catch(() => {})
@@ -118,7 +116,12 @@ function OptionsApp() {
     )
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const rootElement = document.getElementById('root')
+if (!rootElement) {
+    throw new Error('Root element #root not found')
+}
+
+ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
         <ClerkProvider
             publishableKey={config.clerkPublishableKey}

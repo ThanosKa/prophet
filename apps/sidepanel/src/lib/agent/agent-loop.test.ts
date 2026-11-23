@@ -1,30 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock background tool execution bridge
 vi.mock('./background-bridge', () => ({
   executeToolViaBackground: vi.fn(),
 }))
 
-// Mock chrome.runtime API
 global.chrome = {
   runtime: {
     sendMessage: vi.fn(),
   },
 } as any
 
-// Import after mocks
 const { executeToolViaBackground } = await import('./background-bridge')
 const { runAgentLoop } = await import('./agent-loop')
 
 const API = 'http://localhost:3000'
 
-/** An SSE body with one `data:` frame per event. */
 const sse = (events: unknown[]) => events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join('')
 
 const requestBodies = (fetchMock: ReturnType<typeof vi.fn>) =>
   fetchMock.mock.calls.map((call) => JSON.parse(String(call[1]?.body)))
 
-/** Answers each request with the next Turn's events, in order. */
 function serveTurns(turns: unknown[][]) {
   const fetchMock = vi.fn()
   for (const turn of turns) fetchMock.mockResolvedValueOnce(new Response(sse(turn)))
@@ -32,7 +27,6 @@ function serveTurns(turns: unknown[][]) {
   return { fetchMock, bodies: () => requestBodies(fetchMock) }
 }
 
-/** Answers every request with the same Turn (a fresh Response each time: a body reads once). */
 function serveEveryTurn(turn: unknown[]) {
   const fetchMock = vi.fn(() => Promise.resolve(new Response(sse(turn))))
   vi.stubGlobal('fetch', fetchMock)
@@ -51,7 +45,6 @@ describe('runAgentLoop', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Mock auth token
     vi.mocked(chrome.runtime.sendMessage).mockResolvedValue({
       token: 'mock-token',
     })
@@ -83,13 +76,41 @@ describe('runAgentLoop', () => {
       const events: any[] = []
       for await (const event of runAgentLoop({ baseUrl: API, chatId: 'chat-1', userMessage: 'Hi' })) {
         events.push(event)
-        if (events.length > 10) break // Safety
+        if (events.length > 10) break
       }
 
       expect(global.fetch).toHaveBeenCalled()
       const call = (global.fetch as any).mock.calls[0]
       const body = JSON.parse(call[1].body)
       expect(body.userMessage).toBe('Hi')
+    })
+  })
+
+  describe('Stream frames', () => {
+    it('skips frames with an unknown event type and keeps reading', async () => {
+      serveTurns([
+        [{ type: 'future_event', delta: 'x' }, { type: 'content_delta', delta: 'Hi' }, { type: 'done' }],
+      ])
+
+      const events = await collect()
+
+      expect(events.filter((e) => e.type === 'content_delta')).toEqual([{ type: 'content_delta', delta: 'Hi' }])
+    })
+
+    it('ignores a field of the wrong type instead of acting on it', async () => {
+      serveTurns([[{ type: 'content_delta', delta: 42 }, { type: 'done' }]])
+
+      const events = await collect()
+
+      expect(events.some((e) => e.type === 'content_delta')).toBe(false)
+    })
+
+    it('skips a frame that is not a JSON object', async () => {
+      serveTurns([['not-an-object', { type: 'content_delta', delta: 'Hi' }, { type: 'done' }]])
+
+      const events = await collect()
+
+      expect(events.filter((e) => e.type === 'content_delta')).toHaveLength(1)
     })
   })
 
@@ -163,13 +184,12 @@ describe('runAgentLoop', () => {
         if (events.length > 10) break
       }
 
-      expect(executeToolViaBackground).toHaveBeenCalledWith('take_snapshot', {})
+      expect(executeToolViaBackground).toHaveBeenCalledWith({ toolName: 'take_snapshot', toolInput: {} })
 
       const toolComplete = events.find((e) => e.type === 'tool_call_complete')
       expect(toolComplete).toBeDefined()
       expect(toolComplete.toolName).toBe('take_snapshot')
     })
-
   })
 
   describe('Tool input check', () => {
@@ -200,7 +220,29 @@ describe('runAgentLoop', () => {
 
       await collect()
 
-      expect(executeToolViaBackground).toHaveBeenCalledWith('scroll_page', { direction: 'down', pixels: 500 })
+      expect(executeToolViaBackground).toHaveBeenCalledWith({ toolName: 'scroll_page', toolInput: { direction: 'down', pixels: 500 } })
+    })
+
+    it('sends a tool call with a name it does not know to the executor and answers it with a tool_result', async () => {
+      const futureTool = { type: 'tool_use', id: 'toolu_01Future', name: 'read_clipboard', input: { format: 'text' } }
+      const { bodies } = serveTurns([
+        [{ type: 'tool_use', toolUse: futureTool }, { type: 'done', stopReason: 'tool_use' }],
+        [{ type: 'done', stopReason: 'end_turn' }],
+      ])
+      vi.mocked(executeToolViaBackground).mockResolvedValue({ success: false, error: 'Unknown tool: read_clipboard' })
+
+      const events = await collect()
+
+      expect(executeToolViaBackground).toHaveBeenCalledWith({ toolName: 'read_clipboard', toolInput: { format: 'text' } })
+      expect(bodies()[1].previousTurns[0]).toEqual({
+        content: [futureTool],
+        toolResults: [
+          { type: 'tool_result', tool_use_id: 'toolu_01Future', content: 'Unknown tool: read_clipboard', is_error: true },
+        ],
+      })
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: 'tool_call_start', toolName: 'read_clipboard', toolCallId: 'toolu_01Future' })
+      )
     })
   })
 
@@ -247,7 +289,6 @@ describe('runAgentLoop', () => {
       { type: 'tool_use', toolUse: { type: 'tool_use', id, name: 'take_snapshot', input: {} } },
       { type: 'done', stopReason: 'tool_use' },
     ]
-    // The server releases no tool calls on a last Turn, but done still names the one Claude asked for.
     const lastTurn = (runEnd: string) => [
       { type: 'content_delta', delta: 'I found two invoices; the March one is still open.' },
       { type: 'execution_complete', stopReason: 'tool_use', finalOutput: 'I found two invoices; the March one is still open.' },
@@ -306,7 +347,6 @@ describe('runAgentLoop', () => {
     ]
 
     it("doesn't send a request over the limit in UTF-8 bytes, and ends the Run with its notice", async () => {
-      // 1.5M characters is well under 4,000,000 as string length, but each euro sign is 3 bytes.
       const page = '€'.repeat(1_500_000)
       const { fetchMock } = serveTurns([snapshotTurn])
       vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: page, durationMs: 1 })
@@ -443,10 +483,9 @@ describe('runAgentLoop', () => {
   })
 
   describe('Silent stops', () => {
-
     it('sends an is_error tool_result for a tool that threw, so the next turn stays valid', async () => {
       const { fetchMock, bodies } = serveTurns([
-        [{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'click', input: { ref: 'a' } } }, { type: 'done' }],
+        [{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'click_element_by_uid', input: { uid: 'a' } } }, { type: 'done' }],
         [{ type: 'content_delta', delta: 'ok' }, { type: 'done' }],
       ])
       vi.mocked(executeToolViaBackground).mockRejectedValue(new Error('Could not establish connection'))
@@ -486,7 +525,7 @@ describe('runAgentLoop', () => {
     it('runs no tools on Turn 20, and the Turn-limit notice follows the reply', async () => {
       const { fetchMock } = serveEveryTurn([
         { type: 'content_delta', delta: 'Scrolling.' },
-        { type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'scroll', input: {} } },
+        { type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'take_snapshot', input: {} } },
         { type: 'execution_complete', stopReason: 'tool_use', finalOutput: 'Scrolling.' },
         { type: 'done', stopReason: 'tool_use' },
       ])
@@ -514,7 +553,7 @@ describe('runAgentLoop', () => {
     })
 
     it('does not start another turn when a tool turn was cut before done', async () => {
-      const { fetchMock } = serveEveryTurn([{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'click', input: {} } }])
+      const { fetchMock } = serveEveryTurn([{ type: 'tool_use', toolUse: { type: 'tool_use', id: 't1', name: 'take_snapshot', input: {} } }])
       vi.mocked(executeToolViaBackground).mockResolvedValue({ success: true, data: 'ok', durationMs: 1 })
 
       const events = await collect()
@@ -613,7 +652,6 @@ describe('runAgentLoop', () => {
   describe('Cancellation', () => {
     const encoder = new TextEncoder()
 
-    // A response whose body stays open after the first chunk, like a long generation.
     const openStreamingResponse = () => {
       const cancel = vi.fn()
       const body = new ReadableStream<Uint8Array>({
@@ -663,8 +701,8 @@ describe('runAgentLoop', () => {
 
     it('does not execute further tools from the same turn once aborted', async () => {
       const payload = [
-        '{"type":"tool_use","toolUse":{"type":"tool_use","id":"t1","name":"click","input":{"ref":"a"}}}',
-        '{"type":"tool_use","toolUse":{"type":"tool_use","id":"t2","name":"click","input":{"ref":"b"}}}',
+        '{"type":"tool_use","toolUse":{"type":"tool_use","id":"t1","name":"click_element_by_uid","input":{"uid":"a"}}}',
+        '{"type":"tool_use","toolUse":{"type":"tool_use","id":"t2","name":"click_element_by_uid","input":{"uid":"b"}}}',
         '{"type":"done"}',
       ]
         .map((line) => `data: ${line}\n\n`)
@@ -931,6 +969,22 @@ describe('runAgentLoop', () => {
           { type: 'done', stopReason: 'tool_use', contentBlocks },
         ],
         [{ type: 'content_delta', delta: 'Done.' }, { type: 'done', stopReason: 'end_turn' }],
+      ])
+
+      await run({ model: 'claude-sonnet-5-5', enableThinking: true })
+
+      expect(bodies()[1].previousTurns[0].content).toEqual(contentBlocks)
+    })
+
+    it("replays the server's content blocks as sent when one has a block type it does not know", async () => {
+      const contentBlocks = [
+        { type: 'thinking', thinking: 'The inbox is one click away.', signature: 'sig-abc' },
+        { type: 'container_upload', file_id: 'file_011CNha8iCJcU1wXNR6q4V8w' },
+        navigate,
+      ]
+      const { bodies } = serveTurns([
+        [{ type: 'tool_use', toolUse: navigate }, { type: 'done', stopReason: 'tool_use', contentBlocks }],
+        [{ type: 'done', stopReason: 'end_turn' }],
       ])
 
       await run({ model: 'claude-sonnet-5-5', enableThinking: true })

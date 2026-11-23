@@ -1,3 +1,4 @@
+import { attemptAsync } from '@prophet/shared'
 import { create } from 'zustand'
 import {
   INITIAL_REVIEW_PROMPT_STATE,
@@ -20,14 +21,9 @@ async function loadState(): Promise<ReviewPromptState> {
 }
 
 async function saveState(state: ReviewPromptState): Promise<void> {
-  try {
-    await chrome.storage.local.set({ [REVIEW_PROMPT_STORAGE_KEY]: state })
-  } catch {
-    // Storage can fail (quota, extension reload). The prompt is optional, so drop the update.
-  }
+  await attemptAsync(() => chrome.storage.local.set({ [REVIEW_PROMPT_STORAGE_KEY]: state }))
 }
 
-// Each action re-reads storage first so several open side panels cannot overwrite each other.
 async function update(transform: (state: ReviewPromptState) => ReviewPromptState): Promise<boolean> {
   const next = transform(await loadState())
   await saveState(next)

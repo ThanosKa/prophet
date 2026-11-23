@@ -35,15 +35,12 @@ import {
 import { AGENT_SIZE_LIMITS, imageDataSchema, type ImageData } from "@prophet/shared";
 import { USER_FACING_TEXT } from "@/lib/user-facing-errors";
 
-// Resolving to false means the message was not sent, so the input keeps the draft.
-export type OnSend = (message: string, image?: ImageData) => void | Promise<boolean | void>;
+export type OnSend = (args: { message: string; image?: ImageData }) => void | Promise<boolean | void>;
 
-/** Refuses an image at attach time rather than starting a Run the server would reject. */
 function checkAttachedImage(file: File): FileCheck {
   if (!imageDataSchema.shape.mediaType.safeParse(file.type).success) {
     return { ok: false, message: USER_FACING_TEXT.imageTypeUnsupported };
   }
-  // Base64 turns every 3 bytes (rounded up) into 4 characters
   const base64Chars = Math.ceil(file.size / 3) * 4;
   if (base64Chars > AGENT_SIZE_LIMITS.attachedImageChars) {
     return { ok: false, message: USER_FACING_TEXT.imageTooLargeToAttach };
@@ -98,7 +95,6 @@ export function EnhancedChatInput({
     if (disabled) return;
     const file = message.files?.[0];
     const imageForApi = file ? await fileToImageData(file) : undefined;
-    // Attach-time checks make this rare; keep the draft rather than send without the image
     if (imageForApi === null) return false;
     const text =
       message.text && message.text.trim().length > 0
@@ -106,7 +102,7 @@ export function EnhancedChatInput({
         : file
         ? "Sent with attachments"
         : "";
-    return onSend(text, imageForApi);
+    return onSend({ message: text, image: imageForApi });
   };
 
   return (

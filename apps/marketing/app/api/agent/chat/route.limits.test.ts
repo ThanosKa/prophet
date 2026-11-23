@@ -45,7 +45,6 @@ describe('request size in POST /api/agent/chat', () => {
   })
 
   it('measures the body in bytes when there is no Content-Length', async () => {
-    // 2,100,000 two-byte characters: under the limit in chars, over it in bytes.
     const body = JSON.stringify({ chatId: CHAT_ID, userMessage: 'é'.repeat(2_100_000) })
     const request = new Request(AGENT_CHAT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })
     expect(request.headers.get('content-length')).toBeNull()
@@ -73,7 +72,6 @@ describe('request size in POST /api/agent/chat', () => {
 
 const doneTurn = () => anthropicTurn({ content: [text('Done.')], stopReason: 'end_turn' })
 
-/** A Turn that took a snapshot and got `snapshot` back, as the extension echoes it. */
 function snapshotTurn({ id, snapshot }: { id: string; snapshot: string }) {
   return {
     content: [{ type: 'tool_use', id, name: 'take_snapshot', input: {} }],
@@ -102,8 +100,6 @@ describe('field sizes in POST /api/agent/chat', () => {
     expect(sentResult(0).startsWith(hugeSnapshot.slice(0, 199_000))).toBe(true)
     expect(sentResult(0)).toMatch(/shortened/i)
     expect(sentResult(1)).toBe(sentResult(0))
-    // A result this large puts both Turns over the Run budget, so each request ends with
-    // the last-Turn notice; everything before it must still match byte for byte.
     const withoutNotice = (call: number) =>
       sentParams(call).messages.filter((message: { role: string }) => message.role !== 'system')
     const earlier = JSON.stringify(withoutNotice(0))
@@ -136,7 +132,6 @@ describe('field sizes in POST /api/agent/chat', () => {
   it('still answers a request shaped like extension 1.0.5 sends it with a 250K-char snapshot', async () => {
     streamMock.mockReturnValue(doneTurn())
     const snapshot = 'x'.repeat(250_000)
-    // 1.0.5 sends its baked-in model id, no runId, and each Turn's server contentBlocks unchanged.
     const previousTurns = [
       {
         content: [

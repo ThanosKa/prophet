@@ -93,10 +93,6 @@ function messageRow({ role, content }: { role: MessageRow['role']; content: stri
   }
 }
 
-/**
- * In-memory stand-in for the chats row: reads return the current title and
- * every update().set().where() writes it, so repeated POSTs see prior writes.
- */
 function useChatStore({ title, claimSucceeds = true }: { title: string; claimSucceeds?: boolean }) {
   const writes: string[] = []
   const state = { title, writes }

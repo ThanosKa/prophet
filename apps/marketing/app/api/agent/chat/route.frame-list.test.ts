@@ -1,8 +1,3 @@
-/**
- * Characterization test: the full frame list the route sends for each main Turn ending.
- * Installed extension builds parse these frames, so the types, order and field values
- * stay as they are today. Only the Run id, which differs on every request, is matched by shape.
- */
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import {
   anthropicTurn,
@@ -44,7 +39,6 @@ const sessionCreated = {
   runId: expect.stringMatching(UUID),
 };
 
-/** The usage fields every stub Turn reports: 1,000 input and 50 output tokens. */
 const TOKENS = {
   inputTokens: 1000,
   outputTokens: 50,
@@ -346,7 +340,6 @@ describe("the frame list of POST /api/agent/chat", () => {
         ],
       },
       { type: "content_delta", delta: "Prophet is a side panel agent." },
-      // The Turn has started one search, so its running cost already counts it.
       { type: "metrics_update", metrics: { ...TOKENS, costCents: 2 } },
       { type: "citations", citations },
       executionComplete({

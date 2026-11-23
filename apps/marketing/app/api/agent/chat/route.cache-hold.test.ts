@@ -25,7 +25,6 @@ beforeEach(async () => {
   await resetAs(USER_ID)
 })
 
-/** A paid user mid-Run: the chat and the Run's opening user row, as Turn 1 saved it. */
 async function seedRun({ credits, opening = 'Tidy my inbox' }: { credits: number; opening?: string }) {
   await seedUserWithChat({ userId: USER_ID, chatId: CHAT_ID, credits, tier: 'pro' })
   await db.insert(schema.messages).values({
@@ -43,14 +42,8 @@ function post(body: Record<string, unknown>) {
   return postAgentChat({ chatId: CHAT_ID, ...body })
 }
 
-/** 120,000 ASCII characters of snapshot text: 60,000 estimated tokens. */
 const LARGE_SNAPSHOT = '[uid=1_7] link "Re: quarterly report" href="/mail/7"\n'.repeat(2400).slice(0, 120_000)
 
-/**
- * Turn 3 of a Sonnet 5.5 Run. Turn 1 read a large snapshot, so everything Turn 2 sent
- * (system, tools, the opening message, Turn 1 and its snapshot) is the cached prefix;
- * only Turn 2 and its short result are new.
- */
 function continuationWithLargeCachedPrefix() {
   return {
     model: 'claude-sonnet-5-5',
@@ -80,10 +73,6 @@ function finishedTurn(usage: Usage) {
 }
 
 describe('cache-aware Hold in POST /api/agent/chat', () => {
-  // The Hold estimates this request at 71,688 tokens: a 71,555-token cached prefix (what
-  // Turn 2 sent) and 133 new ones (Turn 2 and its result). Floor at 4,096 output tokens:
-  //   (71555 x $0.10 + 133 x $2.50 + 4096 x $10) / 1M = $0.048448 -> x1.25 = 6.06c -> 7 credits
-  // The whole prompt as a cache write would need 28 (24 at the plain input rate).
   const CACHED_HOLD_FLOOR = 7
 
   it('allows a Sonnet 5.5 continuation with a large cached prefix at a balance that covers the cached cost', async () => {
@@ -96,9 +85,7 @@ describe('cache-aware Hold in POST /api/agent/chat', () => {
     await response.text()
 
     expect(response.status).toBe(200)
-    // 7 credits = $0.056 of API cost; the prompt takes $0.007488, leaving 4,851 output tokens
     expect(streamMock.mock.calls[0]?.[0].max_tokens).toBe(4851)
-    // 50 x $2 + 100 x $2.50 + 70000 x $0.10 + 300 x $10 = $0.01035 -> x1.25 = 1.29c -> 2
     expect(await balance()).toBe(5)
   })
 
@@ -115,9 +102,6 @@ describe('cache-aware Hold in POST /api/agent/chat', () => {
   })
 
   it('prices the legacy single-Turn form as a whole cache write, with no cached prefix', async () => {
-    // The same ~71K-token prompt, its bulk in the opening message an earlier Turn sent.
-    // An old build sends only its newest Turn, so nothing is taken as cached: about 28
-    // credits, where a cached opening would need 7.
     await seedRun({ credits: CACHED_HOLD_FLOOR, opening: LARGE_SNAPSHOT })
     const response = await post({
       model: 'claude-sonnet-5-5',
@@ -135,7 +119,6 @@ describe('cache-aware Hold in POST /api/agent/chat', () => {
 
   it('settles a cache miss above the Hold through the overage path', async () => {
     await seedRun({ credits: CACHED_HOLD_FLOOR })
-    // The cache expired: the whole prompt is written again instead of read.
     streamMock.mockReturnValue(
       finishedTurn({ input_tokens: 50, cache_creation_input_tokens: 71_600, cache_read_input_tokens: 0, output_tokens: 300 })
     )
@@ -144,8 +127,6 @@ describe('cache-aware Hold in POST /api/agent/chat', () => {
     await response.text()
 
     expect(response.status).toBe(200)
-    // (50 x $2 + 71600 x $2.50 + 300 x $10) / 1M = $0.1821 -> x1.25 = 22.76c -> 23 credits,
-    // 16 above the 7-credit Hold, so the balance goes negative
     expect(await balance()).toBe(-16)
     const [record] = await db.select().from(schema.usageRecords).where(eq(schema.usageRecords.userId, USER_ID))
     expect(record?.costCents).toBe(23)

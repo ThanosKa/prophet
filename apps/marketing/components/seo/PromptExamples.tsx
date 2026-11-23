@@ -10,7 +10,7 @@ interface PromptExamplesProps {
 export function PromptExamples({ prompts }: PromptExamplesProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
 
-  async function handleCopy(prompt: string, index: number) {
+  async function handleCopy({ prompt, index }: { prompt: string; index: number }) {
     await navigator.clipboard.writeText(prompt)
     setCopiedIndex(index)
     setTimeout(() => setCopiedIndex(null), 2000)
@@ -26,7 +26,7 @@ export function PromptExamples({ prompts }: PromptExamplesProps) {
           {prompts.map((prompt, index) => (
             <button
               key={index}
-              onClick={() => handleCopy(prompt, index)}
+              onClick={() => handleCopy({ prompt, index })}
               className="group relative p-4 rounded-lg bg-card border text-left transition-colors hover:bg-muted/50"
             >
               <p className="text-sm pr-8">{prompt}</p>

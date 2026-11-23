@@ -10,8 +10,8 @@ export async function POST() {
   } catch (err) {
     logger.error({ error: err }, 'Failed to sync user')
     if (err instanceof Error && err.message === 'Unauthorized') {
-      return NextResponse.json(error(SESSION_EXPIRED_MESSAGE, 'UNAUTHORIZED'), { status: 401 })
+      return NextResponse.json(error({ message: SESSION_EXPIRED_MESSAGE, code: 'UNAUTHORIZED' }), { status: 401 })
     }
-    return NextResponse.json(error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'), { status: 500 })
+    return NextResponse.json(error({ message: INTERNAL_ERROR_MESSAGE, code: 'INTERNAL_ERROR' }), { status: 500 })
   }
 }

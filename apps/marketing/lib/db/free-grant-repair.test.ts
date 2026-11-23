@@ -17,7 +17,6 @@ type Database = Awaited<ReturnType<typeof setup>>
 const journalSchema = z.object({ entries: z.array(z.object({ idx: z.number(), tag: z.string() })) })
 const journal = journalSchema.parse(JSON.parse(readFileSync(path.join(migrationsFolder, 'meta/_journal.json'), 'utf8')))
 
-// The amount migration 0008 hardcodes. It stays 7 even if the Free grant changes later.
 const FREE_GRANT_AT_REPAIR = 7
 const repairEntry = journal.entries.find(entry => entry.tag.endsWith(REPAIR_TAG_SUFFIX))
 
@@ -33,8 +32,6 @@ function userRow(id: string, overrides: Partial<typeof users.$inferInsert> = {})
   }
 }
 
-// Applies every migration (the repair finds no rows on an empty table), then each test seeds
-// users and runs the repair's SQL file again by hand.
 async function setup() {
   const db = drizzle(new PGlite(), { schema })
   await migrate(db, { migrationsFolder })
@@ -73,13 +70,9 @@ describe('migration: repair Free users created without included Credits', () => 
 
   async function seedUsers(db: Database): Promise<void> {
     await db.insert(users).values([
-      // Created by the Clerk webhook before the fix: Free, 7 balance, 0 included.
       userRow('webhook_free', { tier: 'free', creditsRemaining: 7, creditsIncluded: 0 }),
-      // Same, but the user has spent some of the grant and has Purchased credits.
       userRow('webhook_free_spent', { tier: 'free', creditsRemaining: -3, creditsIncluded: 0, purchasedCredits: 40 }),
-      // Created by sign-in sync: already has the grant.
       userRow('signin_free', { tier: 'free', creditsRemaining: 7, creditsIncluded: TIER_CONFIG.free.credits }),
-      // Paid user.
       userRow('paid_pro', {
         tier: 'pro',
         creditsRemaining: 900,
@@ -89,7 +82,6 @@ describe('migration: repair Free users created without included Credits', () => 
         stripePriceId: 'price_1',
         subscriptionStatus: 'active',
       }),
-      // Downgraded to Free by the Stripe webhook: included Credits set to the Free grant.
       userRow('downgraded_free', {
         tier: 'free',
         creditsRemaining: 2,
@@ -121,7 +113,6 @@ describe('migration: repair Free users created without included Credits', () => 
       const { creditsIncluded: wasIncluded, ...restBefore } = byId(before, id)
       expect(wasIncluded).toBe(0)
       expect(creditsIncluded).toBe(FREE_GRANT_AT_REPAIR)
-      // Balances, tier, Stripe fields and timestamps are all untouched.
       expect(restAfter).toEqual(restBefore)
     }
 

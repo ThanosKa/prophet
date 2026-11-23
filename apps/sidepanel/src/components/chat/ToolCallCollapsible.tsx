@@ -28,7 +28,6 @@ import {
 import { cn } from '@/lib/utils'
 import { toolNameSchema, type ToolCall, type ToolName } from '@prophet/shared'
 
-/** A tool call to show. Stored calls may name a tool this build doesn't know, so any name is allowed. */
 export type ToolCallView = Omit<ToolCall, 'name'> & { name: string }
 
 interface ToolCallCollapsibleProps {

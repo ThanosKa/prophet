@@ -17,7 +17,6 @@ type HoldDatabase = HoldStore & {
   transaction: <T>(run: (tx: HoldStore) => Promise<T>) => Promise<T>
 }
 
-/** A Turn's Hold once taken, with what every settlement of it writes and logs. */
 type HoldContext = {
   db: HoldDatabase
   userId: string
@@ -28,23 +27,15 @@ type HoldContext = {
   reserveCents: number
 }
 
-/** What a Turn that ended early had measured when it stopped. */
 export type PartialTurn = {
-  /** False before message_start: nothing was billed upstream. */
   usageReported: boolean
-  /** Measured so far, with the web searches that started. */
   usage: TokenUsage
-  /** Text, thinking and tool JSON, for the output estimate. */
   streamedOutput: string
-  /** Reply text so far, for the Run record. */
   text: string
 }
 
-/** How a Turn ended, which is all its Hold needs to know to close. */
 export type HoldOutcome =
-  /** Nothing was sent to Anthropic: the whole Hold goes back and no record is written. */
   | { type: 'not_started' }
-  /** The Turn reached its final message: the full cost is charged. */
   | {
       type: 'finished'
       request: RunRequest
@@ -52,27 +43,14 @@ export type HoldOutcome =
       ending: TurnEnding
       isFinalTurn: boolean
     }
-  /** Stop, disconnect or error: charged from what was measured, up to the Hold. */
   | { type: 'unfinished'; request: RunRequest; partial: PartialTurn }
 
 /** A taken Hold. However the Turn ends, closing it is the only way to settle it. */
 export type TurnHold = {
   readonly reserveCents: number
-  /**
-   * Settles the Hold for `outcome`. Succeeds at most once: any later call does nothing
-   * and returns null. A `finished` close whose transaction fails throws and leaves the
-   * Hold open for an `unfinished` close. `not_started` and `unfinished` never throw;
-   * on failure they log, keep the Hold and return null.
-   */
   close(outcome: HoldOutcome): Promise<{ chargedCents: number } | null>
 }
 
-/**
- * Before message_start nothing was billed upstream, so the hold goes back in full.
- * After it, output usage only arrives with the final message_delta, so the
- * streamed text stands in for it; a deliberate disconnect cannot dodge it.
- * Never throws: on failure it logs, keeps the Hold and returns null.
- */
 async function settleUnfinishedTurn({
   context: { db, userId, chatId, model, holdId, hold, reserveCents },
   request,
@@ -87,12 +65,11 @@ async function settleUnfinishedTurn({
   const actualCents = partial.usageReported
     ? Math.min(
         reserveCents,
-        calculateUsageCostInCredits(model, { ...partial.usage, outputTokens })
+        calculateUsageCostInCredits({ model, usage: { ...partial.usage, outputTokens } })
       )
     : 0
   try {
     await db.transaction(async (tx) => {
-      // Stop, disconnect or error released no tool calls: only the text so far.
       await writeRunRecord({
         tx,
         chatId,
@@ -131,10 +108,6 @@ async function settleUnfinishedTurn({
   }
 }
 
-/**
- * The billing transaction of a Turn that reached its final message: the full cost,
- * which may exceed the Hold. Throws when the transaction fails, keeping the Hold.
- */
 async function settleFinishedTurn({
   context: { db, userId, chatId, model, hold },
   request,
@@ -149,10 +122,9 @@ async function settleFinishedTurn({
   isFinalTurn: boolean
 }): Promise<number> {
   const { inputTokens, cacheCreationInputTokens, cacheReadInputTokens, outputTokens } = usage
-  const costCents = calculateUsageCostInCredits(model, usage)
+  const costCents = calculateUsageCostInCredits({ model, usage })
   const maxContextTokens = getModelContextWindow(model)
   await db.transaction(async (tx) => {
-    // Locks the chat row, so it goes before settlement locks the user row.
     await writeRunRecord({
       tx,
       chatId,
@@ -164,7 +136,6 @@ async function settleFinishedTurn({
 
     await settleCredits({ db: tx, userId, hold, actualCents: costCents })
 
-    // Always record usage for billing audit trail
     await tx.insert(usageRecords).values({
       userId,
       inputTokens,
@@ -175,7 +146,6 @@ async function settleFinishedTurn({
       model,
     })
 
-    // Update context tokens on final turn only
     if (isFinalTurn) {
       const promptTokens = inputTokens + cacheCreationInputTokens + cacheReadInputTokens
       const newContextTokens = Math.min(promptTokens + outputTokens, maxContextTokens)
@@ -194,10 +164,6 @@ async function settleFinishedTurn({
   return costCents
 }
 
-/**
- * Gives the whole Hold back when the Turn failed before anything was sent to
- * Anthropic. Never throws: on failure it logs, keeps the Hold and returns null.
- */
 async function returnUnstartedHold({
   context: { db, userId, chatId, holdId, hold, reserveCents },
 }: {
@@ -259,7 +225,6 @@ export async function takeHold({
       if (closed) return null
       const actualCents = await settle({ context, outcome })
       if (actualCents === null) return null
-      // Closed as soon as the settlement lands, so nothing after it can settle twice.
       closed = true
       logger.info({ userId, chatId, holdId, actualCents }, 'Credit hold settled')
       if (outcome.type === 'finished' && actualCents > reserveCents) {

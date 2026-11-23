@@ -25,9 +25,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const post = getBlogPost(slug)
   if (!post) return {}
 
-  // `absolute` drops the "| Prophet" template suffix. Prophet has almost no brand
-  // search volume, so those 10 characters are better spent on the query phrase
-  // before Google truncates the SERP title at roughly 60 characters.
   return {
     title: { absolute: post.title },
     description: post.description,
@@ -60,9 +57,9 @@ export default async function BlogPostPage({ params }: PageProps) {
     (p) => p.slug !== post.slug && !redirectedPaths.has(`/blog/${p.slug}`)
   )
   const sameCategory = allOthers.filter((p) => p.category === post.category)
-  const sharedKeyword = (a: string[], b: string[]) => a.some((k) => b.includes(k))
+  const sharedKeyword = ({ a, b }: { a: string[]; b: string[] }) => a.some((k) => b.includes(k))
   const byKeyword = allOthers.filter(
-    (p) => p.category !== post.category && sharedKeyword(p.keywords, post.keywords)
+    (p) => p.category !== post.category && sharedKeyword({ a: p.keywords, b: post.keywords })
   )
   const relatedPosts = [...sameCategory, ...byKeyword].slice(0, 4)
 

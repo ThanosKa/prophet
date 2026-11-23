@@ -28,7 +28,6 @@ import Link from 'next/link'
 import { TIER_CONFIG, calculateCostInCredits, type ModelName } from '@/lib/pricing'
 import { formatDollars } from '@prophet/shared'
 
-// Prophet runs Claude only, so these are the models it can estimate a Prophet bill for.
 const MODEL_OPTIONS = {
   'claude-haiku': { name: 'Claude Haiku 5.5', prophetModel: 'claude-haiku-5-5' },
   'claude-sonnet': { name: 'Claude Sonnet 5.5', prophetModel: 'claude-sonnet-5-5' },
@@ -44,6 +43,14 @@ const LENGTH_TOKENS = {
 } as const
 
 type LengthKey = keyof typeof LENGTH_TOKENS
+
+function isModelKey(value: string): value is ModelKey {
+  return Object.hasOwn(MODEL_OPTIONS, value)
+}
+
+function isLengthKey(value: string): value is LengthKey {
+  return Object.hasOwn(LENGTH_TOKENS, value)
+}
 
 interface Service {
   name: string
@@ -73,15 +80,14 @@ export default function AiPricingComparisonPage() {
   const tokens = LENGTH_TOKENS[msgLength]
   const model = MODEL_OPTIONS[selectedModel]
 
-  // What Prophet charges for one message, in dollars: rounded up to whole Credits, never below the Minimum charge.
-  const perMessage = calculateCostInCredits(model.prophetModel, tokens.input, tokens.output) / 100
+  const perMessage = calculateCostInCredits({ model: model.prophetModel, inputTokens: tokens.input, outputTokens: tokens.output }) / 100
   const prophetMonthlyCost = perMessage * messagesPerDay * 30
   const breakeven = Math.floor(20 / (perMessage * 30))
 
   const services = useMemo(() => {
     return SERVICES.map((s) => ({
       ...s,
-      cost: s.type === 'fixed' ? (s.monthly as number) : prophetMonthlyCost,
+      cost: s.type === 'fixed' ? s.monthly : prophetMonthlyCost,
     })).sort((a, b) => a.cost - b.cost)
   }, [prophetMonthlyCost])
 
@@ -131,7 +137,7 @@ export default function AiPricingComparisonPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Average message length</Label>
-                  <Select value={msgLength} onValueChange={(v) => setMsgLength(v as LengthKey)}>
+                  <Select value={msgLength} onValueChange={(v) => { if (isLengthKey(v)) setMsgLength(v) }}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -144,7 +150,7 @@ export default function AiPricingComparisonPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Preferred model (for Prophet)</Label>
-                  <Select value={selectedModel} onValueChange={(v) => setSelectedModel(v as ModelKey)}>
+                  <Select value={selectedModel} onValueChange={(v) => { if (isModelKey(v)) setSelectedModel(v) }}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

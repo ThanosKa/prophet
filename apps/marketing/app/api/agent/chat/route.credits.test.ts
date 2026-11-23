@@ -95,7 +95,6 @@ const CACHED_USAGE = {
   cache_read_input_tokens: 100_000,
 }
 
-/** message_start reports the cache buckets; message_delta only the output count. */
 function cachedTurn({ outputTokens, stopReason = 'end_turn' }: { outputTokens: number; stopReason?: string }) {
   return {
     [Symbol.asyncIterator]: async function* () {
@@ -114,10 +113,6 @@ function cachedTurn({ outputTokens, stopReason = 'end_turn' }: { outputTokens: n
   }
 }
 
-/**
- * 10,000 input tokens reported (unless `usage` says otherwise), 4,000 bytes of text
- * streamed, then the turn hangs until the route aborts the upstream request.
- */
 function turnThatHangsAfterStreaming(
   usage: Record<string, number> = { input_tokens: 10_000 },
   abortTakesMs = 0
@@ -181,12 +176,10 @@ describe('credit reservation in POST /api/agent/chat', () => {
 
     expect(sentMaxTokens()).toBeGreaterThanOrEqual(4096)
     expect(sentMaxTokens()).toBeLessThan(16_000)
-    // (1000 x $4 + 500 x $20) / 1M = $0.014 -> x1.25 = 1.75c -> 2 credits
     expect(await balance()).toBe(18)
   })
 
   it('shrinks a Haiku thinking turn to what the balance affords, never below the thinking floor', async () => {
-    // fresh-chat Haiku 5.5 + Thinking: floor 1 credit, full 16000-token turn 2 credits
     const outcomes: Array<number | 'refused'> = []
     for (let credits = 0; credits <= 2; credits++) {
       streamMock.mockClear()
@@ -225,11 +218,9 @@ describe('credit reservation in POST /api/agent/chat', () => {
     await Promise.all(responses.map((response) => response.text()))
 
     const served = responses.filter((response) => response.status === 200).length
-    // losers of the reserve race get 409 BALANCE_HELD; later readers of the drained row get 402
     const refused = responses.filter((response) => response.status === 409 || response.status === 402).length
     expect(served + refused).toBe(20)
     expect(served).toBeGreaterThanOrEqual(1)
-    // each served turn settles at 2 credits; before reservations all 20 ran (-20)
     expect(await balance()).toBe(20 - 2 * served)
     expect(await balance()).toBeGreaterThanOrEqual(0)
   })
@@ -254,15 +245,12 @@ describe('credit reservation in POST /api/agent/chat', () => {
     await readUntil(reader, 'content_delta')
     await reader.cancel()
 
-    // 10,000 input + 4,000 streamed bytes ~ 2,000 output tokens on Opus 5.5:
-    // ($0.04 + $0.04) x1.25 = 10 credits
     await vi.waitFor(async () => expect(await balance()).toBe(990))
     expect(upstream.signal?.aborted).toBe(true)
   })
 
   it('on a Worker, keeps the request and its database client until a disconnected Turn has settled', async () => {
     await seedUser({ credits: 1000 })
-    // Settlement starts well after the hang-up, so a client closed at the hang-up would miss it.
     turnThatHangsAfterStreaming({ input_tokens: 10_000 }, 30)
     const keptAlive: Promise<unknown>[] = []
     let balanceWhenClosed: number | undefined
@@ -276,7 +264,6 @@ describe('credit reservation in POST /api/agent/chat', () => {
         },
       }),
       handle: () => {
-        // This suite's `db` is pglite, so open the request's client by hand.
         currentRequestDb()
         return post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
       },
@@ -379,7 +366,6 @@ describe('credit reservation in POST /api/agent/chat', () => {
   })
 
   it('answers 402 INSUFFICIENT_BALANCE without calling Anthropic when the floor reserve does not fit', async () => {
-    // ~60K chars of history on Opus 5.5: the input alone costs more than 20 credits
     await seedUser({ credits: 20, history: ['a'.repeat(30_000), 'b'.repeat(30_000)] })
 
     const response = await post({ userMessage: 'continue', model: 'claude-opus-5-5' })
@@ -409,7 +395,6 @@ describe('prompt-cache billing in POST /api/agent/chat', () => {
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
     await response.text()
 
-    // 1,000 x $4 + 2,000 x $5 + 100,000 x $0.20 + 500 x $20 = $0.044 -> x1.25 = 5.5 -> 6 credits
     expect(await balance()).toBe(994)
   })
 
@@ -493,8 +478,6 @@ describe('prompt-cache billing in POST /api/agent/chat', () => {
     const response = await post({ userMessage: 'Hello', model: 'claude-opus-5-5' })
     await response.text()
 
-    // 6,000 x $4 + 2,000 x $5 + 100,000 x $0.20 + 500 x $20 + 1 search x $0.01
-    // = $0.074 -> x1.25 = 9.25 -> 10 credits
     expect(await balance()).toBe(990)
   })
 
@@ -507,8 +490,6 @@ describe('prompt-cache billing in POST /api/agent/chat', () => {
     await readUntil(reader, 'content_delta')
     await reader.cancel()
 
-    // $0.004 input + $0.01 write + $0.02 read + ~2,000 streamed output tokens x $20 ($0.04)
-    // = $0.074 -> x1.25 = 9.25 -> 10 credits
     await vi.waitFor(async () => expect(await balance()).toBe(990))
   })
 })
@@ -562,7 +543,6 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
   })
 
   it('mid-agent-loop on Opus 5.5, tells the user to switch to Haiku and send "continue"', async () => {
-    // fresh-chat floors: Haiku 1 credit, Opus 14
     await seedUser({ credits: 8, history: ['Open my inbox'] })
 
     const response = await post(continuationTurn({ model: 'claude-opus-5-5' }))
@@ -625,9 +605,6 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
   })
 
   it('on Haiku 5.5 + Thinking, only suggests turning Thinking off (there is no cheaper model)', async () => {
-    // ~126K estimated tokens (mostly one long history row) put Haiku on its over-100K
-    // rate card, a first Turn's prompt priced as a cache write ($0.625/MTok):
-    // floors 12 credits without Thinking (4,096 output tokens), 14 with it (12,096)
     await seedUser({ credits: 12, history: ['x'.repeat(240_000)] })
 
     const response = await post({ userMessage: 'Hello', model: 'claude-haiku-5-5', enableThinking: true })
@@ -643,7 +620,6 @@ describe('402 INSUFFICIENT_BALANCE wording in POST /api/agent/chat', () => {
 })
 
 describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat', () => {
-  // Fresh-chat floors at the 25% Margin: Haiku 1 credit, Sonnet 7, Sonnet + Thinking 17, Opus 14.
   const FREE_GRANT = 7
 
   it('runs a Haiku Turn and charges the 1-Credit Minimum charge', async () => {
@@ -687,17 +663,12 @@ describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat',
 
     expect(response.status).toBe(200)
     expect(streamMock).toHaveBeenCalledTimes(1)
-    // The whole grant ($0.056 of API cost) is held. The ~5,775-token estimated prompt is a
-    // first Turn's, priced as a cache write ($2.50/MTok, $0.0144), which leaves 4,156
-    // output tokens at $10/MTok.
     expect(sentMaxTokens()).toBe(4156)
     expect(doneEvent(events)).toMatchObject({ maxTokensReducedForBalance: true })
-    // (1000 x $2 + 500 x $10) / 1M = $0.007 -> x1.25 = 0.875c -> 1 credit
     expect(await balance()).toBe(6)
   })
 
   it('refuses a Sonnet 5.5 Turn with some chat history the balance cannot cover, and Haiku still runs', async () => {
-    // ~2,000 tokens of history lift the Sonnet floor to 8 credits
     await seedUser({ credits: FREE_GRANT, history: ['a'.repeat(4_000)] })
 
     const sonnet = await post({ userMessage: 'Hello', model: 'claude-sonnet-5-5' })
@@ -738,7 +709,6 @@ describe('a new Free user with the 7-Credit Free grant in POST /api/agent/chat',
 })
 
 describe('Subscription credits and Purchased credits in POST /api/agent/chat', () => {
-  // Fresh-chat Opus 5.5 floor at the 25% Margin: 14 credits.
   it('spends the Free grant before Purchased credits', async () => {
     await seedUser({ credits: 7, purchased: 100 })
     streamMock.mockReturnValue(
@@ -762,7 +732,6 @@ describe('Subscription credits and Purchased credits in POST /api/agent/chat', (
     await response.text()
 
     expect(response.status).toBe(200)
-    // The 2-credit Turn comes out of Subscription credits; the unused hold goes back Purchased-first.
     expect(await balances()).toEqual({ subscription: 5, purchased: 10 })
   })
 

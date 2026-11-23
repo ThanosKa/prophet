@@ -42,7 +42,6 @@ export default function UsagePage() {
   const [usage, setUsage] = useState<UsageState>({ status: "loading" })
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   const [daysPerPage, setDaysPerPage] = useState<number>(DAYS_PER_PAGE_OPTIONS[0])
-  // `before` cursors of every page newer than the one shown; empty on the newest page.
   const [cursors, setCursors] = useState<string[]>([])
   const [reloadKey, setReloadKey] = useState(0)
   const before = cursors.at(-1)
@@ -51,7 +50,6 @@ export default function UsagePage() {
     const controller = new AbortController()
     const params = new URLSearchParams({ days: daysPerPage.toString() })
     if (before) params.append("before", before)
-    // The table groups by UTC day, so the days picked are sent as UTC days.
     if (dateRange?.from) params.append("from", format(dateRange.from, "yyyy-MM-dd"))
     if (dateRange?.to) params.append("to", format(dateRange.to, "yyyy-MM-dd"))
 
@@ -64,9 +62,8 @@ export default function UsagePage() {
         const parsed = usageResponseSchema.safeParse(body)
         if (!parsed.success) throw new Error("Usage response did not match the expected shape")
         setUsage({ status: "success", page: parsed.data.data })
-      } catch (err) {
+      } catch {
         if (controller.signal.aborted) return
-        console.error("Failed to fetch usage:", err)
         setUsage({ status: "error" })
       }
     }

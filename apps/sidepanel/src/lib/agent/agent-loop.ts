@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { logger } from "../logger";
+import { isRecord } from "../utils";
 import { executeToolViaBackground } from "./background-bridge";
 import {
   AGENT_ERROR_CODES,
@@ -7,6 +9,7 @@ import {
   MAX_AGENT_TURNS,
   runEndSchema,
   toolInputSchemas,
+  toolNameSchema,
   type RunEnd,
 } from "@prophet/shared";
 import {
@@ -23,8 +26,6 @@ import type {
   ContentBlock,
   ImageData,
   AgentLoopEvent,
-  AgentTurn,
-  ToolName,
 } from "@prophet/shared";
 import type { ToolExecutionResult } from "./types";
 
@@ -32,7 +33,7 @@ interface StreamAgentChatOptions {
   chatId: string;
   model: AgentModel;
   userMessage?: string;
-  previousTurns?: AgentTurn[];
+  previousTurns?: RunTurn[];
   runId?: string;
   image?: ImageData;
   enableThinking?: boolean;
@@ -40,11 +41,16 @@ interface StreamAgentChatOptions {
 
 export type AgentRunErrorEvent = { type: "error"; error: string; code?: string; details?: ErrorDetails };
 
-/** Why a Run stopped before Claude finished: shown as a notice after the reply, not as an error. */
 export type RunNoticeReason = RunEnd | "superseded" | "request_too_large";
 
+type ToolCallEvent =
+  | { type: "tool_call_start"; toolName: string; params: unknown; toolCallId: string }
+  | { type: "tool_call_complete"; toolName: string; result: unknown; toolCallId: string }
+  | { type: "tool_call_error"; toolName: string; error: string; toolCallId: string };
+
 export type AgentRunEvent =
-  | Exclude<AgentLoopEvent, { type: "error" }>
+  | Exclude<AgentLoopEvent, { type: "error" | ToolCallEvent["type"] }>
+  | ToolCallEvent
   | AgentRunErrorEvent
   | { type: "output_truncated"; reducedForBalance: boolean }
   | { type: "run_notice"; reason: RunNoticeReason; message: string };
@@ -60,11 +66,8 @@ const REQUEST_TOO_LARGE_NOTICE: AgentRunEvent = {
   message: USER_FACING_TEXT.requestTooLarge,
 };
 
-// Older servers omit the flag; only an explicit true means max_tokens was lowered to fit the balance.
 const reducedForBalanceSchema = z.object({ maxTokensReducedForBalance: z.literal(true) });
-// The Run's id (its opening message). Only a first Turn's session_created is sure to carry it.
 const runIdSchema = z.object({ runId: z.string().uuid() });
-// On a Run's last Turn the server says why it is the last; it released no tool calls on it.
 const runEndFieldSchema = z.object({ runEnd: runEndSchema });
 
 const CANCELLED_EVENT: AgentRunEvent = {
@@ -72,11 +75,111 @@ const CANCELLED_EVENT: AgentRunEvent = {
   error: "Agent execution cancelled by user",
 };
 
+const optionalField = <T extends z.ZodTypeAny>(schema: T) => schema.optional().catch(undefined);
+
+type StreamedToolUse = { type?: unknown; id: string; name: string; input: Record<string, unknown> };
+
+type RunTurn = { content: unknown[]; toolResults: ToolResult[] };
+
+export type TurnEvent = Omit<AgentStreamEvent, "name" | "toolUse" | "contentBlocks"> & {
+  name?: string;
+  toolUse?: StreamedToolUse;
+  contentBlocks?: unknown[];
+};
+
+function isStreamedToolUse(value: unknown): value is StreamedToolUse {
+  return isRecord(value) && typeof value.id === "string" && typeof value.name === "string" && isRecord(value.input);
+}
+
+function blockList(value: unknown): unknown[] | undefined {
+  return Array.isArray(value) ? value : undefined;
+}
+
+const metricsSchema = z.object({
+  inputTokens: z.number(),
+  cacheCreationInputTokens: z.number().optional(),
+  cacheReadInputTokens: z.number().optional(),
+  outputTokens: z.number(),
+  costCents: z.number().optional(),
+  durationMs: z.number().optional(),
+  webSearchRequests: z.number().optional(),
+  webSearchCostCents: z.number().optional(),
+});
+
+const streamEventSchema = z
+  .object({
+    type: z.enum([
+      "content_delta",
+      "thinking_delta",
+      "tool_use_start",
+      "tool_use",
+      "tool_use_complete",
+      "done",
+      "error",
+      "session_created",
+      "metrics_update",
+      "execution_complete",
+      "tool_call_start",
+      "tool_call_complete",
+      "tool_call_error",
+      "web_search_start",
+      "web_search_results",
+      "web_search_error",
+      "citations",
+    ]),
+    content: optionalField(z.string()),
+    delta: optionalField(z.string()),
+    id: optionalField(z.string()),
+    name: optionalField(z.string()),
+    toolUse: z.unknown().transform((value) => (isStreamedToolUse(value) ? value : undefined)),
+    error: optionalField(z.string()),
+    code: optionalField(z.string()),
+    details: z.unknown().transform(parseErrorDetails),
+    toolUseId: optionalField(z.string()),
+    query: optionalField(z.string()),
+    sources: optionalField(
+      z.array(z.object({ url: z.string(), title: z.string(), pageAge: z.string().nullable().optional() }))
+    ),
+    errorCode: optionalField(z.string()),
+    citations: optionalField(z.array(z.object({ url: z.string(), title: z.string(), citedText: z.string() }))),
+    contentBlocks: z.unknown().transform(blockList),
+    stopReason: optionalField(z.string().nullable()),
+    usage: optionalField(
+      z.object({
+        inputTokens: z.number(),
+        cacheCreationInputTokens: z.number().optional(),
+        cacheReadInputTokens: z.number().optional(),
+        outputTokens: z.number(),
+        costCents: z.number().optional(),
+        webSearchRequests: z.number().optional(),
+        webSearchCostCents: z.number().optional(),
+      })
+    ),
+    metrics: optionalField(metricsSchema),
+    finalOutput: optionalField(z.string()),
+    sessionId: optionalField(z.string()),
+    toolCallId: optionalField(z.string()),
+    toolName: optionalField(toolNameSchema),
+    params: z.unknown(),
+    input: optionalField(z.record(z.unknown())),
+    result: z.unknown(),
+  })
+  .passthrough();
+
+function parseStreamEvent(payload: string): TurnEvent | null {
+  try {
+    const parsed = streamEventSchema.safeParse(JSON.parse(payload));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
 type ToolInputCheck = { ok: true; input: Record<string, unknown> } | { ok: false; error: string };
 
-/** Checks a tool call against its tool's input schema; a tool without one gets its input as is. */
-function checkToolInput({ name, input }: { name: ToolName; input: Record<string, unknown> }): ToolInputCheck {
-  const schema = toolInputSchemas[name];
+function checkToolInput({ name, input }: { name: string; input: Record<string, unknown> }): ToolInputCheck {
+  const knownName = toolNameSchema.safeParse(name);
+  const schema = knownName.success ? toolInputSchemas[knownName.data] : undefined;
   if (!schema) return { ok: true, input };
   const parsed = schema.safeParse(input);
   if (parsed.success) return { ok: true, input: parsed.data };
@@ -90,17 +193,14 @@ async function* streamAgentChat({
   signal,
 }: {
   baseUrl: string;
-  /** The JSON request body, already checked against the request size limit. */
   body: string;
   signal?: AbortSignal;
-}): AsyncGenerator<AgentStreamEvent> {
+}): AsyncGenerator<TurnEvent> {
   const tokenResponse = await chrome.runtime.sendMessage({
     type: "GET_AUTH_TOKEN",
   });
   const token = tokenResponse?.token;
 
-  // baseUrl can be full URL like "http://localhost:3000/api/agent/chat/dev"
-  // or base URL like "http://localhost:3000" - handle both cases
   const url = baseUrl.includes("/api/")
     ? new URL(baseUrl)
     : new URL("/api/agent/chat", baseUrl);
@@ -131,7 +231,6 @@ async function* streamAgentChat({
 
     if (response.status === 429) {
       const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10)
-      // Concurrency 429s carry no request quota, so only show "N remaining" when the server sent it.
       const remainingHeader = response.headers.get('X-RateLimit-Remaining')
 
       yield {
@@ -146,7 +245,7 @@ async function* streamAgentChat({
       };
     } else {
       if (!errorData.error) {
-        console.error("[agent-loop] HTTP error without a JSON error body", response.status);
+        logger.error("agent-loop", "HTTP error without a JSON error body", response.status);
       }
       const retryAfterHeader = Number.parseInt(response.headers.get("Retry-After") ?? "", 10);
       const details =
@@ -157,7 +256,6 @@ async function* streamAgentChat({
       yield {
         type: "error",
         error: describeHttpFailure({ status: response.status, body: errorData }),
-        // Vercel's own 413 has no JSON body, so the status alone names it.
         code: errorData.code ?? (response.status === 413 ? AGENT_ERROR_CODES.requestTooLarge : undefined),
         details,
       };
@@ -167,7 +265,7 @@ async function* streamAgentChat({
 
   const reader = response.body?.getReader();
   if (!reader) {
-    console.error("[agent-loop] Response had no body", response.status);
+    logger.error("agent-loop", "Response had no body", response.status);
     yield {
       type: "error",
       error: USER_FACING_TEXT.serverUnavailable,
@@ -179,7 +277,6 @@ async function* streamAgentChat({
   let buffer = "";
   let fullyRead = false;
 
-  // releaseLock() alone leaves the connection open and the server generating; cancel() closes it.
   const cancelBody = () => {
     reader.cancel().catch(() => {});
   };
@@ -206,23 +303,15 @@ async function* streamAgentChat({
 
       for (const line of lines) {
         if (line.startsWith("data: ")) {
-          try {
-            const data = JSON.parse(line.slice(6)) as AgentStreamEvent;
-            yield data;
-          } catch {
-            // Skip malformed JSON
-          }
+          const data = parseStreamEvent(line.slice(6));
+          if (data) yield data;
         }
       }
     }
 
     if (buffer.startsWith("data: ")) {
-      try {
-        const data = JSON.parse(buffer.slice(6)) as AgentStreamEvent;
-        yield data;
-      } catch {
-        // Skip malformed JSON
-      }
+      const data = parseStreamEvent(buffer.slice(6));
+      if (data) yield data;
     }
   } finally {
     signal?.removeEventListener("abort", cancelBody);
@@ -233,13 +322,11 @@ async function* streamAgentChat({
   }
 }
 
-/** Runs one tool call, already checked against its tool's input schema, and reports what it did. */
-export type ToolRunner = (call: { name: ToolName; input: Record<string, unknown> }) => Promise<ToolExecutionResult>;
+export type ToolRunner = (call: { name: string; input: Record<string, unknown> }) => Promise<ToolExecutionResult>;
 
-const runToolViaBackground: ToolRunner = ({ name, input }) => executeToolViaBackground(name, input);
+const runToolViaBackground: ToolRunner = ({ name, input }) => executeToolViaBackground({ toolName: name, toolInput: input });
 
-/** Opens one Turn: sends its JSON request body and yields the Turn's events as they stream in. */
-export type TurnSource = (request: { body: string; signal?: AbortSignal }) => AsyncIterable<AgentStreamEvent>;
+export type TurnSource = (request: { body: string; signal?: AbortSignal }) => AsyncIterable<TurnEvent>;
 
 export interface RunAgentLoopOptions {
   baseUrl: string;
@@ -249,9 +336,7 @@ export interface RunAgentLoopOptions {
   image?: ImageData;
   signal?: AbortSignal;
   enableThinking?: boolean;
-  /** Runs each tool call in the user's tab; defaults to the background bridge. */
   runTool?: ToolRunner;
-  /** Opens each Turn's event stream; defaults to a fetch to the agent route at `baseUrl`. */
   openTurn?: TurnSource;
 }
 
@@ -266,20 +351,15 @@ export async function* runAgentLoop({
   runTool = runToolViaBackground,
   openTurn = (request) => streamAgentChat({ baseUrl, ...request }),
 }: RunAgentLoopOptions): AsyncGenerator<AgentRunEvent> {
-  // Append-only: each request resends the previous one's turns unchanged, so the
-  // server's prompt cache hits and the model keeps every earlier tool observation.
-  const previousTurns: AgentTurn[] = [];
+  const previousTurns: RunTurn[] = [];
   let turnCount = 0;
   let toolResults: ToolResult[] = [];
   let isFirstRequest = true;
-  // Sent on every continuation so the server can tell this Run from a newer one in the same chat.
   let runId: string | undefined;
   const maxTurns = MAX_AGENT_TURNS;
 
-  // Track tool calls to detect repetitive patterns (like Manus does)
   const toolCallHistory: Array<{ name: string; inputHash: string }> = [];
 
-  // Every path through Turn `maxTurns` returns: it runs no tools and never resumes.
   while (true) {
     if (signal?.aborted) {
       yield CANCELLED_EVENT;
@@ -287,8 +367,6 @@ export async function* runAgentLoop({
     }
 
     turnCount++;
-    // The server rebuilds the run's opening message from the DB, which keeps only its
-    // text, so the image goes with every request to keep that message unchanged.
     const streamOptions: StreamAgentChatOptions = {
       chatId,
       model,
@@ -304,7 +382,6 @@ export async function* runAgentLoop({
       if (runId) streamOptions.runId = runId;
     }
 
-    // Measured in UTF-8 bytes, as the server counts them: string length undercounts non-ASCII text.
     const body = JSON.stringify(streamOptions);
     if (new TextEncoder().encode(body).length > AGENT_SIZE_LIMITS.requestBytes) {
       yield REQUEST_TOO_LARGE_NOTICE;
@@ -315,16 +392,14 @@ export async function* runAgentLoop({
     const isLastTurn = turnCount === maxTurns;
     let hasToolUse = false;
     let skippedToolCall = false;
-    let doneEvent: AgentStreamEvent | undefined;
-    // Held until done says whether the Run ends on this Turn: only a Run's last Turn is its final answer.
+    let doneEvent: TurnEvent | undefined;
     let finalAnswer: AgentRunEvent | undefined;
-    let serverContent: ContentBlock[] | undefined;
-    toolResults = []; // Reset for the CURRENT turn only
-    const assistantContent: ContentBlock[] = [];
-    let turnTextContent = ""; // Text content for this turn only
+    let serverContent: unknown[] | undefined;
+    toolResults = [];
+    const assistantContent: Array<ContentBlock | StreamedToolUse> = [];
+    let turnTextContent = "";
 
     for await (const event of openTurn({ body, signal })) {
-      // Checked per event so a stopped run never executes the remaining tool_use blocks of its turn.
       if (signal?.aborted) {
         yield CANCELLED_EVENT;
         return;
@@ -365,9 +440,6 @@ export async function* runAgentLoop({
         }
 
         case "tool_call_start":
-          // Ignore server-provided tool_call_start events.
-          // We emit tool_call_start deterministically from the corresponding tool_use
-          // so the UI always has real params and we avoid duplicate tool rows.
           break;
 
         case "tool_use": {
@@ -377,16 +449,14 @@ export async function* runAgentLoop({
               ? {
                   type: "tool_use" as const,
                   id: event.id,
-                  name: event.name as ToolName,
+                  name: event.name,
                   input: event.input || {},
                 }
               : null);
 
-          // The Run ends on its last Turn, so Claude would never see what a tool run there did.
           if (toolUse && isLastTurn) {
             skippedToolCall = true;
           } else if (toolUse) {
-            // Ensure the type property is set for message history persistence
             if (!toolUse.type) {
               toolUse = { ...toolUse, type: "tool_use" };
             }
@@ -402,7 +472,6 @@ export async function* runAgentLoop({
 
             assistantContent.push(toolUse);
 
-            // Yield tool_call_start with full params before execution
             yield {
               type: "tool_call_start",
               toolName: toolUse.name,
@@ -440,7 +509,6 @@ export async function* runAgentLoop({
                 resultContent = toolResult.error || "Tool execution failed";
               }
 
-              // Detect repetitive tool calls (context engineering like Manus)
               const toolName = toolUse.name;
               const inputHash = JSON.stringify(toolUse.input);
               const repeatCount = toolCallHistory.filter(
@@ -448,7 +516,6 @@ export async function* runAgentLoop({
               ).length;
               toolCallHistory.push({ name: toolName, inputHash });
 
-              // Inject warning if agent is repeating itself
               if (repeatCount >= 2) {
                 resultContent = `[STUCK WARNING: You've called ${toolUse.name} with identical parameters ${repeatCount + 1} times. The page state is likely not changing. Either try a different approach or tell the user what's blocking you.]\n\n${resultContent}`;
               }
@@ -477,7 +544,7 @@ export async function* runAgentLoop({
                   };
             } catch (error) {
               const message = error instanceof Error ? error.message : String(error);
-              // Anthropic rejects the next turn if any tool_use lacks a matching tool_result.
+              // Anthropic rejects the next turn if any tool_use lacks a matching tool_result. https://docs.claude.com/en/docs/agents-and-tools/tool-use/implement-tool-use
               toolResults.push({
                 type: "tool_result",
                 tool_use_id: toolUse.id,
@@ -502,8 +569,6 @@ export async function* runAgentLoop({
           break;
 
         case "execution_complete":
-          // The backend emits execution_complete at the end of every Turn. Yielding it on a Turn the
-          // Run continues past would make the UI finalize the reply and then reset on the next Turn.
           finalAnswer = {
             type: "execution_complete",
             finalOutput: event.finalOutput || turnTextContent,
@@ -519,12 +584,10 @@ export async function* runAgentLoop({
           break;
 
         case "error":
-          // A 409 with this code means a newer Run took over the chat; BALANCE_HELD is a 409 too.
           if (event.code === AGENT_ERROR_CODES.runSuperseded) {
             yield { type: "run_notice", reason: "superseded", message: USER_FACING_TEXT.runSuperseded };
             return;
           }
-          // A first request's 413 is about the message or image; a continuation's is the Run's history.
           if (event.code === AGENT_ERROR_CODES.requestTooLarge && isContinuation) {
             yield REQUEST_TOO_LARGE_NOTICE;
             return;
@@ -536,6 +599,16 @@ export async function* runAgentLoop({
             details: parseErrorDetails(event.details),
           };
           return;
+
+        case "tool_use_start":
+        case "tool_use_complete":
+        case "tool_call_complete":
+        case "tool_call_error":
+        case "web_search_start":
+        case "web_search_results":
+        case "web_search_error":
+        case "citations":
+          break;
       }
     }
 
@@ -544,17 +617,14 @@ export async function* runAgentLoop({
       return;
     }
 
-    // The server always ends a turn with done or error; anything else means a function timeout or proxy cut.
     if (!doneEvent) {
-      console.error("[agent-loop] Stream ended without done or error", { chatId, turnCount });
+      logger.error("agent-loop", "Stream ended without done or error", { chatId, turnCount });
       yield { type: "error", error: USER_FACING_TEXT.streamCut };
       return;
     }
 
-    // Claude paused mid-Turn (a long server-side search): resend its content as is to let it go on.
     const paused = doneEvent.stopReason === "pause_turn";
     const serverRunEnd = runEndFieldSchema.safeParse(doneEvent);
-    // An older server doesn't say runEnd; a Turn that still wanted to go on ends the Run here anyway.
     const wantedMore = paused || skippedToolCall || doneEvent.stopReason === "tool_use";
     const runEnd = serverRunEnd.success
       ? serverRunEnd.data.runEnd
@@ -582,8 +652,6 @@ export async function* runAgentLoop({
       });
     }
 
-    // The server's blocks are authoritative: they carry the signed thinking a
-    // tool-use turn must replay. Fall back to the streamed blocks if none came.
     previousTurns.push({ content: serverContent ?? assistantContent, toolResults });
   }
 }

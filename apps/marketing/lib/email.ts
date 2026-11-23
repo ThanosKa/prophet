@@ -30,6 +30,7 @@ export interface SendPurchaseEmailParams {
 /**
  * Webhooks await their email before answering (a Worker cancels work left running after
  * the response), so a slow Resend must not hold the answer past the sender's timeout.
+ * https://developers.cloudflare.com/workers/runtime-apis/context/#waituntil
  */
 const SEND_TIMEOUT_MS = 5_000
 
@@ -47,7 +48,6 @@ async function sendWithin(payload: Parameters<Resend['emails']['send']>[0]): Pro
   }
 }
 
-// Logs name the email by its Resend id, never by the recipient's address.
 export async function sendWelcomeEmail({ to, firstName, lastName }: SendWelcomeEmailParams): Promise<void> {
   const html = buildWelcomeHtml({ firstName, lastName })
 
@@ -96,12 +96,16 @@ function buildWelcomeSubject({ firstName }: { firstName?: string | null }): stri
   return firstName ? `Welcome to Prophet, ${firstName}!` : 'Welcome to Prophet!'
 }
 
-function formatName(firstName?: string | null, lastName?: string | null): string | null {
+function formatName({
+  firstName,
+  lastName,
+}: {
+  firstName?: string | null
+  lastName?: string | null
+}): string | null {
   const parts = [firstName, lastName].filter(Boolean)
   return parts.length > 0 ? parts.join(' ') : null
 }
-
-// ─── Shared email style constants ───
 
 const GOLD_PRIMARY = '#D4960A'
 const GOLD_GRADIENT_START = '#FFD700'
@@ -170,7 +174,7 @@ You're receiving this because you signed up for Prophet.
 }
 
 export function buildWelcomeHtml({ firstName, lastName }: { firstName?: string | null; lastName?: string | null }): string {
-  const fullName = formatName(firstName, lastName)
+  const fullName = formatName({ firstName, lastName })
   const greeting = fullName ? `Welcome to Prophet, ${fullName}!` : 'Welcome to Prophet!'
 
   const content = `
@@ -248,7 +252,7 @@ Install Prophet Extension
 
 export function buildPurchaseHtml(params: SendPurchaseEmailParams): string {
   const { firstName, lastName, planName, credits, isSubscription } = params
-  const fullName = formatName(firstName, lastName)
+  const fullName = formatName({ firstName, lastName })
   const greeting = fullName ? `Thank you, ${fullName}!` : 'Thank you for your purchase!'
   const creditsFormatted = formatDollars(credits)
   const typeLabel = isSubscription ? 'Subscription' : 'One-time purchase'

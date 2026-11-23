@@ -6,7 +6,7 @@ const onWorker = isWorkerRuntime()
 
 const options: LoggerOptions = {
   level: process.env.LOG_LEVEL || (isDevelopment ? 'debug' : 'info'),
-  // pino-pretty runs in a worker thread, which the Workers runtime does not offer.
+  // pino-pretty runs in a worker thread, which the Workers runtime does not offer. https://github.com/pinojs/pino/blob/main/docs/transports.md
   transport:
     isDevelopment && !onWorker
       ? {
@@ -23,16 +23,18 @@ const options: LoggerOptions = {
       return { level: label }
     },
   },
-  // Call sites log errors under `error`; without this an Error object prints as `{}`.
+  // Call sites log errors under `error`; without this an Error object prints as `{}`. https://github.com/pinojs/pino/blob/main/docs/api.md#pino-stdserializers
   serializers: { error: pino.stdSerializers.err },
 }
 
-// The level formatter above puts the label first on every line.
 const LEVEL_LABEL = /^\{"level":"(\w+)"/
 
-// pino's default destination calls fs.writeSync in a form the Workers runtime rejects,
-// so every log call would throw there. Workers Logs files each line by the console
-// method that wrote it, so errors must go through console.error to be filtered as errors.
+/*
+ * pino's default destination calls fs.writeSync in a form the Workers runtime rejects,
+ * so every log call would throw there. Workers Logs files each line by the console
+ * method that wrote it, so errors must go through console.error to be filtered as errors.
+ * https://developers.cloudflare.com/workers/observability/logs/workers-logs/
+ */
 /* eslint-disable no-console -- the one place Worker logs reach the console */
 const consoleDestination: DestinationStream = {
   write(line) {

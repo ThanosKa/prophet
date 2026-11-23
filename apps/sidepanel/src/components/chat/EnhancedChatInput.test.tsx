@@ -29,7 +29,6 @@ describe('EnhancedChatInput image attach', () => {
     const form = container.querySelector('form')
     if (!form) throw new Error('no form')
     await act(async () => form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })))
-    // FileReader resolves on a later task
     await act(async () => new Promise((resolve) => setTimeout(resolve, 20)))
   }
 
@@ -41,7 +40,7 @@ describe('EnhancedChatInput image attach', () => {
     document.body.appendChild(container)
     root = createRoot(container)
     onSend = vi.fn<OnSend>()
-    // jsdom has no object URLs
+    // jsdom has no object URLs https://github.com/jsdom/jsdom/issues/1721
     Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:shot'), revokeObjectURL: vi.fn() })
   })
 
@@ -53,7 +52,6 @@ describe('EnhancedChatInput image attach', () => {
   it('refuses an image over 2,000,000 base64 chars when it is attached, with a message', async () => {
     await render()
 
-    // 1,600,000 bytes encode to 2,133,336 base64 chars
     await attach(imageOfBytes({ bytes: 1_600_000, type: 'image/png' }))
 
     expect(container.querySelector('[role="alert"]')?.textContent).toMatch(/too large/i)
@@ -74,7 +72,6 @@ describe('EnhancedChatInput image attach', () => {
   it('sends an image within the limit with its validated media type', async () => {
     await render()
 
-    // 1,400,000 bytes encode to 1,866,668 base64 chars
     await attach(imageOfBytes({ bytes: 1_400_000, type: 'image/webp' }))
     expect(container.querySelector('[role="alert"]')).toBeNull()
     expect(container.querySelector('img[alt="shot.png"]')).not.toBeNull()
@@ -82,7 +79,7 @@ describe('EnhancedChatInput image attach', () => {
     await submit()
 
     expect(onSend).toHaveBeenCalledTimes(1)
-    const [, image] = onSend.mock.calls[0]
+    const [{ image }] = onSend.mock.calls[0]
     expect(image?.mediaType).toBe('image/webp')
     expect(image?.base64.length).toBe(1_866_668)
   })

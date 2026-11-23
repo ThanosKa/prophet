@@ -75,7 +75,6 @@ async function openingRowId(content: string) {
 
 const balance = () => balanceOf(USER_ID)
 
-/** Run A opens a.com, then Run B opens b.com in another panel. Returns A's runId. */
 async function runAThenRunB() {
   streamMock.mockReturnValueOnce(anthropicTurn({ content: A_TURN_1, stopReason: 'tool_use' }))
   const runA = await runIdOf(await post({ userMessage: 'Open a.com' }))
@@ -84,10 +83,6 @@ async function runAThenRunB() {
   return { runA, runB }
 }
 
-/**
- * Run A finishes Turn 1, and its Turn 2 is still streaming when Run B starts in another
- * panel. A's Turn 2 ends while B's Turn 1 is still streaming; then B's Turn 1 ends.
- */
 async function aTurn2EndsWhileBStreams() {
   streamMock.mockReturnValueOnce(anthropicTurn({ content: A_TURN_1, stopReason: 'tool_use' }))
   const runA = await runIdOf(await post({ userMessage: 'Open a.com' }))
@@ -143,7 +138,6 @@ describe('one live Run per chat in POST /api/agent/chat', () => {
   it("settles an older Run's in-flight Turn but leaves its record alone", async () => {
     await aTurn2EndsWhileBStreams()
 
-    // Every Turn is billed at its real cost and no Hold is left behind.
     const usage = await db.select().from(schema.usageRecords)
     expect(usage).toHaveLength(3)
     expect(usage.every((record) => record.costCents > 0)).toBe(true)
@@ -210,7 +204,6 @@ describe('one live Run per chat in POST /api/agent/chat', () => {
     streamMock.mockReturnValueOnce(anthropicTurn({ content: [text('Hi there.')], stopReason: 'end_turn' }))
     await (await post({ userMessage: 'Hi' })).text()
 
-    // The side panel's Stop cancels the response body.
     await aTurn2.reader.cancel()
     aGate.open()
 
@@ -231,7 +224,6 @@ describe('one live Run per chat in POST /api/agent/chat', () => {
   })
 
   it('builds a continuation with runId from the rows up to and including its opening', async () => {
-    // A row an older build saved for another Run after this Run had started.
     await db.insert(schema.messages).values([
       { chatId: CHAT_ID, role: 'user', content: 'Open a.com', createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, 0)) },
       { chatId: CHAT_ID, role: 'user', content: 'Open b.com', createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, 1)) },
@@ -256,7 +248,6 @@ describe('one live Run per chat in POST /api/agent/chat', () => {
   })
 
   it('keeps the earlier rules for a continuation without runId', async () => {
-    // Extension 1.0.5 sends no runId: Run A goes on after Run B started, as before.
     const { runA } = await runAThenRunB()
     expect(runA).toBe(await openingRowId('Open a.com'))
     streamMock.mockReturnValueOnce(anthropicTurn({ content: [text('a.com is open.')], stopReason: 'end_turn' }))
@@ -266,7 +257,6 @@ describe('one live Run per chat in POST /api/agent/chat', () => {
 
     expect(response.status).toBe(200)
     expect(session).not.toHaveProperty('runId')
-    // The newest user row is B's, whose row isn't A's: the record write is skipped.
     expect(await storedMessages()).toEqual([
       { role: 'user', content: 'Open a.com', toolCalls: null },
       {
@@ -282,7 +272,6 @@ describe('one live Run per chat in POST /api/agent/chat', () => {
       },
     ])
     expect(await db.select().from(schema.usageRecords)).toHaveLength(3)
-    // Its prompt is still the whole chat minus a trailing assistant row.
     expect(sentParams(2).messages.map((message: { content: unknown }) => message.content).slice(0, 3)).toEqual([
       'Open a.com',
       'Opening a.com.\n\nActions taken:\n- navigate {"url":"https://a.com"}',
@@ -302,7 +291,6 @@ describe('one live Run per chat in POST /api/agent/chat', () => {
       streamMock.mockReturnValueOnce(anthropicTurn({ content: B_TURN_1, stopReason: 'tool_use', gate: bGate.gate }))
       const bTurn1 = await readUntil({ response: await post({ userMessage: 'Open b.com' }), marker: 'content_delta' })
 
-      // B's opening is the newest user row and B has no row yet when A's next Turn ends.
       streamMock.mockReturnValueOnce(anthropicTurn({ content: [text('a.com is open.')], stopReason: 'end_turn' }))
       const aTurn2 = await post(continuation)
       await aTurn2.text()
@@ -324,7 +312,6 @@ describe('one live Run per chat in POST /api/agent/chat', () => {
           toolCalls: [{ type: 'tool_use', id: 'toolu_b1', name: 'navigate', input: { url: 'https://b.com' } }],
         },
       ])
-      // A's Turn is still billed.
       const usage = await db.select().from(schema.usageRecords)
       expect(usage).toHaveLength(3)
       expect(await balance()).toBe(1000 - usage.reduce((sum, record) => sum + record.costCents, 0))

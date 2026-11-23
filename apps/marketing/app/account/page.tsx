@@ -28,7 +28,6 @@ export default function AccountOverviewPage() {
 
   const balanceDisplay = describeAccountBalance(balance);
   const tierName = user.tier.charAt(0).toUpperCase() + user.tier.slice(1);
-  // The bar tracks Subscription credits against the plan; Purchased credits sit outside it.
   const creditPercentage =
     user.creditsIncluded > 0
       ? Math.max(0, Math.min(100, Math.round((balance.subscription / user.creditsIncluded) * 100)))
@@ -50,7 +49,6 @@ export default function AccountOverviewPage() {
         </p>
       </div>
 
-      {/* Status Alerts - only show problem states on overview (not free tier prompt) */}
       {(user.subscriptionStatus === 'past_due' || user.subscriptionStatus === 'incomplete' || user.subscriptionStatus === 'canceled') && (
         <SubscriptionAlerts
           tier={user.tier}

@@ -17,13 +17,12 @@ import {
   MessageActions,
   MessageResponse,
 } from "@/components/ai-elements/message";
-import { ToolCallCollapsible } from "./ToolCallCollapsible";
+import { ToolCallCollapsible, type ToolCallView } from "./ToolCallCollapsible";
 import { useStickToBottomContext } from "use-stick-to-bottom";
-import { readStoredToolCalls, type Message as MessageType, type ToolCall } from "@prophet/shared";
+import { readStoredToolCalls, type Message as MessageType } from "@prophet/shared";
 import { toolPartView, type MessagePart } from "@/lib/agent/chat-adapter";
 
 interface AgentMessage extends MessageType {
-  /** From the messages API after a reload, so validated before it is shown. */
   toolCalls?: unknown;
   thinkingContent?: string;
   parts?: MessagePart[];
@@ -37,7 +36,7 @@ interface EnhancedMessageListProps {
   messages: AgentMessage[];
   isLoading?: boolean;
   isStreaming?: boolean;
-  currentToolCall?: ToolCall | null;
+  currentToolCall?: ToolCallView | null;
   hasMore?: boolean;
   isLoadingOlder?: boolean;
   onLoadOlder?: () => void;
@@ -48,7 +47,7 @@ function ScrollTrigger({ scrollRef }: { scrollRef: React.RefObject<{ scrollToBot
 
   useEffect(() => {
     if (scrollRef.current === null) {
-      (scrollRef as React.MutableRefObject<{ scrollToBottom: () => void } | null>).current = { scrollToBottom };
+      scrollRef.current = { scrollToBottom };
     }
   }, [scrollToBottom, scrollRef]);
 
@@ -62,13 +61,12 @@ function MessageWithActions({
 }: {
   message: AgentMessage;
   isStreaming?: boolean;
-  currentToolCall?: ToolCall | null;
+  currentToolCall?: ToolCallView | null;
 }) {
   const [copied, setCopied] = useState(false);
   const isAssistant = message.role === "assistant";
   const displayContent = message.content;
   const hasParts = message.parts && message.parts.length > 0;
-  // A reloaded message has no live parts; its Run's actions come from the stored tool calls
   const storedToolCalls = hasParts ? [] : readStoredToolCalls(message.toolCalls);
   const hasThinking = Boolean(message.thinkingContent);
   const showThinking = hasThinking && isStreaming && !displayContent && !hasParts;

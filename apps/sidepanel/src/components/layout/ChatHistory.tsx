@@ -1,4 +1,3 @@
-
 import { Trash2, Plus, Loader2 } from 'lucide-react'
 import { useRef, useEffect, useMemo } from 'react'
 import {
@@ -47,7 +46,6 @@ export function ChatHistory({
         const scrollArea = scrollAreaRef.current
         if (!scrollArea) return
 
-        // Targeted fix for Radix ScrollArea: use the viewport as the root
         const viewport = scrollArea.querySelector('[data-radix-scroll-area-viewport]')
 
         const observer = new IntersectionObserver(
@@ -57,7 +55,7 @@ export function ChatHistory({
                 }
             },
             {
-                root: viewport, // Critical: observe within this scroll container
+                root: viewport,
                 threshold: 0.1
             }
         )
@@ -74,8 +72,8 @@ export function ChatHistory({
         setDrawerOpen(false)
     }
 
-    const handleDelete = (e: React.MouseEvent, id: string) => {
-        e.stopPropagation()
+    const handleDelete = ({ event, id }: { event: React.MouseEvent; id: string }) => {
+        event.stopPropagation()
         onDeleteChat(id)
     }
 
@@ -178,7 +176,7 @@ export function ChatHistory({
                                                         <div
                                                             role="button"
                                                             tabIndex={0}
-                                                            onClick={(e) => handleDelete(e, chat.id)}
+                                                            onClick={(e) => handleDelete({ event: e, id: chat.id })}
                                                             className={cn(
                                                                 "shrink-0 flex-none p-1.5 rounded-md transition-all outline-none",
                                                                 "text-muted-foreground/60",

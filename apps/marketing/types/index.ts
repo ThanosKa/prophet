@@ -8,7 +8,6 @@ export interface ChatStreamResponse {
   }
 }
 
-// API Response helpers
 export interface SuccessResponse<T = unknown> {
   data: T
 }
@@ -21,13 +20,19 @@ export interface ErrorResponse {
 
 export type ApiResponse<T = unknown> = SuccessResponse<T> | ErrorResponse
 
-// Helper to create success responses
 export function success<T>(data: T): SuccessResponse<T> {
   return { data }
 }
 
-// Helper to create error responses
-export function error(message: string, code?: string, details?: unknown): ErrorResponse {
+export function error({
+  message,
+  code,
+  details,
+}: {
+  message: string
+  code?: string
+  details?: unknown
+}): ErrorResponse {
   return { error: message, code, details }
 }
 

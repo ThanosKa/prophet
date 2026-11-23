@@ -7,19 +7,9 @@ import { calculateUsageCostInCredits, type ModelName } from '@/lib/pricing'
 type CreditStore = Pick<PgDatabase<PgQueryResultHKT>, 'update'>
 type CreditReserveStore = Pick<PgDatabase<PgQueryResultHKT>, '$with' | 'with' | 'select'>
 
-/**
- * Deliberately pessimistic: 2 ASCII bytes per token covers English (~3.5 bytes/token),
- * code and accessibility snapshots (~1.9); 2 tokens per non-ASCII character covers
- * Greek (~1.7 tokens/char), CJK (~1.4) and Cyrillic, all measured with the published
- * tokenizer x1.35 (the Opus 4.7+ inflation bound). Bytes alone undercount Greek, whose
- * letters are 2 bytes but ~1.7 tokens. Over-estimating only makes the hold temporarily
- * larger; under-estimating lets a turn settle above its hold.
- */
 const ASCII_BYTES_PER_TOKEN = 2
 const TOKENS_PER_NON_ASCII_CHAR = 2
-// Tool-use system prompt Anthropic injects (346 tokens on Claude 4) x1.35, rounded up.
 const REQUEST_OVERHEAD_TOKENS = 500
-// High-res vision caps an image at ~4784 tokens on Claude 5 models.
 const IMAGE_TOKEN_ALLOWANCE = 4800
 
 function isImageBlock(value: unknown): boolean {
@@ -93,12 +83,15 @@ export function planCreditReservation({
   webSearchMaxUses: number
 }): CreditReservationPlan {
   const costWith = (outputTokens: number) =>
-    calculateUsageCostInCredits(model, {
-      inputTokens: 0,
-      cacheCreationInputTokens: restTokens,
-      cacheReadInputTokens: cachedPrefixTokens,
-      outputTokens,
-      webSearchRequests: webSearchMaxUses,
+    calculateUsageCostInCredits({
+      model,
+      usage: {
+        inputTokens: 0,
+        cacheCreationInputTokens: restTokens,
+        cacheReadInputTokens: cachedPrefixTokens,
+        outputTokens,
+        webSearchRequests: webSearchMaxUses,
+      },
     })
 
   const floorCents = costWith(minTokens)
@@ -111,8 +104,6 @@ export function planCreditReservation({
     return { ok: true, reserveCents: fullCents, maxTokens }
   }
 
-  // Cost is monotonic in output tokens, so binary-search the billing function itself
-  // rather than inverting it: the reserve then matches settle's rounding exactly.
   let affordable = minTokens
   let unaffordable = maxTokens
   while (unaffordable - affordable > 1) {
@@ -124,7 +115,6 @@ export function planCreditReservation({
   return { ok: true, reserveCents: costWith(affordable), maxTokens: affordable }
 }
 
-/** How much of a Turn's hold came out of each balance, so settlement can return it. */
 export type CreditHold = { subscriptionCents: number; purchasedCents: number }
 
 /**
@@ -150,7 +140,6 @@ export async function reserveCredits({
       .where(eq(users.id, userId))
       .for('update')
   )
-  // Subscription credits can be negative after an overage; they then give nothing.
   const fromSubscription = (subscription: AnyPgColumn) =>
     sql`LEAST(GREATEST(${subscription}, 0), ${reserveCents}::integer)`
 
@@ -198,7 +187,6 @@ export async function settleCredits({
   const refundToSubscription = Math.max(unusedCents, 0) - refundToPurchased
   const overageCents = Math.max(-unusedCents, 0)
 
-  // Both SET expressions read the row as it was before this UPDATE.
   const overageFromSubscription = sql`LEAST(GREATEST(${users.creditsRemaining}, 0), ${overageCents}::integer)`
   const overageFromPurchased = sql`LEAST(${users.purchasedCredits}, ${overageCents}::integer - ${overageFromSubscription})`
 

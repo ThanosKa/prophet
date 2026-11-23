@@ -1,16 +1,9 @@
-/**
- * Dev Logger for LLM Interactions
- * 
- * Logs all LLM requests and responses to log.txt when NODE_ENV=development
- * Provides formatted output showing model, user messages, JSON payloads, and responses.
- */
-
+import { attemptAsync } from '@prophet/shared'
 import { writeFile, appendFile, mkdir } from 'fs/promises'
 import { join, resolve } from 'path'
 import type { MessageParam } from '@anthropic-ai/sdk/resources/messages'
 import { logger } from '@/lib/logger'
 
-// Use absolute path to ensure consistency across different route contexts
 const LOG_DIR = resolve(process.cwd(), 'logs')
 const LOG_FILE_PATH = join(LOG_DIR, 'response.txt')
 
@@ -19,7 +12,6 @@ export class DevLogger {
     private buffer: string[] = []
 
     constructor() {
-        // More permissive check for development logging
         this.isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
         
         if (this.isDev) {
@@ -28,16 +20,9 @@ export class DevLogger {
     }
 
     private async ensureLogDir(): Promise<void> {
-        try {
-            await mkdir(LOG_DIR, { recursive: true })
-        } catch {
-            // Ignore if directory already exists
-        }
+        await attemptAsync(() => mkdir(LOG_DIR, { recursive: true }))
     }
 
-    /**
-     * Log an LLM request (before streaming)
-     */
     async logRequest(
         model: string,
         messages: MessageParam[],
@@ -49,14 +34,11 @@ export class DevLogger {
         await this.ensureLogDir()
         const timestamp = new Date().toISOString()
 
-        // Extract user message
         const lastMessage = messages[messages.length - 1]
         const userMessage = this.extractTextFromMessage(lastMessage)
 
-        // LLM Input (all messages as text)
         const llmInput = messages.map(m => `[${m.role.toUpperCase()}]: ${this.extractTextFromMessage(m)}`).join('\n')
 
-        // Format JSON sent to LLM (sanitize base64 data and truncate system prompt)
         const sanitizedMessages = this.sanitizeMessagesForLogging(messages)
         const MAX_SYSTEM_PROMPT_LENGTH = 1000
         const truncatedSystemPrompt = systemPrompt && systemPrompt.length > MAX_SYSTEM_PROMPT_LENGTH
@@ -102,7 +84,6 @@ ${jsonSent}
 
         this.buffer.push(logBlock)
 
-        // Write immediately in case of crash
         try {
             await appendFile(LOG_FILE_PATH, logBlock, 'utf-8')
         } catch (_err) {
@@ -110,9 +91,6 @@ ${jsonSent}
         }
     }
 
-    /**
-     * Log LLM response (after streaming completes)
-     */
     async logResponse(
         responseText: string,
         usage?: {
@@ -153,9 +131,6 @@ END OF RESPONSE
         }
     }
 
-    /**
-     * Log an error
-     */
     async logError(error: Error | string): Promise<void> {
         if (!this.isDev) return
 
@@ -177,9 +152,6 @@ ${error instanceof Error && error.stack ? `\nStack:\n${error.stack}` : ''}
         }
     }
 
-    /**
-     * Clear the log file (useful at server startup)
-     */
     async clearLog(): Promise<void> {
         if (!this.isDev) return
 
@@ -199,9 +171,6 @@ Each request shows: Model, User Message, JSON Sent, and Response.
         }
     }
 
-    /**
-     * Extract text from Anthropic message format
-     */
     private extractTextFromMessage(message: MessageParam): string {
         if (typeof message.content === 'string') {
             return message.content
@@ -220,12 +189,8 @@ Each request shows: Model, User Message, JSON Sent, and Response.
         return '[Complex message]'
     }
 
-    /**
-     * Sanitize messages for logging - replace base64 data with placeholders and truncate long content
-     * Returns a simplified structure for logging purposes only (not for API calls)
-     */
     private sanitizeMessagesForLogging(messages: MessageParam[]): unknown[] {
-        const MAX_CONTENT_LENGTH = 500 // Show first 500 chars of tool results
+        const MAX_CONTENT_LENGTH = 500
 
         return messages.map(message => {
             if (typeof message.content === 'string') {
@@ -234,7 +199,6 @@ Each request shows: Model, User Message, JSON Sent, and Response.
 
             if (Array.isArray(message.content)) {
                 const sanitizedContent = message.content.map(block => {
-                    // Sanitize base64 images
                     if (block.type === 'image' && 'source' in block) {
                         return {
                             type: 'image',
@@ -242,9 +206,8 @@ Each request shows: Model, User Message, JSON Sent, and Response.
                         }
                     }
 
-                    // Truncate long tool results
                     if (block.type === 'tool_result' && 'content' in block) {
-                        const content = (block as { content: unknown }).content
+                        const content = block.content
                         if (typeof content === 'string' && content.length > MAX_CONTENT_LENGTH) {
                             return {
                                 ...block,
@@ -263,5 +226,4 @@ Each request shows: Model, User Message, JSON Sent, and Response.
     }
 }
 
-// Singleton instance
 export const devLogger = new DevLogger()

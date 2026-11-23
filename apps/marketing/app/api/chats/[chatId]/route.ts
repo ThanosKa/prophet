@@ -18,13 +18,13 @@ export async function GET(
     const auth_ = await auth()
     userId = auth_.userId
     if (!userId) {
-      return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
+      return NextResponse.json(error({ message: 'Unauthorized', code: 'UNAUTHORIZED' }), { status: 401 })
     }
 
-    const rateLimitResult = await checkRateLimit(userId, 'api')
+    const rateLimitResult = await checkRateLimit({ userId, type: 'api' })
     if (!rateLimitResult.success) {
       return NextResponse.json(
-        error('Too many requests', 'RATE_LIMIT_EXCEEDED'),
+        error({ message: 'Too many requests', code: 'RATE_LIMIT_EXCEEDED' }),
         {
           status: 429,
           headers: {
@@ -41,7 +41,7 @@ export async function GET(
     })
 
     if (!chat) {
-      return NextResponse.json(error('Chat not found', 'CHAT_NOT_FOUND'), { status: 404 })
+      return NextResponse.json(error({ message: 'Chat not found', code: 'CHAT_NOT_FOUND' }), { status: 404 })
     }
 
     logger.info({ userId, chatId }, 'Chat fetched')
@@ -49,7 +49,7 @@ export async function GET(
   } catch (err) {
     logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to fetch chat')
     return NextResponse.json(
-      error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'),
+      error({ message: INTERNAL_ERROR_MESSAGE, code: 'INTERNAL_ERROR' }),
       { status: 500 }
     )
   }
@@ -66,13 +66,13 @@ export async function DELETE(
     const auth_ = await auth()
     userId = auth_.userId
     if (!userId) {
-      return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
+      return NextResponse.json(error({ message: 'Unauthorized', code: 'UNAUTHORIZED' }), { status: 401 })
     }
 
-    const rateLimitResult = await checkRateLimit(userId, 'api')
+    const rateLimitResult = await checkRateLimit({ userId, type: 'api' })
     if (!rateLimitResult.success) {
       return NextResponse.json(
-        error('Too many requests', 'RATE_LIMIT_EXCEEDED'),
+        error({ message: 'Too many requests', code: 'RATE_LIMIT_EXCEEDED' }),
         {
           status: 429,
           headers: {
@@ -89,7 +89,7 @@ export async function DELETE(
     })
 
     if (!chat) {
-      return NextResponse.json(error('Chat not found', 'CHAT_NOT_FOUND'), { status: 404 })
+      return NextResponse.json(error({ message: 'Chat not found', code: 'CHAT_NOT_FOUND' }), { status: 404 })
     }
 
     await db.delete(chats).where(eq(chats.id, chatId))
@@ -99,7 +99,7 @@ export async function DELETE(
   } catch (err) {
     logger.error({ error: err instanceof Error ? err.message : String(err), userId }, 'Failed to delete chat')
     return NextResponse.json(
-      error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'),
+      error({ message: INTERNAL_ERROR_MESSAGE, code: 'INTERNAL_ERROR' }),
       { status: 500 }
     )
   }

@@ -1,42 +1,22 @@
-/**
- * Mock mode: a fake Turn source and a fake tool runner for the real Run loop.
- *
- * Use by setting VITE_USE_DEV_API=mock in .env.local. `runAgentLoop` runs as it does for a real
- * Run (continuations, the last Turn, run_notice, tool_call_start); only the two adapters are fake.
- *
- * Special commands:
- * - "/all" runs ALL tools, "/snap", "/nav", "/tabs", "/element", "/wait", "/page" run one group
- * - "/think" forces extended thinking (also on when the brain toggle is on)
- * - "/limit" asks for a tool on every Turn, so the Run ends with the turn_limit notice
- * - "/budget" ends the Run on its second Turn with the run_budget notice
- * - Any other message picks a random response
- */
 import type { ToolName } from '@prophet/shared'
 import type { TurnSource, ToolRunner } from './agent-loop'
 
-// All real tools from the agent
 const ALL_TOOLS: ToolName[] = [
-  // Observation
   'take_snapshot',
   'search_snapshot',
-  // Element Interaction
   'click_element_by_uid',
   'fill_element_by_uid',
   'hover_element_by_uid',
-  // Navigation
   'navigate',
   'go_back',
   'go_forward',
   'reload_page',
-  // Page
   'scroll_page',
   'get_page_content',
   'get_page_info',
-  // Wait
   'wait_for_selector',
   'wait_for_navigation',
   'wait_for_timeout',
-  // Tabs
   'list_tabs',
   'switch_tab',
   'close_tab',
@@ -84,9 +64,7 @@ interface MockScenario {
   tools: ToolName[]
   text: string
   forceThinking?: boolean
-  /** Ends the Run on its second Turn with this reason. */
   runEnd?: 'run_budget'
-  /** Asks for a tool on every Turn, never finishing on its own. */
   neverStops?: boolean
 }
 
@@ -126,14 +104,9 @@ const defaultWait = (ms: number) => new Promise<void>((resolve) => setTimeout(re
 export interface MockAdapterOptions {
   userMessage: string
   enableThinking?: boolean
-  /** Pauses for the fake typing and tool delays; tests pass an instant one. */
   wait?: (ms: number) => Promise<void>
 }
 
-/**
- * The fake Turn source and tool runner for one mock Run. Its first Turn streams the scenario's
- * thinking, text and tool calls; the Turn the loop continues with answers and ends the Run.
- */
 export function createMockAdapters({
   userMessage,
   enableThinking,
@@ -150,7 +123,7 @@ export function createMockAdapters({
     await wait(100)
 
     if (isFirstTurn && (enableThinking || scenario.forceThinking)) {
-      for (const char of generateMockThinking(userMessage, scenario.tools)) {
+      for (const char of generateMockThinking({ userMessage, tools: scenario.tools })) {
         yield { type: 'thinking_delta', delta: char }
         await wait(Math.random() * 15 + 5)
       }
@@ -173,7 +146,7 @@ export function createMockAdapters({
             type: 'tool_use',
             id: `toolu_mock_${turnNumber}_${toolName}`,
             name: toolName,
-            input: generateMockToolInput(toolName, userMessage),
+            input: generateMockToolInput({ toolName, userMessage }),
           },
         }
       }
@@ -200,10 +173,7 @@ export function createMockAdapters({
   return { openTurn, runTool }
 }
 
-/**
- * Generate mock thinking content based on user message and tools
- */
-function generateMockThinking(userMessage: string, tools: string[]): string {
+function generateMockThinking({ userMessage, tools }: { userMessage: string; tools: string[] }): string {
   const thoughts = [
     `Let me analyze this request: "${userMessage.slice(0, 50)}${userMessage.length > 50 ? '...' : ''}"`,
     '',
@@ -232,18 +202,19 @@ function generateMockThinking(userMessage: string, tools: string[]): string {
   return thoughts.join('\n')
 }
 
-/**
- * Generate mock tool input based on tool name
- */
-function generateMockToolInput(toolName: string, userMessage: string): Record<string, unknown> {
+function generateMockToolInput({
+  toolName,
+  userMessage,
+}: {
+  toolName: string
+  userMessage: string
+}): Record<string, unknown> {
   switch (toolName) {
-    // Observation
     case 'take_snapshot':
       return {}
     case 'search_snapshot':
       return { query: userMessage.slice(0, 30) || 'button' }
 
-    // Element Interaction
     case 'click_element_by_uid':
       return { uid: 'btn_123' }
     case 'fill_element_by_uid':
@@ -251,7 +222,6 @@ function generateMockToolInput(toolName: string, userMessage: string): Record<st
     case 'hover_element_by_uid':
       return { uid: 'menu_789' }
 
-    // Navigation
     case 'navigate':
       return { url: 'https://example.com' }
     case 'go_back':
@@ -261,7 +231,6 @@ function generateMockToolInput(toolName: string, userMessage: string): Record<st
     case 'reload_page':
       return {}
 
-    // Page
     case 'scroll_page':
       return { direction: 'down', amount: 500 }
     case 'get_page_content':
@@ -269,7 +238,6 @@ function generateMockToolInput(toolName: string, userMessage: string): Record<st
     case 'get_page_info':
       return {}
 
-    // Wait
     case 'wait_for_selector':
       return { selector: '#content', timeout: 5000 }
     case 'wait_for_navigation':
@@ -277,7 +245,6 @@ function generateMockToolInput(toolName: string, userMessage: string): Record<st
     case 'wait_for_timeout':
       return { ms: 1000 }
 
-    // Tabs
     case 'list_tabs':
       return {}
     case 'switch_tab':

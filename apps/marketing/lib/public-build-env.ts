@@ -1,9 +1,3 @@
-/**
- * The `NEXT_PUBLIC_*` values a production build inlines into every bundle. They come
- * from the build machine (process.env or `.env.production.local`), not from the
- * Worker's secrets, so a build without them ships a site that fails only under real
- * traffic. Kept free of app imports: `vite.config.ts` loads it.
- */
 const REQUIRED_PUBLIC_KEYS = [
   'NEXT_PUBLIC_APP_URL',
   'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',

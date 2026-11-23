@@ -12,8 +12,6 @@ import { error as errorBody } from '@/types'
 import { EXTRA_CREDITS, TIER_CONFIG, hasLivePlan } from '@/lib/pricing'
 import { getAppUrl } from '@/lib/constants'
 
-// The server picks every price: `priceId` is still accepted so an older cached page keeps
-// working, but it is ignored.
 const subscriptionCheckoutSchema = z.object({
   priceId: z.string().optional(),
   tier: z.enum(['pro', 'premium', 'ultra']),
@@ -22,7 +20,7 @@ const subscriptionCheckoutSchema = z.object({
 const paymentCheckoutSchema = z.object({
   priceId: z.string().optional(),
   mode: z.literal('payment'),
-  credits: z.number().optional(), // For future variable credit amounts
+  credits: z.number().optional(),
 })
 
 const checkoutSchema = z.discriminatedUnion('mode', [
@@ -38,9 +36,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const rateLimitResult = await checkRateLimit(userId, 'api')
+    const rateLimitResult = await checkRateLimit({ userId, type: 'api' })
     if (!rateLimitResult.success) {
-      return NextResponse.json(errorBody('Too many requests', 'RATE_LIMIT_EXCEEDED'), {
+      return NextResponse.json(errorBody({ message: 'Too many requests', code: 'RATE_LIMIT_EXCEEDED' }), {
         status: 429,
         headers: {
           'X-RateLimit-Limit': rateLimitResult.limit?.toString() || '',
@@ -51,7 +49,6 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    // Default mode to 'subscription' if not provided (backwards compatibility)
     const parseBody = { ...body, mode: body.mode || 'subscription' }
     const data = checkoutSchema.parse(parseBody)
 
@@ -63,15 +60,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // One plan per user: a second Checkout would open a second subscription on the same
-    // customer. A subscriber switches plans in the billing portal instead.
     if (data.mode === 'subscription' && hasLivePlan(user)) {
       logger.info(
         { userId, tier: data.tier, subscriptionStatus: user.subscriptionStatus },
         'Plan checkout refused: subscription exists'
       )
       return NextResponse.json(
-        errorBody('You already have a plan. Switch plans in the billing portal.', 'SUBSCRIPTION_EXISTS'),
+        errorBody({ message: 'You already have a plan. Switch plans in the billing portal.', code: 'SUBSCRIPTION_EXISTS' }),
         { status: 409 }
       )
     }
@@ -80,7 +75,6 @@ export async function POST(request: Request) {
 
     const priceId = data.mode === 'payment' ? EXTRA_CREDITS.priceId : TIER_CONFIG[data.tier].priceId
 
-    // Validate priceId is configured (env vars loaded at build time)
     if (!priceId) {
       const tierOrType = data.mode === 'subscription' ? data.tier : 'payment'
       logger.error({ tier: tierOrType }, 'Stripe price ID not configured')
@@ -100,7 +94,7 @@ export async function POST(request: Request) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${appUrl}/account`,
       cancel_url: isPayment ? `${appUrl}/account/billing` : `${appUrl}/pricing`,
-      allow_promotion_codes: !isPayment, // No promo codes for one-time credits
+      allow_promotion_codes: !isPayment,
       metadata,
       ...(user.stripeCustomerId
         ? { customer: user.stripeCustomerId }

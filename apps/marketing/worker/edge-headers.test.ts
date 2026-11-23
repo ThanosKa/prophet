@@ -37,7 +37,7 @@ describe('withEdgeHeaders', () => {
   })
 
   it('copies a response whose headers cannot change, such as a static file', async () => {
-    const asset = Response.redirect('https://prophetchrome.com/', 307) // immutable headers
+    const asset = Response.redirect('https://prophetchrome.com/', 307)
     expect(() => asset.headers.set('X-Test', '1')).toThrow()
 
     const response = withEdgeHeaders({ request: new Request('https://cf-test.prophetchrome.com/old'), response: asset })

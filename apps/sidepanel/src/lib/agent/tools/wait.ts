@@ -1,13 +1,11 @@
-import { cdpCommander, type EvaluateResult } from '../cdp-commander'
+import { cdpCommander } from '../cdp-commander'
+import { evaluateResultSchema } from '../cdp-results'
 import { type ToolExecutionResult } from '../types'
 import { activeTabTool, waitForLoadUnlessComplete } from './tab-tool'
 
 const MAX_TIMEOUT_MS = 30000
 const DEFAULT_TIMEOUT_MS = 10000
 
-/**
- * Wait for a CSS selector to appear in the DOM.
- */
 export const waitForSelector = activeTabTool<{
   selector: string
   timeout?: number
@@ -16,11 +14,10 @@ export const waitForSelector = activeTabTool<{
   failure: 'Failed to wait for selector',
   run: async ({ input, tab }) => {
     const timeout = Math.min(input.timeout || DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS)
-    // Escape selector for use in template literal
     const escapedSelector = input.selector.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
     const checkVisible = input.visible ?? false
 
-    const result = await cdpCommander.sendCommand<EvaluateResult>(
+    const result = evaluateResultSchema.parse(await cdpCommander.sendCommand(
       tab.id,
       'Runtime.evaluate',
       {
@@ -71,8 +68,8 @@ export const waitForSelector = activeTabTool<{
         awaitPromise: true,
         returnByValue: true,
       },
-      timeout + 1000, // CDP timeout slightly longer than JS timeout
-    )
+      timeout + 1000,
+    ))
 
     if (result.exceptionDetails) {
       return {
@@ -86,10 +83,6 @@ export const waitForSelector = activeTabTool<{
   },
 })
 
-/**
- * Wait for page navigation to complete.
- * Listens for chrome.tabs.onUpdated with status 'complete'.
- */
 export const waitForNavigation = activeTabTool<{ timeout?: number }>({
   failure: 'Failed to wait for navigation',
   run: async ({ input, tab }) => {
@@ -106,10 +99,6 @@ export const waitForNavigation = activeTabTool<{ timeout?: number }>({
   },
 })
 
-/**
- * Wait for a specified amount of time.
- * Useful for animations or debounced operations.
- */
 export async function waitForTimeout(input: { ms: number }): Promise<ToolExecutionResult> {
   const startTime = Date.now()
   const timeout = Math.min(Math.max(input.ms, 0), MAX_TIMEOUT_MS)

@@ -19,7 +19,6 @@ export function SubscriptionAlerts({ tier, status, billingPeriodEnd }: Subscript
 
   return (
     <>
-      {/* Free tier - upgrade prompt */}
       {tier === 'free' && !isIncomplete && !isPastDue && (
         <Alert>
           <Info className="h-4 w-4" />
@@ -36,7 +35,6 @@ export function SubscriptionAlerts({ tier, status, billingPeriodEnd }: Subscript
         </Alert>
       )}
 
-      {/* Past due - payment failed */}
       {isPastDue && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -53,7 +51,6 @@ export function SubscriptionAlerts({ tier, status, billingPeriodEnd }: Subscript
         </Alert>
       )}
 
-      {/* Incomplete - payment pending (amber/gold style) */}
       {isIncomplete && (
         <Alert className="border-amber-500/50 bg-amber-500/5 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-400">
           <Clock className="h-4 w-4" />
@@ -70,7 +67,6 @@ export function SubscriptionAlerts({ tier, status, billingPeriodEnd }: Subscript
         </Alert>
       )}
 
-      {/* Canceled - access until date */}
       {isCanceled && billingPeriodEnd && (
         <Alert>
           <XCircle className="h-4 w-4" />

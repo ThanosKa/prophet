@@ -26,12 +26,11 @@ export function databaseConnectionString(env: DatabaseEnv): string {
   return connectionString
 }
 
-/** Opens one request's client. It connects on its first query, so a request with none costs nothing. */
 export function openRequestClient(connectionString: string): RequestClient {
   const client = postgres(connectionString, {
-    prepare: false, // Same as the shared pool, for connection poolers.
-    max: 1, // One request, one connection: the most a burst can open is one per live request.
-    fetch_types: false, // Saves a round trip per connection. The schema has no array columns.
+    prepare: false,
+    max: 1,
+    fetch_types: false,
   })
   return {
     db: drizzle(client, { schema }),

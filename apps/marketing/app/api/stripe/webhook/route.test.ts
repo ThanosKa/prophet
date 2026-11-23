@@ -36,9 +36,9 @@ const { logger } = await import('@/lib/logger')
 
 const USER_ID = 'user_123'
 const CUSTOMER_ID = 'cus_123'
-const PERIOD_START = 1_767_225_600 // 2026-01-01
-const PERIOD_END = 1_769_904_000 // 2026-02-01
-const NEXT_PERIOD_END = 1_772_323_200 // 2026-03-01
+const PERIOD_START = 1_767_225_600
+const PERIOD_END = 1_769_904_000
+const NEXT_PERIOD_END = 1_772_323_200
 const DAY_MS = 24 * 60 * 60 * 1000
 
 beforeAll(async () => {
@@ -92,7 +92,6 @@ async function postWebhook(event: unknown) {
   return POST(new Request('http://localhost/api/stripe/webhook', { method: 'POST', body: '{}' }))
 }
 
-/** The answer stays pending until the email settles: a Worker may cancel work left running after it. */
 async function expectAnswerToWaitForEmail(event: unknown) {
   let finishEmail = () => {}
   mocks.sendPurchaseEmail.mockImplementationOnce(() => new Promise<void>((resolve) => { finishEmail = resolve }))
@@ -409,6 +408,19 @@ describe('POST /api/stripe/webhook', () => {
       expect(mocks.sendPurchaseEmail).not.toHaveBeenCalled()
     })
 
+    it('answers 500 and changes no user when the subscription status is not one the database stores', async () => {
+      await insertFreeBuyer()
+      const before = await readUser()
+
+      const response = await postWebhook(
+        subscriptionEvent({ type: 'customer.subscription.created', priceId: TIER_CONFIG.pro.priceId, status: 'trialing' })
+      )
+
+      expect(response.status).toBe(500)
+      expect(await readUser()).toEqual(before)
+      expect(mocks.sendPurchaseEmail).not.toHaveBeenCalled()
+    })
+
     it('answers Stripe only after the new subscription email has settled', async () => {
       await insertFreeBuyer()
 
@@ -459,7 +471,7 @@ describe('POST /api/stripe/webhook', () => {
       expect(user.stripePriceId).toBe(TIER_CONFIG.ultra.priceId)
       expect(user.creditsIncluded).toBe(TIER_CONFIG.ultra.credits)
       expect(await balances()).toEqual({ subscriptionCredits: 300, purchasedCredits: 1000 })
-      expect(mocks.invalidateUserTierCache).toHaveBeenCalledWith(USER_ID)
+      expect(mocks.invalidateUserTierCache).toHaveBeenCalledWith({ userId: USER_ID })
     })
 
     it('keeps both balances on a downgrade', async () => {
@@ -514,7 +526,7 @@ describe('POST /api/stripe/webhook', () => {
       expect(user.tier).toBe('free')
       expect(user.creditsIncluded).toBe(TIER_CONFIG.free.credits)
       expect(await balances()).toEqual({ subscriptionCredits: 7, purchasedCredits: 1000 })
-      expect(mocks.invalidateUserTierCache).toHaveBeenCalledWith(USER_ID)
+      expect(mocks.invalidateUserTierCache).toHaveBeenCalledWith({ userId: USER_ID })
     })
 
     it('keeps Subscription credits below the Free grant as they are', async () => {

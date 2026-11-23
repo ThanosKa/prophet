@@ -1,9 +1,5 @@
 import type { ToolExecutionResult, AgentLoopEvent } from './types'
 
-// ============================================================================
-// Sidepanel → Background Messages
-// ============================================================================
-
 export interface ExecuteToolRequest {
   type: 'EXECUTE_TOOL'
   toolName: string
@@ -51,10 +47,6 @@ export type SidepanelToBackgroundMessage =
   | CloseAuthTabRequest
   | OpenSidePanelRequest
 
-// ============================================================================
-// Background → Sidepanel Messages
-// ============================================================================
-
 export interface ToolExecutionResponse {
   type: 'TOOL_RESULT'
   requestId: string
@@ -78,10 +70,6 @@ export type BackgroundToSidepanelMessage =
   | AgentEventMessage
   | AgentStateResponse
 
-// ============================================================================
-// Background → Content Script Messages
-// ============================================================================
-
 export interface AgentActiveRequest {
   type: 'AGENT_ACTIVE'
 }
@@ -93,10 +81,6 @@ export interface AgentInactiveRequest {
 export type BackgroundToContentMessage =
   | AgentActiveRequest
   | AgentInactiveRequest
-
-// ============================================================================
-// Agent State (stored in chrome.storage.local)
-// ============================================================================
 
 export interface AgentState {
   isRunning: boolean
@@ -122,38 +106,114 @@ export const DEFAULT_AGENT_STATE: AgentState = {
   error: null,
 }
 
-// ============================================================================
-// Type Guards
-// ============================================================================
+function messageOfType(type: string) {
+  return (msg: unknown): msg is { type: string } =>
+    typeof msg === 'object' && msg !== null && 'type' in msg && msg.type === type
+}
 
 export function isExecuteToolRequest(msg: unknown): msg is ExecuteToolRequest {
   return (
-    typeof msg === 'object' &&
-    msg !== null &&
-    (msg as ExecuteToolRequest).type === 'EXECUTE_TOOL'
+    messageOfType('EXECUTE_TOOL')(msg) &&
+    'toolName' in msg &&
+    typeof msg.toolName === 'string' &&
+    'toolInput' in msg &&
+    typeof msg.toolInput === 'object' &&
+    msg.toolInput !== null &&
+    'requestId' in msg &&
+    typeof msg.requestId === 'string'
   )
 }
 
 export function isStartAgentLoopRequest(msg: unknown): msg is StartAgentLoopRequest {
   return (
-    typeof msg === 'object' &&
-    msg !== null &&
-    (msg as StartAgentLoopRequest).type === 'START_AGENT_LOOP'
+    messageOfType('START_AGENT_LOOP')(msg) &&
+    'chatId' in msg &&
+    typeof msg.chatId === 'string' &&
+    'userMessage' in msg &&
+    typeof msg.userMessage === 'string' &&
+    'model' in msg &&
+    typeof msg.model === 'string' &&
+    (!('image' in msg) || msg.image === undefined || (typeof msg.image === 'object' && msg.image !== null))
   )
 }
 
 export function isGetAgentStateRequest(msg: unknown): msg is GetAgentStateRequest {
-  return (
-    typeof msg === 'object' &&
-    msg !== null &&
-    (msg as GetAgentStateRequest).type === 'GET_AGENT_STATE'
-  )
+  return messageOfType('GET_AGENT_STATE')(msg)
 }
 
 export function isStopAgentLoopRequest(msg: unknown): msg is StopAgentLoopRequest {
+  return messageOfType('STOP_AGENT_LOOP')(msg)
+}
+
+const AGENT_LOOP_EVENT_TYPES: Record<AgentLoopEvent['type'], true> = {
+  session_created: true,
+  session_resumed: true,
+  content_delta: true,
+  thinking_delta: true,
+  tool_call_start: true,
+  tool_call_complete: true,
+  tool_call_error: true,
+  web_search_start: true,
+  web_search_results: true,
+  web_search_error: true,
+  citations: true,
+  metrics_update: true,
+  execution_complete: true,
+  error: true,
+  done: true,
+}
+
+function isAgentLoopEvent(value: unknown): value is AgentLoopEvent {
   return (
-    typeof msg === 'object' &&
-    msg !== null &&
-    (msg as StopAgentLoopRequest).type === 'STOP_AGENT_LOOP'
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    typeof value.type === 'string' &&
+    Object.hasOwn(AGENT_LOOP_EVENT_TYPES, value.type)
   )
+}
+
+function isStringOrNull(value: unknown): value is string | null {
+  return value === null || typeof value === 'string'
+}
+
+function isToolExecution(value: unknown): value is AgentState['currentToolExecution'] {
+  return (
+    value === null ||
+    (typeof value === 'object' &&
+      'toolName' in value &&
+      typeof value.toolName === 'string' &&
+      'startedAt' in value &&
+      typeof value.startedAt === 'number')
+  )
+}
+
+function isAgentState(value: unknown): value is AgentState {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'isRunning' in value &&
+    typeof value.isRunning === 'boolean' &&
+    'chatId' in value &&
+    isStringOrNull(value.chatId) &&
+    'model' in value &&
+    isStringOrNull(value.model) &&
+    'currentToolExecution' in value &&
+    isToolExecution(value.currentToolExecution) &&
+    'pendingEvents' in value &&
+    Array.isArray(value.pendingEvents) &&
+    value.pendingEvents.every(isAgentLoopEvent) &&
+    'accumulatedContent' in value &&
+    typeof value.accumulatedContent === 'string' &&
+    'error' in value &&
+    isStringOrNull(value.error)
+  )
+}
+
+export function isAgentEventMessage(msg: unknown): msg is AgentEventMessage {
+  return messageOfType('AGENT_EVENT')(msg) && 'event' in msg && isAgentLoopEvent(msg.event)
+}
+
+export function isAgentStateResponse(msg: unknown): msg is AgentStateResponse {
+  return messageOfType('AGENT_STATE')(msg) && 'state' in msg && isAgentState(msg.state)
 }

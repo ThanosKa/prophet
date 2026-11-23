@@ -39,7 +39,6 @@ interface FakeRun {
   release: () => void
 }
 
-// Each runAgentLoop call emits `before`, parks until released (a tool or stream still in flight), then emits `after`.
 function scriptRuns(script: Array<{ before: AgentRunEvent[]; after: AgentRunEvent[] }>) {
   const runs: FakeRun[] = []
   vi.mocked(runAgentLoop).mockImplementation(async function* ({ signal }) {

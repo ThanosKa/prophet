@@ -10,7 +10,6 @@ import type { TierName } from '@/lib/pricing'
 interface UpgradeButtonProps {
   tier: Exclude<TierName, 'free'>
   priceId: string
-  /** The user is on a paid plan: switch it in the billing portal instead of a second checkout. */
   hasPlan?: boolean
   variant?: 'default' | 'outline'
   className?: string

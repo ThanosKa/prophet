@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AXNode } from './cdp-commander'
 
-// Mock CDP commander
 vi.mock('./cdp-commander', () => ({
   cdpCommander: {
     enable: vi.fn(),
@@ -9,14 +8,12 @@ vi.mock('./cdp-commander', () => ({
   },
 }))
 
-// Mock chrome.tabs API
 global.chrome = {
   tabs: {
     get: vi.fn(),
   },
 } as any
 
-// Import after mocks
 const { cdpCommander } = await import('./cdp-commander')
 const { snapshotManager } = await import('./snapshot-manager')
 
@@ -92,7 +89,6 @@ describe('SnapshotManager', () => {
 
       const snapshot = await snapshotManager.takeSnapshot(1)
 
-      // Only 1 button should be in the snapshot (the non-ignored one)
       expect(snapshot.idToNode.size).toBe(1)
     })
 
@@ -103,7 +99,6 @@ describe('SnapshotManager', () => {
             nodeId: '1',
             ignored: false,
             role: { value: 'button' },
-            // Missing backendDOMNodeId
           },
           {
             nodeId: '2',
@@ -209,7 +204,6 @@ describe('SnapshotManager', () => {
 
       const snapshot = await snapshotManager.takeSnapshot(1)
 
-      // Only the button should be included
       expect(snapshot.idToNode.size).toBe(1)
     })
 
@@ -256,29 +250,19 @@ describe('SnapshotManager', () => {
         title: 'Example',
       } as any)
 
-      // Mock the sequence of CDP calls:
-      // 1. getFullAXTree
-      // 2. DOM.resolveNode (check existing UID)
-      // 3. Runtime.callFunctionOn (get existing UID - returns null)
-      // 4. Runtime.releaseObject
-      // 5. DOM.resolveNode (inject new UID)
-      // 6. Runtime.callFunctionOn (set UID)
-      // 7. Runtime.releaseObject
       vi.mocked(cdpCommander.sendCommand)
-        .mockResolvedValueOnce(mockAxTree) // getFullAXTree
-        .mockResolvedValueOnce({ object: { objectId: 'obj1' } }) // DOM.resolveNode (check)
-        .mockResolvedValueOnce({ result: { value: null } }) // Runtime.callFunctionOn (get - returns null)
-        .mockResolvedValueOnce(undefined) // Runtime.releaseObject
-        .mockResolvedValueOnce({ object: { objectId: 'obj2' } }) // DOM.resolveNode (inject)
-        .mockResolvedValueOnce({ result: {} }) // Runtime.callFunctionOn (set)
-        .mockResolvedValueOnce(undefined) // Runtime.releaseObject
+        .mockResolvedValueOnce(mockAxTree)
+        .mockResolvedValueOnce({ object: { objectId: 'obj1' } })
+        .mockResolvedValueOnce({ result: { value: null } })
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce({ object: { objectId: 'obj2' } })
+        .mockResolvedValueOnce({ result: {} })
+        .mockResolvedValueOnce(undefined)
 
       const snapshot = await snapshotManager.takeSnapshot(1)
 
-      // Get the actual UID that was generated
       const actualUid = Array.from(snapshot.idToNode.keys())[0]
 
-      // Should have at least one node with a UID
       expect(snapshot.idToNode.size).toBeGreaterThan(0)
       expect(actualUid).toBeDefined()
 

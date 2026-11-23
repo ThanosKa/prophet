@@ -1,3 +1,4 @@
+import { attempt } from '@prophet/shared'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { messages, chats } from '@/lib/db/schema'
@@ -15,7 +16,7 @@ import {
 } from '@prophet/shared'
 import { error, INTERNAL_ERROR_MESSAGE } from '@/types'
 import { logger } from '@/lib/logger'
-import { calculateUsageCostInCredits, type ModelName } from '@/lib/pricing'
+import { calculateUsageCostInCredits } from '@/lib/pricing'
 import { estimateInputTokens } from '@/lib/credit-reservation'
 import { lastTurnReason, withLastTurnNotice } from '@/lib/agent/last-turn'
 import { closingFrames, describeTurnError, readTurnStream } from '@/lib/agent/turn-stream'
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
   if (process.env.NODE_ENV !== 'development') {
     logger.warn({}, '[DEV] Endpoint called in non-development environment')
     return NextResponse.json(
-      error('This endpoint is only available in development', 'FORBIDDEN'),
+      error({ message: 'This endpoint is only available in development', code: 'FORBIDDEN' }),
       { status: 403 }
     )
   }
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
         '[DEV] Request validation failed'
       )
       return NextResponse.json(
-        error('Invalid request body', 'VALIDATION_ERROR', validation.error.issues),
+        error({ message: 'Invalid request body', code: 'VALIDATION_ERROR', details: validation.error.issues }),
         { status: 400 }
       )
     }
@@ -65,14 +66,14 @@ export async function POST(req: Request) {
     } = validation.data
     const model = resolveAgentModel(
       validation.data.model ?? DEFAULT_AGENT_MODEL
-    ) as ModelName
+    )
 
     const isFirstTurn = !!userMessage
     const runTurns = resolveRunTurns({ previousTurns, previousContent, toolResults })
     if (!isFirstTurn && runTurns.length === 0) {
       logger.warn({}, '[DEV] Neither userMessage nor toolResults provided')
       return NextResponse.json(
-        error('Either userMessage or toolResults is required', 'VALIDATION_ERROR'),
+        error({ message: 'Either userMessage or toolResults is required', code: 'VALIDATION_ERROR' }),
         { status: 400 }
       )
     }
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
       orderBy: (messages, { asc }) => [asc(messages.createdAt)],
     })
     const builtMessages = buildAgentMessages({ history, userMessage, image, runTurns })
-    const tools = buildAgentTools(AGENT_TOOLS, enableWebSearch)
+    const tools = buildAgentTools({ clientTools: AGENT_TOOLS, enableWebSearch })
     const runEnd = lastTurnReason({
       runTurns,
       hasRunId: runId !== undefined,
@@ -93,7 +94,6 @@ export async function POST(req: Request) {
       }),
     })
     const anthropicMessages = runEnd ? withLastTurnNotice(builtMessages) : builtMessages
-    // Production names the Run on a first Turn and on a continuation that sends its id.
     const sessionRunId = isFirstTurn ? crypto.randomUUID() : runId
 
     logger.debug(
@@ -101,7 +101,6 @@ export async function POST(req: Request) {
       '[DEV] Starting agent stream'
     )
 
-    // DEV LOGGING: Log request to LLM
     await devLogger.logRequest(model, anthropicMessages, AGENT_SYSTEM_PROMPT, { enableThinking })
 
     const encoder = new TextEncoder()
@@ -120,11 +119,7 @@ export async function POST(req: Request) {
 
         const safeClose = () => {
           if (!controllerClosed) {
-            try {
-              controller.close()
-            } catch {
-              // Ignore
-            }
+            attempt(() => controller.close())
             controllerClosed = true
           }
         }
@@ -167,7 +162,7 @@ export async function POST(req: Request) {
           const { stopReason } = final
           const { inputTokens, cacheCreationInputTokens, cacheReadInputTokens, outputTokens } = final.usage
           const fullTextResponse = final.text
-          const costCents = calculateUsageCostInCredits(model, final.usage)
+          const costCents = calculateUsageCostInCredits({ model, usage: final.usage })
 
           logger.info(
             {
@@ -183,7 +178,6 @@ export async function POST(req: Request) {
             '[DEV] Agent stream completed'
           )
 
-          // DEV LOGGING: Log response from LLM
           await devLogger.logResponse(fullTextResponse, {
             input_tokens: inputTokens,
             output_tokens: outputTokens,
@@ -191,10 +185,8 @@ export async function POST(req: Request) {
             cache_creation_input_tokens: cacheCreationInputTokens,
           })
 
-          // Determine if this is the final turn of the agentic loop
           const isFinalTurn = runEnd !== null || !final.runContinues
 
-          // Save messages only on appropriate turns (same logic as production)
           const assistantToolCalls = final.clientToolCalls;
           const hasContent = fullTextResponse.trim().length > 0 || assistantToolCalls.length > 0;
 
@@ -202,7 +194,6 @@ export async function POST(req: Request) {
           const newContextTokens = Math.min(promptTokens + outputTokens, getModelContextWindow(model));
 
           await db.transaction(async (tx) => {
-            // Save user message on first turn only
             if (isFirstTurn && userMessage) {
               await tx.insert(messages).values({
                 chatId,
@@ -215,7 +206,6 @@ export async function POST(req: Request) {
               });
             }
 
-            // Only save assistant message on FINAL turn
             if (isFinalTurn && hasContent) {
               await tx.insert(messages).values({
                 chatId,
@@ -229,7 +219,6 @@ export async function POST(req: Request) {
               });
             }
 
-            // Update context tokens on final turn only
             if (isFinalTurn) {
               await tx
                 .update(chats)
@@ -291,7 +280,7 @@ export async function POST(req: Request) {
       '[DEV] Agent chat endpoint error'
     )
     return NextResponse.json(
-      error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'),
+      error({ message: INTERNAL_ERROR_MESSAGE, code: 'INTERNAL_ERROR' }),
       { status: 500 }
     )
   }

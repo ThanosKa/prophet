@@ -12,8 +12,6 @@ vi.mock('@clerk/nextjs/server', () => ({ auth: authMock }))
 vi.mock('@/lib/ratelimit', () => ({ checkRateLimit: checkRateLimitMock }))
 vi.mock('@/lib/logger', () => ({ logger: { info: vi.fn(), error: vi.fn() } }))
 
-// The daily aggregation is SQL (grouping by UTC day, sums, paging), so it runs against
-// a real Postgres engine in-process rather than a mocked query builder.
 vi.mock('@/lib/db', async () => {
   const { PGlite } = await import('@electric-sql/pglite')
   const { drizzle } = await import('drizzle-orm/pglite')
@@ -174,8 +172,8 @@ describe('GET /api/usage (daily totals per model)', () => {
 
   it('groups by UTC day, whatever offset the timestamp was written with', async () => {
     await seed([
-      { at: '2026-10-07T23:30:00-02:00' }, // 2026-10-08 01:30 UTC
-      { at: '2026-10-08T00:30:00+03:00' }, // 2026-10-07 21:30 UTC
+      { at: '2026-10-07T23:30:00-02:00' },
+      { at: '2026-10-08T00:30:00+03:00' },
     ])
 
     const { body } = await getUsage()

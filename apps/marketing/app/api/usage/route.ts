@@ -11,24 +11,23 @@ import { checkRateLimit } from '@/lib/ratelimit'
 
 const utcDay = sql<string>`to_char(${usageRecords.createdAt} AT TIME ZONE 'UTC', 'YYYY-MM-DD')`
 
-// count() and sum() over integer columns return bigint, which drivers hand back as strings.
+// count() and sum() over integer columns return bigint, which drivers hand back as strings. https://node-postgres.com/features/types
 const total = (column: AnyPgColumn) => sql`coalesce(sum(${column}), 0)`.mapWith(Number)
 
 const startOfUtcDay = (day: string) => new Date(`${day}T00:00:00.000Z`)
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 const startOfNextUtcDay = (day: string) => new Date(startOfUtcDay(day).getTime() + MS_PER_DAY)
 
-/** Daily usage totals per model for the signed-in user, paged by UTC day, newest first. */
 export async function GET(req: Request) {
   try {
     const { userId } = await auth()
     if (!userId) {
-      return NextResponse.json(error('Unauthorized', 'UNAUTHORIZED'), { status: 401 })
+      return NextResponse.json(error({ message: 'Unauthorized', code: 'UNAUTHORIZED' }), { status: 401 })
     }
 
-    const rateLimitResult = await checkRateLimit(userId, 'api')
+    const rateLimitResult = await checkRateLimit({ userId, type: 'api' })
     if (!rateLimitResult.success) {
-      return NextResponse.json(error('Too many requests', 'RATE_LIMIT_EXCEEDED'), {
+      return NextResponse.json(error({ message: 'Too many requests', code: 'RATE_LIMIT_EXCEEDED' }), {
         status: 429,
         headers: {
           'X-RateLimit-Limit': rateLimitResult.limit?.toString() || '',
@@ -42,7 +41,7 @@ export async function GET(req: Request) {
     const query = dailyUsageQuerySchema.safeParse(Object.fromEntries(searchParams))
     if (!query.success) {
       return NextResponse.json(
-        error('Invalid query parameters', 'VALIDATION_ERROR', query.error.issues),
+        error({ message: 'Invalid query parameters', code: 'VALIDATION_ERROR', details: query.error.issues }),
         { status: 400 }
       )
     }
@@ -55,8 +54,6 @@ export async function GET(req: Request) {
       to ? lt(usageRecords.createdAt, startOfNextUtcDay(to)) : undefined
     )
 
-    // Pick the page's days first (one extra to learn whether older days exist), so a
-    // page never splits a day's models across two pages.
     const pageDays = await db
       .select({ day: utcDay })
       .from(usageRecords)
@@ -96,6 +93,6 @@ export async function GET(req: Request) {
     }))
   } catch (err) {
     logger.error({ error: err }, 'Failed to fetch usage records')
-    return NextResponse.json(error(INTERNAL_ERROR_MESSAGE, 'INTERNAL_ERROR'), { status: 500 })
+    return NextResponse.json(error({ message: INTERNAL_ERROR_MESSAGE, code: 'INTERNAL_ERROR' }), { status: 500 })
   }
 }

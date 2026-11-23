@@ -27,13 +27,11 @@ class DebuggerManagerClass {
       const tabId = source.tabId
       if (tabId === undefined) return
 
-      // console.log(`[DebuggerManager] Detached from tab ${tabId}, reason: ${reason}`)
       this.cleanup(tabId)
     })
 
     chrome.tabs.onRemoved.addListener((tabId) => {
       if (this.attachedTabs.has(tabId)) {
-        // console.log(`[DebuggerManager] Tab ${tabId} closed, cleaning up`)
         this.cleanup(tabId)
       }
     })
@@ -81,9 +79,6 @@ class DebuggerManagerClass {
     }
   }
 
-  /**
-   * Removes extension iframes to prevent "Debugger detached" errors.
-   */
   private async ensureNoExtensionFrame(tabId: number): Promise<boolean> {
     try {
       const result = await chrome.scripting.executeScript({
@@ -101,13 +96,11 @@ class DebuggerManagerClass {
 
       return result?.[0]?.result === true
     } catch {
-      // Scripting may fail on some pages (chrome://, etc.)
       return false
     }
   }
 
   private async doAttach(tabId: number): Promise<void> {
-    // Clean room: Remove extension frames before attaching
     const removedFrames = await this.ensureNoExtensionFrame(tabId)
     if (removedFrames) {
       logger.log('DebuggerManager', 'Removed extension frames, waiting for DOM to settle')
@@ -119,7 +112,6 @@ class DebuggerManagerClass {
       this.attachedTabs.add(tabId)
       this.pendingCommands.set(tabId, new Set())
       this.scheduleAutoDetach(tabId)
-      // console.log(`[DebuggerManager] Attached to tab ${tabId}`)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       if (message.includes('Another debugger is already attached')) {
@@ -140,7 +132,6 @@ class DebuggerManagerClass {
 
     try {
       await chrome.debugger.detach({ tabId })
-      // console.log(`[DebuggerManager] Manually detached from tab ${tabId}`)
     } catch (error) {
       logger.warn('DebuggerManager', `Error detaching from tab ${tabId}:`, error)
     } finally {
@@ -163,7 +154,6 @@ class DebuggerManagerClass {
   private scheduleAutoDetach(tabId: number): void {
     const timer = setTimeout(() => {
       if (this.attachedTabs.has(tabId)) {
-        // console.log(`[DebuggerManager] Auto-detaching from tab ${tabId} due to inactivity`)
         this.detach(tabId)
       }
     }, AUTO_DETACH_TIMEOUT_MS)
@@ -192,7 +182,6 @@ class DebuggerManagerClass {
 
   handleTabRemoved(tabId: number): void {
     if (this.attachedTabs.has(tabId)) {
-      // console.log(`[DebuggerManager] Tab ${tabId} removed externally, cleaning up`)
       this.cleanup(tabId)
     }
   }

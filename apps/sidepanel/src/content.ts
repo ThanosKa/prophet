@@ -1,15 +1,9 @@
 import type { OpenSidePanelRequest } from './lib/agent/messages'
-
-// Agent Overlay State
-// ============================================================================
+import { logger } from './lib/logger'
 
 let agentOverlayContainer: HTMLDivElement | null = null
 let viewportBorder: HTMLDivElement | null = null
 let pauseButton: HTMLButtonElement | null = null
-
-// ============================================================================
-// Agent Overlay Functions
-// ============================================================================
 
 function createAgentOverlay(): void {
   if (agentOverlayContainer) return
@@ -138,10 +132,6 @@ function hideAgentOverlay(): void {
   if (pauseButton) pauseButton.style.display = 'none'
 }
 
-// ============================================================================
-// Message Handlers
-// ============================================================================
-
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   try {
     switch (message.type) {
@@ -171,16 +161,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         return false
     }
   } catch (error) {
-    console.error('[Prophet Content] Error handling message:', error)
+    logger.error('Prophet Content', 'Error handling message:', error)
     sendResponse({ success: false, error: String(error) })
   }
 
   return true
 })
-
-// ============================================================================
-// Auth Success Page Handler
-// ============================================================================
 
 if (window.location.pathname === '/auth-success') {
   const handleOpenProphet = () => {
@@ -188,7 +174,6 @@ if (window.location.pathname === '/auth-success') {
     chrome.runtime.sendMessage(msg)
   }
 
-  // Look for the button immediately and also observe for it (React hydration)
   const setupButtonListener = () => {
     const btn = document.querySelector('[data-open-prophet]')
     if (btn) {

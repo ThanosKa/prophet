@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET } from './route'
 
-// Mock modules
 vi.mock('@clerk/nextjs/server', () => ({
   auth: vi.fn(),
 }))
@@ -25,7 +24,6 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
-// Import after mocks
 const { auth } = await import('@clerk/nextjs/server')
 const { db } = await import('@/lib/db')
 const { checkRateLimit } = await import('@/lib/ratelimit')
@@ -76,7 +74,7 @@ describe('GET /api/usage/export', () => {
   it('answers 429 with rate limit headers and does not read the database', async () => {
     vi.mocked(checkRateLimit).mockResolvedValue({ success: false, limit: 15, remaining: 0, reset: 1234 })
     const response = await GET(new Request('http://localhost:3000/api/usage/export'))
-    expect(checkRateLimit).toHaveBeenCalledWith(userId, 'api')
+    expect(checkRateLimit).toHaveBeenCalledWith({ userId, type: 'api' })
     expect(response.status).toBe(429)
     expect(await response.json()).toMatchObject({ error: 'Too many requests', code: 'RATE_LIMIT_EXCEEDED' })
     expect(response.headers.get('X-RateLimit-Limit')).toBe('15')
@@ -85,4 +83,3 @@ describe('GET /api/usage/export', () => {
     expect(db.query.usageRecords.findMany).not.toHaveBeenCalled()
   })
 })
-

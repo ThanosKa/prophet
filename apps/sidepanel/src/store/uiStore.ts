@@ -10,14 +10,12 @@ import {
 } from '@prophet/shared'
 import type { AgentModel } from '@prophet/shared'
 
-/** The context meter's denominator and clamp: the active model's window. */
 export function selectMaxContextTokens(state: Pick<UIState, 'selectedModel'>): number {
   return getModelContextWindow(resolveAgentModel(state.selectedModel))
 }
 
 type Theme = 'light' | 'dark'
 
-// Each field degrades to undefined on its own, so one bad value never resets the rest.
 const persistedUIStateSchema = z
   .object({
     selectedModel: agentModelSchema.optional().catch(undefined),
@@ -61,7 +59,7 @@ export const useUIStore = create<UIState>()(
       contextReasoningTokens: 0,
       contextCachedInputTokens: 0,
       selectedModel: DEFAULT_AGENT_MODEL,
-      theme: 'dark' as Theme,
+      theme: 'dark',
       enableThinking: false,
 
       setDrawerOpen: (open) => set({ drawerOpen: open }),
@@ -136,8 +134,6 @@ export const useUIStore = create<UIState>()(
         theme: state.theme,
         enableThinking: state.enableThinking,
       }),
-      // Earlier builds saved the model IDs they shipped with (e.g. claude-haiku-4-5);
-      // map those onto the current model so the picker still shows a label.
       merge: (persisted, current) => {
         const saved = persistedUIStateSchema.parse(persisted)
         return {

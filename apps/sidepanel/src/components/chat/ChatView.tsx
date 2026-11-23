@@ -3,18 +3,19 @@ import { EnhancedMessageList, type EnhancedMessageListHandle } from './EnhancedM
 import { EnhancedChatInput, type OnSend } from './EnhancedChatInput'
 import { ChatBanner, type ChatBannerProps } from './ChatBanner'
 import { ReviewPrompt } from './ReviewPrompt'
+import type { ToolCallView } from './ToolCallCollapsible'
 import { Suggestions, Suggestion } from '@/components/ai-elements/suggestion'
-import type { Message, ToolCall } from '@prophet/shared'
+import type { Message } from '@prophet/shared'
 
 interface AgentMessage extends Message {
-  toolCalls?: ToolCall[]
+  toolCalls?: ToolCallView[]
 }
 
 interface ChatViewProps extends ChatBannerProps {
   messages: AgentMessage[]
   isLoading?: boolean
   isStreaming?: boolean
-  currentToolCall?: ToolCall | null
+  currentToolCall?: ToolCallView | null
   onSend: OnSend
   onAbort?: () => void
   disabled?: boolean
@@ -58,7 +59,7 @@ export function ChatView({
   }, [messages.length])
 
   const handleSuggestionClick = (suggestion: string) => {
-    void onSend(suggestion)
+    void onSend({ message: suggestion })
   }
 
   return (

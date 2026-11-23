@@ -25,11 +25,9 @@ beforeEach(() => {
 
 const SESSION = { type: 'session_created', sessionId: 'chat_1', runId: 'run_1' } as const
 
-/** Reads one fake Turn and records every frame sent while it streamed. */
 async function readTurn(stream: object) {
   const sent: unknown[] = []
   const result = await readTurnStream({
-    // A plain vi.fn, so the fake stream needs no cast to the SDK's MessageStream.
     open: vi.fn().mockResolvedValue(stream),
     sessionFrame: SESSION,
     model: 'claude-haiku-5-5',
@@ -40,7 +38,6 @@ async function readTurn(stream: object) {
   return { sent, result }
 }
 
-/** The stub's 1,000 input and 50 output tokens on Haiku 5.5 cost one Credit. */
 const STUB_USAGE = {
   inputTokens: 1000,
   cacheCreationInputTokens: 0,
@@ -352,7 +349,6 @@ describe('readTurnStream', () => {
   })
 })
 
-/** A stream that sends `events` and then fails, as Stop or a dropped connection does. */
 function cutOffStream({ events, error }: { events: Record<string, unknown>[]; error: Error }) {
   return {
     [Symbol.asyncIterator]: async function* () {
@@ -363,7 +359,6 @@ function cutOffStream({ events, error }: { events: Record<string, unknown>[]; er
   }
 }
 
-/** The SDK's own factory, so the error has the exact class and message a real 400 has. */
 function anthropicBadRequest(message: string) {
   return APIError.generate(
     400,

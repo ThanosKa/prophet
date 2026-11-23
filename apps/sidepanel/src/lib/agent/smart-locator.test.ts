@@ -1,21 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SmartLocator } from './smart-locator'
 
-// Mock CDP commander
 vi.mock('./cdp-commander', () => ({
   cdpCommander: {
     sendCommand: vi.fn(),
   },
 }))
 
-// Mock snapshot manager
 vi.mock('./snapshot-manager', () => ({
   snapshotManager: {
     getNodeByUid: vi.fn(),
   },
 }))
 
-// Import after mocks
 const { cdpCommander } = await import('./cdp-commander')
 const { snapshotManager } = await import('./snapshot-manager')
 
@@ -46,11 +43,11 @@ describe('SmartLocator', () => {
       })
 
       vi.mocked(cdpCommander.sendCommand)
-        .mockResolvedValueOnce(undefined) // scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } }) // getBoundingBox
-        .mockResolvedValueOnce({ result: { value: { isCovered: false } } }) // isElementCovered
-        .mockResolvedValueOnce(undefined) // mousePressed
-        .mockResolvedValueOnce(undefined) // mouseReleased
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } })
+        .mockResolvedValueOnce({ result: { value: { isCovered: false } } })
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce(undefined)
 
       await smartLocator.click(1, 'abc123')
 
@@ -71,15 +68,14 @@ describe('SmartLocator', () => {
       })
 
       vi.mocked(cdpCommander.sendCommand)
-        .mockResolvedValueOnce(undefined) // scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } }) // getBoundingBox
-        .mockResolvedValueOnce({ result: { value: { isCovered: false } } }) // isElementCovered
-        .mockResolvedValueOnce(undefined) // mousePressed
-        .mockResolvedValueOnce(undefined) // mouseReleased
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } })
+        .mockResolvedValueOnce({ result: { value: { isCovered: false } } })
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce(undefined)
 
       await smartLocator.click(1, 'abc123')
 
-      // Center should be (100 + 25, 200 + 15) = (125, 215)
       expect(cdpCommander.sendCommand).toHaveBeenCalledWith(
         1,
         'Input.dispatchMouseEvent',
@@ -101,11 +97,11 @@ describe('SmartLocator', () => {
       })
 
       vi.mocked(cdpCommander.sendCommand)
-        .mockResolvedValueOnce(undefined) // scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } }) // getBoundingBox
-        .mockResolvedValueOnce({ result: { value: { isCovered: false } } }) // isElementCovered
-        .mockResolvedValueOnce(undefined) // mousePressed
-        .mockResolvedValueOnce(undefined) // mouseReleased
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } })
+        .mockResolvedValueOnce({ result: { value: { isCovered: false } } })
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce(undefined)
 
       await smartLocator.click(1, 'abc123')
 
@@ -132,13 +128,13 @@ describe('SmartLocator', () => {
       })
 
       vi.mocked(cdpCommander.sendCommand)
-        .mockResolvedValueOnce(undefined) // scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } }) // getBoundingBox
-        .mockResolvedValueOnce({ result: { value: { isCovered: false } } }) // isElementCovered
-        .mockResolvedValueOnce(undefined) // mousePressed
-        .mockResolvedValueOnce(undefined) // mouseReleased
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } })
+        .mockResolvedValueOnce({ result: { value: { isCovered: false } } })
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce(undefined)
 
-      await smartLocator.click(1, 'abc123', true) // doubleClick = true
+      await smartLocator.click(1, 'abc123', true)
 
       expect(cdpCommander.sendCommand).toHaveBeenCalledWith(
         1,
@@ -157,13 +153,12 @@ describe('SmartLocator', () => {
       })
 
       vi.mocked(cdpCommander.sendCommand)
-        .mockResolvedValueOnce(undefined) // scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({ result: { value: { x: 0, y: 0, width: 0, height: 0 } } }) // getBoundingBox
-        .mockResolvedValueOnce(undefined) // Runtime.evaluate (synthetic click)
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce({ result: { value: { x: 0, y: 0, width: 0, height: 0 } } })
+        .mockResolvedValueOnce(undefined)
 
       await smartLocator.click(1, 'abc123')
 
-      // Should use Runtime.evaluate for synthetic click
       expect(cdpCommander.sendCommand).toHaveBeenCalledWith(
         1,
         'Runtime.evaluate',
@@ -196,7 +191,6 @@ describe('SmartLocator', () => {
 
       await smartLocator.fill(1, 'abc123', 'test@example.com')
 
-      // Should call Runtime.evaluate with .focus()
       expect(cdpCommander.sendCommand).toHaveBeenCalledWith(
         1,
         'Runtime.evaluate',
@@ -219,7 +213,6 @@ describe('SmartLocator', () => {
 
       await smartLocator.fill(1, 'abc123', 'text')
 
-      // Should dispatch Cmd/Ctrl+A
       const calls = vi.mocked(cdpCommander.sendCommand).mock.calls
       const selectAllCalls = calls.filter(
         (call) => call[1] === 'Input.dispatchKeyEvent' && (call[2] as any)?.key === 'a'
@@ -259,9 +252,8 @@ describe('SmartLocator', () => {
 
       vi.mocked(cdpCommander.sendCommand).mockResolvedValue(undefined)
 
-      await smartLocator.fill(1, 'abc123', '') // Empty string
+      await smartLocator.fill(1, 'abc123', '')
 
-      // Should dispatch Backspace instead of insertText
       const calls = vi.mocked(cdpCommander.sendCommand).mock.calls
       const backspaceCalls = calls.filter(
         (call) => call[1] === 'Input.dispatchKeyEvent' && (call[2] as any)?.key === 'Backspace'
@@ -283,7 +275,6 @@ describe('SmartLocator', () => {
 
       await smartLocator.fill(1, 'abc123', 'text')
 
-      // Should call Runtime.evaluate with input/change events
       const calls = vi.mocked(cdpCommander.sendCommand).mock.calls
       const eventCalls = calls.filter(
         (call) =>
@@ -308,8 +299,8 @@ describe('SmartLocator', () => {
       })
 
       vi.mocked(cdpCommander.sendCommand)
-        .mockResolvedValueOnce(undefined) // scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({ result: { value: null } }) // getBoundingBox returns null
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce({ result: { value: null } })
 
       await expect(smartLocator.hover(1, 'abc123')).rejects.toThrow(
         'Could not get element bounding box'
@@ -326,9 +317,9 @@ describe('SmartLocator', () => {
       })
 
       vi.mocked(cdpCommander.sendCommand)
-        .mockResolvedValueOnce(undefined) // scrollIntoViewIfNeeded
-        .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } }) // getBoundingBox
-        .mockResolvedValueOnce(undefined) // mouseMoved
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce({ result: { value: { x: 100, y: 200, width: 50, height: 30 } } })
+        .mockResolvedValueOnce(undefined)
 
       await smartLocator.hover(1, 'abc123')
 
@@ -348,15 +339,13 @@ describe('SmartLocator', () => {
     it('converts modifier array to bitfield', async () => {
       vi.mocked(cdpCommander.sendCommand).mockResolvedValue(undefined)
 
-      // alt=1, ctrl=2, meta=4, shift=8
-      // ctrl+shift = 2 + 8 = 10
       await smartLocator.pressKey(1, 'a', ['ctrl', 'shift'])
 
       const calls = vi.mocked(cdpCommander.sendCommand).mock.calls
       const keyDownCall = calls.find((call) => (call[2] as any)?.type === 'keyDown')
 
       expect(keyDownCall).toBeDefined()
-      expect((keyDownCall![2] as any)?.modifiers).toBe(10) // ctrl(2) + shift(8)
+      expect((keyDownCall![2] as any)?.modifiers).toBe(10)
     })
 
     it('maps special keys to correct keyCodes', async () => {

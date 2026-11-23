@@ -8,12 +8,6 @@ import { integrations } from './seo/integrations'
 import { professions } from './seo/professions'
 import { useCases } from './seo/use-cases'
 
-/**
- * Blog titles render with `title: { absolute }`, so no "| Prophet" suffix is
- * appended. Google truncates SERP titles at roughly 600px (~60 chars) and
- * descriptions at roughly 920px (~155 chars); anything longer is spent on
- * an ellipsis instead of a reason to click.
- */
 const TITLE_MAX = 60
 const DESCRIPTION_MAX = 155
 
@@ -44,18 +38,8 @@ describe('blog post snippet budgets', () => {
   })
 })
 
-/**
- * Programmatic pages set `title` without `absolute`, so the root layout appends
- * "| Prophet". Their effective SERP title is therefore the data title plus that
- * suffix, which is the budget checked here — blog posts use `absolute` and are
- * checked above without it.
- */
 const TITLE_SUFFIX = ' | Prophet'
 
-/**
- * Two titles predate this budget and sit 1-3 characters over. They are listed
- * rather than excluded by a looser limit so that any *new* overrun still fails.
- */
 const TITLE_OVERRUN_DEBT = new Set([
   'prophet-vs-claude-in-chrome',
   'claude-in-chrome-alternative',
@@ -113,7 +97,6 @@ describe('BlogPosting structured data', () => {
       expect(node.publisher.logo.url).toMatch(/\.(png|jpg|jpeg)$/)
       expect(node.wordCount).toBeGreaterThan(0)
 
-      // Google requires ISO 8601 dates and rejects a dateModified before publish.
       expect(node.datePublished).toMatch(/^\d{4}-\d{2}-\d{2}$/)
       expect(node.dateModified).toMatch(/^\d{4}-\d{2}-\d{2}$/)
       expect(new Date(node.dateModified).getTime()).toBeGreaterThanOrEqual(

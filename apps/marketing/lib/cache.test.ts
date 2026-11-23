@@ -1,11 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-// Create mock Redis methods
 const mockGet = vi.fn()
 const mockSetex = vi.fn()
 const mockDel = vi.fn()
 
-// Create mock Redis client to inject into functions
 const mockRedis = {
   get: mockGet,
   setex: mockSetex,
@@ -30,7 +28,6 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
-// Import after mocks are set up
 const { db } = await import('@/lib/db')
 const { logger } = await import('@/lib/logger')
 const { getUserTier, invalidateUserTierCache, CACHE_TTL_SECONDS } = await import('./cache')
@@ -49,7 +46,7 @@ describe('User Tier Cache', () => {
       it('returns cached tier when available in Redis', async () => {
         mockGet.mockResolvedValue('pro')
 
-        const tier = await getUserTier('user_123', mockRedis)
+        const tier = await getUserTier({ userId: 'user_123', redisClient: mockRedis })
 
         expect(tier).toBe('pro')
         expect(mockGet).toHaveBeenCalledWith('user:tier:user_123')
@@ -58,7 +55,7 @@ describe('User Tier Cache', () => {
       it('does not query database when cache hit', async () => {
         mockGet.mockResolvedValue('premium')
 
-        await getUserTier('user_456', mockRedis)
+        await getUserTier({ userId: 'user_456', redisClient: mockRedis })
 
         expect(db.query.users.findFirst).not.toHaveBeenCalled()
       })
@@ -72,7 +69,7 @@ describe('User Tier Cache', () => {
           tier: 'pro',
         } as any)
 
-        const tier = await getUserTier('user_123', mockRedis)
+        const tier = await getUserTier({ userId: 'user_123', redisClient: mockRedis })
 
         expect(tier).toBe('pro')
         expect(db.query.users.findFirst).toHaveBeenCalledWith({
@@ -88,7 +85,7 @@ describe('User Tier Cache', () => {
           tier: 'premium',
         } as any)
 
-        await getUserTier('user_123', mockRedis)
+        await getUserTier({ userId: 'user_123', redisClient: mockRedis })
 
         expect(mockSetex).toHaveBeenCalledWith(
           'user:tier:user_123',
@@ -104,7 +101,7 @@ describe('User Tier Cache', () => {
           tier: 'ultra',
         } as any)
 
-        await getUserTier('user_abc', mockRedis)
+        await getUserTier({ userId: 'user_abc', redisClient: mockRedis })
 
         expect(mockGet).toHaveBeenCalledWith('user:tier:user_abc')
         expect(mockSetex).toHaveBeenCalledWith(
@@ -120,7 +117,7 @@ describe('User Tier Cache', () => {
         mockGet.mockResolvedValue(null)
         vi.mocked(db.query.users.findFirst).mockResolvedValue(null as any)
 
-        const tier = await getUserTier('nonexistent_user', mockRedis)
+        const tier = await getUserTier({ userId: 'nonexistent_user', redisClient: mockRedis })
 
         expect(tier).toBe('free')
       })
@@ -129,7 +126,7 @@ describe('User Tier Cache', () => {
         mockGet.mockResolvedValue(null)
         vi.mocked(db.query.users.findFirst).mockResolvedValue(null as any)
 
-        await getUserTier('nonexistent_user', mockRedis)
+        await getUserTier({ userId: 'nonexistent_user', redisClient: mockRedis })
 
         expect(mockSetex).not.toHaveBeenCalled()
       })
@@ -141,7 +138,7 @@ describe('User Tier Cache', () => {
           tier: 'pro',
         } as any)
 
-        const tier = await getUserTier('user_123', mockRedis)
+        const tier = await getUserTier({ userId: 'user_123', redisClient: mockRedis })
 
         expect(tier).toBe('pro')
         expect(db.query.users.findFirst).toHaveBeenCalled()
@@ -156,7 +153,7 @@ describe('User Tier Cache', () => {
           tier: 'premium',
         } as any)
 
-        const tier = await getUserTier('user_123', mockRedis)
+        const tier = await getUserTier({ userId: 'user_123', redisClient: mockRedis })
 
         expect(tier).toBe('premium')
         expect(logger.error).toHaveBeenCalled()
@@ -171,7 +168,7 @@ describe('User Tier Cache', () => {
           tier: 'pro',
         } as any)
 
-        const tier = await getUserTier('user_123', mockRedis)
+        const tier = await getUserTier({ userId: 'user_123', redisClient: mockRedis })
 
         expect(tier).toBe('pro')
         expect(db.query.users.findFirst).toHaveBeenCalled()
@@ -183,7 +180,7 @@ describe('User Tier Cache', () => {
     it('deletes the cache key for specified user', async () => {
       mockDel.mockResolvedValue(1)
 
-      await invalidateUserTierCache('user_123', mockRedis)
+      await invalidateUserTierCache({ userId: 'user_123', redisClient: mockRedis })
 
       expect(mockDel).toHaveBeenCalledWith('user:tier:user_123')
     })
@@ -191,13 +188,13 @@ describe('User Tier Cache', () => {
     it('handles Redis deletion errors gracefully', async () => {
       mockDel.mockRejectedValue(new Error('Redis error'))
 
-      await expect(invalidateUserTierCache('user_123', mockRedis)).resolves.not.toThrow()
+      await expect(invalidateUserTierCache({ userId: 'user_123', redisClient: mockRedis })).resolves.not.toThrow()
     })
 
     it('logs error when cache invalidation fails', async () => {
       mockDel.mockRejectedValue(new Error('Redis error'))
 
-      await invalidateUserTierCache('user_123', mockRedis)
+      await invalidateUserTierCache({ userId: 'user_123', redisClient: mockRedis })
 
       expect(logger.error).toHaveBeenCalled()
     })
@@ -205,7 +202,7 @@ describe('User Tier Cache', () => {
     it('logs success when cache invalidation succeeds', async () => {
       mockDel.mockResolvedValue(1)
 
-      await invalidateUserTierCache('user_123', mockRedis)
+      await invalidateUserTierCache({ userId: 'user_123', redisClient: mockRedis })
 
       expect(logger.info).toHaveBeenCalled()
     })
@@ -223,7 +220,7 @@ describe('User Tier Cache', () => {
         tier: 'pro',
       } as any)
 
-      await getUserTier('user_123', mockRedis)
+      await getUserTier({ userId: 'user_123', redisClient: mockRedis })
 
       expect(mockSetex).toHaveBeenCalledWith(
         expect.any(String),
@@ -240,7 +237,7 @@ describe('User Tier Cache', () => {
       for (const expectedTier of validTiers) {
         vi.clearAllMocks()
         mockGet.mockResolvedValue(expectedTier)
-        const tier = await getUserTier('user_123', mockRedis)
+        const tier = await getUserTier({ userId: 'user_123', redisClient: mockRedis })
         expect(validTiers).toContain(tier)
       }
     })

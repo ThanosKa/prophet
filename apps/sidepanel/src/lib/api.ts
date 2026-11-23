@@ -1,4 +1,5 @@
 import { config } from './config'
+import { logger } from './logger'
 import { describeHttpFailure, describeThrownError, parseErrorBody } from './user-facing-errors'
 import type { ApiResponse, Chat, User, PaginatedMessages } from '@prophet/shared'
 
@@ -23,9 +24,6 @@ class ApiClient {
       })
       const token = tokenResponse?.token
 
-      // console.log('[API] Token retrieved:', token ? 'yes' : 'no')
-      // console.log('[API] Request:', endpoint)
-
       const url = new URL(endpoint, this._baseUrl)
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -42,7 +40,7 @@ class ApiClient {
 
       if (!response.ok) {
         const errorData = parseErrorBody(await response.json().catch(() => ({})))
-        if (!errorData.error) console.error(`[API] ${endpoint} failed with HTTP ${response.status}`)
+        if (!errorData.error) logger.error('API', `${endpoint} failed with HTTP ${response.status}`)
         return {
           error: describeHttpFailure({ status: response.status, body: errorData }),
           code: errorData.code || 'HTTP_ERROR',
@@ -52,7 +50,7 @@ class ApiClient {
       const data = await response.json()
       return data
     } catch (err) {
-      console.error(`[API] ${endpoint} request failed:`, err)
+      logger.error('API', `${endpoint} request failed:`, err)
       return {
         error: describeThrownError(err),
         code: 'NETWORK_ERROR',

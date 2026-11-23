@@ -41,7 +41,7 @@ describe('POST /api/stripe/portal', () => {
   it('answers 429 with rate limit headers and reaches neither the database nor Stripe', async () => {
     checkRateLimitMock.mockResolvedValue({ success: false, limit: 15, remaining: 0, reset: 1234 })
     const response = await call()
-    expect(checkRateLimitMock).toHaveBeenCalledWith(USER.id, 'api')
+    expect(checkRateLimitMock).toHaveBeenCalledWith({ userId: USER.id, type: 'api' })
     expect(response.status).toBe(429)
     expect(await response.json()).toMatchObject({
       error: 'Too many requests',
