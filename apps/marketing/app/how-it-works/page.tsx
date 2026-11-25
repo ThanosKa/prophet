@@ -447,7 +447,7 @@ chrome.debugger.sendCommand(
                   <CardTitle className="text-base">Why Accessibility Tree?</CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground space-y-2">
-                  <p>Unlike screenshot-based approaches (Computer Use, Claude in Chrome), Prophet uses the accessibility tree:</p>
+                  <p>Unlike agents that work from screenshots of the page, Prophet reads the accessibility tree:</p>
                   <p>• <strong className="text-foreground">Fast</strong> - No image processing or vision models</p>
                   <p>• <strong className="text-foreground">Deterministic</strong> - UIDs target exact elements</p>
                   <p>• <strong className="text-foreground">Efficient</strong> - Less tokens than screenshots</p>
@@ -534,7 +534,11 @@ chrome.debugger.sendCommand(
               <a href="https://www.anthropic.com/news/claude-for-chrome" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
                 Claude in Chrome
               </a>
-              , their official browser extension. Here's how Prophet's approach differs:
+              , their official browser extension. Per{' '}
+              <a href="https://support.claude.com/en/articles/12012173" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+                Anthropic&apos;s help center
+              </a>{' '}
+              (November 2026), it reads page text, clicks, types, navigates, fills forms and takes screenshots, runs only in Google Chrome, and needs a paid Claude plan. Here&apos;s how Prophet differs:
             </p>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -547,39 +551,24 @@ chrome.debugger.sendCommand(
                 </thead>
                 <tbody className="text-muted-foreground">
                   <tr className="border-b">
-                    <td className="py-3 px-4 font-medium text-foreground">How it "sees" pages</td>
-                    <td className="py-3 px-4">Screenshots (vision model)</td>
-                    <td className="py-3 px-4">Accessibility tree (structured data)</td>
+                    <td className="py-3 px-4 font-medium text-foreground">How it reads pages</td>
+                    <td className="py-3 px-4">Page text, DOM state and screenshots</td>
+                    <td className="py-3 px-4">Accessibility tree snapshot (text only, no screenshots)</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4 font-medium text-foreground">Speed</td>
-                    <td className="py-3 px-4">"Noticeably slower" - screenshot/analyze cycle</td>
-                    <td className="py-3 px-4">Fast - direct element targeting</td>
+                    <td className="py-3 px-4 font-medium text-foreground">Actions</td>
+                    <td className="py-3 px-4">Reads, clicks, types, navigates, fills forms</td>
+                    <td className="py-3 px-4">19 tools: click, type, fill forms, navigate, scroll, tabs and more</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4 font-medium text-foreground">Vision model</td>
-                    <td className="py-3 px-4">Required</td>
-                    <td className="py-3 px-4">Not needed</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-3 px-4 font-medium text-foreground">Element targeting</td>
-                    <td className="py-3 px-4">Coordinate-based (probabilistic)</td>
-                    <td className="py-3 px-4">UID-based (deterministic)</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-3 px-4 font-medium text-foreground">Token usage</td>
-                    <td className="py-3 px-4">High (images are expensive)</td>
-                    <td className="py-3 px-4">Low (structured text)</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-3 px-4 font-medium text-foreground">Infrastructure</td>
-                    <td className="py-3 px-4">Anthropic's servers</td>
-                    <td className="py-3 px-4">Your own backend (full control)</td>
+                    <td className="py-3 px-4 font-medium text-foreground">Models</td>
+                    <td className="py-3 px-4">All public Claude models</td>
+                    <td className="py-3 px-4">Claude Haiku 5.5, Sonnet 5.5, Opus 5.5</td>
                   </tr>
                   <tr>
                     <td className="py-3 px-4 font-medium text-foreground">Billing</td>
-                    <td className="py-3 px-4">Claude subscription ($20-200/mo)</td>
-                    <td className="py-3 px-4">Pay-per-use credits</td>
+                    <td className="py-3 px-4">Paid Claude plan (Pro from $20/mo)</td>
+                    <td className="py-3 px-4">Pay-per-use credits, no subscription</td>
                   </tr>
                 </tbody>
               </table>
@@ -634,7 +623,7 @@ chrome.debugger.sendCommand(
             <Card className="hover:bg-muted/50 transition-colors">
               <CardContent className="pt-6">
                 <p className="font-medium mb-2">Claude in Chrome</p>
-                <p className="text-sm text-muted-foreground mb-3">Anthropic's official browser extension using screenshot-based approach.</p>
+                <p className="text-sm text-muted-foreground mb-3">Anthropic's official browser extension for paid Claude plans.</p>
                 <a
                   href="https://www.anthropic.com/news/claude-for-chrome"
                   className="text-sm text-primary hover:underline"

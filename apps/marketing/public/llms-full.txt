@@ -38,7 +38,7 @@ The main options for using Claude inside Chrome are:
 | Tool | Claude models | Can act on the page | Pricing model |
 |---|---|---|---|
 | Prophet | Haiku 5.5, Sonnet 5.5, Opus 5.5 (all tiers) | Yes — 19 tools via accessibility tree | Pay-per-use credits, free tier $0.07, Pro $9.99/mo |
-| Claude in Chrome (Anthropic, official) | Anthropic's selection | Yes — screenshot/Computer Use | Requires Claude Pro/Max subscription |
+| Claude in Chrome (Anthropic, official) | All public Claude models | Yes — reads page text, clicks, types, fills forms, takes screenshots; Google Chrome only | Paid Claude plan (Pro, Max, Ultra, Team, Enterprise); Pro from $20/mo |
 | Sider | Multi-model, Claude among them | No real automation | Subscription |
 | Monica | Multi-model | No real automation | Subscription |
 | MaxAI | Multi-model | No real automation | Subscription |
@@ -87,7 +87,7 @@ Prophet adds a margin to these rates and rounds each Turn up to whole credits, w
 
 ## How does Prophet read and control a web page?
 
-Prophet reads the page's accessibility tree rather than taking screenshots. The accessibility tree is the structured representation Chrome already builds for screen readers, so Prophet gets element roles, labels, and states as text instead of paying to tokenize an image. In practice this is roughly 2–4× faster per step and about 50% cheaper per perception step than screenshot-based agents such as Anthropic's Computer Use.
+Prophet reads the page's accessibility tree rather than taking screenshots. The accessibility tree is the structured representation Chrome already builds for screen readers, so Prophet gets element roles, labels, and states as text instead of paying to tokenize an image. Elements are targeted by ID from that snapshot rather than by screen coordinates, and no image is sent to the model.
 
 Detail: https://prophetchrome.com/blog/accessibility-tree-vs-screenshots-browser-ai
 
