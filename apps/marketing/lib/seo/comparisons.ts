@@ -36,45 +36,47 @@ export const comparisons: ComparisonEntry[] = [
     slug: 'prophet-vs-claude-in-chrome',
     competitor: 'Claude in Chrome',
     h1: 'Prophet vs Claude in Chrome: Which Browser AI Extension Is Better?',
-    title: 'Prophet vs Claude in Chrome: Speed, Price, Automation',
-    description: 'Anthropic\'s official extension needs Claude Pro at $20/mo and reads pages by screenshot. Prophet reads the accessibility tree and bills per use.',
+    title: 'Prophet vs Claude in Chrome: Price, Models, Automation',
+    description: 'Claude in Chrome needs a paid Claude plan (Pro from $20/mo) and runs only in Google Chrome. Prophet runs Claude pay-per-use with 19 browser tools.',
     keyword: 'prophet vs claude in chrome',
     featureMatrix: [
-      { feature: 'Page Understanding', prophet: 'Accessibility tree (structured data)', competitor: 'Screenshots (vision model)' },
-      { feature: 'Speed', prophet: 'Fast - direct element targeting via UIDs', competitor: 'Slower - screenshot/analyze cycle each step' },
-      { feature: 'Pricing Model', prophet: 'Pay-per-use credits (no subscription required)', competitor: 'Claude Pro/Team/Enterprise subscription' },
-      { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: '$20/month (Claude Pro)' },
-      { feature: 'Browser Automation', prophet: '19 tools via Chrome DevTools Protocol', competitor: 'Computer Use (coordinate-based clicks)' },
-      { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'Claude Sonnet, Opus (depends on subscription)' },
-      { feature: 'Data Privacy', prophet: 'Text page snapshots (no screenshots) sent to Claude; page content not stored in our database', competitor: 'Screenshots sent to Anthropic servers' },
-      { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'No - closed source' },
+      { feature: 'Page Understanding', prophet: 'Accessibility tree snapshot (text, no screenshots)', competitor: 'Page text, DOM state and screenshots' },
+      { feature: 'Browser Actions', prophet: '19 tools via Chrome DevTools Protocol (click, fill, navigate, scroll, tabs)', competitor: 'Reads, clicks, types, navigates and fills forms' },
+      { feature: 'Pricing Model', prophet: 'Pay-per-use credits (no subscription required)', competitor: 'Included with a paid Claude plan' },
+      { feature: 'Starting Price', prophet: 'Free ($0.07 credits included)', competitor: '$20/month (Claude Pro, billed monthly)' },
+      { feature: 'Plans', prophet: 'Free, Pro, Premium, Ultra, or one-time credit packs', competitor: 'Pro, Max, Ultra, Team, Enterprise (not Free)' },
+      { feature: 'Models Available', prophet: 'Claude Haiku 5.5, Sonnet 5.5, Opus 5.5', competitor: 'All public Claude models' },
+      { feature: 'Browsers', prophet: 'Chrome (side panel)', competitor: 'Google Chrome only, not other Chromium browsers or mobile' },
+      { feature: 'Data Privacy', prophet: 'Text page snapshots (no screenshots) sent to Claude; page content not stored in our database', competitor: 'Collects website content, per its Chrome Web Store privacy disclosure' },
+      { feature: 'Open Source', prophet: 'Yes - full source on GitHub', competitor: 'Not listed as open source' },
     ],
     prophetAdvantages: [
-      'Uses the accessibility tree instead of screenshots, resulting in faster and cheaper interactions with lower token usage',
-      'Pay-per-use pricing means you only pay for what you consume rather than committing to a $20+/month subscription',
-      'Deterministic element targeting with UIDs instead of probabilistic coordinate-based clicks',
-      'Fully open source with transparent architecture and community contributions',
+      'Pay-per-use pricing means you only pay for what you use instead of committing to a $20+/month Claude plan',
+      'Reads the accessibility tree as text and never sends screenshots, so each step sends the model structured text rather than images',
+      'Targets elements by unique ID from that snapshot instead of by position on the screen',
+      'Fully open source, so you can read exactly what the extension sends and where',
     ],
     competitorAdvantages: [
-      'Backed by Anthropic directly with first-party support and seamless integration with existing Claude subscriptions',
-      'Can visually interpret complex page layouts, charts, and images that the accessibility tree does not capture',
+      'Built by Anthropic, with first-party support and nothing extra to pay if you already have a paid Claude plan',
+      'Can take screenshots, so it can work with charts, canvas apps and visual layouts that the accessibility tree does not describe',
+      'Offers every public Claude model and can read console output, network requests and DOM state for developers',
     ],
     verdict:
-      'This is the only comparison on this site where the competitor is the model vendor itself, and that changes the calculus. Claude in Chrome is not a worse version of Prophet — it is a different bet on how a browser agent should perceive a page. Anthropic chose Computer Use, which screenshots the viewport and asks a vision model where to click. That handles canvas elements, charts, and visually-encoded layouts that have no accessibility semantics at all, and it will keep working on pages built by people who never thought about screen readers. The cost is that every single step is an image round-trip: slower, and image tokens are the most expensive tokens Anthropic sells. Prophet reads the accessibility tree, so a page becomes a few kilobytes of structured text rather than a megapixel screenshot, and element targeting is a UID lookup rather than a coordinate guess. On a ten-step form fill that difference compounds into roughly an order of magnitude in both latency and token spend. The honest summary: Anthropic built the more general tool, Prophet built the faster and cheaper one for structured pages, which is most pages.',
+      'This is the only comparison on this site where the competitor is the model vendor itself, and that changes the calculus. Both extensions run Claude in Chrome\'s side panel and both can act on the page: per Anthropic\'s help center (support.claude.com/en/articles/12012173, read November 2026), Claude in Chrome reads page text, clicks, types, navigates, fills forms and takes screenshots. The real differences are price and perception. Claude in Chrome comes with a paid Claude plan (Pro, Max, Ultra, Team or Enterprise), so its floor is Claude Pro at $20/month billed monthly, and it runs only in Google Chrome. Prophet has no subscription floor: you buy credits and pay for the tokens each Turn uses. Prophet also never sends screenshots; it reads the accessibility tree as text and targets elements by ID, which suits forms, tables and ordinary web apps. Claude in Chrome can also look at screenshots, which helps on canvas apps and charts. The honest summary: if you already pay for Claude, use Claude in Chrome; if you do not want a subscription, or want to read the extension\'s source, use Prophet.',
     pricingReality: {
       heading: 'The $20 floor',
       body:
-        'Claude in Chrome has no standalone price because it is not a standalone product — it is a feature of a Claude subscription. That means the entry cost is $20/month for Claude Pro (or $25/user/month for Team), and it is the same $20 whether you run one automation this month or four hundred. There is no metered option and no way to pay less by using it less. Prophet starts at $0 with a one-time $0.07 of credits and no card, then bills pay-per-use credits for the tokens you actually use. For a user running a handful of browser automations a week on Sonnet, realistic spend is well under $2/month, which is roughly a tenth of the Claude Pro floor. The arithmetic inverts at high volume: if you are running Claude constantly all day, every day, a flat $20 eventually becomes the cheaper deal, and at that point Claude Pro plus Claude in Chrome is genuinely the rational purchase.',
+        'Claude in Chrome has no standalone price because it is not a standalone product — it is included with paid Claude plans and not available on the Free plan. As of November 2026 (claude.com/pricing), the entry cost is $20/month for Claude Pro billed monthly ($17/month billed annually), or a Team standard seat at $25/user/month billed monthly ($20 billed annually). It is the same price whether you run one task this month or four hundred. Prophet starts at $0 with a one-time $0.07 of credits and no card, then bills pay-per-use credits for the tokens you actually use. The arithmetic inverts at high volume: if you use Claude all day, every day, a flat plan eventually becomes the cheaper deal, and at that point a Claude plan plus Claude in Chrome is the rational purchase.',
     },
     switchingNotes:
-      'Nothing transfers, and nothing needs to. Claude in Chrome keeps its conversation history inside your claude.ai account, where it stays; Prophet keeps its own history against your Prophet account. The two extensions coexist in Chrome without conflict, so the low-risk path is to install Prophet alongside your existing subscription and run the same task through both for a week. The one genuine adjustment is prompting style: Computer Use responds well to visual instructions ("click the blue button top right"), whereas the accessibility tree responds to semantic ones ("click the Submit button in the checkout form"). Users coming from Claude in Chrome tend to over-describe position for the first day or two.',
+      'Nothing transfers, and nothing needs to. Claude in Chrome keeps its conversation history inside your claude.ai account, where it stays; Prophet keeps its own history against your Prophet account. The two extensions can sit side by side in Chrome, so the low-risk path is to install Prophet alongside your existing plan and run the same task through both. One adjustment helps: Prophet finds elements by their label and role, so semantic instructions ("click the Submit button in the checkout form") work better than positional ones ("click the blue button top right").',
     chooseCompetitorIf:
-      'You already pay for Claude Pro and would not cancel it regardless, you need automation on canvas-heavy or visually-encoded interfaces where the accessibility tree is genuinely empty, or your organisation requires that every AI vendor in the stack be first-party. First-party support and a single vendor relationship are real procurement advantages that no third-party extension can match.',
+      'You already pay for a Claude plan and would keep it anyway, you need an agent that can look at screenshots of canvas-heavy or chart-heavy interfaces, or your organisation requires that every AI vendor in the stack be first-party. First-party support and a single vendor relationship are real procurement advantages that no third-party extension can match.',
     faq: [
       {
         question: 'Is Prophet a replacement for Claude in Chrome?',
         answer:
-          'For structured web pages, yes, and usually a faster and cheaper one. For canvas-based apps, image-heavy dashboards, and pages with no accessibility semantics, no — Computer Use sees things the accessibility tree cannot. Many users run both, using Prophet as the default and falling back to Claude in Chrome for the visual edge cases.',
+          'For most structured web pages, yes, and without a subscription. Both can read the page, click, type and fill forms. Claude in Chrome can also take screenshots, which helps on canvas apps and charts that have no text structure; Prophet reads the accessibility tree only. Some users keep both: Claude in Chrome on a Claude plan they already have, Prophet where they want pay-per-use.',
       },
       {
         question: 'Do I need a Claude Pro subscription to use Prophet?',
@@ -82,14 +84,14 @@ export const comparisons: ComparisonEntry[] = [
           'No. Prophet talks to the Anthropic API through its own backend, so you do not need any claude.ai subscription. You get a one-time $0.07 in credits on signup without a card, enough to try Haiku 5.5, and Sonnet 5.5 and Opus 5.5 are pay-per-use from there with no subscription.',
       },
       {
-        question: 'Which is faster for browser automation?',
+        question: 'Does Claude in Chrome work only with screenshots?',
         answer:
-          'Prophet, by a wide margin on structured pages. Computer Use has to capture, upload and analyse a screenshot on every step before it can act. Prophet sends a compact accessibility tree snapshot and targets elements by UID. The gap grows with the number of steps, so a one-step task feels similar while a ten-step task does not.',
+          'No. Per Anthropic\'s help center (November 2026), Claude in Chrome reads the text of the page and can click, type, navigate, fill forms and take screenshots. Prophet differs in that it never sends screenshots: it sends a text snapshot of the page\'s accessibility tree and targets elements by ID.',
       },
       {
         question: 'Is Claude in Chrome the official Claude extension?',
         answer:
-          'Yes. It is built and shipped by Anthropic, which means first-party support, no third-party data hop, and earliest access to new Claude capabilities. Prophet is an independent open-source extension built on the public Anthropic API, which is why it can offer pay-per-use pricing and model choice that the official extension does not.',
+          'Yes. It is built and shipped by Anthropic, works on paid Claude plans (Pro, Max, Ultra, Team and Enterprise) and runs only in Google Chrome. Prophet is an independent open-source extension built on the public Anthropic API, which is why it can offer pay-per-use pricing with no subscription.',
       },
     ],
   },
@@ -550,13 +552,13 @@ export const alternatives: AlternativeEntry[] = [
     description: 'Anthropic\'s extension needs a $20/mo Claude Pro plan. Prophet runs the same models from $0 with 19 browser tools. Full comparison.',
     painPoints: [
       'Claude in Chrome requires a $20+/month Claude Pro subscription just to use browser automation features',
-      'Screenshot-based page understanding is slow and expensive - each action requires a full screenshot/analyze cycle',
-      'Coordinate-based clicking is probabilistic and can miss targets, especially on dynamic or responsive pages',
+      'Claude in Chrome runs only in Google Chrome, not in other Chromium browsers or on mobile',
+      'Claude in Chrome is not available on the free Claude plan, so trying it means starting a paid plan',
     ],
     solutions: [
       'Prophet starts free with $0.07 in credits and uses pay-per-use pricing - no subscription commitment needed',
-      'Prophet reads the accessibility tree instead of screenshots, using fewer tokens and delivering results faster',
-      'Prophet uses deterministic UID-based element targeting that reliably hits the correct button, link, or input every time',
+      'Prophet is a Chrome side panel extension with 19 browser tools that click, fill forms, navigate, scroll and manage tabs',
+      'Prophet runs Claude Haiku 5.5, Sonnet 5.5 and Opus 5.5 without any Claude plan, so you can try it before paying anything',
     ],
   },
   {

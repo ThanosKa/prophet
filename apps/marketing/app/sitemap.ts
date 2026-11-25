@@ -36,8 +36,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     const staticPages: Entry[] = [
         { url: baseUrl, lastModified: TEMPLATES_LAST_UPDATED, changeFrequency: 'weekly', priority: 1 },
         { url: `${baseUrl}/pricing`, lastModified: TEMPLATES_LAST_UPDATED, changeFrequency: 'weekly', priority: 0.9 },
-        { url: `${baseUrl}/how-it-works`, lastModified: TEMPLATES_LAST_UPDATED, changeFrequency: 'monthly', priority: 0.8 },
-        { url: `${baseUrl}/best-ai-chrome-extensions`, lastModified: TEMPLATES_LAST_UPDATED, changeFrequency: 'weekly', priority: 0.9 },
+        { url: `${baseUrl}/how-it-works`, lastModified: new Date('2026-11-25'), changeFrequency: 'monthly', priority: 0.8 },
+        { url: `${baseUrl}/best-ai-chrome-extensions`, lastModified: new Date('2026-11-25'), changeFrequency: 'weekly', priority: 0.9 },
         { url: `${baseUrl}/best-claude-chrome-extensions`, lastModified: new Date('2026-11-23'), changeFrequency: 'weekly', priority: 0.9 },
         { url: `${baseUrl}/best-ai-sidebar-extensions`, lastModified: TEMPLATES_LAST_UPDATED, changeFrequency: 'weekly', priority: 0.9 },
         { url: `${baseUrl}/free-claude-ai`, lastModified: TEMPLATES_LAST_UPDATED, changeFrequency: 'weekly', priority: 0.8 },
