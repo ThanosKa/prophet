@@ -95,6 +95,9 @@ export function Footer() {
             <a href="https://discord.gg/2YV53RbS" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition">
               Discord
             </a>
+            <a href="https://thanoska.betteruptime.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition">
+              Status
+            </a>
           </div>
         </div>
       </div>
