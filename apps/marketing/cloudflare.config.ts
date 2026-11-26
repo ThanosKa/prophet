@@ -14,7 +14,11 @@ export default defineConfig({
      * https://developers.cloudflare.com/workers/configuration/compatibility-flags/
      */
     compatibilityFlags: ["nodejs_compat", "enable_request_signal"],
-    observability: { enabled: true },
+    observability: {
+      enabled: true,
+      // https://developers.cloudflare.com/workers/observability/exporting-opentelemetry-data/ (logs also go to Better Stack, source "Prophet (Cloudflare Worker)")
+      logs: { enabled: true, destinations: ["betterstack-prophet"] },
+    },
     assets: {
       htmlHandling: "none",
       notFoundHandling: "none",
