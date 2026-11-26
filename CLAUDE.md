@@ -39,6 +39,7 @@ Installed extension builds outlive deploys, so the API keeps accepting what olde
 - Write Conventional Commits with a scope, naming the behaviour: `fix(marketing): keep one live Run per chat`. Scopes in use: `marketing`, `sidepanel`, `shared`, `seo`, `db`, `claude`.
 - Production is the `prophet-marketing` Cloudflare Worker, serving `prophetchrome.com` since 2026-11-08. Merging to `main` updates it: `.github/workflows/deploy.yml` deploys once CI passes, and stops if migration files changed. By hand: from `apps/marketing`, `pnpm build:vinext` then `npx cf deploy --prebuilt`, on Node 24.22 or newer (README, Deployment). Vercel is no longer connected to GitHub; it serves only the `www` → root redirect and is kept as the way back. A schema change has an ordering rule: see `.claude/docs/database-schema.md`.
 - Logs: `npx wrangler tail prophet-marketing --format pretty` streams live requests through the owner's `wrangler login`, so start it before the request you want to see.
+- Errors: Better Stack Errors (Sentry SDK, `apps/marketing/lib/error-tracking.ts`) gets the live site's server errors, `logger.error` lines and browser errors; a build without `NEXT_PUBLIC_ERROR_TRACKING_ENV` sends nothing (README, Error tracking).
 - An extension release bumps the version in `apps/sidepanel/manifest.ts` and `apps/sidepanel/package.json`, and adds notes to `apps/sidepanel/RELEASE_NOTES.md`.
 - If your change makes a line in these docs false, fix that line in the same PR.
 
