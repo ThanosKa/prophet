@@ -150,6 +150,7 @@ export default function PrivacyPage() {
                   <p className="text-muted-foreground leading-relaxed mb-3">We use the following third-party services:</p>
                   <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
                     <li><strong className="text-foreground">Anthropic:</strong> AI model API (chat processing)</li>
+                    <li><strong className="text-foreground">Better Stack:</strong> Error reports from the website and API, without account details, cookies or request contents</li>
                     <li><strong className="text-foreground">Clerk:</strong> Authentication and user management</li>
                     <li><strong className="text-foreground">Cloudflare:</strong> Website and API hosting, and cookie-free visitor analytics</li>
                     <li><strong className="text-foreground">Resend:</strong> Account and receipt emails</li>

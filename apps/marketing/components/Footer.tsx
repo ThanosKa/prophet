@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { SiteStatus } from '@/components/SiteStatus'
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
@@ -81,7 +82,9 @@ export function Footer() {
         </div>
 
         <div className="border-t pt-8 flex flex-col md:flex-row items-center gap-4">
-          <div className="flex-1"></div>
+          <div className="flex-1 text-sm text-muted-foreground">
+            <SiteStatus />
+          </div>
           <p className="text-sm text-muted-foreground text-center md:text-center">
             &copy; {currentYear} Prophet. All rights reserved.
           </p>
@@ -94,6 +97,9 @@ export function Footer() {
             </a>
             <a href="https://discord.gg/2YV53RbS" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition">
               Discord
+            </a>
+            <a href="https://thanoska.betteruptime.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition">
+              Status
             </a>
           </div>
         </div>

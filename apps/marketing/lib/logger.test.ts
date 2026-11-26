@@ -85,3 +85,27 @@ describe('logger', () => {
     expect(JSON.parse(String(consoleOut.error.mock.calls[0][0])).error).toBe('connection refused')
   })
 })
+
+describe('logger error tracking', () => {
+  afterEach(() => {
+    vi.doUnmock('./error-tracking')
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    vi.resetModules()
+  })
+
+  it('reports error and fatal lines to error tracking, and nothing below them', async () => {
+    consoleSpies()
+    const reportErrorLog = vi.fn()
+    vi.doMock('./error-tracking', () => ({ reportErrorLog }))
+    const logger = await workerLogger()
+    const error = new Error('connection refused')
+
+    logger.info({ userId: 'user_1' }, 'Turn finished')
+    logger.warn('Rate limit exceeded for agent chat')
+    logger.error({ error }, 'Failed to fetch chats')
+    logger.fatal('Worker cannot start')
+
+    expect(reportErrorLog.mock.calls).toEqual([[[{ error }, 'Failed to fetch chats']], [['Worker cannot start']]])
+  })
+})

@@ -1,5 +1,8 @@
 import pino, { type DestinationStream, type LoggerOptions } from 'pino'
+import { reportErrorLog } from './error-tracking'
 import { isWorkerRuntime } from './runtime'
+
+const ERROR_LEVEL = pino.levels.values.error
 
 const isDevelopment = process.env.NODE_ENV === 'development'
 const onWorker = isWorkerRuntime()
@@ -25,6 +28,12 @@ const options: LoggerOptions = {
   },
   // Call sites log errors under `error`; without this an Error object prints as `{}`. https://github.com/pinojs/pino/blob/main/docs/api.md#pino-stdserializers
   serializers: { error: pino.stdSerializers.err },
+  hooks: {
+    logMethod(args, method, level) {
+      if (level >= ERROR_LEVEL) reportErrorLog(args)
+      method.apply(this, args)
+    },
+  },
 }
 
 const LEVEL_LABEL = /^\{"level":"(\w+)"/

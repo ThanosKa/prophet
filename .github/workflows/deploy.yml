@@ -34,6 +34,9 @@ jobs:
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
       NEXT_PUBLIC_CLERK_SIGN_IN_URL: ${{ vars.NEXT_PUBLIC_CLERK_SIGN_IN_URL }}
       NEXT_PUBLIC_CLERK_SIGN_UP_URL: ${{ vars.NEXT_PUBLIC_CLERK_SIGN_UP_URL }}
+      # Turns on error tracking (apps/marketing/lib/error-tracking.ts) and tags events with the deployed commit.
+      NEXT_PUBLIC_ERROR_TRACKING_ENV: production
+      NEXT_PUBLIC_ERROR_TRACKING_RELEASE: ${{ github.event.workflow_run.head_sha || github.sha }}
 
     steps:
       - name: Checkout the commit CI passed on

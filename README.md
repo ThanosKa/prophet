@@ -326,6 +326,10 @@ Only the marketing app (backend API) needs deployment. The Chrome extension runs
 
 Run `db:migrate` before deploying code that needs a schema change.
 
+### Error tracking
+
+Server and browser errors from `apps/marketing` go to Better Stack Errors through the Sentry SDK (`lib/error-tracking.ts`, `worker/index.ts`, `instrumentation.ts`, `instrumentation-client.ts`): what a request throws, every `logger.error` and `logger.fatal` line, uncaught browser errors, and render errors that reach `app/global-error.tsx` (vinext's default error page, unchanged). It is off unless the build sets `NEXT_PUBLIC_ERROR_TRACKING_ENV`: the deploy workflow sets `production` and the commit SHA as the release. Set `development` in `.env.local` to send local errors, and `production` in `.env.production.local` before a manual deploy. Events carry no user, cookies, headers other than the user agent, bodies, query strings or screenshots. The extension does not report errors. Uptime: [status page](https://thanoska.betteruptime.com).
+
 ### Vercel (fallback only)
 
 Vercel still builds `main`, but since the cutover it serves only `www.prophetchrome.com` (a 308 to the root) and visitors whose DNS still holds the old answer. The project is kept as the way back: take `prophetchrome.com` off the Worker and add back the DNS-only CNAME to Vercel's target. The original setup was:
@@ -348,7 +352,6 @@ Vercel still builds `main`, but since the cutover it serves only `www.prophetchr
 - [ ] Configure custom domain and SSL
 - [ ] Test all payment flows and webhooks
 - [ ] Verify Chrome extension connects to production API
-- [ ] Enable error tracking and monitoring
 - [ ] Review rate limits and scaling strategy
 
 ## CI/CD
