@@ -60,7 +60,7 @@ interface Service {
 }
 
 const SERVICES: Service[] = [
-  { name: 'ChatGPT Plus', monthly: 20, type: 'fixed', note: 'GPT-4o with limits' },
+  { name: 'ChatGPT Plus', monthly: 20, type: 'fixed', note: 'GPT-6 models with usage limits' },
   { name: 'Claude Pro', monthly: 20, type: 'fixed', note: 'Sonnet/Opus with limits' },
   { name: 'Gemini Advanced', monthly: 20, type: 'fixed', note: 'Gemini 2.5 Pro with limits' },
   { name: 'Perplexity Pro', monthly: 20, type: 'fixed', note: 'Search-focused AI' },
